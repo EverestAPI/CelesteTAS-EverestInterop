@@ -1377,7 +1377,7 @@ public sealed class Editor : Drawable {
                         loadingDots = (loadingDots + 1).Mod(4);
                         loadingEntry.DisplayText = $"Loading{new string('.', loadingDots)}{new string(' ', 3 - loadingDots)}";
 
-                        (var commandEntries, bool done) = await CommunicationWrapper.RequestAutoCompleteEntries(command.Name, commandLine.Value.Arguments).ConfigureAwait(false);
+                        (var commandEntries, bool done) = await CommunicationWrapper.RequestAutoCompleteEntries(command.Name, commandLine.Value.Arguments, Document.FilePath, Document.Caret.Row).ConfigureAwait(false);
 
                         var menuEntries = commandEntries.Select(entry => new PopupMenu.Entry {
                             SearchText = entry.FullName,

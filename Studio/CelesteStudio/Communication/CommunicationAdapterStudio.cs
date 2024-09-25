@@ -148,11 +148,13 @@ public sealed class CommunicationAdapterStudio(
         });
         LogVerbose($"Sent message Hotkey: {hotkey} ({(released ? "released" : "pressed")})");
     }
-    public void WriteCommandAutoCompleteRequest(int hash, string commandName, string[] commandArgs) {
+    public void WriteCommandAutoCompleteRequest(int hash, string commandName, string[] commandArgs, string filePath, int fileLine) {
         QueueMessage(MessageID.RequestCommandAutoComplete, writer => {
             writer.Write(hash);
             writer.Write(commandName);
             writer.WriteObject(commandArgs);
+            writer.Write(filePath);
+            writer.Write(fileLine);
         });
         LogVerbose($"Sent message RequestCommandAutoComplete: '{commandName}' '{string.Join(' ', commandArgs)}' ({hash})");
     }

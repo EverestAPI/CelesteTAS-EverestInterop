@@ -83,7 +83,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                     GameDataType.ConsoleCommand => reader.ReadBoolean(),
                     GameDataType.SettingValue => reader.ReadString(),
                     GameDataType.RawInfo => reader.ReadObject<(string, bool)>(),
-                    GameDataType.CommandHash => reader.ReadObject<(string, string[])>(),
+                    GameDataType.CommandHash => reader.ReadObject<(string, string[], string, int)>(),
                     _ => null,
                 };
                 LogVerbose($"Received message RequestGameData: '{gameDataType}' ('{arg ?? "<null>"}')");
@@ -121,16 +121,16 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                 gameData = GameData.GetGameState();
                                 break;
                             case GameDataType.CommandHash:
-                                (string commandName, string[] commandArgs) = ((string, string[]))arg!;
+                                (string commandName, string[] commandArgs, string filePath, int fileLine) = ((string, string[], string, int))arg!;
 
                                 var meta = Command.GetMeta(commandName);
                                 if (meta == null) {
                                     // Fallback to the default implementation
-                                    gameData = commandArgs[..^1].Aggregate(17, (current, commandArg) => 31 * current + commandArg.GetStableHashCode());
+                                    gameData = commandArgs[..^1].Aggregate(17, (current, commandArg) => 31 * current + 17 * commandArg.GetStableHashCode());
                                     break;
                                 }
 
-                                gameData = meta.GetHash(commandArgs);
+                                gameData = meta.GetHash(commandArgs, filePath, fileLine);
                                 break;
 
                             default:
@@ -176,7 +176,9 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 int hash = reader.ReadInt32();
                 string commandName = reader.ReadString();
                 string[] commandArgs = reader.ReadObject<string[]>();
-                LogVerbose($"Received message RequestCommandAutoComplete: '{commandName}' '{string.Join(' ', commandArgs)}' ({hash})");
+                string filePath = reader.ReadString();
+                int fileLine = reader.ReadInt32();
+                LogVerbose($"Received message RequestCommandAutoComplete: '{commandName}' '{string.Join(' ', commandArgs)}' file '{filePath}' line {fileLine} ({hash})");
 
                 var meta = Command.GetMeta(commandName);
                 if (meta == null) {
@@ -194,7 +196,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
 
                 // Collect entries
                 Task.Run(() => {
-                    using var enumerator = meta.GetAutoCompleteEntries(commandArgs);
+                    using var enumerator = meta.GetAutoCompleteEntries(commandArgs, filePath, fileLine);
                     while (Connected) {
                         try {
                             if (!enumerator.MoveNext()) {

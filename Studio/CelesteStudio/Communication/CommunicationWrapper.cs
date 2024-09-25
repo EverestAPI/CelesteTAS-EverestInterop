@@ -196,12 +196,12 @@ public static class CommunicationWrapper {
 
     // The hashcode is stored instead of the actual key, since it is used as an identifier in responses from Celeste
     private static readonly Dictionary<int, (List<CommandAutoCompleteEntry> Entries, bool Done)> autoCompleteEntryCache = [];
-    public static async Task<(List<CommandAutoCompleteEntry> Entries, bool Done)> RequestAutoCompleteEntries(string commandName, string[] commandArgs) {
+    public static async Task<(List<CommandAutoCompleteEntry> Entries, bool Done)> RequestAutoCompleteEntries(string commandName, string[] commandArgs, string filePath, int fileLine) {
         if (!Connected) {
             return (Entries: [], Done: true);
         }
 
-        object? argsHash = await comm!.RequestGameData(GameDataType.CommandHash, (commandName, commandArgs)).ConfigureAwait(false);
+        object? argsHash = await comm!.RequestGameData(GameDataType.CommandHash, (commandName, commandArgs, filePath, fileLine)).ConfigureAwait(false);
         if (argsHash == null) {
             return (Entries: [], Done: true);
         }
@@ -214,7 +214,7 @@ public static class CommunicationWrapper {
         }
         var result = autoCompleteEntryCache[hash] = (Entries: [], Done: false);
 
-        comm.WriteCommandAutoCompleteRequest(hash, commandName, commandArgs);
+        comm.WriteCommandAutoCompleteRequest(hash, commandName, commandArgs, filePath, fileLine);
         return result;
     }
 

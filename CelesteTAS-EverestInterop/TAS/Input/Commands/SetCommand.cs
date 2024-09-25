@@ -55,14 +55,14 @@ public static class SetCommand {
         public string Insert => $"Set{CommandInfo.Separator}[0;(Mod).Setting]{CommandInfo.Separator}[1;Value]";
         public bool HasArguments => true;
 
-        public int GetHash(string[] args) {
+        public int GetHash(string[] args, string filePath, int fileLine) {
             int hash = GetTargetArgs(args)
                 .Aggregate(17, (current, arg) => 31 * current + arg.GetStableHashCode());
             // The other argument don't influence each other, so just the length matters
             return 31 * hash + 17 * args.Length;
         }
 
-        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args) {
+        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
             var targetArgs = GetTargetArgs(args).ToArray();
 
             // Parameter

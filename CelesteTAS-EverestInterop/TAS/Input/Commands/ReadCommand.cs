@@ -16,7 +16,7 @@ public static class ReadCommand {
         public string Insert => $"Read{CommandInfo.Separator}[0;File Name]{CommandInfo.Separator}[1;Starting Label]{CommandInfo.Separator}[2;(Ending Label)]";
         public bool HasArguments => true;
 
-        public int GetHash(string[] args) {
+        public int GetHash(string[] args, string filePath, int fileLine) {
             int hash = args[..Math.Max(0, args.Length - 1)]
                 .Aggregate(17, (current, arg) => 31 * current + 17 * arg.GetStableHashCode());
 
@@ -24,7 +24,6 @@ public static class ReadCommand {
             hash = 31 * hash + 17 * InputController.StudioTasFilePath.GetStableHashCode();
 
             if (args.Length >= 1 && !string.IsNullOrWhiteSpace(args[0])) {
-                string filePath = InputController.StudioTasFilePath;
                 if (Path.GetDirectoryName(filePath) is not { } fileDir) {
                     return hash;
                 }
@@ -43,8 +42,7 @@ public static class ReadCommand {
             return hash;
         }
 
-        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args) {
-            string filePath = InputController.StudioTasFilePath;
+        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
             if (Path.GetDirectoryName(filePath) is not { } fileDir) {
                 yield break;
             }
@@ -62,7 +60,6 @@ public static class ReadCommand {
                 if (prefix.StartsWith("./")) {
                     prefix = prefix["./".Length..];
                 }
-
 
                 yield return new CommandAutoCompleteEntry { Name = "../", Prefix = prefix, IsDone = false };
 
@@ -117,8 +114,8 @@ public static class ReadCommand {
     }
 
     // "Read, Path",
-    // "Read, Path, StartLine",
-    // "Read, Path, StartLine, EndLine"
+    // "Read, Path, StartLabel",
+    // "Read, Path, StartLabel, EndLabel"
     [TasCommand("Read", ExecuteTiming = ExecuteTiming.Parse, MetaDataProvider = typeof(ReadMeta))]
     private static void Read(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         string[] args = commandLine.Arguments;

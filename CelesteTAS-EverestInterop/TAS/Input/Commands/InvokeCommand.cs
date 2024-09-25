@@ -21,14 +21,14 @@ public static class InvokeCommand {
         public string Insert => $"Invoke{CommandInfo.Separator}[0;Entity.Method]{CommandInfo.Separator}[1;Parameter]";
         public bool HasArguments => true;
 
-        public int GetHash(string[] args) {
+        public int GetHash(string[] args, string filePath, int fileLine) {
             int hash = SetCommand.SetMeta.GetTargetArgs(args)
                 .Aggregate(17, (current, arg) => 31 * current + arg.GetStableHashCode());
             // The other argument don't influence each other, so just the length matters
             return 31 * hash + 17 * args.Length;
         }
 
-        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args) {
+        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
             var targetArgs = SetCommand.SetMeta.GetTargetArgs(args).ToArray();
 
             // Parameters

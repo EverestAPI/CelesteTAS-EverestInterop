@@ -14,7 +14,7 @@ public static class PressCommand {
         public string Insert => $"Press{CommandInfo.Separator}[0;Key1{CommandInfo.Separator}Key2...]";
         public bool HasArguments => true;
 
-        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args) =>
+        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) =>
             Enum.GetValues<Keys>()
                 .Select(key => new CommandAutoCompleteEntry {
                     Name = key.ToString(),
