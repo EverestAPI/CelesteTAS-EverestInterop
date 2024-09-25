@@ -112,6 +112,7 @@ public readonly record struct Command(
                 Parsing = false;
             }
 
+            command = new Command(commandLine, info, filePath, fileLine, studioLine, frame);
             if (!inputController.Commands.TryGetValue(frame, out var commands)) {
                 inputController.Commands[frame] = commands = new List<Command>();
             }

@@ -12,6 +12,7 @@ using TAS.Input;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
+using Comment = TAS.Input.Comment;
 
 namespace TAS.EverestInterop;
 

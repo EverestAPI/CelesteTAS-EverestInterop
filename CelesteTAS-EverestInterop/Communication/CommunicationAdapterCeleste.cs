@@ -215,7 +215,22 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 Task.Run(async () => {
                     CommandAutoCompleteEntry[] entriesToWrite;
 
+                    var timeout = TimeSpan.FromSeconds(5.0f);
+                    var lastWrite = DateTime.UtcNow;
+
                     while (Connected && !done) {
+                        // Individual entries shouldn't take too long to compute
+                        var now = DateTime.UtcNow;
+                        if (now - lastWrite > timeout) {
+                            QueueMessage(MessageID.CommandAutoComplete, writer => {
+                                writer.Write(hash);
+                                writer.WriteObject(Array.Empty<CommandAutoCompleteEntry>());
+                                writer.Write(/*done*/true);
+                            });
+                            LogVerbose($"Sent message CommandAutoComplete: 0 [timeout] ({hash})");
+                            break;
+                        }
+
                         lock (entries) {
                             if (entries.Count == 0) {
                                 continue;
@@ -223,6 +238,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
 
                             entriesToWrite = entries.ToArray();
                             entries.Clear();
+                            lastWrite = now;
                         }
 
                         QueueMessage(MessageID.CommandAutoComplete, writer => {
@@ -235,7 +251,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                         await Task.Delay(TimeSpan.FromSeconds(0.1f)).ConfigureAwait(false);
                     }
 
-                    lock(entries) {
+                    lock (entries) {
                         entriesToWrite = entries.ToArray();
                         entries.Clear();
                     }
