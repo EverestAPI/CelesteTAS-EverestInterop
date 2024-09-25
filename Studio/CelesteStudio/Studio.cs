@@ -280,8 +280,6 @@ public sealed class Studio : Form {
     private void ApplySettings() {
         Topmost = Settings.Instance.AlwaysOnTop;
         Menu = CreateMenu(); // Recreate menu to reflect changes
-
-        LegacyCommandInfo.GenerateCommandInfos(Settings.Instance.CommandSeparatorText);
     }
 
     protected override void OnDragDrop(DragEventArgs e) {

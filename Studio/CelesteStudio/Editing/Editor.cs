@@ -254,23 +254,11 @@ public sealed class Editor : Drawable {
 
         Focus();
 
-        CommunicationWrapper.CommandsChanged += _ => {
-            GenerateBaseAutoCompleteEntries();
-            Recalc();
-        };
-        // Update command separator
-        Settings.Changed += () => {
-            GenerateBaseAutoCompleteEntries();
-            Recalc();
-        };
-
         highlighter = new(FontManager.EditorFontRegular, FontManager.EditorFontBold, FontManager.EditorFontItalic, FontManager.EditorFontBoldItalic);
         Settings.FontChanged += () => {
             highlighter = new(FontManager.EditorFontRegular, FontManager.EditorFontBold, FontManager.EditorFontItalic, FontManager.EditorFontBoldItalic);
             Recalc();
         };
-
-        GenerateBaseAutoCompleteEntries();
 
         BackgroundColor = Settings.Instance.Theme.Background;
         Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.Background;
@@ -308,18 +296,44 @@ public sealed class Editor : Drawable {
             });
         };
 
+        // Commands
         var commandsMenu = new SubMenuItem { Text = "Insert Other Command" };
 
+        CommunicationWrapper.CommandsChanged += _ => {
+            GenerateBaseAutoCompleteEntries();
+            GenerateCommandMenu();
+            Recalc();
+        };
+        // Update command separator
+        Settings.Changed += () => {
+            GenerateBaseAutoCompleteEntries();
+            GenerateCommandMenu();
+            Recalc();
+        };
+
+        GenerateBaseAutoCompleteEntries();
         GenerateCommandMenu();
-        Settings.Changed += GenerateCommandMenu;
 
         void GenerateCommandMenu() {
             commandsMenu.Items.Clear();
-            foreach (var command in LegacyCommandInfo.AllCommands) {
-                if (command == null) {
+
+            foreach (string? commandName in CommandInfo.CommandOrder) {
+                if (commandName == null) {
                     commandsMenu.Items.Add(new SeparatorMenuItem());
-                } else {
-                    commandsMenu.Items.Add(CreateCommandInsert(command.Value));
+                } else if (CommunicationWrapper.Commands.FirstOrDefault(cmd => cmd.Name == commandName) is var command) {
+                    commandsMenu.Items.Add(CreateCommandInsert(command));
+                }
+            }
+
+            // 3rd party commands (i.e. added through the API by another mod)
+            var thirdPartyCommands = CommunicationWrapper.Commands
+                .Where(command => !CommandInfo.CommandOrder.Contains(command.Name) && !CommandInfo.HiddenCommands.Contains(command.Name))
+                .ToArray();
+
+            if (thirdPartyCommands.Any()) {
+                commandsMenu.Items.Add(new SeparatorMenuItem());
+                foreach (var command in thirdPartyCommands) {
+                    commandsMenu.Items.Add(CreateCommandInsert(command));
                 }
             }
         }
@@ -379,7 +393,7 @@ public sealed class Editor : Drawable {
             }
         };
 
-        MenuItem CreateCommandInsert(LegacyCommandInfo info) {
+        MenuItem CreateCommandInsert(CommandInfo info) {
             var cmd = new Command { Shortcut = Keys.None };
             cmd.Executed += (_, _) => {
                 InsertQuickEdit(info.Insert);
@@ -387,7 +401,7 @@ public sealed class Editor : Drawable {
                 ScrollCaretIntoView();
             };
 
-            return new ButtonMenuItem(cmd) { Text = info.Name, ToolTip = info.Description };
+            return new ButtonMenuItem(cmd) { Text = info.Name };
         }
     }
 
@@ -1236,6 +1250,7 @@ public sealed class Editor : Drawable {
     private void GenerateBaseAutoCompleteEntries() {
         baseAutoCompleteEntries.Clear();
 
+        // Snippets
         foreach (var snippet in Settings.Instance.Snippets) {
             if (!string.IsNullOrWhiteSpace(snippet.Shortcut) && snippet.Enabled &&
                 CreateEntry(snippet.Shortcut, snippet.Insert, "Snippet", hasArguments: false) is { } entry)
@@ -1243,8 +1258,19 @@ public sealed class Editor : Drawable {
                 baseAutoCompleteEntries.Add(entry);
             }
         }
+
+        // Commands
+        foreach (string? commandName in CommandInfo.CommandOrder) {
+            if (commandName != null && CommunicationWrapper.Commands.FirstOrDefault(cmd => cmd.Name == commandName) is var command && !string.IsNullOrEmpty(command.Name) &&
+                CreateEntry(command.Name, command.Insert.Replace(CommandInfo.Separator, Settings.Instance.CommandSeparatorText), "Command", command.HasArguments) is { } entry)
+            {
+                baseAutoCompleteEntries.Add(entry);
+            }
+        }
         foreach (var command in CommunicationWrapper.Commands) {
-            if (CreateEntry(command.Name, command.Insert.Replace(CommandInfo.Separator, Settings.Instance.CommandSeparatorText), "Command", command.HasArguments) is { } entry) {
+            if (!CommandInfo.CommandOrder.Contains(command.Name) && !CommandInfo.HiddenCommands.Contains(command.Name) &&
+                CreateEntry(command.Name, command.Insert.Replace(CommandInfo.Separator, Settings.Instance.CommandSeparatorText), "Command", command.HasArguments) is { } entry)
+            {
                 baseAutoCompleteEntries.Add(entry);
             }
         }

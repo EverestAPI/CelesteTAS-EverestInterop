@@ -235,8 +235,8 @@ public static class LibTasHelper {
         return string.Join("", buttons);
     }
 
-    // StartExportLibTAS (Optional Path)
-    [TasCommand("StartExportLibTAS", Aliases = ["ExportLibTAS"], ExecuteTiming = ExecuteTiming.Parse)]
+    // ExportLibTAS (Optional Path)
+    [TasCommand("ExportLibTAS", Aliases = ["StartExportLibTAS"], ExecuteTiming = ExecuteTiming.Parse)]
     private static void StartExportLibTasCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         string[] args = commandLine.Arguments;
         string path = "Celeste.ltm";
@@ -247,7 +247,7 @@ public static class LibTasHelper {
         StartExport(path);
     }
 
-    [TasCommand("FinishExportLibTAS", Aliases = new[] {"EndExportLibTAS"}, ExecuteTiming = ExecuteTiming.Parse)]
+    [TasCommand("EndExportLibTAS", Aliases = new[] {"FinishExportLibTAS"}, ExecuteTiming = ExecuteTiming.Parse)]
     private static void FinishExportLibTasCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         FinishExport();
     }
