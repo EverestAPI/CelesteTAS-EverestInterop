@@ -80,6 +80,7 @@ public enum GameDataType : byte {
     RawInfo,
     GameState,
     CommandHash,
+    LevelInfo,
 }
 
 public enum RecordingFailedReason : byte {

@@ -132,6 +132,12 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
 
                                 gameData = meta.GetHash(commandArgs, filePath, fileLine);
                                 break;
+                            case GameDataType.LevelInfo:
+                                gameData = new LevelInfo {
+                                    ModUrl = GameData.GetModUrl(),
+                                    WakeupTime = GameData.GetWakeupTime(),
+                                };
+                                break;
 
                             default:
                                 gameData = null;
@@ -162,6 +168,10 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
 
                                 case GameDataType.CommandHash:
                                     writer.Write((int)gameData!);
+                                    break;
+                                
+                                case GameDataType.LevelInfo:
+                                    writer.WriteObject((LevelInfo)gameData!);
                                     break;
                             }
                             LogVerbose($"Sent message GameDataResponse: {gameDataType} = '{gameData}'");
