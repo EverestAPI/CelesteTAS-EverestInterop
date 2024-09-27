@@ -1340,7 +1340,11 @@ public sealed class Editor : Drawable {
     }
 
     private void UpdateAutoComplete(bool open = true) {
-        var line = Document.Lines[Document.Caret.Row][..Document.Caret.Col].TrimStart();
+        string line = Document.Lines[Document.Caret.Row];
+        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, line.Length);
+
+        // Ignore text to the right of the caret to auto-completion
+        line = line[..Document.Caret.Col].TrimStart();
 
         // Don't auto-complete on comments or action lines
         if (line.StartsWith('#') || ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) {
