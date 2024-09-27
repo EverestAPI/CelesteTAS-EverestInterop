@@ -14,11 +14,11 @@ namespace TAS.Input;
 #nullable enable
 
 [Flags]
-public enum ExecuteTiming {
+public enum ExecuteTiming : byte {
     /// Executes the command while parsing inputs, like Read commands
-    Parse,
+    Parse = 1 << 0,
     /// Executes the command at runtime while playing inputs, like Console commands
-    Runtime,
+    Runtime = 1 << 1,
 }
 
 /// Creates a command which can be used inside TAS files
@@ -92,7 +92,7 @@ public readonly record struct Command(
     public static bool TryParse(InputController inputController, string filePath, int fileLine, string lineText, int frame, int studioLine, out Command command) {
         command = default;
 
-        if (!CommandLine.TryParse(lineText, out var commandLine)) {
+        if (string.IsNullOrWhiteSpace(lineText) || !char.IsLetter(lineText[0]) || !CommandLine.TryParse(lineText, out var commandLine)) {
             return false;
         }
 

@@ -400,9 +400,7 @@ internal static class CommonExtensions {
 
 // https://github.com/NoelFB/Foster/blob/main/Framework/Extensions/EnumExt.cs
 internal static class EnumExtensions {
-    /// <summary>
-    /// Enum.Has boxes the value, where as this method does not.
-    /// </summary>
+    /// Enum.HasFlag boxes the value, whereas this method does not
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool Has<TEnum>(this TEnum lhs, TEnum rhs) where TEnum : unmanaged, Enum {
         return sizeof(TEnum) switch {
