@@ -208,10 +208,13 @@ public sealed class PopupMenu : Scrollable {
     public void Recalc() {
         shownEntries = entries.Where(entry => string.IsNullOrEmpty(entry.SearchText) || entry.SearchText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase)).ToArray();
         if (shownEntries.Length == 0) {
-            contentWidth = 0;
-            contentHeight = 0;
-            Visible = false;
-            return;
+            shownEntries = [new Entry {
+                DisplayText = "No results",
+                SearchText = string.Empty,
+                ExtraText = string.Empty,
+                OnUse = null!,
+                Disabled = true
+            }];
         }
 
         selectedEntry = Math.Clamp(selectedEntry, 0, shownEntries.Length - 1);

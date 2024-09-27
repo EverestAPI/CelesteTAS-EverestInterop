@@ -176,8 +176,10 @@ public sealed class Editor : Drawable {
     /// Auto-complete entries for commands and snippets
     private readonly List<PopupMenu.Entry> baseAutoCompleteEntries = [];
 
-    // Cancellation token for fetching command-argument auto-complete entries
+    /// Cancellation token for fetching command-argument auto-complete entries
     private CancellationTokenSource? commandAutoCompleteTokenSource;
+    /// Index of the currently fetched entires, to prevent flashing "Loading..." while typing
+    private int lastAutoCompleteArgumentIndex = -1;
 
     // These should be ordered from most specific to most applicable.
     private readonly ContextAction[] contextActions = [
@@ -1237,6 +1239,7 @@ public sealed class Editor : Drawable {
     private void CloseAutoCompletePopup() {
         if (ActivePopupMenu == autoCompleteMenu) {
             ActivePopupMenu = null;
+            lastAutoCompleteArgumentIndex = -1;
         }
     }
     private void CloseContextActionsPopup() {
@@ -1356,6 +1359,7 @@ public sealed class Editor : Drawable {
             ActivePopupMenu = autoCompleteMenu;
         }
         if (ActivePopupMenu == null) {
+            lastAutoCompleteArgumentIndex = -1;
             return;
         }
 
@@ -1369,6 +1373,7 @@ public sealed class Editor : Drawable {
             autoCompleteMenu.Entries.Clear();
             autoCompleteMenu.Entries.AddRange(baseAutoCompleteEntries);
             autoCompleteMenu.Filter = line;
+            lastAutoCompleteArgumentIndex = -1;
         } else {
             var command = CommunicationWrapper.Commands.FirstOrDefault(cmd => string.Equals(cmd.Name, commandLine.Value.Command, StringComparison.OrdinalIgnoreCase));
 
@@ -1386,6 +1391,15 @@ public sealed class Editor : Drawable {
                 commandAutoCompleteTokenSource?.Cancel();
                 commandAutoCompleteTokenSource?.Dispose();
                 commandAutoCompleteTokenSource = new CancellationTokenSource();
+
+                // Don't clear on same argument to prevent flashing "Loading..."
+                if (lastAutoCompleteArgumentIndex != commandLine.Value.Arguments.Length) {
+                    autoCompleteMenu.Entries.Clear();
+                    autoCompleteMenu.Entries.Add(loadingEntry);
+                    autoCompleteMenu.Recalc();
+                    Recalc();
+                }
+                lastAutoCompleteArgumentIndex = commandLine.Value.Arguments.Length;
 
                 var token = commandAutoCompleteTokenSource.Token;
                 Task.Run(async () => {
