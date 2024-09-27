@@ -60,6 +60,15 @@ public sealed class Editor : Drawable {
                 }
             }
 
+            // Calculate total frame count
+            totalFrameCount = 0;
+            foreach (string line in document.Lines) {
+                if (!ActionLine.TryParse(line, out var actionLine)) {
+                    continue;
+                }
+                totalFrameCount += actionLine.FrameCount;
+            }
+
             // Auto-collapses folds which are too long
             foreach (var fold in foldings) {
                 if (Settings.Instance.MaxUnfoldedLines == 0) {
@@ -79,20 +88,26 @@ public sealed class Editor : Drawable {
 
             return;
 
-            void HandleTextChanged(Document _, int minRow, int maxRow) {
+            void HandleTextChanged(Document _, Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
                 lastModification = DateTime.UtcNow;
 
-                ConvertToActionLines(minRow, maxRow);
+                ConvertToActionLines(insertions.Keys);
 
-                // Need to update total frame count
-                int totalFrames = 0;
-                foreach (var line in document.Lines) {
-                    if (!ActionLine.TryParse(line, out var actionLine)) {
+                // Adjust total frame count
+                foreach (string deletion in deletions.Values) {
+                    if (!ActionLine.TryParse(deletion, out var actionLine)) {
                         continue;
                     }
-                    totalFrames += actionLine.FrameCount;
+                    totalFrameCount -= actionLine.FrameCount;
                 }
-                Studio.Instance.GameInfoPanel.TotalFrames = totalFrames;
+                foreach (string insertion in insertions.Values) {
+                    if (!ActionLine.TryParse(insertion, out var actionLine)) {
+                        continue;
+                    }
+                    totalFrameCount += actionLine.FrameCount;
+                }
+
+                Studio.Instance.GameInfoPanel.TotalFrames = totalFrameCount;
                 Studio.Instance.GameInfoPanel.UpdateGameInfo();
 
                 if (Settings.Instance.AutoIndexRoomLabels) {
@@ -113,10 +128,11 @@ public sealed class Editor : Drawable {
                             untrimmedLabel = match.Groups[1].Value;
                         }
 
-                        if (roomLabels.TryGetValue(label, out var list))
+                        if (roomLabels.TryGetValue(label, out var list)) {
                             list.Add(row);
-                        else
+                        } else {
                             roomLabels[label] = [row];
+                        }
                     }
 
                     using var __ = Document.Update(raiseEvents: false);
@@ -178,7 +194,7 @@ public sealed class Editor : Drawable {
 
     /// Cancellation token for fetching command-argument auto-complete entries
     private CancellationTokenSource? commandAutoCompleteTokenSource;
-    /// Index of the currently fetched entires, to prevent flashing "Loading..." while typing
+    /// Index of the currently fetched entries, to prevent flashing "Loading..." while typing
     private int lastAutoCompleteArgumentIndex = -1;
 
     // These should be ordered from most specific to most applicable.
@@ -209,6 +225,9 @@ public sealed class Editor : Drawable {
 
     /// User-preference for the starting index of room labels
     private int roomLabelStartIndex;
+
+    /// Current total frame count (including commands if connected to Celeste)
+    private int totalFrameCount;
 
     // Offset from the left accounting for line numbers
     private float textOffsetX;
@@ -277,6 +296,10 @@ public sealed class Editor : Drawable {
         };
 
         CommunicationWrapper.StateUpdated += (prevState, state) => {
+            if (state.tasStates.HasFlag(States.Enable) && !state.tasStates.HasFlag(States.FrameStep)) {
+                totalFrameCount = state.TotalFrames;
+            }
+
             if (prevState.CurrentLine == state.CurrentLine &&
                 prevState.SaveStateLine == state.SaveStateLine &&
                 prevState.CurrentLineSuffix == state.CurrentLineSuffix) {
@@ -448,8 +471,10 @@ public sealed class Editor : Drawable {
     /// Recalculates all values and invalidates the paint.
     private void Recalc() {
         // Ensure there is always at least 1 line
-        if (Document.Lines.Count == 0)
+        if (Document.Lines.Count == 0) {
+            using var __ = Document.Update(raiseEvents: false);
             Document.InsertLine(0, string.Empty);
+        }
 
         // Snap caret
         Document.Caret.Row = Math.Clamp(Document.Caret.Row, 0, Document.Lines.Count - 1);
@@ -702,6 +727,8 @@ public sealed class Editor : Drawable {
 
     /// Ensures that parsable action-line has the correct format
     public bool TryParseAndFormatActionLine(int row, out ActionLine actionLine) {
+        using var __ = Document.Update(raiseEvents: false);
+
         if (ActionLine.TryParse(Document.Lines[row], out actionLine)) {
             Document.ReplaceLine(row, actionLine.ToString());
             return true;
@@ -711,28 +738,27 @@ public sealed class Editor : Drawable {
     }
 
     /// Applies the correct action-line formatting to all specified lines
-    private void ConvertToActionLines(int startRow, int endRow) {
-        int minRow = Math.Min(startRow, endRow);
-        int maxRow = Math.Max(startRow, endRow);
-
+    private void ConvertToActionLines(IEnumerable<int> rows) {
         using var __ = Document.Update(raiseEvents: false);
 
         // Convert to action lines, if possible
-        for (int row = minRow; row <= Math.Min(maxRow, Document.Lines.Count - 1); row++) {
-            var line = Document.Lines[row];
-            if (ActionLine.TryParse(line, out var actionLine)) {
-                var newLine = actionLine.ToString();
-
-                if (Document.Caret.Row == row) {
-                    if (Document.Caret.Col == line.Length) {
-                        Document.Caret.Col = newLine.Length;
-                    } else {
-                        Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
-                    }
-                }
-
-                Document.ReplaceLine(row, newLine);
+        foreach (int row in rows) {
+            string? line = Document.Lines[row];
+            if (!ActionLine.TryParse(line, out var actionLine)) {
+                continue;
             }
+
+            string newLine = actionLine.ToString();
+
+            if (Document.Caret.Row == row) {
+                if (Document.Caret.Col == line.Length) {
+                    Document.Caret.Col = newLine.Length;
+                } else {
+                    Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
+                }
+            }
+
+            Document.ReplaceLine(row, newLine);
         }
     }
 
@@ -1428,6 +1454,8 @@ public sealed class Editor : Drawable {
                             DisplayText = entry.Name,
                             ExtraText = entry.Extra,
                             OnUse = () => {
+                                using var __ = Document.Update();
+
                                 string insert = entry.FullName;
 
                                 var selectedQuickEdit = GetQuickEdits()

@@ -4,8 +4,8 @@ using System.IO;
 using System.Linq;
 using CelesteStudio.Communication;
 using CelesteStudio.Util;
-using Eto.Forms;
 using StudioCommunication.Util;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace CelesteStudio.Editing;
@@ -71,44 +71,6 @@ public class Anchor {
     public Anchor Clone() => new() { Row = Row, MinCol = MinCol, MaxCol = MaxCol, UserData = UserData, OnRemoved = OnRemoved };
 }
 
-public class UndoStack(int stackSize = 256) {
-    public struct Entry(List<string> lines, Dictionary<int, List<Anchor>> anchors, CaretPosition caret) {
-        public readonly List<string> Lines = lines;
-        public readonly Dictionary<int, List<Anchor>> Anchors = anchors;
-        public CaretPosition Caret = caret;
-    }
-
-    public int Curr = 0;
-    public readonly Entry[] Stack = new Entry[stackSize];
-
-    private int head = 0, tail = 0;
-
-    public void Push(CaretPosition caret) {
-        head = (Curr + 1).Mod(stackSize);
-        if (head == tail)
-            tail = (tail + 1).Mod(stackSize); // Discard the oldest entry
-
-        Stack[Curr].Caret = caret;
-        Stack[head] = new Entry(
-            // Make sure to copy lines / anchors
-            [..Stack[Curr].Lines],
-            Stack[Curr].Anchors.ToDictionary(entry => entry.Key, entry => entry.Value.Select(anchor => anchor.Clone()).ToList()),
-            // Will be overwritten later, so it doesn't matter what's used
-            caret
-        );
-        Curr = head;
-    }
-
-    public void Undo() {
-        if (Curr == tail) return;
-        Curr = (Curr - 1).Mod(stackSize);
-    }
-    public void Redo() {
-        if (Curr == head) return;
-        Curr = (Curr + 1).Mod(stackSize);
-    }
-}
-
 public class Document : IDisposable {
     // Unify all TASes to use a single line separator
     public const char NewLine = '\n';
@@ -146,13 +108,13 @@ public class Document : IDisposable {
 
     private readonly UndoStack undoStack = new();
 
-    private List<string> CurrentLines => undoStack.Stack[undoStack.Curr].Lines;
+    private List<string> CurrentLines;
     public List<string> Lines => CurrentLines;
 
-    // An anchor is a part of the document, which will move with the text its placed on.
-    // They can hold arbitrary user data.
-    // As their text gets edited, they will grow / shrink in size or removed entirely.
-    private Dictionary<int, List<Anchor>> CurrentAnchors => undoStack.Stack[undoStack.Curr].Anchors;
+    /// An anchor is a part of the document, which will move with the text its placed on.
+    /// They can hold arbitrary user data.
+    /// As their text gets edited, they will grow / shrink in size or removed entirely.
+    private Dictionary<int, List<Anchor>> CurrentAnchors = [];
     public IEnumerable<Anchor> Anchors => CurrentAnchors.SelectMany(pair => pair.Value);
 
     public string Text => string.Join(NewLine, CurrentLines);
@@ -167,23 +129,21 @@ public class Document : IDisposable {
 
     private readonly Stack<QueuedUpdate> updateStack = [];
 
-    // NOTE: The min/max rows may contain more than what was actually changed
-    public event Action<Document, int, int> TextChanged = (doc, _, _) => {
+    /// Reports insertions and deletions of the document
+    public event Action<Document, Dictionary<int, string>, Dictionary<int, string>> TextChanged = (doc, _, _) => {
         if (Settings.Instance.AutoSave) {
             doc.Save();
-            return;
+        } else {
+            doc.Dirty = true;
         }
-
-        doc.Dirty = true;
     };
-    private void OnTextChanged(int minRow, int maxRow) => TextChanged.Invoke(this, minRow, maxRow);
+    private void OnTextChanged(Dictionary<int, string> insertions, Dictionary<int, string> deletions) => TextChanged.Invoke(this, insertions, deletions);
 
     private Document(string? filePath) {
         FilePath = filePath ?? string.Empty;
 
         bool validPath = !string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath);
-        var lines = !validPath ? [] : File.ReadAllLines(filePath!);
-        undoStack.Stack[undoStack.Curr] = new UndoStack.Entry(lines.ToList(), [], Caret);
+        CurrentLines = !validPath ? [] : File.ReadAllLines(filePath!).ToList();
 
         if (validPath) {
             // Save with the new line endings
@@ -320,10 +280,11 @@ public class Document : IDisposable {
         }
 
         // No unsaved changes are discarded since this is just a regular, undo-able update
-        undoStack.Push(Caret);
-        CurrentLines.Clear();
-        CurrentLines.AddRange(newLines);
-        Application.Instance.Invoke(() => OnTextChanged(0, newLines.Length));
+        using var __ = Update();
+        using var patch = new Patch(this);
+
+        patch.DeleteRange(0, CurrentLines.Count);
+        patch.InsertRange(0, newLines);
     }
 
     private void OnLinesUpdated(Dictionary<int, string> newLines) {
@@ -377,102 +338,237 @@ public class Document : IDisposable {
 
     #region Text Manipulation
 
+    /// Ring buffer containing patches to go between undo-states
+    public sealed class UndoStack(int bufferSize = 256) {
+        /// Represents the state of the document at a certain point in time, in relation to other entries
+        public record struct Entry(Patch[] patches, Dictionary<int, List<Anchor>> anchors, CaretPosition caret);
+
+        private int curr = 0, head = 0, tail = 0;
+        private readonly Entry[] stack = new Entry[bufferSize];
+
+        public void Push(QueuedUpdate update) {
+            stack[head] = new Entry(
+                update.Patches.ToArray(),
+                update.Document.CurrentAnchors.ToDictionary(e => e.Key, e => e.Value.Select(anchor => anchor.Clone()).ToList()),
+                update.Document.Caret
+            );
+
+            head = curr = (curr + 1).Mod(bufferSize);
+            if (head == tail) {
+                tail = (tail + 1).Mod(bufferSize); // Discard the oldest entry
+            }
+        }
+
+        /// Returns an entry containing the data to go to the previous one
+        public Entry? Undo() {
+            if (curr == tail) {
+                return null;
+            }
+
+            curr = (curr - 1).Mod(bufferSize);
+            return new Entry(
+                stack[curr].patches.Reverse().ToArray(),
+                stack[curr].anchors.ToDictionary(e => e.Key, e => e.Value.Select(anchor => anchor.Clone()).ToList()),
+                stack[curr].caret);
+        }
+        /// Returns an entry containing the data to go to the next one
+        public Entry? Redo() {
+            if (curr == head) {
+                return null;
+            }
+
+            curr = (curr + 1).Mod(bufferSize);
+            return stack[curr];
+        }
+    }
+
+    /// Represents a big, undo-able, modification of the document
     public sealed class QueuedUpdate : IDisposable {
-        private int currMinRow = -1, currMaxRow = -1;
-        private readonly Document document;
+        public readonly List<Patch> Patches = [];
+        public readonly Document Document;
+
         private readonly bool raiseEvents;
 
         public QueuedUpdate(Document document, bool raiseEvents) {
-            this.document = document;
+            Document = document;
             this.raiseEvents = raiseEvents;
 
             document.updateStack.Push(this);
         }
 
-        public void PushChange(int minRow, int maxRow) {
-            if (!raiseEvents) {
+        public void Dispose() {
+            Document.updateStack.Pop();
+
+            if (Patches.Count == 0) {
                 return;
             }
 
-            if (currMinRow == -1 || currMaxRow == -1) {
-                currMinRow = minRow;
-                currMaxRow = maxRow;
+            if (Document.updateStack.Count == 0) {
+                if (raiseEvents) {
+                    var totalPatch = Patches.Aggregate(Patch.Merge);
+                    if (totalPatch.Insertions.Count == 0 && totalPatch.Deletions.Count == 0) {
+                        return;
+                    }
+
+                    Document.undoStack.Push(this);
+                    Document.OnTextChanged(totalPatch.Insertions, totalPatch.Deletions);
+                }
             } else {
-                currMinRow = Math.Min(currMinRow, minRow);
-                currMaxRow = Math.Max(currMaxRow, maxRow);
+                Document.updateStack.Peek().Patches.AddRange(Patches);
             }
         }
-        public void Dispose() {
-            document.updateStack.Pop();
+    }
 
-            if (!raiseEvents) {
+    /// Represents a small modification of the document with insertions and deletions
+    public readonly struct Patch(Document document, QueuedUpdate? update = null) : IDisposable {
+        // Insertions are at the lines where the new text will be
+        // Deletions are at the lines where the line currently is
+        public readonly Dictionary<int, string> Insertions = [], Deletions = [];
+
+        private readonly QueuedUpdate update = update ?? document.updateStack.Peek();
+
+        public void Insert(int row, string line) {
+            Insertions[row] = line;
+        }
+        public void InsertRange(int row, IEnumerable<string> lines) {
+            foreach (string line in lines) {
+                Insertions[row++] = line;
+            }
+        }
+
+        public void Delete(int row) {
+            if (!Insertions.Remove(row)) {
+                Deletions.Add(row, document.CurrentLines[row]);
+            }
+        }
+        public void DeleteRange(int minRow, int maxRow) {
+            for (int row = minRow; row <= maxRow; row++) {
+                Delete(row);
+            }
+        }
+
+        public void Modify(int row, string line) {
+            if (!Insertions.Remove(row)) {
+                Deletions.Add(row, document.CurrentLines[row]);
+            }
+            Insertions[row] = line;
+        }
+
+        public void Dispose() {
+            // Clean-up no-ops
+            var commonRows = Insertions.Keys.Intersect(Deletions.Keys);
+            foreach (var row in commonRows) {
+                if (Insertions[row] == Deletions[row]) {
+                    Insertions.Remove(row);
+                    Deletions.Remove(row);
+                }
+            }
+            if (Insertions.Count == 0 && Deletions.Count == 0) {
                 return;
             }
-            if (currMinRow == -1 || currMaxRow == -1) {
-                if (raiseEvents) {
-                     // Revert the undo-stack entry to prevent empty entries
-                     document.undoStack.Undo();
+
+            document.ApplyPatch(Insertions, Deletions);
+            update.Patches.Add(this);
+        }
+
+        public Patch Copy() {
+            var patch = new Patch(document, update);
+            foreach ((int row, string line) in Insertions) {
+                patch.Insertions[row] = line;
+            }
+            foreach ((int row, string line) in Deletions) {
+                patch.Deletions[row] = line;
+            }
+            return patch;
+        }
+
+        public static Patch Merge(Patch a, Patch b) {
+            var result = a.Copy();
+
+            foreach ((int row, string line) in b.Deletions) {
+                if (!result.Insertions.Remove(row)) {
+                    result.Deletions.Add(row, line);
                 }
 
-                return;
+                foreach ((int insertionRow, string insertionLine) in result.Insertions) {
+                    if (insertionRow >= row) {
+                        result.Insertions[insertionRow - 1] = insertionLine;
+                        result.Insertions.Remove(insertionRow);
+                    }
+                }
             }
 
-            if (document.updateStack.Count == 0) {
-                document.OnTextChanged(Math.Max(0, currMinRow), Math.Min(document.Lines.Count, currMaxRow));
-            } else if (raiseEvents) {
-                document.updateStack.Peek().PushChange(currMinRow, currMaxRow);
+            foreach ((int row, string line) in b.Insertions) {
+                result.Insertions.Add(row, line);
             }
+
+            return result;
         }
     }
 
     /// Starts a new update, if there isn't one active already
-    public QueuedUpdate Update(bool raiseEvents = true) {
-        if (raiseEvents && updateStack.Count == 0) {
-            undoStack.Push(Caret);
+    public QueuedUpdate Update(bool raiseEvents = true) => new(this, raiseEvents);
+
+    private void ApplyPatch(Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
+        // Create a mapping of patch rows to actual rows, while editing the lines
+        var realDeletionsRows = deletions.Keys.ToDictionary(row => row);
+        var realInsertionRows = insertions.Keys.ToDictionary(row => row);
+
+        foreach ((int row, _) in deletions) {
+            CurrentLines.RemoveAt(realDeletionsRows[row]);
+
+            // Shift following lines
+            foreach ((int patchRow, int realRow) in realDeletionsRows) {
+                if (patchRow > row) {
+                    realDeletionsRows[patchRow] = realRow - 1;
+                }
+            }
+            foreach ((int patchRow, int realRow) in realInsertionRows) {
+                if (patchRow > row) {
+                    realDeletionsRows[patchRow] = realRow - 1;
+                }
+            }
         }
-
-        return new QueuedUpdate(this, raiseEvents);
-    }
-
-    private void PushUndoState() {
-        if (updateStack.Count != 0)
-            return;
-
-        Console.WriteLine("WARNING: Updated without Document.Update()");
-        undoStack.Push(Caret);
-    }
-    private void ChangedText(int minRow, int maxRow) {
-        if (minRow > maxRow)
-            (minRow, maxRow) = (maxRow, minRow);
-
-        if (updateStack.TryPeek(out var update)) {
-            update.PushChange(minRow, maxRow);
-        } else {
-            OnTextChanged(minRow, maxRow);
+        foreach ((int row, string line) in insertions) {
+            CurrentLines.Insert(realInsertionRows[row], line);
         }
     }
 
     public void Undo() {
-        undoStack.Undo();
-        Caret = undoStack.Stack[undoStack.Curr].Caret;
+        if (undoStack.Undo() is not { } entry) {
+            return;
+        }
 
-        OnTextChanged(0, CurrentLines.Count - 1);
+        // Un-apply patches (already reversed)
+        foreach (var patch in entry.patches) {
+            ApplyPatch(patch.Deletions, patch.Insertions);
+        }
+
+        CurrentAnchors = entry.anchors;
+        Caret = entry.caret;
     }
     public void Redo() {
-        undoStack.Redo();
-        Caret = undoStack.Stack[undoStack.Curr].Caret;
+        if (undoStack.Redo() is not { } entry) {
+            return;
+        }
 
-        OnTextChanged(0, CurrentLines.Count - 1);
+        // Re-apply patches
+        foreach (var patch in entry.patches) {
+            ApplyPatch(patch.Insertions, patch.Deletions);
+        }
+
+        CurrentAnchors = entry.anchors;
+        Caret = entry.caret;
     }
 
     public void Insert(string text) => Caret = Insert(Caret, text);
     public CaretPosition Insert(CaretPosition pos, string text) {
-        var newLines = text.ReplaceLineEndings(NewLine.ToString()).SplitDocumentLines();
-        if (newLines.Length == 0)
+        string[] newLines = text.ReplaceLineEndings(NewLine.ToString()).SplitDocumentLines();
+        if (newLines.Length == 0) {
             return pos;
+        }
 
-        var oldPos = pos;
-        PushUndoState();
+        using var patch = new Patch(this);
 
         if (newLines.Length == 1) {
             // Update anchors
@@ -487,7 +583,7 @@ public class Document : IDisposable {
                 }
             }
 
-            CurrentLines[pos.Row] = CurrentLines[pos.Row].Insert(pos.Col, text);
+            patch.Modify(pos.Row, CurrentLines[pos.Row].Insert(pos.Col, text));
             pos.Col += text.Length;
         } else {
             // Move anchors below down
@@ -532,17 +628,12 @@ public class Document : IDisposable {
             string left  = CurrentLines[pos.Row][..pos.Col];
             string right = CurrentLines[pos.Row][pos.Col..];
 
-            CurrentLines[pos.Row] = left + newLines[0];
-            for (int i = 1; i < newLines.Length; i++) {
-                CurrentLines.Insert(pos.Row + i, newLines[i]);
-            }
+            patch.Modify(pos.Row, left + newLines[0]);
+            patch.InsertRange(pos.Row + 1, newLines[1..]);
             pos.Row += newLines.Length - 1;
             pos.Col = newLines[^1].Length;
-
-            CurrentLines[pos.Row] += right;
+            patch.Modify(pos.Row, CurrentLines[pos.Row] + right);
         }
-
-        ChangedText(oldPos.Row, pos.Row);
 
         return pos;
     }
@@ -550,67 +641,63 @@ public class Document : IDisposable {
     public void InsertLineAbove(string text) => InsertLine(Caret.Row, text);
     public void InsertLineBelow(string text) => InsertLine(Caret.Row + 1, text);
     public void InsertLine(int row, string text) {
-        PushUndoState();
+        using var patch = new Patch(this);
 
-        var newLines = text.SplitDocumentLines();
-        if (newLines.Length == 0)
-            CurrentLines.Insert(row, string.Empty);
-        else
-            CurrentLines.InsertRange(row, newLines);
+        string[] newLines = text.SplitDocumentLines();
+        if (newLines.Length == 0) {
+            patch.Insert(row, string.Empty);
+        } else {
+            patch.InsertRange(row, newLines);
+        }
 
-        int newLineCount = text.Count(c => c == NewLine) + 1;
-
-        if (Caret.Row >= row)
+        if (Caret.Row >= row) {
+            int newLineCount = text.Count(c => c == NewLine) + 1;
             Caret.Row += newLineCount;
-
-        ChangedText(row, row + newLineCount);
+        }
     }
     public void InsertLines(int row, string[] newLines) {
-        PushUndoState();
+        using var patch = new Patch(this);
 
-        CurrentLines.InsertRange(row, newLines);
+        patch.InsertRange(row, newLines);
 
-        if (Caret.Row >= row)
+        if (Caret.Row >= row) {
             Caret.Row += newLines.Length;
-
-        ChangedText(row, row + newLines.Length);
+        }
     }
 
     public void ReplaceLine(int row, string text) {
-        if (Lines[row] == text) {
-            return;
-        }
-
-        var newLines = text.SplitDocumentLines();
+        string[] newLines = text.SplitDocumentLines();
         ReplaceLines(row, newLines);
     }
 
     public void ReplaceLines(int row, string[] newLines) {
-        PushUndoState();
+        using var patch = new Patch(this);
 
-        if (newLines.Length == 0) {
-            CurrentLines[row] = string.Empty;
-        } else if (newLines.Length == 1) {
-            CurrentLines[row] = newLines[0];
-        } else {
-            CurrentLines[row] = newLines[0];
-            CurrentLines.InsertRange(row + 1, newLines[1..]);
+        switch (newLines.Length)
+        {
+            case 0:
+                patch.Modify(row, string.Empty);
+                break;
+            case 1:
+                patch.Modify(row, newLines[0]);
+                break;
+            default:
+                patch.Modify(row, newLines[0]);
+                patch.InsertRange(row + 1, newLines[1..]);
+                break;
         }
 
-        int newLineCount = newLines.Length > 0 ? newLines.Length-1 : 0;
-
-        if (Caret.Row >= row)
+        if (Caret.Row >= row) {
+            int newLineCount = newLines.Length > 0 ? newLines.Length-1 : 0;
             Caret.Row += newLineCount;
-
-        ChangedText(row, row + newLineCount);
+        }
     }
 
     public void SwapLines(int rowA, int rowB) {
-        PushUndoState();
+        using var patch = new Patch(this);
 
-        (CurrentLines[rowA], CurrentLines[rowB]) = (CurrentLines[rowB], CurrentLines[rowA]);
-
-        ChangedText(rowA, rowB);
+        patch.Modify(rowA, CurrentLines[rowB]);
+        patch.Modify(rowB, CurrentLines[rowA]);
     }
 
     public void RemoveRange(CaretPosition start, CaretPosition end) {
@@ -619,10 +706,11 @@ public class Document : IDisposable {
             return;
         }
 
-        PushUndoState();
+        using var patch = new Patch(this);
 
-        if (start > end)
+        if (start > end) {
             (end, start) = (start, end);
+        }
 
         List<Anchor>? anchors;
         // Invalidate in between
@@ -669,17 +757,16 @@ public class Document : IDisposable {
             }
         }
 
-        CurrentLines[start.Row] = CurrentLines[start.Row][..start.Col] + CurrentLines[end.Row][end.Col..];
-        CurrentLines.RemoveRange(start.Row + 1, end.Row - start.Row);
-
-        ChangedText(start.Row, start.Row);
+        patch.Modify(start.Row, CurrentLines[start.Row][..start.Col] + CurrentLines[end.Row][end.Col..]);
+        patch.DeleteRange(start.Row + 1, end.Row);
     }
 
     public void RemoveRangeInLine(int row, int startCol, int endCol) {
-        PushUndoState();
+        using var patch = new Patch(this);
 
-        if (startCol > endCol)
+        if (startCol > endCol) {
             (endCol, startCol) = (startCol, endCol);
+        }
 
         // Update anchors
         if (CurrentAnchors.TryGetValue(row, out var anchors)) {
@@ -705,33 +792,30 @@ public class Document : IDisposable {
             }
         }
 
-        CurrentLines[row] = CurrentLines[row].Remove(startCol, endCol - startCol);
-
-        ChangedText(row, row);
+        patch.Modify(row, CurrentLines[row].Remove(startCol, endCol - startCol));
     }
 
+    /// Removes the specified line
     public void RemoveLine(int row) {
-        PushUndoState();
-
-        CurrentLines.RemoveAt(row);
-
-        ChangedText(row, row);
+        using var patch = new Patch(this);
+        patch.Delete(row);
     }
 
     /// Removes an inclusive range of lines from min..max
     public void RemoveLines(int min, int max) {
-        PushUndoState();
-
-        CurrentLines.RemoveRange(min, max - min + 1);
-
-        ChangedText(min, max);
+        using var patch = new Patch(this);
+        patch.DeleteRange(min, max);
     }
 
+    /// Replaces the inclusive range startCol..endCol with text inside the line
     public void ReplaceRangeInLine(int row, int startCol, int endCol, string text) {
-        PushUndoState();
+        Debug.Assert(!text.Contains('\n') && !text.Contains('\r'));
 
-        if (startCol > endCol)
+        using var patch = new Patch(this);
+
+        if (startCol > endCol) {
             (endCol, startCol) = (startCol, endCol);
+        }
 
         // Update anchors
         if (CurrentAnchors.TryGetValue(row, out var anchors)) {
@@ -762,27 +846,26 @@ public class Document : IDisposable {
             }
         }
 
-        CurrentLines[row] = CurrentLines[row].ReplaceRange(startCol, endCol - startCol, text);
-
-        ChangedText(row, row);
+        patch.Modify(row, CurrentLines[row].ReplaceRange(startCol, endCol - startCol, text));
     }
 
     public string GetSelectedText() => GetTextInRange(Selection.Start, Selection.End);
     public string GetTextInRange(CaretPosition start, CaretPosition end) {
-        if (start > end)
+        if (start > end) {
             (end, start) = (start, end);
+        }
 
         if (start.Row == end.Row) {
             return CurrentLines[start.Row][start.Col..end.Col];
         }
 
-        var lines = new string[end.Row - start.Row + 1];
+        string[] lines = new string[end.Row - start.Row + 1];
         lines[0] = CurrentLines[start.Row][start.Col..];
         for (int i = 1, row = start.Row + 1; row < end.Row; i++, row++)
             lines[i] = CurrentLines[row];
         lines[^1] = CurrentLines[end.Row][..end.Col];
 
-        return string.Join(Environment.NewLine, lines);
+        return string.Join(NewLine, lines);
     }
 
     #endregion

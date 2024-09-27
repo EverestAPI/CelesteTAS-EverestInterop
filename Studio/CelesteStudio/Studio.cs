@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using CelesteStudio.Communication;
 using CelesteStudio.Data;
 using CelesteStudio.Dialog;
@@ -17,7 +16,7 @@ using Eto.Drawing;
 using FontDialog = CelesteStudio.Dialog.FontDialog;
 using Eto.Forms.ThemedControls;
 using StudioCommunication;
-using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 namespace CelesteStudio;
 
@@ -420,7 +419,7 @@ public sealed class Studio : Form {
             Settings.Instance.LastSaveDirectory = Path.GetDirectoryName(filePath)!;
         }
 
-        void UpdateTitle(Document _0, int _1, int _2) {
+        void UpdateTitle(Document _0, Dictionary<int, string> _1, Dictionary<int, string> _2) {
             Title = TitleBarText;
         }
     }
