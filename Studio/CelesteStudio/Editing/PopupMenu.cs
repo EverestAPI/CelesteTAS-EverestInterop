@@ -174,8 +174,8 @@ public sealed class PopupMenu : Scrollable {
         }
     }
 
-    // We update our size, but reading it won't give the updated value immediatly.
-    // However we need the updated size to properly calculate other things.
+    // We update our size, but reading it won't give the updated value immediately.
+    // However, we need the updated size to properly calculate other things.
     private Size actualSize = new(0, 0);
 
     public bool VScrollBarVisible => actualSize.Height < contentHeight && actualSize.Height > 0;
@@ -206,6 +206,14 @@ public sealed class PopupMenu : Scrollable {
     }
 
     public void Recalc() {
+        // Auto-close if there aren't any entries
+        if (entries.Count == 0) {
+            contentWidth = 0;
+            contentHeight = 0;
+            Visible = false;
+            return;
+        }
+
         shownEntries = entries.Where(entry => string.IsNullOrEmpty(entry.SearchText) || entry.SearchText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase)).ToArray();
         if (shownEntries.Length == 0) {
             shownEntries = [new Entry {
@@ -225,8 +233,11 @@ public sealed class PopupMenu : Scrollable {
         var font = FontManager.PopupFont;
         int maxDisplayLen = shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
         int maxExtraLen = shownEntries.Select(entry => entry.ExtraText.Length).Aggregate(Math.Max);
+        if (maxExtraLen != 0) {
+            maxDisplayLen += DisplayExtraPadding;
+        }
 
-        contentWidth = (int)(font.CharWidth() * (maxDisplayLen + DisplayExtraPadding + maxExtraLen) + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding * 2.0f + Settings.Instance.Theme.PopupMenuBorderPadding * 2);
+        contentWidth = (int)(font.CharWidth() * (maxDisplayLen + maxExtraLen) + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding * 2.0f + Settings.Instance.Theme.PopupMenuBorderPadding * 2);
 
         if (Eto.Platform.Instance.IsGtk) {
             // If the content isn't large enough to require a scrollbar, GTK will just have the background be black instead of transparent.

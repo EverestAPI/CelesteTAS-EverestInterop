@@ -1385,7 +1385,7 @@ public sealed class Editor : Drawable {
                 Disabled = true,
             };
 
-            if (!string.IsNullOrEmpty(command.Name)) {
+            if (!string.IsNullOrEmpty(command.Name) && command.HasArguments) {
                 var lastArgRegion = commandLine.Value.Regions[^1];
 
                 commandAutoCompleteTokenSource?.Cancel();
