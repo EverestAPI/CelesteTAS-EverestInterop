@@ -124,12 +124,6 @@ public readonly record struct CommandLine(
             }
         }
 
-        if (groupStack.Count != 0) {
-            // Unclosed groups
-            commandLine = default;
-            return false;
-        }
-
         // Finish last argument
         arguments.Add(currentArg.ToString());
         regions.Add(new Region(currentArgIndex, line.Length));

@@ -1,5 +1,6 @@
 ﻿using System;
 using StudioCommunication;
+using System.Collections.Generic;
 using System.IO;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Utils;
@@ -8,13 +9,21 @@ namespace TAS.Input.Commands;
 
 public static class AssertCommand {
     private class Meta : ITasCommandMeta {
-        public string Insert => "Assert";
-        public bool HasArguments => false;
+        public string Insert => $"Assert{CommandInfo.Separator}[0;Condition]{CommandInfo.Separator}\"[1;Expected]\"{CommandInfo.Separator}\"[2;Actual]\"";
+        public bool HasArguments => true;
 
-        // TODO: Auto-complete
+        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
+            if (args.Length != 1) {
+                yield break;
+            }
+
+            foreach (var mode in Enum.GetValues<AssertCondition>()) {
+                yield return new CommandAutoCompleteEntry { Name = mode.ToString(), Extra = "Condition", HasNext = true };
+            }
+        }
     }
 
-    enum AssertCondition {
+    private enum AssertCondition {
         Equal,
         NotEqual,
         Contain,
@@ -32,7 +41,7 @@ public static class AssertCommand {
     private static void Assert(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         string[] args = commandLine.Arguments;
         string prefix = $"""
-                         "{commandLine.OriginalText}" ('{Path.GetFileName(filePath)}' line {fileLine}) failed
+                         Assert '{Path.GetFileName(filePath)}' line {fileLine} failed
 
                          """;
 
