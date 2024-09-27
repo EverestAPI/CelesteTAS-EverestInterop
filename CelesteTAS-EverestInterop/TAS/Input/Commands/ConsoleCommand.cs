@@ -18,10 +18,65 @@ namespace TAS.Input.Commands;
 
 public static class ConsoleCommand {
     private class Meta : ITasCommandMeta {
-        public string Insert => "console";
+        public string Insert => "console ";
         public bool HasArguments => true;
 
-        // TODO: Auto-complete
+        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
+            if (args.Length == 1) {
+                // load-commands first as they are the most common
+                yield return new CommandAutoCompleteEntry { Name = "load", Extra = "A-Side", HasNext = true };
+                yield return new CommandAutoCompleteEntry { Name = "hard", Extra = "B-Side", HasNext = true };
+                yield return new CommandAutoCompleteEntry { Name = "rmx2", Extra = "C-Side", HasNext = true };
+
+                // Remaining commands
+                foreach (var command in Engine.Commands.GetCommands()) {
+                    if (command.Name is "load" or "hard" or "rmx2") {
+                        continue;
+                    }
+
+                    yield return new CommandAutoCompleteEntry { Name = command.Name.ToLowerInvariant(), HasNext = false };
+                }
+            } else if (args.Length >= 2 && LoadCommandRegex.Match(args[0]) is { Success: true } match) {
+                // Only support argument auto-complete for load commands
+                string commandName = match.Groups[1].Value.ToLowerInvariant();
+                var areaMode = commandName switch {
+                    "hard" => AreaMode.BSide,
+                    "rmx2" => AreaMode.CSide,
+                    _ => AreaMode.Normal
+                };
+
+                if (args.Length == 2) {
+                    // ID / SID
+                    lock (AssetReloadHelper.AreaReloadLock) {
+                        foreach (var area in AreaData.Areas) {
+                            if (!area.HasMode(areaMode)) {
+                                continue;
+                            }
+
+                            yield return new CommandAutoCompleteEntry {
+                                // Only use ID for base-game
+                                Name = area.LevelSet == "Celeste"
+                                    ? area.ID.ToString()
+                                    : area.SID,
+                                Extra = Dialog.Clean(area.Name, Dialog.Languages[Settings.EnglishLanguage]),
+                                HasNext = false
+                            };
+                        }
+                    }
+                } else if (args.Length == 3) {
+                    // Starting screen
+                    if (!TryGetAreaId(args[1], out int areaId) ||
+                        AreaData.Get(areaId).Mode.GetValueOrDefault((int) areaMode) is not {  } mode)
+                    {
+                        yield break;
+                    }
+
+                    foreach ((string levelName, _) in mode.MapData.levelsByName) {
+                        yield return new CommandAutoCompleteEntry { Name = levelName, Extra = "Room", HasNext = false };
+                    }
+                }
+            }
+        }
     }
 
     public static readonly Regex LoadCommandRegex = new(@"^(load|hard|rmx2)(\d*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
