@@ -1,5 +1,6 @@
 ﻿using System;
 using StudioCommunication;
+using System.IO;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Utils;
 
@@ -26,12 +27,12 @@ public static class AssertCommand {
 
     public static bool Running { get; private set; }
 
-    //  Assert, Condition, Expected, Actual
+    //  Assert, Condition, Expected, Actual, FailureMessage
     [TasCommand("Assert", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime, MetaDataProvider = typeof(Meta))]
     private static void Assert(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         string[] args = commandLine.Arguments;
         string prefix = $"""
-                         "Assert, {string.Join(", ", args)}" failed
+                         "{commandLine.OriginalText}" ('{Path.GetFileName(filePath)}' line {fileLine}) failed
 
                          """;
 
@@ -49,7 +50,8 @@ public static class AssertCommand {
         } else {
             var condition = Enum.Parse<AssertCondition>(args[0], ignoreCase: true); // Must succeed, since this was checked in Parse
             string expected = args[1];
-            string actualTemplate = commandLine.OriginalText[commandLine.Regions[3].StartCol..];
+            string actualTemplate = args[2];
+            string? failureMessage = args.Length >= 4 ? args[3] : null;
 
             Running = true;
             string actual = InfoCustom.ParseTemplate(actualTemplate, 0, [], false);
@@ -58,54 +60,79 @@ public static class AssertCommand {
             switch (condition) {
                 case AssertCondition.Equal: {
                     if (actual != expected) {
-                        AbortTas($"{prefix}Expected: {expected}\nBut was: {actual}", true, 4f);
+                        failureMessage ??= $"""
+                                            Expected equal: {expected}
+                                            But was: {actual}"
+                                            """;
+                        AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
-
                     break;
                 }
                 case AssertCondition.NotEqual: {
                     if (actual == expected) {
-                        AbortTas($"{prefix}Expected: not equal to {expected}\nBut was: {actual}", true, 4f);
+                        failureMessage ??= $"""
+                                            Expected not equal: {expected}
+                                            But was: {actual}"
+                                            """;
+                        AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
-
                     break;
                 }
                 case AssertCondition.Contain:
                     if (!actual.Contains(expected)) {
-                        AbortTas($"{prefix}Expected: contain {expected}\nBut was: {actual}", true, 4f);
+                        failureMessage ??= $"""
+                                            Expected contain: {expected}
+                                            But was: {actual}"
+                                            """;
+                        AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
-
                     break;
                 case AssertCondition.NotContain:
                     if (actual.Contains(expected)) {
-                        AbortTas($"{prefix}Expected: not contain {expected}\nBut was: {actual}", true, 4f);
+                        failureMessage ??= $"""
+                                            Expected not contain: {expected}
+                                            But was: {actual}"
+                                            """;
+                        AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
-
                     break;
                 case AssertCondition.StartWith:
                     if (!actual.StartsWith(expected)) {
-                        AbortTas($"{prefix}Expected: start with {expected}\nBut was: {actual}", true, 4f);
+                        failureMessage ??= $"""
+                                            Expected starts with: {expected}
+                                            But was: {actual}"
+                                            """;
+                        AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
-
                     break;
                 case AssertCondition.NotStartWith:
                     if (actual.StartsWith(expected)) {
-                        AbortTas($"{prefix}Expected: not start with {expected}\nBut was: {actual}", true, 4f);
+                        failureMessage ??= $"""
+                                            Expected not starts with: {expected}
+                                            But was: {actual}"
+                                            """;
+                        AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
-
                     break;
                 case AssertCondition.EndWith:
                     if (!actual.EndsWith(expected)) {
-                        AbortTas($"{prefix}Expected: end with {expected}\nBut was: {actual}", true, 4f);
+                        failureMessage ??= $"""
+                                            Expected ends with: {expected}
+                                            But was: {actual}"
+                                            """;
+                        AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
-
                     break;
                 case AssertCondition.NotEndWith:
                     if (actual.EndsWith(expected)) {
-                        AbortTas($"{prefix}Expected: not end with {expected}\nBut was: {actual}", true, 4f);
+                        failureMessage ??= $"""
+                                            Expected not ends with: {expected}
+                                            But was: {actual}"
+                                            """;
+                        AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
-
                     break;
+
                 default:
                     throw new ArgumentOutOfRangeException();
             }

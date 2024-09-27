@@ -45,9 +45,8 @@ public readonly record struct CommandLine(
         List<string> arguments = [];
         List<Region> regions = [new Region(0, separatorMatch.Index - 1)];
 
-        // Quotes (") and brackets ([]) need to be closed before the next argument can happen
-        bool quoteOpen = false;
-        int bracketCount = 0;
+        // All quotes ("), braces ({}) and brackets ([]) need to be closed before the next argument can happen
+        Stack<char> groupStack = new();
 
         StringBuilder currentArg = new();
         int currentArgIndex = separatorMatch.Index + separator.Length;
@@ -55,7 +54,7 @@ public readonly record struct CommandLine(
         for (int i = currentArgIndex; i < line.Length; i++) {
             string subLine = line[i..];
 
-            if (!quoteOpen && bracketCount == 0 && subLine.StartsWith(separator)) {
+            if (groupStack.Count == 0 && subLine.StartsWith(separator)) {
                 arguments.Add(currentArg.ToString());
                 currentArg.Clear();
                 regions.Add(new Region(currentArgIndex, i - 1));
@@ -65,17 +64,39 @@ public readonly record struct CommandLine(
                 continue;
             }
 
-            switch (line[i]) {
-                case '"' when bracketCount == 0:
-                    quoteOpen = !quoteOpen;
+            char curr = line[i];
+            switch (curr) {
+                case '"':
+                    if (groupStack.Count > 0 && groupStack.Peek() == '"') {
+                        groupStack.Pop();
+                    } else {
+                        groupStack.Push('"');
+                    }
                     break;
                 case '[':
-                    bracketCount++;
-                    currentArg.Append(line[i]);
+                case '{':
+                    groupStack.Push(curr);
+                    currentArg.Append(curr);
                     break;
                 case ']':
-                    bracketCount--;
-                    currentArg.Append(line[i]);
+                    if (groupStack.Count > 0 && groupStack.Peek() == '[') {
+                        groupStack.Pop();
+                    } else {
+                        // Unopened bracket
+                        commandLine = default;
+                        return false;
+                    }
+                    currentArg.Append(curr);
+                    break;
+                case '}':
+                    if (groupStack.Count > 0 && groupStack.Peek() == '{') {
+                        groupStack.Pop();
+                    } else {
+                        // Unopened brace
+                        commandLine = default;
+                        return false;
+                    }
+                    currentArg.Append(curr);
                     break;
                 case '\\':
                     // Escape next char
@@ -85,17 +106,26 @@ public readonly record struct CommandLine(
                         return false;
                     }
 
-                    currentArg.Append(line[++i]);
+                    char next = line[++i];
+                    switch (next) {
+                        case 'n':
+                            currentArg.Append('\n');
+                            break;
+
+                        default:
+                            currentArg.Append(next);
+                            break;
+                    }
                     break;
 
                 default:
-                    currentArg.Append(line[i]);
+                    currentArg.Append(curr);
                     break;
             }
         }
 
-        if (quoteOpen || bracketCount != 0) {
-            // Invalid arguments
+        if (groupStack.Count != 0) {
+            // Unclosed groups
             commandLine = default;
             return false;
         }
