@@ -24,7 +24,7 @@ public static class StudioHelper {
 
     // These values will automatically get filled in by the Build.yml/Release.yml actions
     private const bool   DoubleZipArchive        = false; //DOUBLE_ZIP_ARCHIVE
-    private const string CurrentStudioVersion    = "##STUDIO_VERSION##";
+    public  const string CurrentStudioVersion    = "##STUDIO_VERSION##";
 
     private const string DownloadURL_Windows_x64 = "##URL_WINDOWS_x64##";
     private const string DownloadURL_Linux_x64   = "##URL_LINUX_x64##";
@@ -84,7 +84,7 @@ public static class StudioHelper {
     [Load]
     private static void Load() {
         // INSTALL_STUDIO is only set during builds from Build.yml/Release.yml, since otherwise the URLs / checksums are invalid
-// #if INSTALL_STUDIO
+#if INSTALL_STUDIO
         // Check if studio is already up-to-date
         string installedVersion = "<None>";
         if (!File.Exists(VersionFile) || (installedVersion = File.ReadAllText(VersionFile)) != CurrentStudioVersion) {
@@ -138,9 +138,9 @@ public static class StudioHelper {
         } else {
             installed = true;
         }
-// #else
-//         installed = true;
-// #endif
+#else
+        installed = true;
+#endif
     }
 
     [Initialize]
@@ -153,22 +153,23 @@ public static class StudioHelper {
     private static async Task DownloadStudio() {
         // Download studio archive
         $"Starting download of '{DownloadURL}'...".Log();
-        using (HttpClient client = new()) {
-            client.Timeout = TimeSpan.FromMinutes(5);
-            using var res = await client.GetAsync(DownloadURL).ConfigureAwait(false);
 
-            string? path = Path.GetDirectoryName(TempDownloadPath);
-            if (!string.IsNullOrWhiteSpace(path) && !Directory.Exists(path))
-                Directory.CreateDirectory(path);
+        StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Download;
+        Everest.Updater.DownloadFileWithProgress(DownloadURL, TempDownloadPath, (position, length, speed) => {
+            StudioUpdateBanner.DownloadedBytes = position;
+            StudioUpdateBanner.TotalBytes = length;
+            StudioUpdateBanner.BytesPerSecond = speed * 1024;
 
-            await using var fs = File.OpenWrite(TempDownloadPath);
-            await res.Content.CopyToAsync(fs, null, CancellationToken.None);
-        }
+            return true;
+        });
+
         if (!File.Exists(TempDownloadPath)) {
             "Download failed! The studio archive went missing".Log(LogLevel.Error);
+            StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Failure;
             return;
         }
         "Finished download".Log();
+        StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Install;
 
         // Handle double ZIPs caused by GitHub actions
         if (DoubleZipArchive) {
@@ -190,6 +191,7 @@ public static class StudioHelper {
             string hash = BitConverter.ToString(await md5.ComputeHashAsync(fs)).Replace("-", "");
             if (!Checksum.Equals(hash, StringComparison.OrdinalIgnoreCase)) {
                 $"Download failed! Invalid checksum for studio archive file: Expected {Checksum} got {hash}".Log(LogLevel.Error);
+                StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Failure;
                 return;
             }
             $"Downloaded studio archive has a valid checksum: {hash}".Log(LogLevel.Verbose);
@@ -215,6 +217,7 @@ public static class StudioHelper {
             {
                 // Mark install as invalid, so that next launch will try again
                 File.Delete(VersionFile);
+                StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Failure;
             }
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
             if (!await ExecuteCommand(["chmod", "+x", Path.Combine(StudioDirectory, "CelesteStudio.app", "Contents", "MacOS", "CelesteStudio")],
@@ -224,8 +227,12 @@ public static class StudioHelper {
             {
                 // Mark install as invalid, so that next launch will try again
                 File.Delete(VersionFile);
+                StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Failure;
             }
         }
+
+        StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Success;
+        StudioUpdateBanner.FadeoutTimer = 5.0f;
     }
 
     private static async Task<bool> ExecuteCommand(string[] parameters, string errorMessage) {
@@ -280,6 +287,9 @@ public static class StudioHelper {
                 return;
             }
 
+            StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Launch;
+            StudioUpdateBanner.FadeoutTimer = 5.0f;
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                 $"Starting process '{Path.Combine(StudioDirectory, "CelesteStudio.exe")}'...".Log(LogLevel.Verbose);
                 // Start through explorer to detach studio from the game process (and avoid issues with the Steam Overlay for example)
@@ -291,6 +301,7 @@ public static class StudioHelper {
                 $"Starting process '{Path.Combine(StudioDirectory, "CelesteStudio.app", "Contents", "MacOS", "CelesteStudio")}'...".Log(LogLevel.Verbose);
                 Process.Start(Path.Combine(StudioDirectory, "CelesteStudio.app", "Contents", "MacOS", "CelesteStudio"));
             }
+
             "Successfully launched Studio".Log();
         } catch (Exception ex) {
             ex.LogException("Failed to launch Studio");

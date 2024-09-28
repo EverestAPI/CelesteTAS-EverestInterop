@@ -1,8 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
 namespace StudioCommunication.Util;
+
+public static class NumberExtensions {
+    public static T Mod<T>(this T x, T m) where T : INumber<T> => (x % m + m) % m;
+}
 
 public static class StringExtensions {
     private static readonly string format = "0.".PadRight(339, '#');
@@ -19,6 +24,34 @@ public static class StringExtensions {
         } else {
             return value.ToString($"F{decimals}");
         }
+    }
+
+    private static readonly string[] sizeSuffixes = ["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
+    public static (string Amount, string Suffix) HumanReadableBytes<T>(this T value, int decimals = 1) where T : INumber<T>
+    {
+        if (value < T.Zero) {
+            (string amount, string suffix) = HumanReadableBytes(-value, decimals);
+            return ("-" + amount, suffix);
+        }
+        if (value == T.Zero) {
+            return (string.Format($"{{0:n{decimals}}}", 0), sizeSuffixes[0]);
+        }
+
+        // mag is 0 for bytes, 1 for KiB, 2, for MiB, etc.
+        int mag = (int)Math.Log(double.CreateChecked(value), 1024);
+
+        // 1L << (mag * 10) == 2 ^ (10 * mag)
+        // (i.e. the number of bytes in the unit corresponding to mag)
+        decimal adjustedSize = decimal.CreateChecked(value) / (1L << (mag * 10));
+
+        // Make adjustment when the value is large enough that it would round up to 1000 or more
+        if (Math.Round(adjustedSize, decimals) >= 1000)
+        {
+            mag += 1;
+            adjustedSize /= 1024;
+        }
+
+        return (string.Format($"{{0:n{decimals}}}", adjustedSize), sizeSuffixes[mag]);
     }
 
     /// Replaces the specified range inside the string and returns the result

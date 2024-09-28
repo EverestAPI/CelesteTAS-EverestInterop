@@ -4,6 +4,7 @@ using System.Linq;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
+using StudioCommunication.Util;
 
 namespace CelesteStudio.Editing;
 
