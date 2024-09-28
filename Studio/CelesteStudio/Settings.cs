@@ -11,6 +11,7 @@ using CelesteStudio.Util;
 using Eto;
 using Eto.Drawing;
 using Eto.Forms;
+using StudioCommunication.Util;
 using System.Diagnostics;
 using System.Net;
 using Tomlet;

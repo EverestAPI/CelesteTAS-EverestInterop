@@ -3,6 +3,7 @@ using Eto.Drawing;
 using Eto.Forms;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;

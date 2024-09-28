@@ -8,6 +8,9 @@ using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Celeste.Mod;
+using StudioCommunication.Util;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using TAS.Module;
@@ -92,10 +95,10 @@ public static class StudioHelper {
             Task.Run(async () => {
                 // Kill all Studio instances to avoid issues with file usage
                 foreach (var process in Process.GetProcesses().Where(process => process.ProcessName is "CelesteStudio" or "Celeste Studio")) {
-                    $"Killing process {process} ({process.Id})...".Log(LogLevel.Verbose);
-                    process.Kill();
-                    await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(30.0f)).ConfigureAwait(false);
-                    "Process killed".Log(LogLevel.Verbose);
+                    $"Closing process {process} ({process.Id})...".Log(LogLevel.Verbose);
+                    process.Terminate();
+                    await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10.0f)).ConfigureAwait(false);
+                    "Process terminated".Log(LogLevel.Verbose);
                 }
 
                 // If Studio fails to find the game directory for some reason, that's where "TAS Files" will be placed
@@ -117,7 +120,7 @@ public static class StudioHelper {
                     await DownloadStudio().ConfigureAwait(false);
                     installed = true;
                 } catch (Exception ex) {
-                    ex.LogException("Failed to install Studio");
+                    ReportError("Failed to install Studio", ex.StackTrace);
 
                     // Cleanup install
                     if (Directory.Exists(TempStudioInstallDirectory)) {
@@ -201,8 +204,9 @@ public static class StudioHelper {
             });
 
             if (!File.Exists(DownloadPath)) {
-                "Download failed! The Studio archive went missing".Log(LogLevel.Error);
+                ReportError("Download failed! The Studio archive went missing");
                 StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Failure;
+                StudioUpdateBanner.FadeoutTimer = 5.0f;
                 return;
             }
             "Finished download".Log();
@@ -229,8 +233,9 @@ public static class StudioHelper {
         await using (var fs = File.OpenRead(DownloadPath)) {
             string hash = BitConverter.ToString(await md5.ComputeHashAsync(fs)).Replace("-", "");
             if (!Checksum.Equals(hash, StringComparison.OrdinalIgnoreCase)) {
-                $"Download failed! Invalid checksum for Studio archive file: Expected {Checksum} got {hash}".Log(LogLevel.Error);
+                ReportError($"Download failed! Invalid checksum for Studio archive file: Expected {Checksum} got {hash}");
                 StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Failure;
+                StudioUpdateBanner.FadeoutTimer = 5.0f;
                 return;
             }
             $"Downloaded Studio archive has a valid checksum: {hash}".Log(LogLevel.Verbose);
@@ -306,14 +311,24 @@ public static class StudioHelper {
         string? line;
 
         if (proc.ExitCode != 0) {
-            $"{errorMessage}: Exit Code {proc.ExitCode}".Log(LogLevel.Error);
-
+            List<string> stdoutLines = [], stderrLines = [];
             while ((line = await proc.StandardOutput.ReadLineAsync()) != null) {
-                line.Log(LogLevel.Info);
+                stdoutLines.Add(line);
             }
             while ((line = await proc.StandardError.ReadLineAsync()) != null) {
-                line.Log(LogLevel.Error);
+                stderrLines.Add(line);
             }
+
+            ReportError(
+                $"{errorMessage}: Exit Code {proc.ExitCode}",
+                $"""
+                 Standard Out:
+                 {string.Join(Environment.NewLine, stdoutLines)}
+                 Standard Error:
+                 {string.Join(Environment.NewLine, stderrLines)}
+                 """);
+            stdoutLines.ForEach(l => l.Log());
+            stderrLines.ForEach(l => l.Log(LogLevel.Error));
         } else {
             while ((line = await proc.StandardOutput.ReadLineAsync()) != null) {
                 line.Log(LogLevel.Debug);
@@ -360,7 +375,42 @@ public static class StudioHelper {
 
             "Successfully launched Studio".Log();
         } catch (Exception ex) {
-            ex.LogException("Failed to launch Studio");
+            ReportError("Failed to launch Studio", ex.StackTrace);
+            ex.LogException();
         }
     });
+
+    private static void ReportError(string error, string? additionalInfo = null) {
+        error.Log(LogLevel.Error);
+
+        if (!Directory.Exists(StudioDirectory)) {
+            Directory.CreateDirectory(StudioDirectory);
+        }
+
+        string path = Path.Combine(StudioDirectory, "error_report.txt");
+        string text =
+            $"""
+             === Celeste Studio v{CurrentStudioVersion} - Install failed ===
+             {DateTime.Now.ToString(CultureInfo.InvariantCulture)}
+             
+             The following error occured while trying to install Celeste Studio:
+             {error}
+             
+             This may be caused by a bad internet connection. You can manually download Celeste Studio by following these steps:
+             1. Close Celeste
+             2. Manually download this file: {DownloadURL}
+             3. Rename it to be called "CelesteStudio.zip" (ensure you have file extensions enabled!)
+             4. Place it under "<celeste-install>/CelesteStudio/CelesteStudio.zip" (create the "CelesteStudio" directory if it doesn't already exist. The "<celeste-install>" directory is the same as where "Celeste.exe" / "Celeste.dll" is located)
+             5. Re-open Celeste
+             
+             If the error persists, please report this issue. And send this ENTIRE file along with it.
+             (This file is located under "{path}")
+             
+             Additional Information:
+             {additionalInfo ?? "<not-available>"}
+             """;
+
+        File.WriteAllText(path, text);
+        ProcessHelper.OpenInDefaultApp(path);
+    }
 }

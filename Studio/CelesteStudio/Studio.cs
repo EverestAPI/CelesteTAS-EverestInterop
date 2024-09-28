@@ -16,6 +16,7 @@ using Eto.Drawing;
 using FontDialog = CelesteStudio.Dialog.FontDialog;
 using Eto.Forms.ThemedControls;
 using StudioCommunication;
+using StudioCommunication.Util;
 using System.Collections.Generic;
 
 namespace CelesteStudio;
