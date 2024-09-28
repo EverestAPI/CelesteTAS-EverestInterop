@@ -23,7 +23,8 @@ public static class Migrator {
         bool firstV3Launch = !File.Exists(LatestVersionPath);
 
         // Assumes Studio was properly installed by CelesteTAS
-        bool studioV2Present = File.Exists(Path.Combine(Studio.CelesteDirectory ?? string.Empty, "Celeste Studio.exe"));
+        // Need to check .toml since .exe and .pdb were already deleted by CelesteTAS
+        bool studioV2Present = File.Exists(Path.Combine(Studio.CelesteDirectory ?? string.Empty, "Celeste Studio.toml"));
 
         newVersion = Assembly.GetExecutingAssembly().GetName().Version!;
         if (firstV3Launch) {

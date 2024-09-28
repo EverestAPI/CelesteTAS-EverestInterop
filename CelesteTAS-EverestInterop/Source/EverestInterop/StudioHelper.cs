@@ -1,4 +1,5 @@
-﻿// ReSharper disable HeuristicUnreachableCode
+﻿#define INSTALL_STUDIO
+// ReSharper disable HeuristicUnreachableCode
 #pragma warning disable CS0162 // Unreachable code detected
 
 using System;
@@ -25,15 +26,15 @@ public static class StudioHelper {
 
     // These values will automatically get filled in by the Build.yml/Release.yml actions
     private const bool   DoubleZipArchive        = false; //DOUBLE_ZIP_ARCHIVE
-    public  const string CurrentStudioVersion    = "##STUDIO_VERSION##";
+    public  const string CurrentStudioVersion    = "3.2.0";
 
     private const string DownloadURL_Windows_x64 = "##URL_WINDOWS_x64##";
-    private const string DownloadURL_Linux_x64   = "##URL_LINUX_x64##";
+    private const string DownloadURL_Linux_x64   = "https://github.com/EverestAPI/CelesteTAS-EverestInterop/releases/download/v3.40.3/CelesteStudio-linux-x64.zip";
     private const string DownloadURL_MacOS_x64   = "##URL_MACOS_x64##";
     private const string DownloadURL_MacOS_ARM64 = "##URL_MACOS_ARM64##";
 
     private const string Checksum_Windows_x64    = "##CHECKSUM_WINDOWS_x64##";
-    private const string Checksum_Linux_x64      = "##CHECKSUM_LINUX_x64##";
+    private const string Checksum_Linux_x64      = "9ac83519aadf0b4a8b2967fc03b7943d";
     private const string Checksum_MacOS_x64      = "##CHECKSUM_MACOS_x64##";
     private const string Checksum_MacOS_ARM64    = "##CHECKSUM_MACOS_ARM64##";
 
@@ -134,6 +135,37 @@ public static class StudioHelper {
             });
         } else {
             installed = true;
+        }
+
+        // Migrate from Studio v2
+        if (File.Exists(Path.Combine(Everest.PathGame, "Celeste Studio.exe")) &&
+            // Check .toml to see if v2 was launched once
+            File.Exists(Path.Combine(Everest.PathGame, "Celeste Studio.toml")))
+        {
+            File.Delete(Path.Combine(Everest.PathGame, "Celeste Studio.exe"));
+            File.Delete(Path.Combine(Everest.PathGame, "Celeste Studio.pdb"));
+            // Keep "Celeste Studio.toml" for the settings to be migrated by Studio v3
+
+            // Display migration (Studio v3 was never launched since the v2 .exe still existed)
+            string path = Path.GetTempFileName();
+            string text =
+                """
+                === Celeste Studio v3 - Migration notice ===
+                 
+                Celeste Studio was recently fully rewritten, bringing lots of new features and proper cross-platform compatibility for Windows, Linux and macOS.
+                With this change, the executable also moved slightly from "<celeste-install>/Celeste Studio.exe" to it's own directory under "<celeste-install>/CelesteStudio/".
+
+                Make sure to update any shortcuts you have and no longer use Wine / Mono if you were using that. 
+
+                If you experience any issues, please report those to have them fixed.
+                
+                NOTE: 
+                    There are known issues with Celeste Studio v3 on Windows 7.
+                    If possible, try to update to at least Windows 10, otherwise it is recommended to continue using Celeste Studio v2 with the latest CelesteTAS v3.39.x in the mean time. (Only major bugs will be fixed in that version! No features will be backported!)
+                """;
+
+            File.WriteAllText(path, text);
+            ProcessHelper.OpenInDefaultApp(path);
         }
 #else
         installed = true;
@@ -375,8 +407,7 @@ public static class StudioHelper {
 
             "Successfully launched Studio".Log();
         } catch (Exception ex) {
-            ReportError("Failed to launch Studio", ex.StackTrace);
-            ex.LogException();
+            ex.LogException("Failed to launch Studio");
         }
     });
 
@@ -390,7 +421,7 @@ public static class StudioHelper {
         string path = Path.Combine(StudioDirectory, "error_report.txt");
         string text =
             $"""
-             === Celeste Studio v{CurrentStudioVersion} - Install failed ===
+             === Celeste Studio v{CurrentStudioVersion} - Installation failed ===
              {DateTime.Now.ToString(CultureInfo.InvariantCulture)}
              
              The following error occured while trying to install Celeste Studio:
