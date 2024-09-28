@@ -48,13 +48,11 @@ jobs:
           sed -i "s\\##CHECKSUM_LINUX_x64##\\$(md5sum CelesteStudio-linux-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
           sed -i "s\\##CHECKSUM_MACOS_x64##\\$(md5sum CelesteStudio-macos-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
           sed -i "s\\##CHECKSUM_MACOS_ARM64##\\$(md5sum CelesteStudio-macos-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
-          cat CelesteTAS-EverestInterop/EverestInterop/StudioHelper.cs
+          cat CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
 
       - name: Build
         run: |
           dotnet build CelesteTAS-EverestInterop -c Release -p:DefineConstants=INSTALL_STUDIO
-          ls -la
-          tree .
 
       - name: Create release
         uses: marvinpinto/action-automatic-releases@latest
