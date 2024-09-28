@@ -5,10 +5,8 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using System.Threading;
 using Celeste.Mod;
 using System.Linq;
 using System.Threading.Tasks;
@@ -41,8 +39,9 @@ public static class StudioHelper {
     private static bool installed = false;
 
     private static string StudioDirectory => Path.Combine(Everest.PathGame, "CelesteStudio");
+    private static string TempStudioInstallDirectory => Path.Combine(StudioDirectory, ".temp_install");
     private static string VersionFile => Path.Combine(StudioDirectory, ".version");
-    private static string TempDownloadPath => Path.Combine(StudioDirectory, ".CelesteStudio.zip");
+    private static string DownloadPath => Path.Combine(StudioDirectory, "CelesteStudio.zip");
 
     private static string DownloadURL {
         get {
@@ -85,7 +84,7 @@ public static class StudioHelper {
     private static void Load() {
         // INSTALL_STUDIO is only set during builds from Build.yml/Release.yml, since otherwise the URLs / checksums are invalid
 #if INSTALL_STUDIO
-        // Check if studio is already up-to-date
+        // Check if Studio is already up-to-date
         string installedVersion = "<None>";
         if (!File.Exists(VersionFile) || (installedVersion = File.ReadAllText(VersionFile)) != CurrentStudioVersion) {
             $"Celeste Studio version mismatch: Expected '{CurrentStudioVersion}', found '{installedVersion}'. Installing current version...".Log();
@@ -114,24 +113,19 @@ public static class StudioHelper {
                     }
                 }
 
-                // Reset everything
-                $"Cleaning directory '{StudioDirectory}'...".Log(LogLevel.Verbose);
-                if (Directory.Exists(StudioDirectory)) {
-                    Directory.Delete(StudioDirectory, recursive: true);
-                }
-                Directory.CreateDirectory(StudioDirectory);
-                "Directory cleaned".Log(LogLevel.Verbose);
-
                 try {
                     await DownloadStudio().ConfigureAwait(false);
                     installed = true;
                 } catch (Exception ex) {
                     ex.LogException("Failed to install Studio");
 
-                    // Cleanup
-                    if (Directory.Exists(StudioDirectory)) {
-                        Directory.Delete(StudioDirectory, recursive: true);
+                    // Cleanup install
+                    if (Directory.Exists(TempStudioInstallDirectory)) {
+                        Directory.Delete(TempStudioInstallDirectory, recursive: true);
                     }
+                    StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Failure;
+                    StudioUpdateBanner.FadeoutTimer = 5.0f;
+
                     throw;
                 }
             });
@@ -151,85 +145,147 @@ public static class StudioHelper {
     }
 
     private static async Task DownloadStudio() {
-        // Download studio archive
-        $"Starting download of '{DownloadURL}'...".Log();
+        using var md5 = MD5.Create();
 
-        StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Download;
-        Everest.Updater.DownloadFileWithProgress(DownloadURL, TempDownloadPath, (position, length, speed) => {
-            StudioUpdateBanner.DownloadedBytes = position;
-            StudioUpdateBanner.TotalBytes = length;
-            StudioUpdateBanner.BytesPerSecond = speed * 1024;
+        // Skip download if valid ZIP already exists
+        bool skipDownload = false;
 
-            return true;
-        });
+        if (File.Exists(DownloadPath)) {
+            await using var fs = File.OpenRead(DownloadPath);
 
-        if (!File.Exists(TempDownloadPath)) {
-            "Download failed! The studio archive went missing".Log(LogLevel.Error);
-            StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Failure;
-            return;
+            string hash = BitConverter.ToString(await md5.ComputeHashAsync(fs)).Replace("-", "");
+            if (Checksum.Equals(hash, StringComparison.OrdinalIgnoreCase)) {
+                skipDownload = true;
+            } else {
+                // Try handling double ZIPs caused by GitHub actions
+                if (DoubleZipArchive) {
+                    string innerPath;
+                    using (var zip = ZipFile.OpenRead(DownloadPath)) {
+                        var entry = zip.Entries[0]; // There should only be a single entry in this case
+                        innerPath = Path.Combine(StudioDirectory, entry.Name);
+                        $"Extracting inner ZIP archive: '{entry.Name}'".Log(LogLevel.Verbose);
+
+                        entry.ExtractToFile(innerPath);
+                    }
+
+                    File.Move(innerPath, DownloadPath, overwrite: true);
+                }
+
+                hash = BitConverter.ToString(await md5.ComputeHashAsync(fs)).Replace("-", "");
+                if (Checksum.Equals(hash, StringComparison.OrdinalIgnoreCase)) {
+                    skipDownload = true;
+                }
+            }
         }
-        "Finished download".Log();
-        StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Install;
 
-        // Handle double ZIPs caused by GitHub actions
-        if (DoubleZipArchive) {
-            string innerPath;
-            using (var zip = ZipFile.OpenRead(TempDownloadPath)) {
-                var entry = zip.Entries[0]; // There should only be a single entry in this case
-                innerPath = Path.Combine(StudioDirectory, entry.Name);
-                $"Extracting inner ZIP archive: '{entry.Name}'".Log(LogLevel.Verbose);
-
-                entry.ExtractToFile(innerPath);
+        if (!skipDownload) {
+            // Existing archive doesn't match at all
+            if (File.Exists(DownloadPath)) {
+                File.Delete(DownloadPath);
             }
 
-            File.Move(innerPath, TempDownloadPath, overwrite: true);
-        }
+            if (!Directory.Exists(StudioDirectory)) {
+                Directory.CreateDirectory(StudioDirectory);
+            }
 
-        // Verify checksum
-        using var md5 = MD5.Create();
-        await using (var fs = File.OpenRead(TempDownloadPath)) {
-            string hash = BitConverter.ToString(await md5.ComputeHashAsync(fs)).Replace("-", "");
-            if (!Checksum.Equals(hash, StringComparison.OrdinalIgnoreCase)) {
-                $"Download failed! Invalid checksum for studio archive file: Expected {Checksum} got {hash}".Log(LogLevel.Error);
+            // Download Studio archive
+            $"Starting download of '{DownloadURL}'...".Log();
+
+            StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Download;
+            Everest.Updater.DownloadFileWithProgress(DownloadURL, DownloadPath, (position, length, speed) => {
+                StudioUpdateBanner.DownloadedBytes = position;
+                StudioUpdateBanner.TotalBytes = length;
+                StudioUpdateBanner.BytesPerSecond = speed * 1024;
+
+                return true;
+            });
+
+            if (!File.Exists(DownloadPath)) {
+                "Download failed! The Studio archive went missing".Log(LogLevel.Error);
                 StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Failure;
                 return;
             }
-            $"Downloaded studio archive has a valid checksum: {hash}".Log(LogLevel.Verbose);
+            "Finished download".Log();
+            StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Install;
+
+            // Handle double ZIPs caused by GitHub actions
+            if (DoubleZipArchive) {
+                string innerPath;
+                using (var zip = ZipFile.OpenRead(DownloadPath)) {
+                    var entry = zip.Entries[0]; // There should only be a single entry in this case
+                    innerPath = Path.Combine(StudioDirectory, entry.Name);
+                    $"Extracting inner ZIP archive: '{entry.Name}'".Log(LogLevel.Verbose);
+
+                    entry.ExtractToFile(innerPath);
+                }
+
+                File.Move(innerPath, DownloadPath, overwrite: true);
+            }
+        }
+
+        StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Install;
+
+        // Verify checksum
+        await using (var fs = File.OpenRead(DownloadPath)) {
+            string hash = BitConverter.ToString(await md5.ComputeHashAsync(fs)).Replace("-", "");
+            if (!Checksum.Equals(hash, StringComparison.OrdinalIgnoreCase)) {
+                $"Download failed! Invalid checksum for Studio archive file: Expected {Checksum} got {hash}".Log(LogLevel.Error);
+                StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Failure;
+                return;
+            }
+            $"Downloaded Studio archive has a valid checksum: {hash}".Log(LogLevel.Verbose);
+        }
+
+        // Install to another directory and only delete the old install once it was successful
+        if (!Directory.Exists(TempStudioInstallDirectory)) {
+            Directory.CreateDirectory(TempStudioInstallDirectory);
         }
 
         // Extract
-        $"Extracting {TempDownloadPath} into {StudioDirectory}".Log();
-        ZipFile.ExtractToDirectory(TempDownloadPath, StudioDirectory);
-        "Successfully extracted studio archive".Log();
+        $"Extracting {DownloadPath} into {TempStudioInstallDirectory}".Log();
+        ZipFile.ExtractToDirectory(DownloadPath, TempStudioInstallDirectory);
+        "Successfully extracted Studio archive".Log();
 
         // Store installed version number
-        await File.WriteAllTextAsync(VersionFile, CurrentStudioVersion).ConfigureAwait(false);
-
-        // Cleanup ZIP
-        if (File.Exists(TempDownloadPath)) {
-            File.Delete(TempDownloadPath);
-        }
+        await File.WriteAllTextAsync(Path.Combine(TempStudioInstallDirectory, Path.GetFileName(VersionFile)), CurrentStudioVersion).ConfigureAwait(false);
 
         // Fix lost file permissions
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-            if (!await ExecuteCommand(["chmod", "+x", Path.Combine(StudioDirectory, "CelesteStudio")],
+            if (!await ExecuteCommand(["chmod", "+x", Path.Combine(TempStudioInstallDirectory, "CelesteStudio")],
                     errorMessage: "Install failed! Couldn't make Studio executable").ConfigureAwait(false))
             {
-                // Mark install as invalid, so that next launch will try again
-                File.Delete(VersionFile);
+                Directory.Delete(TempStudioInstallDirectory, recursive: true);
                 StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Failure;
+                StudioUpdateBanner.FadeoutTimer = 5.0f;
+                return;
             }
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-            if (!await ExecuteCommand(["chmod", "+x", Path.Combine(StudioDirectory, "CelesteStudio.app", "Contents", "MacOS", "CelesteStudio")],
+            if (!await ExecuteCommand(["chmod", "+x", Path.Combine(TempStudioInstallDirectory, "CelesteStudio.app", "Contents", "MacOS", "CelesteStudio")],
                     errorMessage: "Install failed! Couldn't make Studio executable").ConfigureAwait(false) ||
-                !await ExecuteCommand(["xattr", "-c", Path.Combine(StudioDirectory, "CelesteStudio.app")],
+                !await ExecuteCommand(["xattr", "-c", Path.Combine(TempStudioInstallDirectory, "CelesteStudio.app")],
                     errorMessage: "Install failed! Couldn't clear Studio app bundle config").ConfigureAwait(false))
             {
-                // Mark install as invalid, so that next launch will try again
-                File.Delete(VersionFile);
+                Directory.Delete(TempStudioInstallDirectory, recursive: true);
                 StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Failure;
+                StudioUpdateBanner.FadeoutTimer = 5.0f;
+                return;
             }
         }
+
+        // Cleanup old install
+        foreach (string file in Directory.GetFiles(StudioDirectory)) {
+            if (file == DownloadPath || file == TempStudioInstallDirectory) {
+                continue;
+            }
+
+            File.Delete(file);
+        }
+
+        // Setup new install
+        foreach (string file in Directory.GetFiles(TempStudioInstallDirectory)) {
+            File.Move(file, Path.Combine(StudioDirectory, Path.GetFileName(file)));
+        }
+        Directory.Delete(TempStudioInstallDirectory, recursive: true);
 
         StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Success;
         StudioUpdateBanner.FadeoutTimer = 5.0f;
@@ -292,7 +348,7 @@ public static class StudioHelper {
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                 $"Starting process '{Path.Combine(StudioDirectory, "CelesteStudio.exe")}'...".Log(LogLevel.Verbose);
-                // Start through explorer to detach studio from the game process (and avoid issues with the Steam Overlay for example)
+                // Start through explorer to detach Studio from the game process (and avoid issues with the Steam Overlay for example)
                 Process.Start("Explorer", [Path.Combine(StudioDirectory, "CelesteStudio.exe")]);
             } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
                 $"Starting process '{Path.Combine(StudioDirectory, "CelesteStudio")}'...".Log(LogLevel.Verbose);
