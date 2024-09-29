@@ -48,7 +48,7 @@ public static class MigrateV3_0_0 {
                 var settings = TomletMain.To<LegacySettings>(settingsTable);
 
                 Settings.Instance.SendInputsToCeleste = settings.SendInputsToCeleste;
-                Settings.Instance.ShowGameInfo = settings.ShowGameInfo;
+                Settings.Instance.GameInfo = settings.ShowGameInfo ? GameInfoType.Panel : GameInfoType.Disabled;
                 Settings.Instance.AutoRemoveMutuallyExclusiveActions = settings.AutoRemoveMutuallyExclusiveActions;
                 Settings.Instance.AlwaysOnTop = settings.AlwaysOnTop;
                 Settings.Instance.AutoBackupEnabled = settings.AutoBackupEnabled;

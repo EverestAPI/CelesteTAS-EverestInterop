@@ -31,6 +31,9 @@ public sealed class Studio : Form {
         Version = $"v{Assembly.GetExecutingAssembly().GetName().Version!.ToString(3)}{VersionSuffix}";
     }
 
+    /// Event which will be called before Studio exits
+    public event Action Exiting = () => { };
+
     /// Platform-specific callback to handle new windows
     public readonly Action<Window> WindowCreationCallback;
 
@@ -326,6 +329,8 @@ public sealed class Studio : Form {
         CommunicationWrapper.SendPath(string.Empty);
         CommunicationWrapper.Stop();
 
+        Exiting();
+
         base.OnClosing(e);
     }
 
@@ -593,7 +598,8 @@ public sealed class Studio : Form {
                 MenuUtils.CreateSettingEnum<CommandSeparator>("Command Separator", nameof(Settings.CommandSeparator), ["Space (\" \")", "Comma (\",\")", "Space + Comma (\", \")"]),
             }},
             new SubMenuItem { Text = "&View", Items = {
-                MenuEntry.View_ShowGameInfo.ToSettingToggle(nameof(Settings.ShowGameInfo)),
+                // TODO: Use MenuEntry.View_ShowGameInfo again
+                MenuUtils.CreateSettingEnum<GameInfoType>("Game Info", nameof(Settings.GameInfo), ["Disabled", "Panel", "Popout"]),
                 MenuUtils.CreateSettingNumberInput("Maximum Game Info Height", nameof(Settings.MaxGameInfoHeight), 0.1f, 0.9f, 0.05f, percent => $"{percent * 100.0f:F0}%"),
                 MenuEntry.View_ShowSubpixelIndicator.ToSettingToggle(nameof(Settings.ShowSubpixelIndicator)),
                 MenuUtils.CreateSettingNumberInput("Subpixel Indicator Scale", nameof(Settings.SubpixelIndicatorScale), 0.1f, 10.0f, 0.25f),

@@ -25,6 +25,7 @@ public enum InsertDirection { Above, Below }
 public enum CaretInsertPosition { AfterInsert, PreviousPosition }
 public enum CommandSeparator { Space, Comma, CommaSpace }
 public enum LineNumberAlignment { Left, Right }
+public enum GameInfoType { Disabled, Panel, Popout }
 
 public sealed class Settings {
     public static string BaseConfigPath {
@@ -141,7 +142,7 @@ public sealed class Settings {
     #endregion
     #region View
 
-    public bool ShowGameInfo { get; set; } = true;
+    public GameInfoType GameInfo { get; set; } = GameInfoType.Panel;
     public bool ShowSubpixelIndicator { get; set; } = true;
     public float MaxGameInfoHeight { get; set; } = 0.3f;
     public float SubpixelIndicatorScale { get; set; } = 2.5f;

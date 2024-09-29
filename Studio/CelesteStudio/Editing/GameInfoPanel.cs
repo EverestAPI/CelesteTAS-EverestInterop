@@ -5,6 +5,8 @@ using CelesteStudio.Data;
 using Eto.Drawing;
 using Eto.Forms;
 using StudioCommunication.Util;
+using System.ComponentModel;
+using System.Threading;
 
 namespace CelesteStudio.Editing;
 
@@ -276,7 +278,7 @@ public sealed class GameInfoPanel : Panel {
         private const int BackgroundPadding = 5;
 
         public Action? Click;
-        private void PerformClick() => Click?.Invoke();
+        public void PerformClick() => Click?.Invoke();
 
         public PopoutButton() {
             Width = Height = IconSize + BackgroundPadding * 2;
@@ -327,6 +329,17 @@ public sealed class GameInfoPanel : Panel {
 
         GameInfoPopout? popoutForm = null;
 
+        Studio.Instance.Exiting += () => {
+            if (popoutForm != null) {
+                popoutForm.Closed += (_, _) => {
+                    // Overwrite values set in regular closing routine
+                    Settings.Instance.GameInfo = GameInfoType.Popout;
+                    Settings.Save();
+                };
+                popoutForm.Close();
+            }
+        };
+
         var popoutButton = new PopoutButton { Visible = false };
         popoutButton.Click += () => {
             scrollable.Content = null;
@@ -337,10 +350,14 @@ public sealed class GameInfoPanel : Panel {
                 popoutForm = null;
 
                 scrollable.Content = gameInfo;
-                Visible = Settings.Instance.ShowGameInfo;
-                OnSizeChanged(EventArgs.Empty); // Changing Visible doesn't send size events
+                Settings.Instance.GameInfo = GameInfoType.Panel;
+                Settings.OnChanged();
+                Settings.Save();
             };
             popoutForm.Show();
+            Settings.Instance.GameInfo = GameInfoType.Popout;
+            Settings.OnChanged();
+            Settings.Save();
 
             Visible = false;
             OnSizeChanged(EventArgs.Empty); // Changing Visible doesn't send size events
@@ -364,10 +381,46 @@ public sealed class GameInfoPanel : Panel {
         Padding = 10;
         Content = layout;
 
-        Visible = Settings.Instance.ShowGameInfo;
+        Load += (_, _) => {
+            switch (Settings.Instance.GameInfo) {
+                case GameInfoType.Disabled:
+                    Visible = false;
+                    break;
+                case GameInfoType.Panel:
+                    Visible = true;
+                    break;
+                case GameInfoType.Popout:
+                    Visible = false;
+                    popoutButton.PerformClick();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        };
+
         BackgroundColor = Settings.Instance.Theme.StatusBg;
         Settings.Changed += () => {
-            Visible = Settings.Instance.ShowGameInfo;
+            switch (Settings.Instance.GameInfo) {
+                case GameInfoType.Disabled:
+                    Visible = false;
+                    popoutForm?.Close();
+                    OnSizeChanged(EventArgs.Empty); // Changing Visible doesn't send size events
+                    break;
+                case GameInfoType.Panel:
+                    Visible = true;
+                    popoutForm?.Close();
+                    OnSizeChanged(EventArgs.Empty); // Changing Visible doesn't send size events
+                    break;
+                case GameInfoType.Popout:
+                    Visible = false;
+                    if (popoutForm == null) {
+                        popoutButton.PerformClick();
+                    }
+                    OnSizeChanged(EventArgs.Empty); // Changing Visible doesn't send size events
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         };
         Settings.ThemeChanged += () => {
             BackgroundColor = Settings.Instance.Theme.StatusBg;
@@ -376,6 +429,10 @@ public sealed class GameInfoPanel : Panel {
         return;
 
         void LimitSize() {
+            if (popoutForm != null) {
+                return;
+            }
+
             // Limit height to certain percentage of entire the window
             scrollable.Size = new Size(
                 ClientSize.Width - Padding.Left - Padding.Right,
@@ -438,5 +495,13 @@ public sealed class GameInfoPopout : Form {
                 Location = lastLocation;
             }
         };
+    }
+
+    protected override void OnClosing(CancelEventArgs e) {
+        Settings.Instance.GameInfoPopoutLocation = Location;
+        Settings.Instance.GameInfoPopoutSize = Size;
+        Settings.Save();
+
+        base.OnClosing(e);
     }
 }
