@@ -71,6 +71,8 @@ public static class MigrateV3_0_0 {
                 if (oldSettings.themes == "Light") {
                     newDocument.Put("ThemeName", "Light");
                 }
+
+                Migrator.WriteSettings(newDocument);
             } catch (Exception ex) {
                 Console.Error.WriteLine($"Failed to read legacy settings file from path '{Path.Combine(Studio.CelesteDirectory, "Celeste Studio.toml")}'");
                 Console.Error.WriteLine(ex);
