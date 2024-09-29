@@ -143,6 +143,7 @@ public sealed class Settings {
 
     public bool ShowGameInfo { get; set; } = true;
     public bool ShowSubpixelIndicator { get; set; } = true;
+    public float MaxGameInfoHeight { get; set; } = 0.3f;
     public float SubpixelIndicatorScale { get; set; } = 2.5f;
 
     public bool AlwaysOnTop { get; set; } = false;

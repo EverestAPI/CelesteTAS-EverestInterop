@@ -5,6 +5,7 @@ using System.Numerics;
 using CelesteStudio.Dialog;
 using Eto.Forms;
 using StudioCommunication;
+using System.Globalization;
 
 namespace CelesteStudio.Util;
 
@@ -116,11 +117,13 @@ public static class MenuUtils {
         return item;
     }
 
-    public static MenuItem CreateSettingNumberInput<T>(string text, string settingName, T minValue, T maxValue, T step) where T : INumber<T>  {
+    public static MenuItem CreateSettingNumberInput<T>(string text, string settingName, T minValue, T maxValue, T step, Func<T, string>? toString = null) where T : INumber<T>  {
         var property = typeof(Settings).GetProperty(settingName)!;
 
+        toString ??= value => value.ToString("F1", CultureInfo.InvariantCulture)!;
+
         var item = new ButtonMenuItem {
-            Text = $"{text}: {property.GetValue(Settings.Instance)!}"
+            Text = $"{text}: {toString((T)property.GetValue(Settings.Instance)!)}"
         };
         item.Click += (_, _) => {
             T value = (T)property.GetValue(Settings.Instance)!;

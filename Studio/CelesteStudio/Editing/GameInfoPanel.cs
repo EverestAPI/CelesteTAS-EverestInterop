@@ -361,7 +361,7 @@ public sealed class GameInfoPanel : Panel {
             // Limit height to half the window
             scrollable.Size = new Size(
                 ClientSize.Width - Padding.Left - Padding.Right,
-                Math.Min(gameInfo.Height + Padding.Top + Padding.Bottom, Studio.Instance.Height / 3) - Padding.Top - Padding.Bottom);
+                Math.Min(gameInfo.Height + Padding.Top + Padding.Bottom, (int)(Studio.Instance.Height * Settings.Instance.MaxGameInfoHeight)) - Padding.Top - Padding.Bottom);
 
             // Account for scroll bar
             bool scrollBarVisible = gameInfo.Height > scrollable.Height;
