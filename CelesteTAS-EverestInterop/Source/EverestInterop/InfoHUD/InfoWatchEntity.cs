@@ -5,6 +5,7 @@ using System.Reflection;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
+using StudioCommunication;
 using TAS.EverestInterop.Hitboxes;
 using TAS.Module;
 using TAS.Utils;

@@ -10,12 +10,75 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using StudioCommunication;
 using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
 
 public static class ConsoleCommand {
+    private class Meta : ITasCommandMeta {
+        public string Insert => "console ";
+        public bool HasArguments => true;
+
+        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
+            if (args.Length == 1) {
+                // load-commands first as they are the most common
+                yield return new CommandAutoCompleteEntry { Name = "load", Extra = "A-Side", HasNext = true };
+                yield return new CommandAutoCompleteEntry { Name = "hard", Extra = "B-Side", HasNext = true };
+                yield return new CommandAutoCompleteEntry { Name = "rmx2", Extra = "C-Side", HasNext = true };
+
+                // Remaining commands
+                foreach (var command in Engine.Commands.GetCommands()) {
+                    if (command.Name is "load" or "hard" or "rmx2") {
+                        continue;
+                    }
+
+                    yield return new CommandAutoCompleteEntry { Name = command.Name.ToLowerInvariant(), HasNext = false };
+                }
+            } else if (args.Length >= 2 && LoadCommandRegex.Match(args[0]) is { Success: true } match) {
+                // Only support argument auto-complete for load commands
+                string commandName = match.Groups[1].Value.ToLowerInvariant();
+                var areaMode = commandName switch {
+                    "hard" => AreaMode.BSide,
+                    "rmx2" => AreaMode.CSide,
+                    _ => AreaMode.Normal
+                };
+
+                if (args.Length == 2) {
+                    // ID / SID
+                    lock (AssetReloadHelper.AreaReloadLock) {
+                        foreach (var area in AreaData.Areas) {
+                            if (!area.HasMode(areaMode)) {
+                                continue;
+                            }
+
+                            yield return new CommandAutoCompleteEntry {
+                                // Only use ID for base-game
+                                Name = area.LevelSet == "Celeste"
+                                    ? area.ID.ToString()
+                                    : area.SID,
+                                Extra = Dialog.Clean(area.Name, Dialog.Languages[Settings.EnglishLanguage]),
+                                HasNext = false
+                            };
+                        }
+                    }
+                } else if (args.Length == 3) {
+                    // Starting screen
+                    if (!TryGetAreaId(args[1], out int areaId) ||
+                        AreaData.Get(areaId).Mode.GetValueOrDefault((int) areaMode) is not {  } mode)
+                    {
+                        yield break;
+                    }
+
+                    foreach ((string levelName, _) in mode.MapData.levelsByName) {
+                        yield return new CommandAutoCompleteEntry { Name = levelName, Extra = "Room", HasNext = false };
+                    }
+                }
+            }
+        }
+    }
+
     public static readonly Regex LoadCommandRegex = new(@"^(load|hard|rmx2)(\d*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private static Vector2 initRemainder;
@@ -114,33 +177,39 @@ public static class ConsoleCommand {
         }
     }
 
-    // "Console CommandType",
-    // "Console CommandType CommandArgs",
-    // "Console LoadCommand IDorSID",
-    // "Console LoadCommand IDorSID Screen",
-    // "Console LoadCommand IDorSID Screen Spawnpoint",
-    // "Console LoadCommand IDorSID PositionX PositionY"
-    // "Console LoadCommand IDorSID PositionX PositionY SpeedX SpeedY"
-    [TasCommand("Console", LegalInMainGame = false)]
-    private static void Console(string[] arguments, string commandText) {
-        string commandName = arguments[0].ToLower(CultureInfo.InvariantCulture);
-        string[] args = arguments.Skip(1).ToArray();
-        if (LoadCommandRegex.Match(commandName) is {Success: true} match) {
+    // "console CommandType",
+    // "console CommandType CommandArgs",
+    // "console LoadCommand IDorSID",
+    // "console LoadCommand IDorSID Screen",
+    // "console LoadCommand IDorSID Screen Spawnpoint",
+    // "console LoadCommand IDorSID PositionX PositionY"
+    // "console LoadCommand IDorSID PositionX PositionY SpeedX SpeedY"
+    [TasCommand("console", LegalInFullGame = false, MetaDataProvider = typeof(Meta))]
+    private static void Console(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        if (commandLine.Arguments.IsEmpty()) {
+            AbortTas("Need to specify arguments for \"Console\" command");
+            return;
+        }
+
+        string commandName = commandLine.Arguments[0].ToLower(CultureInfo.InvariantCulture);
+        string[] commandArgs = commandLine.Arguments[1..];
+
+        if (LoadCommandRegex.Match(commandName) is { Success: true } match) {
             commandName = match.Groups[1].Value;
             if (int.TryParse(match.Groups[2].Value, out int slot)) {
                 // load1 => 0.celeste
                 slot--;
             } else {
-                // debug.celeste
+                // load => debug.celeste
                 slot = -1;
             }
 
-            LoadCommand(commandName, args, slot);
+            LoadCommand(commandName, commandArgs, slot);
         } else {
-            List<string> commandHistory = Engine.Commands.commandHistory;
-            commandHistory.Insert(0, commandText.Substring(8));
-            Engine.Commands.ExecuteCommand(commandName, args);
-            commandHistory.RemoveAt(0);
+            // C# Debug Console uses the history to parse the arguments itself, so we have to temporarily insert it there
+            Engine.Commands.commandHistory.Insert(0, commandLine.OriginalText[commandLine.Regions[1].StartCol..]);
+            Engine.Commands.ExecuteCommand(commandName, commandArgs);
+            Engine.Commands.commandHistory.RemoveAt(0);
         }
     }
 
@@ -387,9 +456,9 @@ public static class ConsoleCommand {
         if (Engine.Scene is Emulator {game.room: var room}) {
             return $"console pico {room.X} {room.Y}";
         }
-        
+
         if (Engine.Scene is not Level level) {
-            return null;
+            return string.Empty;
         }
 
         AreaKey area = level.Session.Area;
@@ -420,7 +489,7 @@ public static class ConsoleCommand {
                 double subX = player.movementCounter.X;
                 double subY = player.movementCounter.Y;
 
-                string format = "0.".PadRight(CelesteTasSettings.MaxDecimals + 2, '#');
+                string format = "0.".PadRight(GameSettings.MaxDecimals + 2, '#');
                 values.Add((x + subX).ToString(format, CultureInfo.InvariantCulture));
                 values.Add((y + subY).ToString(format, CultureInfo.InvariantCulture));
 

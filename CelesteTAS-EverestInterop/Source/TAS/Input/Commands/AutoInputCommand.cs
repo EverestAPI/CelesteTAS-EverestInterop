@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using StudioCommunication;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using TAS.Utils;
@@ -6,6 +7,18 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class AutoInputCommand {
+    private class Meta : ITasCommandMeta {
+        public string Insert => $"""
+                                 AutoInput{CommandInfo.Separator}[0;2]
+                                    1,S,N
+                                   10,O
+                                 StartAutoInput
+                                     [1]
+                                 EndAutoInput
+                                 """;
+        public bool HasArguments => true;
+    }
+
     public record Arguments {
         public readonly int StartLine;
         public readonly int CycleLength;
@@ -49,8 +62,9 @@ public static class AutoInputCommand {
         Manager.Controller.Clear();
     }
 
-    [TasCommand("AutoInput", ExecuteTiming = ExecuteTiming.Parse)]
-    private static void AutoInput(string[] args, int _, string filePath, int fileLine) {
+    [TasCommand("AutoInput", ExecuteTiming = ExecuteTiming.Parse, MetaDataProvider = typeof(Meta))]
+    private static void AutoInput(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\n";
         if (args.IsEmpty()) {
             AbortTas($"{errorText}AutoInput command no cycle length given");
@@ -68,7 +82,8 @@ public static class AutoInputCommand {
     }
 
     [TasCommand("StartAutoInput", ExecuteTiming = ExecuteTiming.Parse)]
-    private static void StartAutoInput(string[] _, int __, string filePath, int fileLine) {
+    private static void StartAutoInput(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\n";
         if (!AutoInputArgs.TryGetValue(filePath, out var arguments)) {
             AbortTas($"{errorText}StartAutoInput command does not have a paired AutoInput command");
@@ -85,7 +100,7 @@ public static class AutoInputCommand {
     }
 
     [TasCommand("EndAutoInput", ExecuteTiming = ExecuteTiming.Parse)]
-    private static void EndAutoInput(string[] _, int __, string filePath, int fileLine) {
+    private static void EndAutoInput(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         EndAutoInputImpl(filePath, fileLine, "EndAutoInput", "AutoInput");
     }
 
@@ -105,8 +120,9 @@ public static class AutoInputCommand {
         AutoInputArgs.Remove(filePath);
     }
 
-    [TasCommand("SkipInput", AliasNames = new[] {"SkipAutoInput"}, ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
-    private static void SkipInput(string[] args, int __, string filePath, int fileLine) {
+    [TasCommand("SkipInput", Aliases = ["SkipAutoInput"], ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
+    private static void SkipInput(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         if (Command.Parsing && AutoInputArgs.TryGetValue(filePath, out var arguments)) {
             string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\nSkipInput command's ";
             if (args.IsEmpty()) {

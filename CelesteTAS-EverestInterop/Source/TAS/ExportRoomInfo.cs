@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Celeste;
 using Monocle;
+using StudioCommunication;
 using TAS.Input;
 using TAS.Input.Commands;
 using TAS.Module;
@@ -13,6 +14,11 @@ namespace TAS;
 
 // ReSharper disable once UnusedType.Global
 public static class ExportRoomInfo {
+    private class Meta : ITasCommandMeta {
+        public string Insert => $"ExportRoomInfo{CommandInfo.Separator}[0;dump_room_info.txt]";
+        public bool HasArguments => true;
+    }
+
     private static StreamWriter streamWriter;
     private static bool exporting;
     private static string lastRoomName;
@@ -73,17 +79,16 @@ public static class ExportRoomInfo {
         lastRoomName = roomName;
     }
 
-    // ReSharper disable once UnusedMember.Local
-    // "StartExportRoomInfo [Path = dump_room_info.txt]"
-    [TasCommand("StartExportRoomInfo", AliasNames = new[] {"ExportRoomInfo"}, CalcChecksum = false)]
-    private static void StartExportCommand(string[] args) {
+    // "ExportRoomInfo [Path = dump_room_info.txt]"
+    [TasCommand("ExportRoomInfo", Aliases = ["StartExportRoomInfo"], CalcChecksum = false)]
+    private static void StartExportCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         string path = args.Length > 0 ? args[0] : "dump_room_info.txt";
         BeginExport(path);
     }
 
-    // ReSharper disable once UnusedMember.Local
-    [TasCommand("FinishExportRoomInfo", AliasNames = new[] {"EndExportRoomInfo"}, CalcChecksum = false)]
-    private static void FinishExportCommand() {
+    [TasCommand("EndExportRoomInfo", Aliases = ["FinishExportRoomInfo"], CalcChecksum = false)]
+    private static void FinishExportCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         EndExport();
     }
 
@@ -227,7 +232,7 @@ public static class ExportRoomInfo {
         }
 
         private static string ConvertToFrames(long? time) {
-            return time == null ? string.Empty : (time.Value / TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks).ToString();
+            return time == null ? string.Empty : (time.Value / Engine.RawDeltaTime.SecondsToTicks()).ToString();
         }
 
         private static string FormatTimeWithFrames(long? time) {

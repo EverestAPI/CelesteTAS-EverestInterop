@@ -32,13 +32,13 @@ public static class RecordingCommand {
 
     // "StartRecording"
     [TasCommand("StartRecording", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
-    private static void StartRecording(string[] _1, int _2, string filePath, int fileLine) {
+    private static void StartRecording(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         if (ParsingCommand) {
-            if (StudioCommunicationBase.Initialized && Manager.Running) {
+            if (CommunicationWrapper.Connected && Manager.Running) {
                 if (!TASRecorderUtils.Installed) {
-                    StudioCommunicationClient.Instance?.SendRecordingFailed(RecordingFailedReason.TASRecorderNotInstalled);
+                    CommunicationWrapper.SendRecordingFailed(RecordingFailedReason.TASRecorderNotInstalled);
                 } else if (!TASRecorderUtils.FFmpegInstalled) {
-                    StudioCommunicationClient.Instance?.SendRecordingFailed(RecordingFailedReason.FFmpegNotInstalled);
+                    CommunicationWrapper.SendRecordingFailed(RecordingFailedReason.FFmpegNotInstalled);
                 }
             }
 
@@ -50,7 +50,7 @@ public static class RecordingCommand {
                 AbortTas("FFmpeg libraries aren't properly installed");
                 return;
             }
-            
+
             if (RecordingTimes.Count > 0) {
                 RecordingTime last = RecordingTimes.Last().Value;
                 if (last.StopFrame == int.MaxValue) {
@@ -81,7 +81,7 @@ public static class RecordingCommand {
 
     // "StopRecording"
     [TasCommand("StopRecording", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
-    private static void StopRecording(string[] _1, int _2, string filePath, int fileLine) {
+    private static void StopRecording(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         if (ParsingCommand) {
             string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\n";
             if (RecordingTimes.IsEmpty()) {
@@ -97,13 +97,13 @@ public static class RecordingCommand {
                     return;
                 }
             }
-            
+
             last.StopFrame = Manager.Controller.Inputs.Count;
         } else {
             TASRecorderUtils.StopRecording();
         }
     }
-    
+
     [ParseFileEnd]
     private static void ParseFileEnd() {
         if (RecordingTimes.IsEmpty()) {

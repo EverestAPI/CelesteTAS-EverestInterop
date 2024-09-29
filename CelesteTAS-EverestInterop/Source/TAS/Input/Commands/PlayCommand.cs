@@ -1,13 +1,45 @@
 using Celeste.Mod;
+using StudioCommunication;
+using StudioCommunication.Util;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
 
 public static class PlayCommand {
-    // "Play, StartLine",
-    // "Play, StartLine, FramesToWait"
-    [TasCommand("Play", ExecuteTiming = ExecuteTiming.Parse)]
-    private static void Play(string[] args, int studioLine) {
+    private class PlayMeta : ITasCommandMeta {
+        public string Insert => $"Play{CommandInfo.Separator}[0;Starting Label]";
+        public bool HasArguments => true;
+
+        public int GetHash(string[] args, string filePath, int fileLine) {
+            // Only file contents and line matters
+            return 31 * File.ReadAllText(filePath).GetStableHashCode() + 17 * fileLine;
+        }
+
+        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
+            if (args.Length != 1) {
+                yield break;
+            }
+
+            // Don't include labels before the current line
+            foreach (string line in File.ReadAllText(filePath).ReplaceLineEndings("\n").Split('\n').Skip(fileLine)) {
+                if (!StudioCommunication.Comment.IsLabel(line)) {
+                    continue;
+                }
+
+                string label = line[1..]; // Remove the #
+                yield return new CommandAutoCompleteEntry { Name = label, IsDone = true, HasNext = false };
+            }
+        }
+    }
+
+    // "Play, StartLabel",
+    // "Play, StartLabel, FramesToWait"
+    [TasCommand("Play", ExecuteTiming = ExecuteTiming.Parse, MetaDataProvider = typeof(PlayMeta))]
+    private static void Play(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         if (!ReadCommand.TryGetLine(args[0], InputController.TasFilePath, out int startLine)) {
             AbortTas($"\"Play, {string.Join(", ", args)}\" failed\n{args[0]} is invalid", true);
             return;

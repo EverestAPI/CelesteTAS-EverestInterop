@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Celeste;
 using Celeste.Mod.UI;
 using Microsoft.Xna.Framework;
@@ -147,6 +148,7 @@ public static class CycleHitboxColor {
             1 => TasSettings.CycleHitboxColor2,
             2 => TasSettings.CycleHitboxColor3,
             3 => TasSettings.OtherCyclesHitboxColor,
+            _ => throw new UnreachableException()
         };
     }
 

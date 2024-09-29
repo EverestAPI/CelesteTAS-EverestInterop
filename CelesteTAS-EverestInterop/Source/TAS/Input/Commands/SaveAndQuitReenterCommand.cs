@@ -5,6 +5,7 @@ using Celeste.Mod;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Utils;
+using StudioCommunication;
 using TAS.Module;
 using TAS.Utils;
 
@@ -68,7 +69,7 @@ public static class SaveAndQuitReenterCommand {
     }
 
     [TasCommand("SaveAndQuitReenter", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
-    private static void SaveAndQuitReenter(string[] args, int studioLine, string filePath, int fileLine) {
+    private static void SaveAndQuitReenter(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         InputController controller = Manager.Controller;
 
         if (ParsingCommand) {

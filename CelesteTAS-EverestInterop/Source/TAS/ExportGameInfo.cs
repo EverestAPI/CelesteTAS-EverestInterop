@@ -5,6 +5,7 @@ using System.Linq;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
+using StudioCommunication;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Input;
 using TAS.Input.Commands;
@@ -14,17 +15,22 @@ using TAS.Utils;
 namespace TAS;
 
 public static class ExportGameInfo {
+    private class Meta : ITasCommandMeta {
+        public string Insert => $"ExportGameInfo{CommandInfo.Separator}[0;dump.txt]";
+        public bool HasArguments => true;
+    }
+
     private static StreamWriter streamWriter;
     private static IDictionary<string, Func<List<Entity>>> trackedEntities;
     private static bool exporting;
     private static InputFrame exportingInput;
 
-    // ReSharper disable once UnusedMember.Local
-    // "StartExportGameInfo"
-    // "StartExportGameInfo Path"
-    // "StartExportGameInfo Path EntitiesToTrack"
-    [TasCommand("StartExportGameInfo", AliasNames = new[] {"ExportGameInfo"}, CalcChecksum = false)]
-    private static void StartExportCommand(string[] args) {
+    // "ExportGameInfo"
+    // "ExportGameInfo Path"
+    // "ExportGameInfo Path EntitiesToTrack"
+    [TasCommand("ExportGameInfo", Aliases = ["StartExportGameInfo"], CalcChecksum = false)]
+    private static void StartExportCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         string path = "dump.txt";
         if (args.Length > 0) {
             if (args[0].Contains(".")) {
@@ -36,10 +42,13 @@ public static class ExportGameInfo {
         BeginExport(path, args);
     }
 
-    // ReSharper disable once UnusedMember.Local
+    [TasCommand("EndExportGameInfo", Aliases = ["FinishExportGameInfo"], CalcChecksum = false)]
+    private static void FinishExportCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        FinishExport();
+    }
+
     [DisableRun]
-    [TasCommand("FinishExportGameInfo", AliasNames = new[] {"EndExportGameInfo"}, CalcChecksum = false)]
-    private static void FinishExportCommand() {
+    private static void FinishExport() {
         exporting = false;
         exportingInput = null;
         streamWriter?.Dispose();
@@ -77,7 +86,7 @@ public static class ExportGameInfo {
             streamWriter = new StreamWriter(path);
         } catch (Exception e) {
             AbortTas($"ExportGameInfo failed\n{e.Message}", true);
-            FinishExportCommand();
+            FinishExport();
             return;
         }
 
@@ -112,8 +121,8 @@ public static class ExportGameInfo {
             }
 
             string time = GameInfo.GetChapterTime(level);
-            string pos = player.ToSimplePositionString(GetDecimals(TasSettings.PositionDecimals, CelesteTasSettings.MaxDecimals));
-            string speed = player.Speed.ToSimpleString(GetDecimals(TasSettings.SpeedDecimals, CelesteTasSettings.MaxDecimals));
+            string pos = player.ToSimplePositionString(GetDecimals(TasSettings.PositionDecimals, GameSettings.MaxDecimals));
+            string speed = player.Speed.ToSimpleString(GetDecimals(TasSettings.SpeedDecimals, GameSettings.MaxDecimals));
             string statuses = GameInfo.GetStatuses(level, player);
             GameInfo.GetAdjustedLiftBoost(player, out string liftBoost);
             if (liftBoost.IsNotEmpty()) {
@@ -139,16 +148,16 @@ public static class ExportGameInfo {
 
                 foreach (Entity entity in entities) {
                     output +=
-                        $"\t{typeName}: {entity.ToSimplePositionString(GetDecimals(TasSettings.PositionDecimals, CelesteTasSettings.MaxDecimals))}";
+                        $"\t{typeName}: {entity.ToSimplePositionString(GetDecimals(TasSettings.PositionDecimals, GameSettings.MaxDecimals))}";
                 }
             }
 
-            if (InfoCustom.GetInfo(GetDecimals(TasSettings.CustomInfoDecimals, CelesteTasSettings.MaxDecimals)) is { } customInfo &&
+            if (InfoCustom.GetInfo(GetDecimals(TasSettings.CustomInfoDecimals, GameSettings.MaxDecimals)) is { } customInfo &&
                 customInfo.IsNotEmpty()) {
                 output += $"\t{customInfo.ReplaceLineBreak(" ")}";
             }
 
-            if (InfoWatchEntity.GetInfo("\t", true, GetDecimals(TasSettings.CustomInfoDecimals, CelesteTasSettings.MaxDecimals)) is { } watchInfo &&
+            if (InfoWatchEntity.GetInfo("\t", true, GetDecimals(TasSettings.CustomInfoDecimals, GameSettings.MaxDecimals)) is { } watchInfo &&
                 watchInfo.IsNotEmpty()) {
                 output += $"\t{watchInfo}";
             }

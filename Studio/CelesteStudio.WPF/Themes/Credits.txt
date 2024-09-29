@@ -1,0 +1,1 @@
+This theme is an adapted version originally from https://github.com/AngryCarrot789/WPFDarkTheme

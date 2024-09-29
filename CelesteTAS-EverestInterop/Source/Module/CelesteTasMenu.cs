@@ -6,6 +6,7 @@ using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
+using StudioCommunication;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
@@ -43,11 +44,16 @@ internal static class CelesteTasMenu {
                 TasSettings.CenterCameraHorizontallyOnly = value));
             subMenu.Add(new TextMenu.OnOff("Restore Settings".ToDialogText(), TasSettings.RestoreSettings).Change(value =>
                 TasSettings.RestoreSettings = value));
-            subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), TasSettings.LaunchStudioAtBoot).Change(value =>
-                TasSettings.LaunchStudioAtBoot = value));
+            subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), TasSettings.LaunchStudioAtBoot).Change(value => {
+                TasSettings.LaunchStudioAtBoot = value;
+                if (value) {
+                    // Also launch directly
+                    StudioHelper.LaunchStudio();
+                }
+            }));
             subMenu.Add(new TextMenu.OnOff("Attempt To Connect To Studio".ToDialogText(), TasSettings.AttemptConnectStudio).Change(value => {
                 TasSettings.AttemptConnectStudio = value;
-                StudioCommunicationClient.ChangeStatus();
+                CommunicationWrapper.ChangeStatus();
             }));
             TextMenu.Item hideFreezeFramesItem;
             subMenu.Add(hideFreezeFramesItem = new TextMenu.OnOff("Hide Freeze Frames".ToDialogText(), TasSettings.HideFreezeFrames).Change(value =>
@@ -124,29 +130,34 @@ internal static class CelesteTasMenu {
 
     private static EaseInSubMenu CreateRoundValuesSubMenu() {
         return new EaseInSubMenu("Round Values".ToDialogText(), false).Apply(subMenu => {
-            subMenu.Add(new TextMenuExt.IntSlider("Position Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
-                CelesteTasSettings.MaxDecimals, TasSettings.PositionDecimals).Change(value =>
+            subMenu.Add(new TextMenuExt.IntSlider("Position Decimals".ToDialogText(), GameSettings.MinDecimals,
+                GameSettings.MaxDecimals, TasSettings.PositionDecimals).Change(value =>
                 TasSettings.PositionDecimals = value));
-            subMenu.Add(new TextMenuExt.IntSlider("Speed Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
-                CelesteTasSettings.MaxDecimals, TasSettings.SpeedDecimals).Change(value =>
+            subMenu.Add(new TextMenuExt.IntSlider("Speed Decimals".ToDialogText(), GameSettings.MinDecimals,
+                GameSettings.MaxDecimals, TasSettings.SpeedDecimals).Change(value =>
                 TasSettings.SpeedDecimals = value));
-            subMenu.Add(new TextMenuExt.IntSlider("Velocity Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
-                CelesteTasSettings.MaxDecimals, TasSettings.VelocityDecimals).Change(value =>
+            subMenu.Add(new TextMenuExt.IntSlider("Velocity Decimals".ToDialogText(), GameSettings.MinDecimals,
+                GameSettings.MaxDecimals, TasSettings.VelocityDecimals).Change(value =>
                 TasSettings.VelocityDecimals = value));
-            subMenu.Add(new TextMenuExt.IntSlider("Angle Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
-                CelesteTasSettings.MaxDecimals, TasSettings.AngleDecimals).Change(value =>
+            subMenu.Add(new TextMenuExt.IntSlider("Angle Decimals".ToDialogText(), GameSettings.MinDecimals,
+                GameSettings.MaxDecimals, TasSettings.AngleDecimals).Change(value =>
                 TasSettings.AngleDecimals = value));
-            subMenu.Add(new TextMenuExt.IntSlider("Custom Info Decimals".ToDialogText(), CelesteTasSettings.MinDecimals,
-                CelesteTasSettings.MaxDecimals, TasSettings.CustomInfoDecimals).Change(value =>
+            subMenu.Add(new TextMenuExt.IntSlider("Custom Info Decimals".ToDialogText(), GameSettings.MinDecimals,
+                GameSettings.MaxDecimals, TasSettings.CustomInfoDecimals).Change(value =>
                 TasSettings.CustomInfoDecimals = value));
             subMenu.Add(new TextMenuExt.IntSlider("Subpixel Indicator Decimals".ToDialogText(), 1,
-                CelesteTasSettings.MaxDecimals, TasSettings.SubpixelIndicatorDecimals).Change(value =>
+                GameSettings.MaxDecimals, TasSettings.SubpixelIndicatorDecimals).Change(value =>
                 TasSettings.SubpixelIndicatorDecimals = value));
             subMenu.Add(new TextMenuExt.EnumerableSlider<SpeedUnit>("Speed Unit".ToDialogText(), new[] {
-                    new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerSecond, "Pixel Per Second".ToDialogText()),
-                    new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerFrame, "Pixel Per Frame".ToDialogText())
+                    new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerSecond, "Pixel per Second".ToDialogText()),
+                    new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerFrame, "Pixel per Frame".ToDialogText())
                 }, TasSettings.SpeedUnit)
                 .Change(value => TasSettings.SpeedUnit = value));
+            subMenu.Add(new TextMenuExt.EnumerableSlider<SpeedUnit>("Velocity Unit".ToDialogText(), new[] {
+                    new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerSecond, "Pixel per Second".ToDialogText()),
+                    new KeyValuePair<SpeedUnit, string>(SpeedUnit.PixelPerFrame, "Pixel per Frame".ToDialogText())
+                }, TasSettings.VelocityUnit)
+                .Change(value => TasSettings.VelocityUnit = value));
         });
     }
 
@@ -161,7 +172,7 @@ internal static class CelesteTasMenu {
                 HeightExtra = 0f
             };
 
-            List<TextMenu.Item> items = containingMenu.GetItems();
+            List<TextMenu.Item> items = containingMenu.Items;
             if (items.Contains(enabledItem)) {
                 containingMenu.Insert(items.IndexOf(enabledItem) + 1, descriptionText);
             }
@@ -182,7 +193,7 @@ internal static class CelesteTasMenu {
                 easeInSubHeader.FadeVisible = value;
             }
 
-            StudioCommunicationClient.ChangeStatus();
+            CommunicationWrapper.ChangeStatus();
         });
         menu.Add(enabledItem);
         CreateOptions(everestModule, menu, inGame);

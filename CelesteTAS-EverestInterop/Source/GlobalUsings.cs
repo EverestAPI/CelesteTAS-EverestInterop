@@ -1,6 +1,6 @@
 global using static TAS.GlobalVariables;
 using TAS.Entities;
-using TAS.Input.Commands;
+using TAS.Input;
 using TAS.Module;
 
 namespace TAS;

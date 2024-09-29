@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using StudioCommunication;
 using TAS.Module;
 using TAS.Utils;
 
@@ -172,11 +173,4 @@ public static partial class ActualEntityCollideHitbox {
     private static bool LoadActualCollidable(this Entity entity) {
         return LastColldables.TryGetValue(entity, out bool result) && result;
     }
-}
-
-// ReSharper disable once UnusedMember.Global
-public enum ActualCollideHitboxType {
-    Off,
-    Override,
-    Append
 }

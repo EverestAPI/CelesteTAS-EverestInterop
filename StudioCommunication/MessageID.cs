@@ -1,102 +1,85 @@
-﻿using System;
-
 namespace StudioCommunication;
 
-public class HighPriorityAttribute : Attribute { }
-
+/// Identifiers for messages sent between Celeste and Studio.
+/// See the send / receive implementations for the attached data.
 public enum MessageID : byte {
-    //Connection
-    /// <summary>
-    /// Unused
-    /// </summary>
-    Default = 0x00,
+    None = 0x00,
 
-    /// <summary>
-    /// Structure: [ModVersion, MinStudioVersion]
-    /// </summary>
-    [HighPriority] VersionInfo = 0x01,
+    #region Common
 
-    /// <summary>
-    /// Structure: [GameDataTypes, Argument]
-    /// </summary>
-    [HighPriority] GetData = 0x08,
+    /// Sent on a regular interval to keep up the connection
+    Ping = 0x01,
 
-    /// <summary>
-    /// Structure: None
-    /// </summary>
-    [HighPriority] EstablishConnection = 0x0D,
+    /// Indicates the adapter should completely restart itself
+    Reset = 0x02,
 
-    /// <summary>
-    /// Structure: None
-    /// </summary>
-    [HighPriority] Wait = 0x0E,
+    /// Syncs the game-settings between Celeste and Studio
+    GameSettings = 0x03,
 
-    /// <summary>
-    /// Structure: None
-    /// </summary>
-    Reset = 0x0F,
+    #endregion
 
-    //Pure data transfer
-    /// <summary>
-    /// Structure: object[] = StudioInfo
-    /// </summary>
-    SendState = 0x10,
+    #region Celeste to Studio
 
-    //Data transfer from Studio
-    /// <summary>
-    /// Structure: string
-    /// </summary>
-    [HighPriority] SendPath = 0x20,
+    /// Sends the current game state to Studio
+    State = 0x10,
 
-    /// <summary>
-    /// Structure: HotkeyIDs, bool released
-    /// </summary>
-    [HighPriority] SendHotkeyPressed = 0x21,
+    /// Sends line to update to Studio (for example ChapterTime)
+    UpdateLines = 0x11,
 
-    /// <summary>
-    /// Structure: None
-    /// </summary>
-    [HighPriority] ConvertToLibTas = 0x24,
+    /// Sends the current bindings for all hotkeys to Studio
+    CurrentBindings = 0x12,
 
-    /// <summary>
-    /// Structure: string settingName
-    /// </summary>
-    [HighPriority] ToggleGameSetting = 0x25,
+    /// Sends the error cause for the recording failure to Studio
+    RecordingFailed = 0x13,
 
-    //Data transfer from CelesteTAS
-    /// <summary>
-    /// Structure: List&lt;Keys&gt;[];
-    /// </summary>
-    [HighPriority] SendCurrentBindings = 0x30,
+    /// Response for the RequestGameData message to Studio
+    GameDataResponse = 0x14,
 
-    /// <summary>
-    /// Structure: string
-    /// </summary>
-    [HighPriority] ReturnData = 0x31,
+    /// Sends all registered TAS commands with metadata to Studio
+    CommandList = 0x15,
 
-    /// <summary>
-    /// Structure: Dictonary<int(line number), string(line text)>
-    /// </summary>
-    [HighPriority] UpdateLines = 0x32,
+    /// Sends incremental auto-complete results about a specific command-line to Studio
+    CommandAutoComplete = 0x16,
 
-    // <summary>
-    /// Structure: None
-    /// </summary>
-    [HighPriority] RecordTAS = 0x33,
+    #endregion
 
-    // <summary>
-    /// Structure: None
-    /// </summary>
-    [HighPriority] RecordingFailed = 0x34,
+    #region Studio to Celeste
+
+    /// Sends the currently edited file path to Celeste
+    FilePath = 0x20,
+
+    /// Sends a pressed hotkey to Celeste
+    Hotkey = 0x21,
+
+    /// Sends a request for certain game data to Celeste
+    RequestGameData = 0x22,
+
+    /// Sends a request for auto-complete results about a specific command-line to Celeste
+    RequestCommandAutoComplete = 0x23,
+
+    /// Sends a new custom info template to Celeste
+    SetCustomInfoTemplate = 0x24,
+
+    /// Clears the currently watched entities in Celeste
+    ClearWatchEntityInfo = 0x25,
+
+    /// Starts recording the current TAS with TAS Recorder
+    RecordTAS = 0x26,
+
+    #endregion
 }
 
 public enum GameDataType : byte {
     ConsoleCommand,
-    ModInfo,
-    ExactGameInfo,
     SettingValue,
     CompleteInfoCommand,
+    ModInfo,
     ModUrl,
+    ExactGameInfo,
+    CustomInfoTemplate,
+    RawInfo,
+    GameState,
+    CommandHash,
 }
 
 public enum RecordingFailedReason : byte {

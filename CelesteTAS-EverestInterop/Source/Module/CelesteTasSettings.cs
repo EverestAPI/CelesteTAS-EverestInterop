@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
-using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
+using StudioCommunication;
+using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
@@ -13,8 +14,6 @@ using YamlDotNet.Serialization;
 namespace TAS.Module;
 
 public class CelesteTasSettings : EverestModuleSettings {
-    public const int MinDecimals = 0;
-    public const int MaxDecimals = 12;
     public static CelesteTasSettings Instance { get; private set; }
 
     public CelesteTasSettings() {
@@ -23,10 +22,11 @@ public class CelesteTasSettings : EverestModuleSettings {
 
     public bool Enabled { get; set; } = true;
 
-    #region Hitboxes
+    // Settings which are shared / controllable from Studio
+    internal GameSettings StudioShared = new();
+    private void SyncSettings() => CommunicationWrapper.SendSettings(StudioShared);
 
-    [YamlMember(Alias = "ShowHitboxes")]
-    public bool _ShowHitboxes { get; set; } = false;
+    #region Hitboxes
 
     [YamlIgnore]
     public bool ShowHitboxes {
@@ -34,11 +34,52 @@ public class CelesteTasSettings : EverestModuleSettings {
         set => _ShowHitboxes = value;
     }
 
-    public bool ShowTriggerHitboxes { get; set; } = true;
-    public bool ShowUnloadedRoomsHitboxes { get; set; } = true;
-    public bool ShowCameraHitboxes { get; set; } = true;
-    public bool SimplifiedHitboxes { get; set; } = true;
-    public ActualCollideHitboxType ShowActualCollideHitboxes { get; set; } = ActualCollideHitboxType.Off;
+    [YamlMember(Alias = "ShowHitboxes")]
+    public bool _ShowHitboxes {
+        get => StudioShared.Hitboxes;
+        set {
+            StudioShared.Hitboxes = value;
+            SyncSettings();
+        }
+    }
+    public bool ShowTriggerHitboxes {
+        get => StudioShared.TriggerHitboxes;
+        set {
+            StudioShared.TriggerHitboxes = value;
+            SyncSettings();
+        }
+    }
+    public bool ShowUnloadedRoomsHitboxes {
+        get => StudioShared.UnloadedRoomsHitboxes;
+        set {
+            StudioShared.UnloadedRoomsHitboxes = value;
+            SyncSettings();
+        }
+    }
+    public bool ShowCameraHitboxes {
+        get => StudioShared.CameraHitboxes;
+        set {
+            StudioShared.CameraHitboxes = value;
+            SyncSettings();
+        }
+    }
+
+    public bool SimplifiedHitboxes {
+        get => StudioShared.SimplifiedHitboxes;
+        set {
+            StudioShared.SimplifiedHitboxes = value;
+            SyncSettings();
+        }
+    }
+
+    public ActualCollideHitboxType ShowActualCollideHitboxes {
+        get => StudioShared.ActualCollideHitboxes;
+        set {
+            StudioShared.ActualCollideHitboxes = value;
+            SyncSettings();
+        }
+    }
+
     public int UnCollidableHitboxesOpacity { get; set; } = 5;
     public Color EntityHitboxColor { get; set; } = HitboxColor.DefaultEntityColor;
     public Color TriggerHitboxColor { get; set; } = HitboxColor.DefaultTriggerColor;
@@ -96,7 +137,7 @@ public class CelesteTasSettings : EverestModuleSettings {
     [SettingName("TAS_KEY_CENTER_CAMERA")]
     [DefaultButtonBinding2(0, Keys.LeftControl, Keys.M)]
     public ButtonBinding KeyCamera { get; set; } = new(0, Keys.LeftControl, Keys.M);
-    
+
     [SettingName("TAS_KEY_LOCK_CAMERA")]
     [DefaultButtonBinding2(0, Keys.LeftControl, Keys.H)]
     public ButtonBinding KeyLockCamera { get; set; } = new(0, Keys.LeftControl, Keys.H);
@@ -122,8 +163,13 @@ public class CelesteTasSettings : EverestModuleSettings {
     #region SimplifiedGraphics
 
     [YamlMember(Alias = "SimplifiedGraphics")]
-    public bool _SimplifiedGraphics { get; set; } = false;
-
+    public bool _SimplifiedGraphics {
+        get => StudioShared.SimplifiedGraphics;
+        set {
+            StudioShared.SimplifiedGraphics = value;
+            SyncSettings();
+        }
+    }
     [YamlIgnore]
     public bool SimplifiedGraphics {
         get => Enabled && _SimplifiedGraphics;
@@ -131,8 +177,13 @@ public class CelesteTasSettings : EverestModuleSettings {
     }
 
     [YamlMember(Alias = "ShowGameplay")]
-    public bool _ShowGameplay { get; set; } = true;
-
+    public bool _ShowGameplay {
+        get => StudioShared.Gameplay;
+        set {
+            StudioShared.Gameplay = value;
+            SyncSettings();
+        }
+    }
     [YamlIgnore]
     public bool ShowGameplay {
         get => _ShowGameplay || !SimplifiedGraphics;
@@ -177,13 +228,50 @@ public class CelesteTasSettings : EverestModuleSettings {
 
     #region Info HUD
 
-    public bool InfoHud { get; set; } = false;
     public bool EnableInfoHudFirstTime = true;
-    public bool InfoGame { get; set; } = true;
-    public bool InfoTasInput { get; set; } = true;
-    public bool InfoSubpixelIndicator { get; set; } = true;
-    public HudOptions InfoCustom { get; set; } = HudOptions.Off;
-    public HudOptions InfoWatchEntity { get; set; } = HudOptions.Both;
+
+    public bool InfoHud {
+        get => StudioShared.InfoHud;
+        set {
+            StudioShared.InfoHud = value;
+            SyncSettings();
+        }
+    }
+    public bool InfoGame {
+        get => StudioShared.InfoGame;
+        set {
+            StudioShared.InfoGame = value;
+            SyncSettings();
+        }
+    }
+    public bool InfoTasInput {
+        get => StudioShared.InfoTasInput;
+        set {
+            StudioShared.InfoTasInput = value;
+            SyncSettings();
+        }
+    }
+    public bool InfoSubpixelIndicator {
+        get => StudioShared.InfoSubpixelIndicator;
+        set {
+            StudioShared.InfoSubpixelIndicator = value;
+            SyncSettings();
+        }
+    }
+    public HudOptions InfoCustom {
+        get => StudioShared.InfoCustom;
+        set {
+            StudioShared.InfoCustom = value;
+            SyncSettings();
+        }
+    }
+    public HudOptions InfoWatchEntity {
+        get => StudioShared.InfoWatchEntity;
+        set {
+            StudioShared.InfoWatchEntity = value;
+            SyncSettings();
+        }
+    }
     public WatchEntityType InfoWatchEntityType { get; set; } = WatchEntityType.Position;
 
     [SettingIgnore]
@@ -203,67 +291,74 @@ public class CelesteTasSettings : EverestModuleSettings {
 
     #region Round Values
 
-    private int positionDecimals = 2;
-    private int speedDecimals = 2;
-    private int velocityDecimals = 2;
-    private int angleDecimals = 5;
-    private int customInfoDecimals = 2;
-    private int subpixelIndicatorDecimals = 2;
-    private SpeedUnit speedUnit = SpeedUnit.PixelPerSecond;
-
     public int PositionDecimals {
-        get => positionDecimals;
+        get => StudioShared.PositionDecimals;
         set {
-            positionDecimals = Calc.Clamp(value, MinDecimals, MaxDecimals);
+            StudioShared.PositionDecimals = Calc.Clamp(value, GameSettings.MinDecimals, GameSettings.MaxDecimals);
             GameInfo.Update();
+            SyncSettings();
         }
     }
 
     public int SpeedDecimals {
-        get => speedDecimals;
+        get => StudioShared.SpeedDecimals;
         set {
-            speedDecimals = Calc.Clamp(value, MinDecimals, MaxDecimals);
+            StudioShared.SpeedDecimals = Calc.Clamp(value, GameSettings.MinDecimals, GameSettings.MaxDecimals);
             GameInfo.Update();
+            SyncSettings();
         }
     }
 
     public int VelocityDecimals {
-        get => velocityDecimals;
+        get => StudioShared.VelocityDecimals;
         set {
-            velocityDecimals = Calc.Clamp(value, MinDecimals, MaxDecimals);
+            StudioShared.VelocityDecimals = Calc.Clamp(value, GameSettings.MinDecimals, GameSettings.MaxDecimals);
             GameInfo.Update();
+            SyncSettings();
         }
     }
 
     public int AngleDecimals {
-        get => angleDecimals;
+        get => StudioShared.AngleDecimals;
         set {
-            angleDecimals = Calc.Clamp(value, MinDecimals, MaxDecimals);
+            StudioShared.AngleDecimals = Calc.Clamp(value, GameSettings.MinDecimals, GameSettings.MaxDecimals);
             GameInfo.Update();
+            SyncSettings();
         }
     }
 
     public int CustomInfoDecimals {
-        get => customInfoDecimals;
+        get => StudioShared.CustomInfoDecimals;
         set {
-            customInfoDecimals = Calc.Clamp(value, MinDecimals, MaxDecimals);
+            StudioShared.CustomInfoDecimals = Calc.Clamp(value, GameSettings.MinDecimals, GameSettings.MaxDecimals);
             GameInfo.Update();
+            SyncSettings();
         }
     }
 
     public int SubpixelIndicatorDecimals {
-        get => subpixelIndicatorDecimals;
+        get => StudioShared.SubpixelIndicatorDecimals;
         set {
-            subpixelIndicatorDecimals = Calc.Clamp(value, 1, MaxDecimals);
+            StudioShared.SubpixelIndicatorDecimals = Calc.Clamp(value, 1, GameSettings.MaxDecimals);
             GameInfo.Update();
+            SyncSettings();
         }
     }
 
     public SpeedUnit SpeedUnit {
-        get => speedUnit;
+        get => StudioShared.SpeedUnit;
         set {
-            speedUnit = value;
+            StudioShared.SpeedUnit = value;
             GameInfo.Update();
+            SyncSettings();
+        }
+    }
+    public SpeedUnit VelocityUnit {
+        get => StudioShared.VelocityUnit;
+        set {
+            StudioShared.VelocityUnit = value;
+            GameInfo.Update();
+            SyncSettings();
         }
     }
 
@@ -271,33 +366,35 @@ public class CelesteTasSettings : EverestModuleSettings {
 
     #region Fast Forward
 
-    private int fastForwardSpeed = 10;
-    private float slowForwardSpeed = 0.1f;
-
-    private readonly float[] slowForwardSpeeds =
-        {0.01f, 0.02f, 0.03f, 0.04f, 0.05f, 0.06f, 0.07f, 0.08f, 0.09f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f};
+    private readonly float[] slowForwardSpeeds = [0.01f, 0.02f, 0.03f, 0.04f, 0.05f, 0.06f, 0.07f, 0.08f, 0.09f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f];
 
     public List<float> SlowForwardSpeeds {
         get {
             List<float> forwardSpeeds = slowForwardSpeeds.ToList();
-            if (slowForwardSpeeds.Contains(slowForwardSpeed)) {
+            if (slowForwardSpeeds.Contains(StudioShared.SlowForwardSpeed)) {
                 return forwardSpeeds;
             }
 
-            forwardSpeeds.Add(slowForwardSpeed);
+            forwardSpeeds.Add(StudioShared.SlowForwardSpeed);
             forwardSpeeds.Sort();
             return forwardSpeeds;
         }
     }
 
     public int FastForwardSpeed {
-        get => fastForwardSpeed;
-        set => fastForwardSpeed = Calc.Clamp(value, 2, 30);
+        get => StudioShared.FastForwardSpeed;
+        set {
+            StudioShared.FastForwardSpeed = Calc.Clamp(value, 2, 30);
+            SyncSettings();
+        }
     }
 
     public float SlowForwardSpeed {
-        get => slowForwardSpeed;
-        set => slowForwardSpeed = Calc.Clamp(value, 0.01f, 0.9f);
+        get => StudioShared.SlowForwardSpeed;
+        set {
+            StudioShared.SlowForwardSpeed = Calc.Clamp(value, 0.01f, 0.9f);
+            SyncSettings();
+        }
     }
 
     #endregion
@@ -305,15 +402,26 @@ public class CelesteTasSettings : EverestModuleSettings {
     #region More Options
 
     [YamlMember(Alias = "CenterCamera")]
-    public bool _CenterCamera { get; set; } = false;
-
+    public bool _CenterCamera {
+        get => StudioShared.CenterCamera;
+        set {
+            StudioShared.CenterCamera = value;
+            SyncSettings();
+        }
+    }
     [YamlIgnore]
     public bool CenterCamera {
         get => Enabled && _CenterCamera;
         set => _CenterCamera = value;
     }
 
-    public bool CenterCameraHorizontallyOnly { get; set; } = false;
+    public bool CenterCameraHorizontallyOnly {
+        get => StudioShared.CenterCameraHorizontallyOnly;
+        set {
+            StudioShared.CenterCameraHorizontallyOnly = value;
+            SyncSettings();
+        }
+    }
 
     public bool RestoreSettings { get; set; } = false;
     public bool LaunchStudioAtBoot { get; set; } = false;
@@ -332,9 +440,4 @@ public class CelesteTasSettings : EverestModuleSettings {
     public bool IgnoreGcCollect { get; set; } = true;
 
     #endregion
-}
-
-public enum SpeedUnit {
-    PixelPerSecond,
-    PixelPerFrame
 }

@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Input;
 using Mono.Cecil.Cil;
 using Monocle;
+using StudioCommunication;
 using TAS.EverestInterop;
 using TAS.Module;
 using TAS.Utils;
@@ -9,6 +10,11 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class MouseCommand {
+    private class Meta : ITasCommandMeta {
+        public string Insert => $"Mouse{CommandInfo.Separator}[0;X]{CommandInfo.Separator}[1;Y]";
+        public bool HasArguments => true;
+    }
+
     public static MouseState CurrentState;
 
     [Load]
@@ -32,8 +38,9 @@ public static class MouseCommand {
     // "Mouse, [L], [R], [M], [X1], [X2]"
     // "Mouse, X, Y, [ScrollWheel], [L], [R], [M], [X1], [X2]"
     // "Mouse, [L], [R], [M], [X1], [X2], X, Y, [ScrollWheel]"
-    [TasCommand("Mouse")]
-    private static void MouseControl(string[] args) {
+    [TasCommand("Mouse", MetaDataProvider = typeof(Meta))]
+    private static void MouseControl(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         if (args.IsEmpty()) {
             return;
         }

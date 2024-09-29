@@ -1,0 +1,80 @@
+name: Build CelesteTAS + Studio
+
+on:
+  workflow_call:
+  push:
+    branches:
+      - '*'
+    paths:
+      - 'CelesteTAS-EverestInterop/**'
+      - 'Studio/**'
+      - 'StudioCommunication/**'
+      - .github/workflows/Build.yml
+      - .github/workflows/Build.CelesteStudio.yml
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - 'CelesteTAS-EverestInterop/**'
+      - 'Studio/**'
+      - 'StudioCommunication/**'
+      - .github/workflows/Build.yml
+      - .github/workflows/Build.CelesteStudio.yml
+
+jobs:
+  build-studio:
+    uses: ./.github/workflows/Build.CelesteStudio.yml
+    with:
+      build-cfg: Debug
+
+  build-celestetas:
+    runs-on: ubuntu-latest
+    needs: build-studio
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+
+      - name: Download Studio builds
+        uses: actions/download-artifact@v4
+        with:
+          pattern: CelesteStudio-*
+      - name: Move Studio builds into correct location
+        run: |
+          mv CelesteStudio-windows-x64/CelesteStudio-windows-x64.zip .
+          mv CelesteStudio-linux-x64/CelesteStudio-linux-x64.zip .
+          mv CelesteStudio-macos-x64/CelesteStudio-macos-x64.zip .
+          mv CelesteStudio-macos-arm64/CelesteStudio-macos-arm64.zip .
+
+      - name: Fill-in download info
+        run: |
+          sed -i "s\\false; //DOUBLE_ZIP_ARCHIVE\\true;\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
+          sed -i "s\\##STUDIO_VERSION##\\$(perl -nle 'print $1 if /<Version>(\S+)<\/Version>/' Studio/CelesteStudio/CelesteStudio.csproj)-$(git rev-parse --short HEAD)\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
+          sed -i "s\\##URL_WINDOWS_x64##\\https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/CelesteStudio-windows-x64.zip\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
+          sed -i "s\\##URL_LINUX_x64##\\https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/CelesteStudio-linux-x64.zip\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
+          sed -i "s\\##URL_MACOS_x64##\\https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/CelesteStudio-macos-x64.zip\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
+          sed -i "s\\##URL_MACOS_ARM64##\\https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/CelesteStudio-macos-arm64.zip\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
+          sed -i "s\\##CHECKSUM_WINDOWS_x64##\\$(md5sum CelesteStudio-windows-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
+          sed -i "s\\##CHECKSUM_LINUX_x64##\\$(md5sum CelesteStudio-linux-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
+          sed -i "s\\##CHECKSUM_MACOS_x64##\\$(md5sum CelesteStudio-macos-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
+          sed -i "s\\##CHECKSUM_MACOS_ARM64##\\$(md5sum CelesteStudio-macos-arm64.zip | head -c 32)\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
+          cat CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
+
+      - name: Build
+        run: dotnet build CelesteTAS-EverestInterop -c Debug -p:DefineConstants=INSTALL_STUDIO
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CelesteTAS
+          path: |
+            everest.yaml
+            bin
+            Dialog
+            Graphics

@@ -6,6 +6,9 @@ using System.Net;
 using System.Text;
 using Celeste.Mod;
 using StudioCommunication;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using TAS.Communication;
 using TAS.Input;
 using TAS.Module;
 using TAS.Utils;
@@ -137,12 +140,23 @@ TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}
         }
     };
 
+    private static readonly RCEndPoint GameStatePoint = new() {
+        Path = "/tas/game_state",
+        Name = "CelesteTAS Game State",
+        InfoHTML = "Returns information about the current game state",
+        Handle = c => Everest.DebugRC.Write(c, JsonSerializer.Serialize(GameData.GetGameState(), new JsonSerializerOptions {
+            IncludeFields = true,
+            WriteIndented = true,
+        }))
+    };
+
     [Load]
     private static void Load() {
         Everest.DebugRC.EndPoints.Add(InfoEndPoint);
         Everest.DebugRC.EndPoints.Add(HotkeyEndPoint);
         Everest.DebugRC.EndPoints.Add(CustomInfoPoint);
         Everest.DebugRC.EndPoints.Add(PlayTasPoint);
+        Everest.DebugRC.EndPoints.Add(GameStatePoint);
     }
 
     [Unload]
@@ -151,6 +165,7 @@ TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}
         Everest.DebugRC.EndPoints.Remove(HotkeyEndPoint);
         Everest.DebugRC.EndPoints.Remove(CustomInfoPoint);
         Everest.DebugRC.EndPoints.Remove(PlayTasPoint);
+        Everest.DebugRC.EndPoints.Remove(GameStatePoint);
     }
 
     private static void WriteLine(StringBuilder builder, string text) {

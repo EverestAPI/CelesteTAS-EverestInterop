@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using StudioCommunication;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using TAS.Utils;
@@ -6,6 +7,15 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class RepeatCommand {
+    private class Meta : ITasCommandMeta {
+        public string Insert => $"""
+                                 Repeat{CommandInfo.Separator}[0;2]
+                                     [1]
+                                 EndRepeat
+                                 """;
+        public bool HasArguments => true;
+    }
+
     private record struct Arguments(int StartLine, int Count, int StartFrame) {
         public readonly int StartLine = StartLine;
         public readonly int Count = Count;
@@ -34,8 +44,9 @@ public static class RepeatCommand {
     }
 
     // "Repeat, Count"
-    [TasCommand("Repeat", ExecuteTiming = ExecuteTiming.Parse)]
-    private static void Repeat(string[] args, int _, string filePath, int fileLine) {
+    [TasCommand("Repeat", ExecuteTiming = ExecuteTiming.Parse, MetaDataProvider = typeof(Meta))]
+    private static void Repeat(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\n";
         if (args.IsEmpty()) {
             AbortTas($"{errorText}Repeat command no count given");
@@ -54,7 +65,8 @@ public static class RepeatCommand {
 
     // "EndRepeat"
     [TasCommand("EndRepeat", ExecuteTiming = ExecuteTiming.Parse)]
-    private static void EndRepeat(string[] _, int studioLine, string filePath, int fileLine) {
+    private static void EndRepeat(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\n";
         if (!RepeatArgs.TryGetValue(filePath, out var arguments)) {
             AbortTas($"{errorText}EndRepeat command does not have a paired Repeat command");

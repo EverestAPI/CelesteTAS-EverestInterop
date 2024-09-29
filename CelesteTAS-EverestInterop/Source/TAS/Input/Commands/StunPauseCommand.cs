@@ -12,6 +12,39 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class StunPauseCommand {
+    private class Meta : ITasCommandMeta {
+        public string Insert => """
+                                StunPause [1]
+                                    [0]
+                                EndStunPause
+                                """;
+        public bool HasArguments => true;
+
+        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
+            if (args.Length != 1) {
+                yield break;
+            }
+
+            foreach (var mode in Enum.GetValues<StunPauseMode>()) {
+                yield return new CommandAutoCompleteEntry { Name = mode.ToString(), IsDone = true };
+            }
+        }
+    }
+    private class ModeMeta : ITasCommandMeta {
+        public string Insert => $"StunPauseMode{CommandInfo.Separator}[0;Input/Simulate]";
+        public bool HasArguments => true;
+
+        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
+            if (args.Length != 1) {
+                yield break;
+            }
+
+            foreach (var mode in Enum.GetValues<StunPauseMode>()) {
+                yield return new CommandAutoCompleteEntry { Name = mode.ToString(), IsDone = true };
+            }
+        }
+    }
+
     public enum StunPauseMode {
         Input,
         Simulate
@@ -85,7 +118,7 @@ public static class StunPauseCommand {
             return;
         }
 
-        long ticks = TimeSpan.FromSeconds(Engine.RawDeltaTime).Ticks * ((int) Math.Ceiling(unpauseTime / Engine.RawDeltaTime) + 2);
+        long ticks = Engine.RawDeltaTime.SecondsToTicks() * ((int) Math.Ceiling(unpauseTime / Engine.RawDeltaTime) + 2);
         SaveData.Instance.AddTime(level.Session.Area, ticks);
 
         if (!level.Completed && level.TimerStarted) {
@@ -93,8 +126,9 @@ public static class StunPauseCommand {
         }
     }
 
-    [TasCommand("StunPause", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
-    private static void StunPause(string[] args, int studioLine, string filePath, int fileLine) {
+    [TasCommand("StunPause", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime, MetaDataProvider = typeof(Meta))]
+    private static void StunPause(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         LocalMode = null;
 
         if (args.IsNotEmpty()) {
@@ -156,7 +190,7 @@ public static class StunPauseCommand {
     }
 
     [TasCommand("EndStunPause", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
-    private static void EndStunPause(string[] args, int __, string filePath, int fileLine) {
+    private static void EndStunPause(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         if (ParsingCommand && Mode == StunPauseMode.Input) {
             AutoInputCommand.EndAutoInputImpl(filePath, fileLine, "EndStunPause", "StunPause");
         } else if (!ParsingCommand && Mode == StunPauseMode.Simulate) {
@@ -164,8 +198,9 @@ public static class StunPauseCommand {
         }
     }
 
-    [TasCommand("StunPauseMode", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
-    private static void StunPauseCommandMode(string[] args) {
+    [TasCommand("StunPauseMode", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime, MetaDataProvider = typeof(ModeMeta))]
+    private static void StunPauseCommandMode(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
         if (args.IsNotEmpty() && Enum.TryParse(args[0], true, out StunPauseMode value)) {
             if (ParsingCommand) {
                 GlobalModeParsing = value;

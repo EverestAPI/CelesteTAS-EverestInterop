@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net7.0-windows</TargetFramework>
+        <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+
+        <UseWPF>true</UseWPF>
+        <UseWindowsForms>true</UseWindowsForms>
+        <ApplicationIcon>Icon.ico</ApplicationIcon>
+        <SelfContained>true</SelfContained>
+        <DebugType>embedded</DebugType>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+        <PublishSingleFile>true</PublishSingleFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\CelesteStudio\CelesteStudio.csproj"/>
+        <PackageReference Include="Eto.Platform.Wpf" Version="2.8.3"/>
+        <PackageReference Include="DarkNet" Version="2.3.0" />
+    </ItemGroup>
+
+</Project>

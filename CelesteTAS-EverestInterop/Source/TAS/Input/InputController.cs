@@ -10,7 +10,6 @@ using StudioCommunication;
 using TAS.EverestInterop;
 using TAS.Input.Commands;
 using TAS.Utils;
-using Command = TAS.Input.Commands.Command;
 #if DEBUG
 using TAS.Module;
 using Monocle;
@@ -253,13 +252,15 @@ public class InputController {
         if (CurrentCommands != null) {
             foreach (var command in CurrentCommands) {
                 if (command.Attribute.ExecuteTiming.Has(ExecuteTiming.Runtime) &&
-                    (!EnforceLegalCommand.EnabledWhenRunning || command.Attribute.LegalInMainGame)) {
+                    (!EnforceLegalCommand.EnabledWhenRunning || command.Attribute.LegalInFullGame)) {
                     command.Invoke();
                 }
 
                 // SaveAndQuitReenter inserts inputs, so we can't continue executing the commands
                 // It already handles the moving of all following commands
-                if (command.Attribute.Name == "SaveAndQuitReenter") break;
+                if (command.Attribute.Name == "SaveAndQuitReenter") {
+                    break;
+                }
             }
         }
 

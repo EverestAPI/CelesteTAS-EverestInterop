@@ -19,7 +19,8 @@ public static class FreeCameraHitbox {
         typeof(SubHudRenderer).GetMethod("BeforeRender")?.OnHook(SubHudRendererOnBeforeRender);
     }
 
-    private static void SubHudRendererOnBeforeRender(On.Celeste.Mod.UI.SubHudRenderer.orig_BeforeRender orig, SubHudRenderer self, Scene scene) {
+    private delegate void orig_SubHudRenderer_BeforeRender(SubHudRenderer self, Scene scene);
+    private static void SubHudRendererOnBeforeRender(orig_SubHudRenderer_BeforeRender orig, SubHudRenderer self, Scene scene) {
         hitboxCanvas ??= VirtualContent.CreateRenderTarget("freecamera-hitbox", (int) Math.Round(320 * CenterCamera.MaximumViewportScale),
             (int) Math.Round(180 * CenterCamera.MaximumViewportScale));
         if (scene is Level && HitboxToggle.DrawHitboxes && DrawFreeCameraHitboxes) {
@@ -39,8 +40,8 @@ public static class FreeCameraHitbox {
         orig(self, scene);
     }
 
-    private static void SubHudRendererOnRenderContent(On.Celeste.Mod.UI.SubHudRenderer.orig_RenderContent orig, SubHudRenderer self,
-        Scene scene) {
+    private delegate void orig_SubHudRenderer_RenderContent(SubHudRenderer self, Scene scene);
+    private static void SubHudRendererOnRenderContent(orig_SubHudRenderer_RenderContent orig, SubHudRenderer self, Scene scene) {
         if (scene is Level && HitboxToggle.DrawHitboxes && DrawFreeCameraHitboxes) {
             SubHudRenderer.BeginRender(sampler: SamplerState.PointWrap);
 

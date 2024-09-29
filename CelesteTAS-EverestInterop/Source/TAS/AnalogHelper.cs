@@ -3,6 +3,8 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.Xna.Framework;
 using Monocle;
+using StudioCommunication;
+using System.Collections.Generic;
 using TAS.Input;
 using TAS.Input.Commands;
 using TAS.Utils;
@@ -10,7 +12,7 @@ using GameInput = Celeste.Input;
 
 namespace TAS;
 
-public enum AnalogueMode {
+public enum AnalogMode {
     Ignore,
     Circle,
     Square,
@@ -31,7 +33,7 @@ public static class AnalogHelper {
     private const short Lowerbound = 7849;
 
     private static readonly Regex Fractional = new(@"\d+\.(\d*)", RegexOptions.Compiled);
-    private static AnalogueMode analogMode = AnalogueMode.Ignore;
+    private static AnalogMode analogMode = AnalogMode.Ignore;
 
     public static Vector2 ComputeAngleVector2(InputFrame input, out Vector2Short angleVector2Short) {
         float precision;
@@ -49,7 +51,7 @@ public static class AnalogHelper {
 
         float x = input.GetX();
         float y = input.GetY();
-        if (analogMode != AnalogueMode.Precise) {
+        if (analogMode != AnalogMode.Precise) {
             x *= input.UpperLimit;
             y *= input.UpperLimit;
         }
@@ -85,19 +87,19 @@ public static class AnalogHelper {
         // assure positive and x>=y
         short shortX, shortY;
         switch (analogMode) {
-            case AnalogueMode.Ignore:
-            case AnalogueMode.Circle:
+            case AnalogMode.Ignore:
+            case AnalogMode.Circle:
                 shortX = RoundToValidShort(x);
                 shortY = RoundToValidShort(y);
                 break;
-            case AnalogueMode.Square:
+            case AnalogMode.Square:
                 float divisor = Math.Max(Math.Abs(x), Math.Abs(y));
                 x /= divisor;
                 y /= divisor;
                 shortX = RoundToValidShort(x);
                 shortY = RoundToValidShort(y);
                 break;
-            case AnalogueMode.Precise:
+            case AnalogMode.Precise:
                 short upperbound = (short) Math.Round(Calc.Clamp(upperLimit * 32767, Lowerbound, 32767), MidpointRounding.AwayFromZero);
                 Vector2Short result = ComputePrecise(new Vector2(x, y), precision, upperbound);
                 shortX = result.X;
@@ -109,7 +111,7 @@ public static class AnalogHelper {
 
         retDirectionShort = new Vector2Short(shortX, shortY);
 
-        if (analogMode == AnalogueMode.Ignore) {
+        if (analogMode == AnalogMode.Ignore) {
             return new Vector2(x, y);
         }
 
@@ -164,12 +166,27 @@ public static class AnalogHelper {
         return new Vector2Short(retX, retY);
     }
 
+    private class Meta : ITasCommandMeta {
+        public string Insert => $"AnalogMode{CommandInfo.Separator}[0;Ignore/Circle/Square/Precise]";
+        public bool HasArguments => true;
+
+        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
+            if (args.Length != 1) {
+                yield break;
+            }
+
+            foreach (var mode in Enum.GetValues<AnalogMode>()) {
+                yield return new CommandAutoCompleteEntry { Name = mode.ToString(), IsDone = true };
+            }
+        }
+    }
+
     // AnalogMode, Mode
-    // AnalogueMode, Mode
-    [TasCommand("AnalogueMode", AliasNames = new[] {"AnalogMode"}, ExecuteTiming = ExecuteTiming.Parse)]
-    private static void AnalogueModeCommand(string[] args, int _, string __, int line) {
-        if (args.IsEmpty() || !Enum.TryParse(args[0], true, out AnalogueMode mode)) {
-            AbortTas($"AnalogMode command failed at line {line}\nMode must be Ignore, Circle, Square or Precise");
+    [TasCommand("AnalogMode", Aliases = ["AnalogueMode"], ExecuteTiming = ExecuteTiming.Parse, MetaDataProvider = typeof(Meta))]
+    private static void AnalogModeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        string[] args = commandLine.Arguments;
+        if (args.IsEmpty() || !Enum.TryParse(args[0], true, out AnalogMode mode)) {
+            AbortTas($"AnalogMode command failed at line {fileLine}\nMode must be Ignore, Circle, Square or Precise");
         } else {
             analogMode = mode;
         }
@@ -177,6 +194,6 @@ public static class AnalogHelper {
 
     [ClearInputs]
     private static void Reset() {
-        analogMode = AnalogueMode.Ignore;
+        analogMode = AnalogMode.Ignore;
     }
 }
