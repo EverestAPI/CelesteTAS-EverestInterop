@@ -277,7 +277,7 @@ public sealed class GameInfoPanel : Panel {
         private const int BackgroundPadding = 5;
 
         public Action? Click;
-        public void PerformClick() => Click?.Invoke();
+        private void PerformClick() => Click?.Invoke();
 
         public PopoutButton() {
             Width = Height = IconSize + BackgroundPadding * 2;
@@ -327,39 +327,19 @@ public sealed class GameInfoPanel : Panel {
         layout.Add(scrollable, 0, 0);
 
         GameInfoPopout? popoutForm = null;
+        bool forceClosePopout = false;
 
         Studio.Instance.Exiting += () => {
-            if (popoutForm != null) {
-                popoutForm.Closed += (_, _) => {
-                    // Overwrite values set in regular closing routine
-                    Settings.Instance.GameInfo = GameInfoType.Popout;
-                    Settings.Save();
-                };
-                popoutForm.Close();
-            }
+            forceClosePopout = true;
+            popoutForm?.Close();
+            forceClosePopout = false;
         };
 
-        var popoutButton = new PopoutButton { Visible = false };
+        var popoutButton = new PopoutButton { Visible = true };
         popoutButton.Click += () => {
-            scrollable.Content = null;
-
-            popoutForm ??= new GameInfoPopout();
-            popoutForm.Closed += (_, _) => {
-                popoutForm.Content = null;
-                popoutForm = null;
-
-                scrollable.Content = gameInfo;
-                Settings.Instance.GameInfo = GameInfoType.Panel;
-                Settings.OnChanged();
-                Settings.Save();
-            };
-            popoutForm.Show();
             Settings.Instance.GameInfo = GameInfoType.Popout;
             Settings.OnChanged();
             Settings.Save();
-
-            Visible = false;
-            OnSizeChanged(EventArgs.Empty); // Changing Visible doesn't send size events
         };
 
         // Only show popout button while hovering Info HUD
@@ -367,6 +347,9 @@ public sealed class GameInfoPanel : Panel {
         MouseLeave += (_, _) => popoutButton.Visible = false;
 
         layout.Add(popoutButton, ClientSize.Width - Padding.Left - Padding.Right - popoutButton.Width, 0);
+        // WPF doesn't like it when the button starts out as invisible before being added for some reason
+        Shown += (_, _) => popoutButton.Visible = false;
+
         SizeChanged += (_, _) => {
             if (popoutForm == null && gameInfo.EditingTemplate) {
                 gameInfo.Width = ClientSize.Width - Padding.Left - Padding.Right;
@@ -381,45 +364,12 @@ public sealed class GameInfoPanel : Panel {
         Content = layout;
 
         Load += (_, _) => {
-            switch (Settings.Instance.GameInfo) {
-                case GameInfoType.Disabled:
-                    Visible = false;
-                    break;
-                case GameInfoType.Panel:
-                    Visible = true;
-                    break;
-                case GameInfoType.Popout:
-                    Visible = false;
-                    popoutButton.PerformClick();
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+            UpdateGameInfoStatus();
         };
 
         BackgroundColor = Settings.Instance.Theme.StatusBg;
         Settings.Changed += () => {
-            switch (Settings.Instance.GameInfo) {
-                case GameInfoType.Disabled:
-                    Visible = false;
-                    popoutForm?.Close();
-                    OnSizeChanged(EventArgs.Empty); // Changing Visible doesn't send size events
-                    break;
-                case GameInfoType.Panel:
-                    Visible = true;
-                    popoutForm?.Close();
-                    OnSizeChanged(EventArgs.Empty); // Changing Visible doesn't send size events
-                    break;
-                case GameInfoType.Popout:
-                    Visible = false;
-                    if (popoutForm == null) {
-                        popoutButton.PerformClick();
-                    }
-                    OnSizeChanged(EventArgs.Empty); // Changing Visible doesn't send size events
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+            UpdateGameInfoStatus();
         };
         Settings.ThemeChanged += () => {
             BackgroundColor = Settings.Instance.Theme.StatusBg;
@@ -434,13 +384,62 @@ public sealed class GameInfoPanel : Panel {
 
             // Limit height to certain percentage of entire the window
             scrollable.Size = new Size(
-                ClientSize.Width - Padding.Left - Padding.Right,
+                Math.Max(0, ClientSize.Width - Padding.Left - Padding.Right),
                 Math.Min(gameInfo.ActualHeight + Padding.Top + Padding.Bottom, (int)(Studio.Instance.Height * Settings.Instance.MaxGameInfoHeight)) - Padding.Top - Padding.Bottom);
             scrollable.ScrollSize = new Size(gameInfo.ActualWidth, gameInfo.ActualHeight);
 
             // Account for scroll bar
             bool scrollBarVisible = gameInfo.Height > scrollable.Height;
             layout.Move(popoutButton, ClientSize.Width - Padding.Left - Padding.Right - popoutButton.Width - (scrollBarVisible ? Studio.ScrollBarSize : 0), 0);
+        }
+
+        void UpdateGameInfoStatus() {
+            switch (Settings.Instance.GameInfo) {
+                case GameInfoType.Disabled:
+                    forceClosePopout = true;
+                    popoutForm?.Close();
+                    forceClosePopout = false;
+
+                    Visible = false;
+                    OnSizeChanged(EventArgs.Empty); // Changing Visible doesn't send size events
+                    break;
+
+                case GameInfoType.Panel:
+                    forceClosePopout = true;
+                    popoutForm?.Close();
+                    forceClosePopout = false;
+
+                    Visible = true;
+                    OnSizeChanged(EventArgs.Empty); // Changing Visible doesn't send size events
+                    break;
+
+                case GameInfoType.Popout:
+                    if (popoutForm != null) {
+                        return;
+                    }
+
+                    scrollable.Content = null;
+
+                    popoutForm ??= new GameInfoPopout();
+                    popoutForm.Closed += (_, _) => {
+                        popoutForm.Content = null;
+                        popoutForm = null;
+
+                        scrollable.Content = gameInfo;
+                        if (!forceClosePopout) {
+                            Settings.Instance.GameInfo = GameInfoType.Panel;
+                            Settings.OnChanged();
+                            Settings.Save();
+                        }
+                    };
+                    popoutForm.Show();
+
+                    Visible = false;
+                    OnSizeChanged(EventArgs.Empty); // Changing Visible doesn't send size events
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
     }
 }
