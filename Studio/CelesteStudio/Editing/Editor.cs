@@ -942,6 +942,7 @@ public sealed class Editor : Drawable {
             (Settings.Instance.SendInputsOnComments && isComment) ||
             (Settings.Instance.SendInputsOnCommands && !isActionLine && !isComment);
 
+        Console.WriteLine($"Key down sending: {Document.Caret} '{Document.Lines[Document.Caret.Row]}' | {isActionLine} {isComment} {isTyping} => {sendInputs} ({Settings.Instance.SendInputsOnActionLines} {Settings.Instance.SendInputsOnComments} {Settings.Instance.SendInputsOnCommands} | {Settings.Instance.SendInputsTypingTimeout}) [{DateTime.UtcNow - lastModification} | {e.Key} {e.Modifiers} '{e.KeyChar}']");
         if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && !isTyping && sendInputs && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
             e.Handled = true;
             return;
@@ -1159,6 +1160,7 @@ public sealed class Editor : Drawable {
             (Settings.Instance.SendInputsOnCommands && !isActionLine && !isComment) ||
             e.KeyChar == ushort.MaxValue;
 
+        Console.WriteLine($"Key up sending: {Document.Caret} '{Document.Lines[Document.Caret.Row]}' | {isActionLine} {isComment} {isTyping} => {sendInputs} ({Settings.Instance.SendInputsOnActionLines} {Settings.Instance.SendInputsOnComments} {Settings.Instance.SendInputsOnCommands} | {Settings.Instance.SendInputsTypingTimeout}) [{DateTime.UtcNow - lastModification} | {e.Key} {e.Modifiers} '{e.KeyChar}']");
         if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && !isTyping && sendInputs && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: true)) {
             e.Handled = true;
             return;
