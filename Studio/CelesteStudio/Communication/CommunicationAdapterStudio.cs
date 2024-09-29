@@ -147,6 +147,7 @@ public sealed class CommunicationAdapterStudio(
             writer.Write(released);
         });
         LogVerbose($"Sent message Hotkey: {hotkey} ({(released ? "released" : "pressed")})");
+        Console.WriteLine(Environment.StackTrace);
     }
     public void WriteCommandAutoCompleteRequest(int hash, string commandName, string[] commandArgs, string filePath, int fileLine) {
         QueueMessage(MessageID.RequestCommandAutoComplete, writer => {

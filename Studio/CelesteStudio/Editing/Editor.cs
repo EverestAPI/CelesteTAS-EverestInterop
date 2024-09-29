@@ -943,6 +943,7 @@ public sealed class Editor : Drawable {
             (Settings.Instance.SendInputsOnCommands && !isActionLine && !isComment);
 
         Console.WriteLine($"Key down sending: {Document.Caret} '{Document.Lines[Document.Caret.Row]}' | {isActionLine} {isComment} {isTyping} => {sendInputs} ({Settings.Instance.SendInputsOnActionLines} {Settings.Instance.SendInputsOnComments} {Settings.Instance.SendInputsOnCommands} | {Settings.Instance.SendInputsTypingTimeout}) [{DateTime.UtcNow - lastModification} | {e.Key} {e.Modifiers} '{e.KeyChar}']");
+        Console.WriteLine($"1st down: {Settings.Instance.SendInputsToCeleste} && {CommunicationWrapper.Connected} && {!isTyping} && {sendInputs}");
         if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && !isTyping && sendInputs && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
             e.Handled = true;
             return;
@@ -1131,6 +1132,7 @@ public sealed class Editor : Drawable {
         }
 
         // If nothing handled this, and it's not a character, send it anyway
+        Console.WriteLine($"2nd down: {Settings.Instance.SendInputsToCeleste} && {CommunicationWrapper.Connected} && {!isTyping} && {!sendInputs} && {!e.Handled} && {e.KeyChar == ushort.MaxValue}");
         if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && !isTyping && !sendInputs && !e.Handled && e.KeyChar == ushort.MaxValue && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
             e.Handled = true;
             return;
