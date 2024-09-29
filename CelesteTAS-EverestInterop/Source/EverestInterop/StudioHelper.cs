@@ -1,5 +1,4 @@
-﻿#define INSTALL_STUDIO
-// ReSharper disable HeuristicUnreachableCode
+﻿// ReSharper disable HeuristicUnreachableCode
 #pragma warning disable CS0162 // Unreachable code detected
 
 using System;
@@ -26,15 +25,15 @@ public static class StudioHelper {
 
     // These values will automatically get filled in by the Build.yml/Release.yml actions
     private const bool   DoubleZipArchive        = false; //DOUBLE_ZIP_ARCHIVE
-    public  const string CurrentStudioVersion    = "3.2.0";
+    public  const string CurrentStudioVersion    = "##STUDIO_VERSION##";
 
     private const string DownloadURL_Windows_x64 = "##URL_WINDOWS_x64##";
-    private const string DownloadURL_Linux_x64   = "https://github.com/EverestAPI/CelesteTAS-EverestInterop/releases/download/v3.40.3/CelesteStudio-linux-x64.zip";
+    private const string DownloadURL_Linux_x64   = "##URL_LINUX_x64##";
     private const string DownloadURL_MacOS_x64   = "##URL_MACOS_x64##";
     private const string DownloadURL_MacOS_ARM64 = "##URL_MACOS_ARM64##";
 
     private const string Checksum_Windows_x64    = "##CHECKSUM_WINDOWS_x64##";
-    private const string Checksum_Linux_x64      = "9ac83519aadf0b4a8b2967fc03b7943d";
+    private const string Checksum_Linux_x64      = "##CHECKSUM_LINUX_x64##";
     private const string Checksum_MacOS_x64      = "##CHECKSUM_MACOS_x64##";
     private const string Checksum_MacOS_ARM64    = "##CHECKSUM_MACOS_ARM64##";
 
@@ -121,7 +120,7 @@ public static class StudioHelper {
                     await DownloadStudio().ConfigureAwait(false);
                     installed = true;
                 } catch (Exception ex) {
-                    ReportError("Failed to install Studio", ex.StackTrace);
+                    ReportError("Failed to install Studio", ex.ToString());
 
                     // Cleanup install
                     if (Directory.Exists(TempStudioInstallDirectory)) {
