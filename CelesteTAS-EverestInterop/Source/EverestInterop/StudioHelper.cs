@@ -185,12 +185,14 @@ public static class StudioHelper {
         bool skipDownload = false;
 
         if (File.Exists(DownloadPath)) {
-            await using var fs = File.OpenRead(DownloadPath);
+            await using (var fs = File.OpenRead(DownloadPath)) {
+                string hash = BitConverter.ToString(await md5.ComputeHashAsync(fs)).Replace("-", "");
+                if (Checksum.Equals(hash, StringComparison.OrdinalIgnoreCase)) {
+                    skipDownload = true;
+                }
+            }
 
-            string hash = BitConverter.ToString(await md5.ComputeHashAsync(fs)).Replace("-", "");
-            if (Checksum.Equals(hash, StringComparison.OrdinalIgnoreCase)) {
-                skipDownload = true;
-            } else {
+            if (!skipDownload) {
                 // Try handling double ZIPs caused by GitHub actions
                 if (DoubleZipArchive) {
                     string innerPath;
@@ -205,7 +207,8 @@ public static class StudioHelper {
                     File.Move(innerPath, DownloadPath, overwrite: true);
                 }
 
-                hash = BitConverter.ToString(await md5.ComputeHashAsync(fs)).Replace("-", "");
+                await using var fs = File.OpenRead(DownloadPath);
+                string hash = BitConverter.ToString(await md5.ComputeHashAsync(fs)).Replace("-", "");
                 if (Checksum.Equals(hash, StringComparison.OrdinalIgnoreCase)) {
                     skipDownload = true;
                 }
