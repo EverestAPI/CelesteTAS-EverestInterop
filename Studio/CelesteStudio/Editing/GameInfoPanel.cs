@@ -65,11 +65,20 @@ public sealed class GameInfo : Panel {
 
     public bool EditingTemplate => Content == editPanel;
 
+    // The StackLayouts don't fit the exact content size on their own..
+    public int ActualWidth => EditingTemplate
+        ? Math.Max(infoTemplateArea.Width, buttonsPanel.Width)
+        : Math.Max(Math.Max(frameInfo.Width, gameStatus.Width), subpixelIndicator.Visible ? subpixelIndicator.Width : 0);
+    public int ActualHeight => EditingTemplate
+        ? infoTemplateArea.Height + buttonsPanel.Height
+        : frameInfo.Height + gameStatus.Height + (subpixelIndicator.Visible ? subpixelIndicator.Height : 0);
+
     private readonly Label frameInfo;
     private readonly Label gameStatus;
     private readonly SubpixelIndicator subpixelIndicator;
 
     private readonly TextArea infoTemplateArea;
+    private readonly Panel buttonsPanel;
 
     private readonly Panel showPanel;
     private readonly Panel editPanel;
@@ -104,9 +113,10 @@ public sealed class GameInfo : Panel {
             Font = FontManager.StatusFont,
             Wrap = false,
         };
+
         var doneButton = new Button { Text = "Done" };
         var cancelButton = new Button { Text = "Cancel" };
-        var buttonsPanel = new StackLayout {
+        buttonsPanel = new StackLayout {
             Padding = 5,
             Spacing = 5,
             Orientation = Orientation.Horizontal,
@@ -153,6 +163,14 @@ public sealed class GameInfo : Panel {
             subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
             subpixelIndicator.Invalidate();
         };
+
+        // Manually forward size changes, since the StackLayouts won't do it..
+        frameInfo.SizeChanged += (_, _) => OnSizeChanged(EventArgs.Empty);
+        gameStatus.SizeChanged += (_, _) => OnSizeChanged(EventArgs.Empty);
+        subpixelIndicator.SizeChanged += (_, _) => OnSizeChanged(EventArgs.Empty);
+
+        infoTemplateArea.SizeChanged += (_, _) => OnSizeChanged(EventArgs.Empty);
+        buttonsPanel.SizeChanged += (_, _) => OnSizeChanged(EventArgs.Empty);
 
         // React to settings changes
         Settings.ThemeChanged += () => {
@@ -358,10 +376,11 @@ public sealed class GameInfoPanel : Panel {
         return;
 
         void LimitSize() {
-            // Limit height to half the window
+            // Limit height to certain percentage of entire the window
             scrollable.Size = new Size(
                 ClientSize.Width - Padding.Left - Padding.Right,
-                Math.Min(gameInfo.Height + Padding.Top + Padding.Bottom, (int)(Studio.Instance.Height * Settings.Instance.MaxGameInfoHeight)) - Padding.Top - Padding.Bottom);
+                Math.Min(gameInfo.ActualHeight + Padding.Top + Padding.Bottom, (int)(Studio.Instance.Height * Settings.Instance.MaxGameInfoHeight)) - Padding.Top - Padding.Bottom);
+            scrollable.ScrollSize = new Size(gameInfo.ActualWidth, gameInfo.ActualHeight);
 
             // Account for scroll bar
             bool scrollBarVisible = gameInfo.Height > scrollable.Height;
@@ -395,9 +414,6 @@ public sealed class GameInfoPopout : Form {
             if (gameInfo.EditingTemplate) {
                 gameInfo.Width = ClientSize.Width - Padding.Left - Padding.Right;
             }
-            scrollable.Size = new Size(
-                ClientSize.Width - Padding.Left - Padding.Right,
-                ClientSize.Height - Padding.Top - Padding.Bottom);
         };
 
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
