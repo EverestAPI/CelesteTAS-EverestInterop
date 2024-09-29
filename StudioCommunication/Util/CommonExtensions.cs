@@ -78,6 +78,34 @@ public static class StringExtensions {
             return hash1 + (hash2*1566083941);
         }
     }
+
+    /// Counts the amount of lines, accounting for LF, CRLF and CR line endings
+    public static int CountLines(this string str) {
+        int lines = 1;
+
+        for (int i = 0; i < str.Length; i++) {
+            // \n is always a newline
+            if (str[i] == '\n') {
+                lines++;
+                continue;
+            }
+            // \r is either alone or a \r\n
+            if (str[i] == '\r')
+            {
+                lines++;
+                if (i + 1 < str.Length && str[i + 1] == '\n') {
+                    i++;
+                }
+            }
+        }
+
+        // Ignore newline at the end
+        if (str.Length > 0 && str[^1] is not ('\n' or '\r')) {
+            lines--;
+        }
+
+        return lines;
+    }
 }
 
 public static class TypeExtensions {

@@ -21,6 +21,9 @@ using WrapEntry = (int StartOffset, (string Line, int Index)[] Lines);
 namespace CelesteStudio.Editing;
 
 public sealed class Editor : Drawable {
+    /// Reports insertions and deletions of the underlying document
+    public event Action<Document, Dictionary<int, string>, Dictionary<int, string>> TextChanged = (_, _, _) => {};
+
     private Document? document;
     public Document Document {
         get => document!;
@@ -62,12 +65,12 @@ public sealed class Editor : Drawable {
             }
 
             // Calculate total frame count
-            totalFrameCount = 0;
+            TotalFrameCount = 0;
             foreach (string line in document.Lines) {
                 if (!ActionLine.TryParse(line, out var actionLine)) {
                     continue;
                 }
-                totalFrameCount += actionLine.FrameCount;
+                TotalFrameCount += actionLine.FrameCount;
             }
 
             // Auto-collapses folds which are too long
@@ -99,17 +102,19 @@ public sealed class Editor : Drawable {
                     if (!ActionLine.TryParse(deletion, out var actionLine)) {
                         continue;
                     }
-                    totalFrameCount -= actionLine.FrameCount;
+                    TotalFrameCount -= actionLine.FrameCount;
                 }
                 foreach (string insertion in insertions.Values) {
                     if (!ActionLine.TryParse(insertion, out var actionLine)) {
                         continue;
                     }
-                    totalFrameCount += actionLine.FrameCount;
+                    TotalFrameCount += actionLine.FrameCount;
                 }
 
-                Studio.Instance.GameInfoPanel.TotalFrames = totalFrameCount;
+                /*
+                Studio.Instance.GameInfoPanel.TotalFrames = TotalFrameCount;
                 Studio.Instance.GameInfoPanel.UpdateGameInfo();
+                */
 
                 if (Settings.Instance.AutoIndexRoomLabels) {
                     // room label without indexing -> lines of all occurrences
@@ -159,6 +164,8 @@ public sealed class Editor : Drawable {
 
                 Recalc();
                 ScrollCaretIntoView();
+
+                TextChanged(document, insertions, deletions);
             }
         }
     }
@@ -228,7 +235,7 @@ public sealed class Editor : Drawable {
     private int roomLabelStartIndex;
 
     /// Current total frame count (including commands if connected to Celeste)
-    private int totalFrameCount;
+    public int TotalFrameCount;
 
     // Offset from the left accounting for line numbers
     private float textOffsetX;
@@ -298,7 +305,7 @@ public sealed class Editor : Drawable {
 
         CommunicationWrapper.StateUpdated += (prevState, state) => {
             if (state.tasStates.HasFlag(States.Enable) && !state.tasStates.HasFlag(States.FrameStep)) {
-                totalFrameCount = state.TotalFrames;
+                TotalFrameCount = state.TotalFrames;
             }
 
             if (prevState.CurrentLine == state.CurrentLine &&
@@ -957,7 +964,7 @@ public sealed class Editor : Drawable {
         if (e.Key != Keys.None) {
             // Check for menu items
             var items = ContextMenu.Items
-                .Concat(Studio.Instance.GameInfoPanel.ContextMenu.Items)
+                .Concat(Studio.Instance.GameInfo.ContextMenu.Items)
                 .Concat(Studio.Instance.Menu.Items)
                 .Concat(Studio.Instance.GlobalHotkeys);
             foreach (var item in items) {
@@ -3268,7 +3275,7 @@ public sealed class Editor : Drawable {
 
     protected override void OnPaint(PaintEventArgs e) {
         // Doing this in Recalc() seems to cause issues for some reason, but it needs to happen regularly
-        Studio.Instance.GameInfoPanel.UpdateGameInfo();
+        //Studio.Instance.GameInfoPanel.UpdateGameInfo();
 
         e.Graphics.AntiAlias = true;
 

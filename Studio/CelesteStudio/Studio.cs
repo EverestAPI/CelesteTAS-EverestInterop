@@ -41,8 +41,10 @@ public sealed class Studio : Form {
     public static string? CelesteDirectory { get; private set; }
 
     public readonly Editor Editor;
-    public readonly GameInfoPanel GameInfoPanel;
-    private readonly Scrollable EditorScrollable;
+    public readonly GameInfo GameInfo;
+
+    private readonly Scrollable editorScrollable;
+    private readonly GameInfoPanel gameInfoPanel;
 
     private JadderlineForm? jadderlineForm;
     private FeatherlineForm? featherlineForm;
@@ -158,34 +160,40 @@ public sealed class Studio : Form {
 
         // Setup editor
         {
-            EditorScrollable = new Scrollable {
+            editorScrollable = new Scrollable {
                 Width = Size.Width,
                 Height = Size.Height,
             }.FixBorder();
-            Editor = new Editor(Document.Dummy, EditorScrollable);
-            EditorScrollable.Content = Editor;
+            Editor = new Editor(Document.Dummy, editorScrollable);
+            editorScrollable.Content = Editor;
 
             // On GTK, prevent the scrollable from reacting to Home/End
             if (Eto.Platform.Instance.IsGtk) {
-                EditorScrollable.KeyDown += (_, e) => e.Handled = true;
+                editorScrollable.KeyDown += (_, e) => e.Handled = true;
             }
 
-            GameInfoPanel = new GameInfoPanel();
+            // Needs to be done after the Editor is set up
+            GameInfo = new GameInfo();
+            gameInfoPanel = new GameInfoPanel();
 
             Content = new StackLayout {
                 Padding = 0,
                 Items = {
-                    EditorScrollable,
-                    GameInfoPanel
+                    editorScrollable,
+                    gameInfoPanel
                 }
             };
 
-            SizeChanged += (_, _) => RecalculateLayout();
             Shown += (_, _) => {
-                GameInfoPanel.UpdateLayout();
+                gameInfoPanel.UpdateLayout();
                 RecalculateLayout();
             };
-
+            SizeChanged += (_, _) => {
+                RecalculateLayout();
+            };
+            gameInfoPanel.SizeChanged += (_, _) => {
+                RecalculateLayout();
+            };
 
             ApplySettings();
 
@@ -200,7 +208,8 @@ public sealed class Studio : Form {
                 OpenFile(args[0]);
             } else if (Settings.Instance.RecentFiles.Count > 0 &&
                        !string.IsNullOrWhiteSpace(Settings.Instance.RecentFiles[0]) &&
-                       File.Exists(Settings.Instance.RecentFiles[0])) {
+                       File.Exists(Settings.Instance.RecentFiles[0]))
+            {
                 // Re-open last file if possible
                 OpenFile(Settings.Instance.RecentFiles[0]);
             } else {
@@ -270,11 +279,15 @@ public sealed class Studio : Form {
         ];
     }
 
-    public void RecalculateLayout() {
-        GameInfoPanel.Width = ClientSize.Width;
-        EditorScrollable.Size = new Size(
+    private void RecalculateLayout() {
+        gameInfoPanel.Width = ClientSize.Width;
+        editorScrollable.Size = new Size(
             Math.Max(0, ClientSize.Width),
-            Math.Max(0, ClientSize.Height - GameInfoPanel.Height));
+            Math.Max(0, ClientSize.Height - Math.Max(0, gameInfoPanel.Height)));
+
+        gameInfoPanel.UpdateLayout();
+        editorScrollable.UpdateLayout();
+        Content.UpdateLayout();
     }
 
     private void ApplySettings() {
