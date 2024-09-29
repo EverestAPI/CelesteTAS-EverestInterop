@@ -6,7 +6,6 @@ using Eto.Drawing;
 using Eto.Forms;
 using StudioCommunication.Util;
 using System.ComponentModel;
-using System.Threading;
 
 namespace CelesteStudio.Editing;
 

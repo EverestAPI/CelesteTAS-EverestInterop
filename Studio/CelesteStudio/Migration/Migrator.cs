@@ -3,15 +3,15 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Threading.Tasks;
 
 namespace CelesteStudio.Migration;
 
 public static class Migrator {
+    public static string BackupDirectory => Path.Combine(Settings.BaseConfigPath, "LegacySettings");
     private static string LatestVersionPath => Path.Combine(Settings.BaseConfigPath, ".latest-version");
 
     private static readonly (Version Version, Action? PreLoad, Action? PostLoad)[] migrations = [
-        (new Version(3, 0, 0), null, MigrateV3_0_0.PostLoad)
+        (new Version(3, 0, 0), MigrateV3_0_0.PreLoad, null)
     ];
 
     private static Version oldVersion = null!, newVersion = null!;
@@ -20,6 +20,10 @@ public static class Migrator {
     /// Migrates settings and other configurations from the last used to the current version
     /// Also shows changelog dialogs when applicable
     public static void ApplyPreLoadMigrations() {
+        if (!Directory.Exists(BackupDirectory)) {
+            Directory.CreateDirectory(BackupDirectory);
+        }
+
         bool firstV3Launch = !File.Exists(LatestVersionPath);
 
         // Assumes Studio was properly installed by CelesteTAS

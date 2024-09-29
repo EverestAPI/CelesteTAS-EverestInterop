@@ -1,9 +1,8 @@
-using CelesteStudio.Editing;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using Tomlet;
+using Tomlet.Models;
 
 namespace CelesteStudio.Migration;
 
@@ -21,13 +20,11 @@ public static class MigrateV3_0_0 {
         public bool AutoBackupEnabled = true;
         public int AutoBackupRate = 1;
         public int AutoBackupCount = 100;
-        public bool FindMatchCase;
 
-        public string LastFileName = "";
         public List<string> RecentFiles = [];
     }
 
-    public static void PostLoad() {
+    public static void PreLoad() {
         if (Studio.CelesteDirectory == null) {
             return;
         }
@@ -43,35 +40,44 @@ public static class MigrateV3_0_0 {
         // Migrate settings
         if (File.Exists(Path.Combine(Studio.CelesteDirectory, "Celeste Studio.toml"))) {
             try {
-                var document = TomlParser.ParseFile(Path.Combine(Studio.CelesteDirectory, "Celeste Studio.toml"));
-                var settingsTable = document.GetSubTable("Settings");
-                var settings = TomletMain.To<LegacySettings>(settingsTable);
+                var oldDocument = TomlParser.ParseFile(Path.Combine(Studio.CelesteDirectory, "Celeste Studio.toml"));
+                var oldSettingsTable = oldDocument.GetSubTable("Settings");
+                var oldSettings = TomletMain.To<LegacySettings>(oldSettingsTable);
 
-                Settings.Instance.SendInputsToCeleste = settings.SendInputsToCeleste;
-                Settings.Instance.GameInfo = settings.ShowGameInfo ? GameInfoType.Panel : GameInfoType.Disabled;
-                Settings.Instance.AutoRemoveMutuallyExclusiveActions = settings.AutoRemoveMutuallyExclusiveActions;
-                Settings.Instance.AlwaysOnTop = settings.AlwaysOnTop;
-                Settings.Instance.AutoBackupEnabled = settings.AutoBackupEnabled;
-                Settings.Instance.AutoBackupRate = settings.AutoBackupRate;
-                Settings.Instance.RecentFiles = settings.RecentFiles;
+                TomlDocument newDocument;
+                if (File.Exists(Settings.SettingsPath)) {
+                    newDocument = TomlParser.ParseFile(Settings.SettingsPath);
+                } else {
+                    newDocument = TomlDocument.CreateEmpty();
+                }
+
+                newDocument.Put("SendInputsToCeleste", oldSettings.SendInputsToCeleste);
+                newDocument.Put("ShowGameInfo", oldSettings.ShowGameInfo);
+                newDocument.Put("AutoRemoveMutuallyExclusiveActions", oldSettings.AutoRemoveMutuallyExclusiveActions);
+                newDocument.Put("AlwaysOnTop", oldSettings.AlwaysOnTop);
+                newDocument.Put("AutoBackupEnabled", oldSettings.AutoBackupEnabled);
+                newDocument.Put("AutoBackupRate", oldSettings.AutoBackupRate);
+                newDocument.Put("AutoBackupCount", oldSettings.AutoBackupCount);
+                newDocument.Put("RecentFiles", oldSettings.RecentFiles);
 
                 // Only migrate font settings if they are non-default
-                if (settings.fontName != "Courier New") {
-                    Settings.Instance.FontFamily = settings.fontName;
+                if (oldSettings.fontName != "Courier New") {
+                    newDocument.Put("FontFamily", oldSettings.fontName);
                 }
-                if (settings.fontSize != 14.25f) {
-                    Settings.Instance.EditorFontSize = settings.fontSize;
+                // ReSharper disable once CompareOfFloatsByEqualityOperator
+                if (oldSettings.fontSize != 14.25f) {
+                    newDocument.Put("EditorFontSize", oldSettings.fontSize);
                 }
-                if (settings.themes == "Light") {
-                    Settings.Instance.ThemeName = Theme.BuiltinLight;
+                if (oldSettings.themes == "Light") {
+                    newDocument.Put("ThemeName", "Light");
                 }
             } catch (Exception ex) {
                 Console.Error.WriteLine($"Failed to read legacy settings file from path '{Path.Combine(Studio.CelesteDirectory, "Celeste Studio.toml")}'");
                 Console.Error.WriteLine(ex);
             }
 
-            // Create a backup instead of deleting, just to be safe
-            File.Move(Path.Combine(Studio.CelesteDirectory, "Celeste Studio.toml"), Path.Combine(Settings.BaseConfigPath, "LegacyStudioSettings.toml.backup"), overwrite: true);
+            // Create backup
+            File.Move(Path.Combine(Studio.CelesteDirectory, "Celeste Studio.toml"), Path.Combine(Migrator.BackupDirectory, "Settings_v2.toml"), overwrite: true);
         }
     }
 }
