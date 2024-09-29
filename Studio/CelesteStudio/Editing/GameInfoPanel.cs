@@ -63,6 +63,8 @@ public sealed class GameInfo : Panel {
 
     private const string DisconnectedText = "Searching...";
 
+    public bool EditingTemplate => Content == editPanel;
+
     private readonly Label frameInfo;
     private readonly Label gameStatus;
     private readonly SubpixelIndicator subpixelIndicator;
@@ -123,7 +125,7 @@ public sealed class GameInfo : Panel {
             infoTemplateArea.Height = (int)((lineCount + 1) * infoTemplateArea.Font.LineHeight()) + 2;
         };
         SizeChanged += (_, _) => {
-            infoTemplateArea.Width = Math.Max(0, ClientSize.Width - Padding.Left - Padding.Right);
+            infoTemplateArea.Width = Math.Max(0, Width);
         };
 
         // Finish editing info template
@@ -296,21 +298,27 @@ public sealed class GameInfoPanel : Panel {
         var gameInfo = Studio.Instance.GameInfo;
         gameInfo.SetupContextMenu();
 
+        var scrollable = new Scrollable {
+            Padding = 0,
+            Border = BorderType.None,
+            Content = gameInfo,
+        };
+
         var layout = new PixelLayout();
-        layout.Add(gameInfo, 0, 0);
+        layout.Add(scrollable, 0, 0);
 
         GameInfoPopout? popoutForm = null;
 
         var popoutButton = new PopoutButton { Visible = false };
         popoutButton.Click += () => {
-            layout.Remove(gameInfo);
+            scrollable.Content = null;
 
             popoutForm ??= new GameInfoPopout();
             popoutForm.Closed += (_, _) => {
                 popoutForm.Content = null;
                 popoutForm = null;
 
-                layout.Add(gameInfo, 0, 0);
+                scrollable.Content = gameInfo;
                 Visible = Settings.Instance.ShowGameInfo;
                 OnSizeChanged(EventArgs.Empty); // Changing Visible doesn't send size events
             };
@@ -326,8 +334,14 @@ public sealed class GameInfoPanel : Panel {
 
         layout.Add(popoutButton, ClientSize.Width - Padding.Left - Padding.Right - popoutButton.Width, 0);
         SizeChanged += (_, _) => {
-            layout.Move(popoutButton, ClientSize.Width - Padding.Left - Padding.Right - popoutButton.Width, 0);
+            if (popoutForm == null && gameInfo.EditingTemplate) {
+                gameInfo.Width = ClientSize.Width - Padding.Left - Padding.Right;
+            }
+            LimitSize();
         };
+
+        Studio.Instance.SizeChanged += (_, _) => LimitSize();
+        gameInfo.SizeChanged += (_, _) => LimitSize();
 
         Padding = 10;
         Content = layout;
@@ -340,6 +354,19 @@ public sealed class GameInfoPanel : Panel {
         Settings.ThemeChanged += () => {
             BackgroundColor = Settings.Instance.Theme.StatusBg;
         };
+
+        return;
+
+        void LimitSize() {
+            // Limit height to half the window
+            scrollable.Size = new Size(
+                ClientSize.Width - Padding.Left - Padding.Right,
+                Math.Min(gameInfo.Height + Padding.Top + Padding.Bottom, Studio.Instance.Height / 3) - Padding.Top - Padding.Bottom);
+
+            // Account for scroll bar
+            bool scrollBarVisible = gameInfo.Height > scrollable.Height;
+            layout.Move(popoutButton, ClientSize.Width - Padding.Left - Padding.Right - popoutButton.Width - (scrollBarVisible ? Studio.ScrollBarSize : 0), 0);
+        }
     }
 }
 public sealed class GameInfoPopout : Form {
@@ -347,15 +374,30 @@ public sealed class GameInfoPopout : Form {
         var gameInfo = Studio.Instance.GameInfo;
         gameInfo.SetupContextMenu(this);
 
+        var scrollable = new Scrollable {
+            Padding = 0,
+            Border = BorderType.None,
+            Content = gameInfo,
+        };
+
         Title = "Game Info";
         Icon = Assets.AppIcon;
-        MinimumSize = new Size(250, 100);
+        MinimumSize = new Size(300, 100);
 
         Padding = 10;
-        Content = gameInfo;
+        Content = scrollable;
         BackgroundColor = Settings.Instance.Theme.StatusBg;
         Settings.ThemeChanged += () => {
             BackgroundColor = Settings.Instance.Theme.StatusBg;
+        };
+
+        SizeChanged += (_, _) => {
+            if (gameInfo.EditingTemplate) {
+                gameInfo.Width = ClientSize.Width - Padding.Left - Padding.Right;
+            }
+            scrollable.Size = new Size(
+                ClientSize.Width - Padding.Left - Padding.Right,
+                ClientSize.Height - Padding.Top - Padding.Bottom);
         };
 
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
