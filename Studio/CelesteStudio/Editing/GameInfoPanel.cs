@@ -68,11 +68,15 @@ public sealed class GameInfo : Panel {
 
     // The StackLayouts don't fit the exact content size on their own..
     public int ActualWidth => EditingTemplate
-        ? Math.Max(infoTemplateArea.Width, buttonsPanel.Width)
-        : Math.Max(Math.Max(frameInfo.Width, gameStatus.Width), subpixelIndicator.Visible ? subpixelIndicator.Width : 0);
+        ? (int)(Math.Max(infoTemplateArea.GetPreferredSize().Width, buttonsPanel.GetPreferredSize().Width))
+        : (int)(Math.Max(Math.Max(frameInfo.GetPreferredSize().Width, gameStatus.GetPreferredSize().Width), subpixelIndicator.Visible ? subpixelIndicator.GetPreferredSize().Width : 0));
     public int ActualHeight => EditingTemplate
-        ? infoTemplateArea.Height + buttonsPanel.Height
-        : frameInfo.Height + gameStatus.Height + (subpixelIndicator.Visible ? subpixelIndicator.Height : 0);
+        ? (int)(infoTemplateArea.GetPreferredSize().Height + buttonsPanel.GetPreferredSize().Height)
+        : (int)(frameInfo.GetPreferredSize().Height + gameStatus.GetPreferredSize().Height + (subpixelIndicator.Visible ? subpixelIndicator.GetPreferredSize().Height : 0));
+
+    public int AvailableWidth {
+        set => infoTemplateArea.Width = Math.Max(0, value);
+    }
 
     private readonly Label frameInfo;
     private readonly Label gameStatus;
@@ -135,17 +139,16 @@ public sealed class GameInfo : Panel {
             // Always have an empty line at the bottom
             infoTemplateArea.Height = (int)((lineCount + 1) * infoTemplateArea.Font.LineHeight()) + 2;
         };
-        SizeChanged += (_, _) => {
-            infoTemplateArea.Width = Math.Max(0, Width);
-        };
 
         // Finish editing info template
         doneButton.Click += (_, _) => {
             CommunicationWrapper.SetCustomInfoTemplate(infoTemplateArea.Text);
             Content = showPanel;
+            OnSizeChanged(EventArgs.Empty);
         };
         cancelButton.Click += (_, _) => {
             Content = showPanel;
+            OnSizeChanged(EventArgs.Empty);
         };
 
         // Update displayed data
@@ -166,12 +169,18 @@ public sealed class GameInfo : Panel {
         };
 
         // Manually forward size changes, since the StackLayouts won't do it..
-        frameInfo.SizeChanged += (_, _) => OnSizeChanged(EventArgs.Empty);
-        gameStatus.SizeChanged += (_, _) => OnSizeChanged(EventArgs.Empty);
-        subpixelIndicator.SizeChanged += (_, _) => OnSizeChanged(EventArgs.Empty);
+        frameInfo.SizeChanged += ForwardSize;
+        gameStatus.SizeChanged += ForwardSize;
+        subpixelIndicator.SizeChanged += ForwardSize;
 
-        infoTemplateArea.SizeChanged += (_, _) => OnSizeChanged(EventArgs.Empty);
-        buttonsPanel.SizeChanged += (_, _) => OnSizeChanged(EventArgs.Empty);
+        infoTemplateArea.SizeChanged += ForwardSize;
+        buttonsPanel.SizeChanged += ForwardSize;
+
+        void ForwardSize(object? _1, EventArgs _2) {
+            Content.Width = ActualWidth;
+            Content.Height = ActualHeight;
+            OnSizeChanged(EventArgs.Empty);
+        }
 
         // React to settings changes
         Settings.ThemeChanged += () => {
@@ -202,6 +211,7 @@ public sealed class GameInfo : Panel {
     public void SetupContextMenu(GameInfoPopout? popout = null) {
         var editCustomInfoItem = MenuEntry.Status_EditCustomInfoTemplate.ToAction(() => {
             Content = editPanel;
+            OnSizeChanged(EventArgs.Empty);
             infoTemplateArea.Text = CommunicationWrapper.GetCustomInfoTemplate();
         });
         editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
@@ -273,6 +283,8 @@ public sealed class GameInfo : Panel {
 
 public sealed class GameInfoPanel : Panel {
     private sealed class PopoutButton : Drawable {
+        public const int ButtonSize = IconSize + BackgroundPadding * 2;
+
         private const int IconSize = 20;
         private const int BackgroundPadding = 5;
 
@@ -280,7 +292,7 @@ public sealed class GameInfoPanel : Panel {
         private void PerformClick() => Click?.Invoke();
 
         public PopoutButton() {
-            Width = Height = IconSize + BackgroundPadding * 2;
+            Width = Height = ButtonSize;
         }
 
         protected override void OnPaint(PaintEventArgs e) {
@@ -335,7 +347,7 @@ public sealed class GameInfoPanel : Panel {
             forceClosePopout = false;
         };
 
-        var popoutButton = new PopoutButton { Visible = true };
+        var popoutButton = new PopoutButton { Visible = false };
         popoutButton.Click += () => {
             Settings.Instance.GameInfo = GameInfoType.Popout;
             Settings.OnChanged();
@@ -343,16 +355,14 @@ public sealed class GameInfoPanel : Panel {
         };
 
         // Only show popout button while hovering Info HUD
-        MouseEnter += (_, _) => popoutButton.Visible = true;
+        MouseEnter += (_, _) => popoutButton.Visible = !gameInfo.EditingTemplate;
         MouseLeave += (_, _) => popoutButton.Visible = false;
 
-        layout.Add(popoutButton, ClientSize.Width - Padding.Left - Padding.Right - popoutButton.Width, 0);
-        // WPF doesn't like it when the button starts out as invisible before being added for some reason
-        Shown += (_, _) => popoutButton.Visible = false;
+        layout.Add(popoutButton, ClientSize.Width - Padding.Left - Padding.Right - PopoutButton.ButtonSize, 0);
 
         SizeChanged += (_, _) => {
-            if (popoutForm == null && gameInfo.EditingTemplate) {
-                gameInfo.Width = ClientSize.Width - Padding.Left - Padding.Right;
+            if (popoutForm == null) {
+                gameInfo.AvailableWidth = ClientSize.Width - Padding.Left - Padding.Right;
             }
             LimitSize();
         };
@@ -382,15 +392,20 @@ public sealed class GameInfoPanel : Panel {
                 return;
             }
 
+            // Causes the game-info to fit to the scrollable again
+            scrollable.Content = gameInfo;
+
             // Limit height to certain percentage of entire the window
             scrollable.Size = new Size(
                 Math.Max(0, ClientSize.Width - Padding.Left - Padding.Right),
                 Math.Min(gameInfo.ActualHeight + Padding.Top + Padding.Bottom, (int)(Studio.Instance.Height * Settings.Instance.MaxGameInfoHeight)) - Padding.Top - Padding.Bottom);
-            scrollable.ScrollSize = new Size(gameInfo.ActualWidth, gameInfo.ActualHeight);
+
+            // Don't show while editing template (cause overlap)
+            popoutButton.Visible = !gameInfo.EditingTemplate;
 
             // Account for scroll bar
             bool scrollBarVisible = gameInfo.Height > scrollable.Height;
-            layout.Move(popoutButton, ClientSize.Width - Padding.Left - Padding.Right - popoutButton.Width - (scrollBarVisible ? Studio.ScrollBarSize : 0), 0);
+            layout.Move(popoutButton, ClientSize.Width - Padding.Left - Padding.Right - PopoutButton.ButtonSize - (scrollBarVisible ? Studio.ScrollBarSize : 0), 0);
         }
 
         void UpdateGameInfoStatus() {
@@ -466,9 +481,7 @@ public sealed class GameInfoPopout : Form {
         };
 
         SizeChanged += (_, _) => {
-            if (gameInfo.EditingTemplate) {
-                gameInfo.Width = ClientSize.Width - Padding.Left - Padding.Right;
-            }
+            gameInfo.AvailableWidth = ClientSize.Width - Padding.Left - Padding.Right;
         };
 
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
@@ -492,6 +505,8 @@ public sealed class GameInfoPopout : Form {
                 }
                 Location = lastLocation;
             }
+
+            gameInfo.AvailableWidth = ClientSize.Width - Padding.Left - Padding.Right;
         };
     }
 

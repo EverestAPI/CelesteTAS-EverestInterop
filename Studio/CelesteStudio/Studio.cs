@@ -43,6 +43,11 @@ public sealed class Studio : Form {
     /// Path to the Celeste install or null if it couldn't be found
     public static string? CelesteDirectory { get; private set; }
 
+    /// For some **UNHOLY** reasons, not calling Content.UpdateLayout() in RecalculateLayout() places during startup causes themeing to crash.
+    /// _However_, while this hack is active, you can't resize the window, so this has to be disabled again as soon as possible...
+    /// I would personally like to burn WPF to the ground ._.
+    public bool WPFHackEnabled = true;
+
     public readonly Editor Editor;
     public readonly GameInfo GameInfo;
 
@@ -288,9 +293,9 @@ public sealed class Studio : Form {
             Math.Max(0, ClientSize.Width),
             Math.Max(0, ClientSize.Height - Math.Max(0, gameInfoPanel.Height)));
 
-        gameInfoPanel.UpdateLayout();
-        editorScrollable.UpdateLayout();
-        Content.UpdateLayout();
+        if (Eto.Platform.Instance.IsWpf && WPFHackEnabled) {
+            Content.UpdateLayout();
+        }
     }
 
     private void ApplySettings() {
