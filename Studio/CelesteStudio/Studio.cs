@@ -293,7 +293,13 @@ public sealed class Studio : Form {
             Math.Max(0, ClientSize.Width),
             Math.Max(0, ClientSize.Height - Math.Max(0, gameInfoPanel.Height)));
 
-        if (Eto.Platform.Instance.IsWpf && WPFHackEnabled) {
+        // Calling UpdateLayout() seems to be required on GTK but causes issues on WPF
+        // TODO: Figure out how macOS handles this
+        if (Eto.Platform.Instance.IsGtk) {
+            gameInfoPanel.UpdateLayout();
+            editorScrollable.UpdateLayout();
+            Content.UpdateLayout();
+        } else if (Eto.Platform.Instance.IsWpf && WPFHackEnabled) {
             Content.UpdateLayout();
         }
     }
