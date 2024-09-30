@@ -90,18 +90,12 @@ public static class StringExtensions {
                 continue;
             }
             // \r is either alone or a \r\n
-            if (str[i] == '\r')
-            {
+            if (str[i] == '\r') {
                 lines++;
                 if (i + 1 < str.Length && str[i + 1] == '\n') {
                     i++;
                 }
             }
-        }
-
-        // Ignore newline at the end
-        if (str.Length > 0 && str[^1] is not ('\n' or '\r')) {
-            lines--;
         }
 
         return lines;
