@@ -106,7 +106,7 @@ public static class StudioHelper {
                 if (Directory.Exists(Path.Combine(StudioDirectory, "TAS Files"))) {
                     foreach (string path in Directory.GetFiles(Path.Combine(StudioDirectory, "TAS Files"), "*", new EnumerationOptions { RecurseSubdirectories = true })) {
                         // Don't copy directories themselves
-                        if (Directory.Exists(file)) {
+                        if (Directory.Exists(path)) {
                             continue;
                         }
 
