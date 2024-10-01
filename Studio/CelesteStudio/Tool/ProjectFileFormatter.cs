@@ -12,6 +12,9 @@ namespace CelesteStudio.Tool;
 public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
     private const string Version = "1.0.0";
 
+    private readonly Button projectRootButton;
+    private string projectRoot;
+
     private readonly CheckBox editRoomIndices;
     private readonly NumericStepper startingIndex;
     private readonly DropDown roomIndexType;
@@ -34,6 +37,21 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
         };
 
         const int rowWidth = 200;
+
+        // General config
+        projectRoot = Editor.FindProjectRoot(Studio.Instance.Editor.Document.FilePath);
+        projectRootButton = new Button { Text = projectRoot, Width = 200 };
+        projectRootButton.Click += (_, _) => {
+            var dialog = new SelectFolderDialog() {
+                Title = "Select project root folder",
+                Directory = projectRoot
+            };
+
+            if (dialog.ShowDialog(this) == DialogResult.Ok) {
+                projectRoot = dialog.Directory;
+                projectRootButton.Text = projectRoot;
+            }
+        };
 
         // Auto-room-indexing
         editRoomIndices = new CheckBox { Width = rowWidth, Checked = true };
@@ -76,6 +94,12 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
                     Spacing = 10,
                     Orientation = Orientation.Horizontal,
                     VerticalContentAlignment = VerticalAlignment.Center,
+                    Items = { new Label { Text = "Select Project Root Folder" }, projectRootButton }
+                },
+                new StackLayout {
+                    Spacing = 10,
+                    Orientation = Orientation.Horizontal,
+                    VerticalContentAlignment = VerticalAlignment.Center,
                     Items = { new Label { Text = "Format Room Label Indices" }, editRoomIndices }
                 },
                 // NOTE: The only reason Scrollables are used, is because they provide a border
@@ -88,23 +112,57 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
     }
 
     private void Format() {
-        string projectRoot = Editor.FindProjectRoot(Studio.Instance.Editor.Document.FilePath);
         string[] files = Directory.GetFiles(projectRoot, "*.tas", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.Hidden });
 
         bool formatRoomIndices = Application.Instance.Invoke(() => editRoomIndices.Checked == true);
         bool includeReads = Application.Instance.Invoke(() => roomIndexType.SelectedKey == nameof(AutoRoomIndexing.IncludeReads));
         int startIndex = (int)Application.Instance.Invoke(() => startingIndex.Value);
 
+        int totalTasks = 0, finishedTasks = 0;
+
+        Label progressLabel;
+        ProgressBar progressBar;
+        Button doneButton;
+
+        var progressPopup = new Eto.Forms.Dialog {
+            Title = "Processing...",
+            Icon = Assets.AppIcon,
+
+            Content = new StackLayout {
+                Padding = 10,
+                Spacing = 10,
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                Items = {
+                    (progressLabel = new Label { Text = $"Formatting files {finishedTasks} / {totalTasks}..." }),
+                    (progressBar = new ProgressBar { Width = 300 }),
+                    (doneButton = new Button { Text = "Done", Enabled = false }),
+                },
+            },
+
+            Resizable = false,
+            Closeable = false,
+            ShowInTaskbar = true,
+        };
+        doneButton.Click += (_, _) => {
+            progressPopup.Close();
+            Close();
+        };
+
+        progressPopup.Load += (_, _) => Studio.Instance.WindowCreationCallback(progressPopup);
+        progressPopup.Shown += (_, _) => progressPopup.Location = Location + new Point((Width - progressPopup.Width) / 2, (Height - progressPopup.Height) / 2);
+
         foreach (string file in files) {
             if (Directory.Exists(file)) {
                 continue;
             }
 
+            totalTasks++;
             Task.Run(async () => {
                 Console.WriteLine($"Reformatting '{file}'...");
 
                 try {
                     if (formatRoomIndices) {
+                        //await Task.Delay((int)Random.Shared.NextInt64(5_000)).ConfigureAwait(false);
                         await UpdateRoomLabelIndices(file, startIndex, includeReads).ConfigureAwait(false);
                     }
 
@@ -112,7 +170,26 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
                 } catch (Exception ex) {
                     Console.WriteLine($"Failed reformatted '{file}': {ex}");
                 }
+
+                finishedTasks++;
+                await Application.Instance.InvokeAsync(UpdateProgress).ConfigureAwait(false);
             });
+        }
+
+        UpdateProgress();
+        progressPopup.ShowModal();
+
+        void UpdateProgress() {
+            progressLabel.Text = finishedTasks == totalTasks
+                ? $"Successfully formatted {progressBar.MaxValue} files."
+                : $"Formatting files {progressBar.Value} / {progressBar.MaxValue}...";
+            progressBar.Value = finishedTasks;
+            progressBar.MaxValue = totalTasks;
+
+            if (finishedTasks == totalTasks) {
+                doneButton.Enabled = true;
+                progressPopup.Title = "Complete";
+            }
         }
     }
 
