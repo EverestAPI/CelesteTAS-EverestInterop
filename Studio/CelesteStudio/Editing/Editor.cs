@@ -1137,7 +1137,7 @@ public sealed class Editor : Drawable {
         }
 
         // If nothing handled this, and it's not a character, send it anyway
-        if (Settings.Instance.SendInputsToCeleste && Settings.Instance.SendInputsNonWritable && CommunicationWrapper.Connected && !isTyping && !sendInputs && !e.Handled && e.KeyChar == char.MaxValue && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
+        if (Settings.Instance.SendInputsToCeleste && Settings.Instance.SendInputsNonWritable && !Platform.Instance.IsWpf && CommunicationWrapper.Connected && !isTyping && !sendInputs && !e.Handled && e.KeyChar == char.MaxValue && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
             e.Handled = true;
             return;
         }
@@ -1164,7 +1164,7 @@ public sealed class Editor : Drawable {
             (Settings.Instance.SendInputsOnActionLines && isActionLine) ||
             (Settings.Instance.SendInputsOnComments && isComment) ||
             (Settings.Instance.SendInputsOnCommands && !isActionLine && !isComment) ||
-            (Settings.Instance.SendInputsNonWritable && e.KeyChar == ushort.MaxValue);
+            (Settings.Instance.SendInputsNonWritable && !Platform.IsWpf && e.KeyChar == ushort.MaxValue);
 
         if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && !isTyping && sendInputs && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: true)) {
             e.Handled = true;

@@ -558,6 +558,18 @@ public sealed class Studio : Form {
         }) { MenuText = "Delete All Files" });
         backupsMenu.Enabled = backupFiles.Length != 0;
 
+        // Don't display Settings.SendInputsNonWritable on WPF, since it's not supported there
+        var inputSendingMenu = new SubMenuItem { Text = "&Input Sending", Items = {
+                MenuUtils.CreateSettingToggle("On Inputs", nameof(Settings.SendInputsOnActionLines)),
+                MenuUtils.CreateSettingToggle("On Comments", nameof(Settings.SendInputsOnComments)),
+                MenuUtils.CreateSettingToggle("On Commands", nameof(Settings.SendInputsOnCommands)),
+        }};
+        if (!Platform.IsWpf) {
+            inputSendingMenu.Items.Add(MenuUtils.CreateSettingToggle("Always send non-writable Inputs", nameof(Settings.SendInputsNonWritable)));
+        }
+        inputSendingMenu.Items.Add(new SeparatorMenuItem());
+        inputSendingMenu.Items.Add(MenuUtils.CreateSettingNumberInput("Typing Timeout", nameof(Settings.SendInputsTypingTimeout), 0.0f, 5.0f, 0.1f));
+
         MenuItem[] items = [
             new SubMenuItem { Text = "&File", Items = {
                 MenuEntry.File_New.ToAction(OnNewFile),
@@ -595,14 +607,7 @@ public sealed class Studio : Form {
                 MenuEntry.Settings_SendInputs.ToSettingToggle(nameof(Settings.SendInputsToCeleste), enabled => {
                     Editor.ShowToastMessage($"{(enabled ? "Enabled" : "Disabled")} Sending Inputs to Celeste", Editor.DefaultToastTime);
                 }),
-                new SubMenuItem { Text = "&Input Sending", Items = {
-                    MenuUtils.CreateSettingToggle("On Inputs", nameof(Settings.SendInputsOnActionLines)),
-                    MenuUtils.CreateSettingToggle("On Comments", nameof(Settings.SendInputsOnComments)),
-                    MenuUtils.CreateSettingToggle("On Commands", nameof(Settings.SendInputsOnCommands)),
-                    MenuUtils.CreateSettingToggle("Always send non-writable Inputs", nameof(Settings.SendInputsNonWritable)),
-                    new SeparatorMenuItem(),
-                    MenuUtils.CreateSettingNumberInput("Typing Timeout", nameof(Settings.SendInputsTypingTimeout), 0.0f, 5.0f, 0.1f),
-                }},
+                inputSendingMenu,
                 MenuUtils.CreateSettingNumberInput("Scroll Speed", nameof(Settings.ScrollSpeed), 0.0f, 30.0f, 1),
                 MenuUtils.CreateSettingNumberInput("Max Unfolded Lines", nameof(Settings.MaxUnfoldedLines), 0, int.MaxValue, 1),
                 MenuUtils.CreateSettingEnum<InsertDirection>("Insert Direction", nameof(Settings.InsertDirection), ["Above Current Line", "Below Current Line"]),
