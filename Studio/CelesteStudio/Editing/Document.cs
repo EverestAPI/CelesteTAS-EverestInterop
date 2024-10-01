@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using CelesteStudio.Communication;
 using CelesteStudio.Util;
+using Eto.Forms;
 using StudioCommunication.Util;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -131,7 +132,8 @@ public class Document : IDisposable {
 
     /// Reports insertions and deletions of the document
     public event Action<Document, Dictionary<int, string>, Dictionary<int, string>>? TextChanged;
-    private void OnTextChanged(Dictionary<int, string> insertions, Dictionary<int, string> deletions) => TextChanged?.Invoke(this, insertions, deletions);
+    private void OnTextChanged(Dictionary<int, string> insertions, Dictionary<int, string> deletions)
+        => Application.Instance.Invoke(() => TextChanged?.Invoke(this, insertions, deletions));
 
     /// Formats lines of a file into a single string, using consistent formatting rules
     public static string FormatLinesToText(IEnumerable<string> lines) {
@@ -287,7 +289,7 @@ public class Document : IDisposable {
         using var __ = Update();
         using var patch = new Patch(this);
 
-        patch.DeleteRange(0, CurrentLines.Count);
+        patch.DeleteRange(0, CurrentLines.Count - 1);
         patch.InsertRange(0, newLines);
     }
 
@@ -527,27 +529,12 @@ public class Document : IDisposable {
     public QueuedUpdate Update(bool raiseEvents = true) => new(this, raiseEvents);
 
     private void ApplyPatch(Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
-        // Create a mapping of patch rows to actual rows, while editing the lines
-        var realDeletionsRows = deletions.Keys.ToDictionary(row => row);
-        var realInsertionRows = insertions.Keys.ToDictionary(row => row);
-
-        foreach ((int row, _) in deletions.OrderBy(e => e.Key)) {
-            CurrentLines.RemoveAt(realDeletionsRows[row]);
-
-            // Shift following lines
-            foreach ((int patchRow, int realRow) in realDeletionsRows) {
-                if (patchRow > row) {
-                    realDeletionsRows[patchRow] = realRow - 1;
-                }
-            }
-            foreach ((int patchRow, int realRow) in realInsertionRows) {
-                if (patchRow > row) {
-                    realDeletionsRows[patchRow] = realRow - 1;
-                }
-            }
+        // Delete from end to beginning to avoid offsetting lines
+        foreach ((int row, _) in deletions.OrderBy(e => e.Key).Reverse()) {
+            CurrentLines.RemoveAt(row);
         }
         foreach ((int row, string line) in insertions.OrderBy(e => e.Key)) {
-            CurrentLines.Insert(realInsertionRows[row], line);
+            CurrentLines.Insert(row, line);
         }
     }
 
