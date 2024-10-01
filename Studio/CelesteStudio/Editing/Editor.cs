@@ -958,6 +958,18 @@ public sealed class Editor : Drawable {
                         }
                     }
                 }
+                // Internal Play-commands
+                for (int row = 0; row < Document.Lines.Count; row++) {
+                    string line = Document.Lines[row];
+                    if (CommandLine.TryParse(line, out var commandLine) && commandLine.IsCommand("Play") && (
+                            // Check in start label
+                            commandLine.Arguments.Length >= 1 && commandLine.Arguments[0] == oldLabel ||
+                            // Check in end label
+                            commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel))
+                    {
+                        commands.Add((string.Empty, row, commandLine));
+                    }
+                }
 
                 // Apply changes to external Read-command
                 foreach ((string file, int row, var commandLine) in commands) {
@@ -979,6 +991,24 @@ public sealed class Editor : Drawable {
 
                     await File.WriteAllTextAsync(file, string.Join(Document.NewLine, lines)).ConfigureAwait(false);
                     Console.WriteLine($"Edited command '{commandLine.OriginalText}' => '{commandLine}' file {file} line {row}");
+                }
+                // Apply changes to internal Play-command
+                using var __ = Document.Update(raiseEvents: false);
+                foreach ((_, int row, var commandLine) in commands) {
+                    if (!commandLine.IsCommand("Play")) {
+                        continue;
+                    }
+
+                    // Start label
+                    if (commandLine.Arguments.Length >= 1 && commandLine.Arguments[0] == oldLabel) {
+                        commandLine.Arguments[0] = newLabel;
+                    }
+                    // End label
+                    if (commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel) {
+                        commandLine.Arguments[1] = newLabel;
+                    }
+
+                    Document.ReplaceLine(row, commandLine.ToString());
                 }
             } catch (Exception ex) {
                 Console.WriteLine($"Failed to refactor room label: {ex}");
