@@ -130,14 +130,8 @@ public class Document : IDisposable {
     private readonly Stack<QueuedUpdate> updateStack = [];
 
     /// Reports insertions and deletions of the document
-    public event Action<Document, Dictionary<int, string>, Dictionary<int, string>> TextChanged = (doc, _, _) => {
-        if (Settings.Instance.AutoSave) {
-            doc.Save();
-        } else {
-            doc.Dirty = true;
-        }
-    };
-    private void OnTextChanged(Dictionary<int, string> insertions, Dictionary<int, string> deletions) => TextChanged.Invoke(this, insertions, deletions);
+    public event Action<Document, Dictionary<int, string>, Dictionary<int, string>>? TextChanged;
+    private void OnTextChanged(Dictionary<int, string> insertions, Dictionary<int, string> deletions) => TextChanged?.Invoke(this, insertions, deletions);
 
     private Document(string? filePath) {
         FilePath = filePath == null ? string.Empty : Path.GetFullPath(filePath);
@@ -412,6 +406,19 @@ public class Document : IDisposable {
 
                     Document.undoStack.Push(this);
                     Document.OnTextChanged(totalPatch.Insertions, totalPatch.Deletions);
+
+                    if (Settings.Instance.AutoSave) {
+                        Document.Save();
+                    } else {
+                        Document.Dirty = true;
+                    }
+                } else {
+                    // Still save, even if there isn't an event triggered
+                    if (Settings.Instance.AutoSave) {
+                        Document.Save();
+                    } else {
+                        Document.Dirty = true;
+                    }
                 }
             } else {
                 Document.updateStack.Peek().Patches.AddRange(Patches);
