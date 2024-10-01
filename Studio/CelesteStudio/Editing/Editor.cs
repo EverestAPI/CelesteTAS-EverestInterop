@@ -989,7 +989,7 @@ public sealed class Editor : Drawable {
                     string[] lines = fileCache[file];
                     lines[row] = commandLine.ToString();
 
-                    await File.WriteAllTextAsync(file, string.Join(Document.NewLine, lines)).ConfigureAwait(false);
+                    await File.WriteAllTextAsync(file, Document.FormatLinesToText(lines)).ConfigureAwait(false);
                     Console.WriteLine($"Edited command '{commandLine.OriginalText}' => '{commandLine}' file {file} line {row}");
                 }
                 // Apply changes to internal Play-command
