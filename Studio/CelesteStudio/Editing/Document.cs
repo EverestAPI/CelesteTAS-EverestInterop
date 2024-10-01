@@ -514,7 +514,7 @@ public class Document : IDisposable {
         var realDeletionsRows = deletions.Keys.ToDictionary(row => row);
         var realInsertionRows = insertions.Keys.ToDictionary(row => row);
 
-        foreach ((int row, _) in deletions) {
+        foreach ((int row, _) in deletions.OrderBy(e => e.Key)) {
             CurrentLines.RemoveAt(realDeletionsRows[row]);
 
             // Shift following lines
@@ -529,7 +529,7 @@ public class Document : IDisposable {
                 }
             }
         }
-        foreach ((int row, string line) in insertions) {
+        foreach ((int row, string line) in insertions.OrderBy(e => e.Key)) {
             CurrentLines.Insert(realInsertionRows[row], line);
         }
     }

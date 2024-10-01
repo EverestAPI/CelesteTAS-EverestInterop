@@ -1170,7 +1170,6 @@ public sealed class Editor : Drawable {
 
                             Document.Selection.Start.Row++;
                             Document.Selection.End.Row++;
-                            Document.Caret.Row++;
                         } else if (Document.Caret.Row < Document.Lines.Count - 1 && Document.Selection.Empty) {
                             Document.SwapLines(Document.Caret.Row, Document.Caret.Row + 1);
                             Document.Caret.Row++;
