@@ -836,14 +836,14 @@ public sealed class Editor : Drawable {
         }
     }
 
-    private const string CurrentFileCacheKey = "";
-    private static readonly Dictionary<string, string[]> fileCache = []; // path -> lines
+    /// Caches the file contents in lines of external files
+    private static readonly Dictionary<string, string[]> fileCache = [];
 
     /// Iterates over all lines of the document, optionally following Read-commands
     private IEnumerable<(string Line, int Row, string File)> IterateDocumentLines(bool includeReads) {
         if (!includeReads) {
             for (int row = 0; row < Document.Lines.Count; row++) {
-                yield return (Document.Lines[row], row, CurrentFileCacheKey);
+                yield return (Document.Lines[row], row, string.Empty);
             }
 
             yield break;
@@ -851,12 +851,11 @@ public sealed class Editor : Drawable {
 
         Stack<(string Path, int CurrRow, int EndRow)> fileStack = [];
 
-        fileCache[CurrentFileCacheKey] = Document.Lines.ToArray();
-        fileStack.Push((CurrentFileCacheKey, 0, Document.Lines.Count - 1));
+        fileStack.Push((string.Empty, 0, Document.Lines.Count - 1));
 
         while (fileStack.TryPop(out var file)) {
             (string path, int currRow, int endRow) = file;
-            string[] lines = fileCache[path];
+            string[] lines = path == string.Empty ? Document.Lines.ToArray() : fileCache[path];
 
             for (int row = currRow; row <= endRow; row++) {
                 string line = lines[row];
@@ -930,6 +929,7 @@ public sealed class Editor : Drawable {
 
             await refactorSemaphore.WaitAsync().ConfigureAwait(false);
             try {
+                // External Read-commands
                 string[] files = Directory.GetFiles(projectRoot, "*.tas", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.Hidden });
                 foreach (string file in files) {
                     if (file == Document.FilePath || Directory.Exists(file)) {
@@ -942,24 +942,35 @@ public sealed class Editor : Drawable {
 
                     for (int row = 0; row < lines.Length; row++) {
                         string line = lines[row];
-                        if (CommandLine.TryParse(line, out var commandLine) &&
-                            commandLine.IsCommand("Read") && (
-                            commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel ||
-                            commandLine.Arguments.Length == 3 && commandLine.Arguments[2] == oldLabel))
+                        if (CommandLine.TryParse(line, out var commandLine) && commandLine.IsCommand("Read") &&
+                            // Verify command points to our file
+                            commandLine.Arguments.Length >= 1 && string.Equals(
+                                Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file)!, commandLine.Arguments[0])),
+                                Path.GetFullPath(Document.FilePath),
+                                StringComparison.OrdinalIgnoreCase
+                            ) && (
+                                // Check in start label
+                                commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel ||
+                                // Check in end label
+                                commandLine.Arguments.Length >= 3 && commandLine.Arguments[2] == oldLabel))
                         {
                             commands.Add((file, row, commandLine));
                         }
                     }
                 }
 
-                // Apply changes
+                // Apply changes to external Read-command
                 foreach ((string file, int row, var commandLine) in commands) {
+                    if (!commandLine.IsCommand("Read")) {
+                        continue;
+                    }
+
                     // Start label
                     if (commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel) {
                         commandLine.Arguments[1] = newLabel;
                     }
                     // End label
-                    if (commandLine.Arguments.Length == 3 && commandLine.Arguments[2] == oldLabel) {
+                    if (commandLine.Arguments.Length >= 3 && commandLine.Arguments[2] == oldLabel) {
                         commandLine.Arguments[2] = newLabel;
                     }
 
