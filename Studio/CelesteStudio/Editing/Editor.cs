@@ -49,7 +49,7 @@ public sealed class Editor : Drawable {
 
             // Reset various state
             ActivePopupMenu = null;
-            fileCache.Clear(); // Unrelated to the file, but good to refresh semi-regularly
+            FileCache.Clear(); // Unrelated to the file, but good to refresh semi-regularly
 
             FixInvalidInputs();
             Recalc();
@@ -149,7 +149,7 @@ public sealed class Editor : Drawable {
                         continue;
                     }
 
-                    bool isCurrentFile = filePath == string.Empty;
+                    bool isCurrentFile = filePath == Document.FilePath;
 
                     string label = match.Groups[1].Value.Trim();
                     if (row == Document.Caret.Row && isCurrentFile) {
@@ -175,7 +175,7 @@ public sealed class Editor : Drawable {
                             : label;
 
                         if (!rowsToIgnore.Contains(occurrences[0].Row)) {
-                            RefactorLabelName(Document.Lines[occurrences[0].Row]["#".Length..], $"lvl_{label}");
+                            Task.Run(async () => await RefactorLabelName(Document.Lines[occurrences[0].Row]["#".Length..], $"lvl_{label}").ConfigureAwait(false));
                         }
                         Document.ReplaceLine(occurrences[0].Row, $"#lvl_{writtenLabel}");
                         continue;
@@ -293,7 +293,7 @@ public sealed class Editor : Drawable {
     private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
     private static readonly Regex AllBreakpointRegex = new(@"^\s*#*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex TimestampRegex = new(@"^\s*#+\s*(\d+:)?\d{1,2}:\d{2}\.\d{3}\(\d+\)", RegexOptions.Compiled);
-    private static readonly Regex RoomLabelRegex = new(@"^#lvl_([^\(\)]*)(?:\s\((\d+)\))?$", RegexOptions.Compiled);
+    public static readonly Regex RoomLabelRegex = new(@"^#lvl_([^\(\)]*)(?:\s\((\d+)\))?$", RegexOptions.Compiled);
 
     public Editor(Document document, Scrollable scrollable) {
         this.document = document;
@@ -837,13 +837,20 @@ public sealed class Editor : Drawable {
     }
 
     /// Caches the file contents in lines of external files
-    private static readonly Dictionary<string, string[]> fileCache = [];
+    public static readonly Dictionary<string, string[]> FileCache = [];
 
     /// Iterates over all lines of the document, optionally following Read-commands
-    private IEnumerable<(string Line, int Row, string File)> IterateDocumentLines(bool includeReads) {
+    public IEnumerable<(string Line, int Row, string File)> IterateDocumentLines(bool includeReads, string? filePath = null) {
+        filePath ??= Document.FilePath;
+        if (!FileCache.ContainsKey(filePath) && filePath != Document.FilePath) {
+            FileCache[filePath] = File.ReadAllLines(filePath);
+        }
+
         if (!includeReads) {
-            for (int row = 0; row < Document.Lines.Count; row++) {
-                yield return (Document.Lines[row], row, string.Empty);
+            string[] lines = filePath == Document.FilePath ? Document.Lines.ToArray() : FileCache[filePath];
+
+            for (int row = 0; row < lines.Length; row++) {
+                yield return (lines[row], row, filePath);
             }
 
             yield break;
@@ -851,13 +858,13 @@ public sealed class Editor : Drawable {
 
         Stack<(string Path, int CurrRow, int EndRow)> fileStack = [];
 
-        fileStack.Push((string.Empty, 0, Document.Lines.Count - 1));
+        fileStack.Push((filePath, 0, Document.Lines.Count - 1));
 
         while (fileStack.TryPop(out var file)) {
             (string path, int currRow, int endRow) = file;
-            string[] lines = path == string.Empty ? Document.Lines.ToArray() : fileCache[path];
+            string[] lines = path == Document.FilePath ? Document.Lines.ToArray() : FileCache[path];
 
-            for (int row = currRow; row <= endRow; row++) {
+            for (int row = currRow; row <= endRow && row < lines.Length; row++) {
                 string line = lines[row];
 
                 if (!CommandLine.TryParse(line, out var commandLine) ||
@@ -868,7 +875,7 @@ public sealed class Editor : Drawable {
                 }
 
                 // Follow Read-command
-                if (Path.GetDirectoryName(Studio.Instance.Editor.Document.FilePath) is not { } documentDir) {
+                if (Path.GetDirectoryName(path) is not { } documentDir) {
                     continue;
                 }
 
@@ -877,8 +884,8 @@ public sealed class Editor : Drawable {
                     continue;
                 }
 
-                if (!fileCache.TryGetValue(fullPath, out string[]? cacheLines)) {
-                    fileCache[fullPath] = cacheLines = File.ReadAllLines(fullPath);
+                if (!FileCache.TryGetValue(fullPath, out string[]? cacheLines)) {
+                    FileCache[fullPath] = cacheLines = File.ReadAllLines(fullPath);
                 }
 
                 var readLines = cacheLines
@@ -912,122 +919,139 @@ public sealed class Editor : Drawable {
         }
     }
 
-    private readonly SemaphoreSlim refactorSemaphore = new(1);
+    public readonly SemaphoreSlim RefactorSemaphore = new(1);
 
     /// Changes the name of a label, updating all references to it in the project
-    private void RefactorLabelName(string oldLabel, string newLabel) {
+    public async Task RefactorLabelName(string oldLabel, string newLabel, string? filePath = null) {
         if (oldLabel == newLabel) {
             return; // Already has that name
         }
 
-        Console.WriteLine($"Performing label refactor for '{oldLabel}' => '{newLabel}'");
-        Task.Run(async () => {
-            string projectRoot = FindProjectRoot(Document.FilePath);
+        filePath ??= Document.FilePath;
+        string projectRoot = FindProjectRoot(filePath);
 
-            // Find all commands which reference this label
-            List<(string FilePath, int Row, CommandLine Line)> commands = [];
+        // Find all commands which reference this label
+        List<(string FilePath, int Row, CommandLine Line)> commands = [];
 
-            await refactorSemaphore.WaitAsync().ConfigureAwait(false);
-            try {
-                // External Read-commands
-                string[] files = Directory.GetFiles(projectRoot, "*.tas", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.Hidden });
-                foreach (string file in files) {
-                    if (file == Document.FilePath || Directory.Exists(file)) {
-                        continue;
-                    }
+        await RefactorSemaphore.WaitAsync().ConfigureAwait(false);
+        Console.WriteLine($"Performing label refactor for '{oldLabel}' => '{newLabel}' file '{filePath}'");
 
-                    if (!fileCache.TryGetValue(file, out string[]? lines)) {
-                        fileCache[file] = lines = await File.ReadAllLinesAsync(file).ConfigureAwait(false);
-                    }
-
-                    for (int row = 0; row < lines.Length; row++) {
-                        string line = lines[row];
-                        if (CommandLine.TryParse(line, out var commandLine) && commandLine.IsCommand("Read") &&
-                            // Verify command points to our file
-                            commandLine.Arguments.Length >= 1 && string.Equals(
-                                Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file)!, commandLine.Arguments[0])),
-                                Path.GetFullPath(Document.FilePath),
-                                StringComparison.OrdinalIgnoreCase
-                            ) && (
-                                // Check in start label
-                                commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel ||
-                                // Check in end label
-                                commandLine.Arguments.Length >= 3 && commandLine.Arguments[2] == oldLabel))
-                        {
-                            commands.Add((file, row, commandLine));
-                        }
-                    }
+        try {
+            // External Read-commands
+            string[] files = Directory.GetFiles(projectRoot, "*.tas", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.Hidden });
+            foreach (string file in files) {
+                if (file == filePath || Directory.Exists(file)) {
+                    continue;
                 }
-                // Internal Play-commands
-                for (int row = 0; row < Document.Lines.Count; row++) {
-                    string line = Document.Lines[row];
-                    if (CommandLine.TryParse(line, out var commandLine) && commandLine.IsCommand("Play") && (
+
+                if (!FileCache.TryGetValue(file, out string[]? lines)) {
+                    FileCache[file] = lines = await File.ReadAllLinesAsync(file).ConfigureAwait(false);
+                }
+
+                for (int row = 0; row < lines.Length; row++) {
+                    string line = lines[row];
+                    if (CommandLine.TryParse(line, out var commandLine) && commandLine.IsCommand("Read") &&
+                        // Verify command points to our file
+                        commandLine.Arguments.Length >= 1 && string.Equals(
+                            Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file)!, $"{commandLine.Arguments[0]}.tas")),
+                            Path.GetFullPath(filePath),
+                            StringComparison.OrdinalIgnoreCase
+                        ) && (
                             // Check in start label
-                            commandLine.Arguments.Length >= 1 && commandLine.Arguments[0] == oldLabel ||
+                            commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel ||
                             // Check in end label
-                            commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel))
+                            commandLine.Arguments.Length >= 3 && commandLine.Arguments[2] == oldLabel))
                     {
-                        commands.Add((string.Empty, row, commandLine));
+                        commands.Add((file, row, commandLine));
                     }
                 }
+            }
+            // Internal Play-commands
+            string[]? internalLines;
+            if (filePath == Document.FilePath) {
+                internalLines = Document.Lines.ToArray();
+            } else if (!FileCache.TryGetValue(filePath, out internalLines)) {
+                FileCache[filePath] = internalLines = await File.ReadAllLinesAsync(filePath).ConfigureAwait(false);
+            }
 
-                // Apply changes to external Read-command
-                foreach ((string file, int row, var commandLine) in commands) {
-                    if (!commandLine.IsCommand("Read")) {
-                        continue;
-                    }
+            for (int row = 0; row < internalLines.Length; row++) {
+                string line = internalLines[row];
+                if (CommandLine.TryParse(line, out var commandLine) && commandLine.IsCommand("Play") && (
+                        // Check in start label
+                        commandLine.Arguments.Length >= 1 && commandLine.Arguments[0] == oldLabel ||
+                        // Check in end label
+                        commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel))
+                {
+                    commands.Add((string.Empty, row, commandLine));
+                }
+            }
 
-                    // Start label
-                    if (commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel) {
-                        commandLine.Arguments[1] = newLabel;
-                    }
-                    // End label
-                    if (commandLine.Arguments.Length >= 3 && commandLine.Arguments[2] == oldLabel) {
-                        commandLine.Arguments[2] = newLabel;
-                    }
 
-                    string[] lines = fileCache[file];
+            // Apply changes to external Read-command
+            foreach ((string file, int row, var commandLine) in commands) {
+                if (!commandLine.IsCommand("Read")) {
+                    continue;
+                }
+
+                // Start label
+                if (commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel) {
+                    commandLine.Arguments[1] = newLabel;
+                }
+                // End label
+                if (commandLine.Arguments.Length >= 3 && commandLine.Arguments[2] == oldLabel) {
+                    commandLine.Arguments[2] = newLabel;
+                }
+
+                string[] lines = FileCache[file];
+                lines[row] = commandLine.ToString();
+
+                await File.WriteAllTextAsync(file, Document.FormatLinesToText(lines)).ConfigureAwait(false);
+                Console.WriteLine($"Edited command '{commandLine.OriginalText}' => '{commandLine}' file {file} line {row}");
+            }
+            // Apply changes to internal Play-command
+            using var __ = Document.Update(raiseEvents: false);
+            foreach ((_, int row, var commandLine) in commands) {
+                if (!commandLine.IsCommand("Play")) {
+                    continue;
+                }
+
+                // Start label
+                if (commandLine.Arguments.Length >= 1 && commandLine.Arguments[0] == oldLabel) {
+                    commandLine.Arguments[0] = newLabel;
+                }
+                // End label
+                if (commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel) {
+                    commandLine.Arguments[1] = newLabel;
+                }
+
+                if (filePath == Document.FilePath) {
+                    Document.ReplaceLine(row, commandLine.ToString());
+                } else {
+                    string[] lines = FileCache[filePath];
                     lines[row] = commandLine.ToString();
 
-                    await File.WriteAllTextAsync(file, Document.FormatLinesToText(lines)).ConfigureAwait(false);
-                    Console.WriteLine($"Edited command '{commandLine.OriginalText}' => '{commandLine}' file {file} line {row}");
+                    await File.WriteAllTextAsync(filePath, Document.FormatLinesToText(lines)).ConfigureAwait(false);
+                    Console.WriteLine($"Edited command '{commandLine.OriginalText}' => '{commandLine}' file {filePath} line {row}");
                 }
-                // Apply changes to internal Play-command
-                using var __ = Document.Update(raiseEvents: false);
-                foreach ((_, int row, var commandLine) in commands) {
-                    if (!commandLine.IsCommand("Play")) {
-                        continue;
-                    }
-
-                    // Start label
-                    if (commandLine.Arguments.Length >= 1 && commandLine.Arguments[0] == oldLabel) {
-                        commandLine.Arguments[0] = newLabel;
-                    }
-                    // End label
-                    if (commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel) {
-                        commandLine.Arguments[1] = newLabel;
-                    }
-
-                    Document.ReplaceLine(row, commandLine.ToString());
-                }
-            } catch (Exception ex) {
-                Console.WriteLine($"Failed to refactor room label: {ex}");
-            } finally {
-                refactorSemaphore.Release();
             }
+
             Console.WriteLine($"Label refactor for '{oldLabel}' => '{newLabel}' done");
-        });
+        } catch (Exception ex) {
+            Console.WriteLine($"Failed to refactor room label: {ex}");
+        } finally {
+            RefactorSemaphore.Release();
+        }
     }
 
     private static readonly Dictionary<string, string> projectRootCache = [];
 
     /// Locates a probable root directory for the current TAS project
-    private static string FindProjectRoot(string filePath) {
+    public static string FindProjectRoot(string filePath) {
         if (projectRootCache.TryGetValue(filePath, out string? projectRoot)) {
             return projectRoot;
         }
 
-        // 1st approach: Seach a Git repository
+        // 1st approach: Search for a Git repository
         for (string? path = Path.GetDirectoryName(filePath); !string.IsNullOrEmpty(path); path = Path.GetDirectoryName(path)) {
             if (Directory.Exists(Path.Combine(path, ".git")) &&
                 // Require at least 75% of files in the repo to be TAS files

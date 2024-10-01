@@ -240,6 +240,8 @@ public class Document : IDisposable {
         }
         Console.WriteLine($"Change: {e.FullPath} - {e.ChangeType}");
 
+        Editor.FileCache.Clear(); // Clear everything, just to be save
+
         // Need to try multiple times, since the file might still be used by other processes
         // The file might also just be temporarily be deleted and re-created by an external tool
         var newLines = Task.Run(async () => {

@@ -661,6 +661,8 @@ public sealed class Studio : Form {
                 MenuUtils.CreateGameSettingNumberInput("Slow Forward Speed", nameof(GameSettings.SlowForwardSpeed), minSlowForwardSpeed, maxSlowForwardSpeed, 0.1f),
             }},
             new SubMenuItem { Text = "&Tools", Items = {
+                MenuUtils.CreateAction("Project File Formatter", Keys.None, ProjectFileFormatterDialog.Show),
+                new SeparatorMenuItem(),
                 MenuUtils.CreateAction("Jadderline", Keys.None, () => {
                     jadderlineForm ??= new();
                     jadderlineForm.Show();
