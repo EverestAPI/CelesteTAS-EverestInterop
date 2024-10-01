@@ -108,7 +108,9 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
         };
         Resizable = false;
 
+        Studio.RegisterDialog(this);
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
+        Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
     }
 
     private void Format() {
@@ -148,6 +150,7 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
             Close();
         };
 
+        Studio.RegisterDialog(progressPopup);
         progressPopup.Load += (_, _) => Studio.Instance.WindowCreationCallback(progressPopup);
         progressPopup.Shown += (_, _) => progressPopup.Location = Location + new Point((Width - progressPopup.Width) / 2, (Height - progressPopup.Height) / 2);
 

@@ -191,7 +191,7 @@ public sealed class Editor : Drawable {
                             : label;
 
                         if (!rowsToIgnore.Contains(occurrences[i].Row)) {
-                            RefactorLabelName(Document.Lines[occurrences[i].Row]["#".Length..], $"lvl_{label} ({i + roomLabelStartIndex})");
+                            Task.Run(async () => await RefactorLabelName(Document.Lines[occurrences[i].Row]["#".Length..], $"lvl_{label} ({i + roomLabelStartIndex})").ConfigureAwait(false));
                         }
                         Document.ReplaceLine(occurrences[i].Row, $"#lvl_{writtenLabel} ({i + roomLabelStartIndex})");
                     }
@@ -1394,6 +1394,22 @@ public sealed class Editor : Drawable {
                 OnToggleCommentText();
                 e.Handled = true;
                 break;
+            case Keys.F2:
+            {
+                // Rename label
+                string line = Document.Lines[Document.Caret.Row];
+                if (Comment.IsLabel(line)) {
+                    string oldLabel = line["#".Length..];
+                    string newLabel = RenameLabelDialog.Show(oldLabel);
+
+                    Task.Run(async () => await RefactorLabelName(oldLabel, newLabel).ConfigureAwait(false));
+
+                    using var __ = Document.Update();
+                    Document.ReplaceLine(Document.Caret.Row, $"#{newLabel}");
+                }
+                e.Handled = true;
+                break;
+            }
             default:
                 if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _) && CalculationExtensions.TryParse(e.KeyChar) is { } op) {
                     StartCalculation(op);
