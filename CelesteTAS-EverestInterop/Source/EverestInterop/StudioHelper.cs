@@ -104,7 +104,12 @@ public static class StudioHelper {
                 // If Studio fails to find the game directory for some reason, that's where "TAS Files" will be placed
                 // Merge the content into the proper location to prevent data loss
                 if (Directory.Exists(Path.Combine(StudioDirectory, "TAS Files"))) {
-                    foreach (string path in Directory.GetFiles(Path.Combine(StudioDirectory, "TAS Files"), "*", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.Directory })) {
+                    foreach (string path in Directory.GetFiles(Path.Combine(StudioDirectory, "TAS Files"), "*", new EnumerationOptions { RecurseSubdirectories = true })) {
+                        // Don't copy directories themselves
+                        if (Directory.Exists(file)) {
+                            continue;
+                        }
+
                         string relativePath = Path.GetRelativePath(Path.Combine(StudioDirectory, "TAS Files"), path);
                         string? relativeDirectory = Path.GetDirectoryName(relativePath);
 

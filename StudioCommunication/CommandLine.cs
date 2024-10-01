@@ -139,4 +139,8 @@ public readonly record struct CommandLine(
         };
         return true;
     }
+
+    public override string ToString() {
+        return string.Join(ArgumentSeparator, [Command, ..Arguments]);
+    }
 }

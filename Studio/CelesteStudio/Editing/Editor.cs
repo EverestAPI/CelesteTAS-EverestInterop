@@ -49,6 +49,7 @@ public sealed class Editor : Drawable {
 
             // Reset various state
             ActivePopupMenu = null;
+            fileCache.Clear(); // Unrelated to the file, but good to refresh semi-regularly
 
             FixInvalidInputs();
             Recalc();
@@ -56,11 +57,11 @@ public sealed class Editor : Drawable {
 
             // Detect user-preference for room indexing
             DetectPreference();
-            UpdateRoomLabelIndices();
+            UpdateRoomLabelIndices([]);
 
             Settings.Changed += () => {
                 DetectPreference();
-                UpdateRoomLabelIndices();
+                UpdateRoomLabelIndices([]);
             };
 
             void DetectPreference() {
@@ -125,14 +126,14 @@ public sealed class Editor : Drawable {
                     TotalFrameCount += actionLine.FrameCount;
                 }
 
-                UpdateRoomLabelIndices();
+                UpdateRoomLabelIndices(rowsToIgnore: insertions.Keys.ToArray());
                 Recalc();
                 ScrollCaretIntoView();
 
                 TextChanged(document, insertions, deletions);
             }
 
-            void UpdateRoomLabelIndices() {
+            void UpdateRoomLabelIndices(int[] rowsToIgnore) {
                 if (Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.Disabled) {
                     return;
                 }
@@ -173,7 +174,10 @@ public sealed class Editor : Drawable {
                             ? untrimmedLabel
                             : label;
 
-                        Document.ReplaceLine(occurrences[0].Row, $"{RoomLabelPrefix}{writtenLabel}");
+                        if (!rowsToIgnore.Contains(occurrences[0].Row)) {
+                            RefactorLabelName(Document.Lines[occurrences[0].Row]["#".Length..], $"lvl_{label}");
+                        }
+                        Document.ReplaceLine(occurrences[0].Row, $"#lvl_{writtenLabel}");
                         continue;
                     }
 
@@ -186,14 +190,15 @@ public sealed class Editor : Drawable {
                             ? untrimmedLabel
                             : label;
 
-                        Document.ReplaceLine(occurrences[i].Row, $"{RoomLabelPrefix}{writtenLabel} ({i + roomLabelStartIndex})");
+                        if (!rowsToIgnore.Contains(occurrences[i].Row)) {
+                            RefactorLabelName(Document.Lines[occurrences[i].Row]["#".Length..], $"lvl_{label} ({i + roomLabelStartIndex})");
+                        }
+                        Document.ReplaceLine(occurrences[i].Row, $"#lvl_{writtenLabel} ({i + roomLabelStartIndex})");
                     }
                 }
             }
         }
     }
-
-    private const string RoomLabelPrefix = "#lvl_";
 
     private readonly Scrollable scrollable;
     // These values need to be stored, since WPF doesn't like accessing them directly from the scrollable
@@ -288,7 +293,7 @@ public sealed class Editor : Drawable {
     private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
     private static readonly Regex AllBreakpointRegex = new(@"^\s*#*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex TimestampRegex = new(@"^\s*#+\s*(\d+:)?\d{1,2}:\d{2}\.\d{3}\(\d+\)", RegexOptions.Compiled);
-    private static readonly Regex RoomLabelRegex = new($@"^{RoomLabelPrefix}([^\(\)]*)(?:\s\((\d+)\))?$", RegexOptions.Compiled);
+    private static readonly Regex RoomLabelRegex = new(@"^#lvl_([^\(\)]*)(?:\s\((\d+)\))?$", RegexOptions.Compiled);
 
     public Editor(Document document, Scrollable scrollable) {
         this.document = document;
@@ -831,21 +836,23 @@ public sealed class Editor : Drawable {
         }
     }
 
+    private const string CurrentFileCacheKey = "";
+    private static readonly Dictionary<string, string[]> fileCache = []; // path -> lines
+
     /// Iterates over all lines of the document, optionally following Read-commands
     private IEnumerable<(string Line, int Row, string File)> IterateDocumentLines(bool includeReads) {
         if (!includeReads) {
             for (int row = 0; row < Document.Lines.Count; row++) {
-                yield return (Document.Lines[row], row, string.Empty);
+                yield return (Document.Lines[row], row, CurrentFileCacheKey);
             }
 
             yield break;
         }
 
-        Dictionary<string, string[]> fileCache = []; // path -> lines
         Stack<(string Path, int CurrRow, int EndRow)> fileStack = [];
 
-        fileCache[string.Empty] = Document.Lines.ToArray();
-        fileStack.Push((string.Empty, 0, Document.Lines.Count - 1));
+        fileCache[CurrentFileCacheKey] = Document.Lines.ToArray();
+        fileStack.Push((CurrentFileCacheKey, 0, Document.Lines.Count - 1));
 
         while (fileStack.TryPop(out var file)) {
             (string path, int currRow, int endRow) = file;
@@ -903,6 +910,115 @@ public sealed class Editor : Drawable {
                 fileStack.Push((fullPath, startLabelRow.Value, endLabelRow.Value - 1)); // Setup next state
                 break;
             }
+        }
+    }
+
+    private readonly SemaphoreSlim refactorSemaphore = new(1);
+
+    /// Changes the name of a label, updating all references to it in the project
+    private void RefactorLabelName(string oldLabel, string newLabel) {
+        if (oldLabel == newLabel) {
+            return; // Already has that name
+        }
+
+        Console.WriteLine($"Performing label refactor for '{oldLabel}' => '{newLabel}'");
+        Task.Run(async () => {
+            string projectRoot = FindProjectRoot(Document.FilePath);
+
+            // Find all commands which reference this label
+            List<(string FilePath, int Row, CommandLine Line)> commands = [];
+
+            await refactorSemaphore.WaitAsync().ConfigureAwait(false);
+            try {
+                string[] files = Directory.GetFiles(projectRoot, "*.tas", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.Hidden });
+                foreach (string file in files) {
+                    if (file == Document.FilePath || Directory.Exists(file)) {
+                        continue;
+                    }
+
+                    if (!fileCache.TryGetValue(file, out string[]? lines)) {
+                        fileCache[file] = lines = await File.ReadAllLinesAsync(file).ConfigureAwait(false);
+                    }
+
+                    for (int row = 0; row < lines.Length; row++) {
+                        string line = lines[row];
+                        if (CommandLine.TryParse(line, out var commandLine) &&
+                            commandLine.IsCommand("Read") && (
+                            commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel ||
+                            commandLine.Arguments.Length == 3 && commandLine.Arguments[2] == oldLabel))
+                        {
+                            commands.Add((file, row, commandLine));
+                        }
+                    }
+                }
+
+                // Apply changes
+                foreach ((string file, int row, var commandLine) in commands) {
+                    // Start label
+                    if (commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel) {
+                        commandLine.Arguments[1] = newLabel;
+                    }
+                    // End label
+                    if (commandLine.Arguments.Length == 3 && commandLine.Arguments[2] == oldLabel) {
+                        commandLine.Arguments[2] = newLabel;
+                    }
+
+                    string[] lines = fileCache[file];
+                    lines[row] = commandLine.ToString();
+
+                    await File.WriteAllTextAsync(file, string.Join(Document.NewLine, lines)).ConfigureAwait(false);
+                    Console.WriteLine($"Edited command '{commandLine.OriginalText}' => '{commandLine}' file {file} line {row}");
+                }
+            } catch (Exception ex) {
+                Console.WriteLine($"Failed to refactor room label: {ex}");
+            } finally {
+                refactorSemaphore.Release();
+            }
+            Console.WriteLine($"Label refactor for '{oldLabel}' => '{newLabel}' done");
+        });
+    }
+
+    private static readonly Dictionary<string, string> projectRootCache = [];
+
+    /// Locates a probable root directory for the current TAS project
+    private static string FindProjectRoot(string filePath) {
+        if (projectRootCache.TryGetValue(filePath, out string? projectRoot)) {
+            return projectRoot;
+        }
+
+        // 1st approach: Seach a Git repository
+        for (string? path = Path.GetDirectoryName(filePath); !string.IsNullOrEmpty(path); path = Path.GetDirectoryName(path)) {
+            if (Directory.Exists(Path.Combine(path, ".git")) &&
+                // Require at least 75% of files in the repo to be TAS files
+                GetTasFilePercentage(path) >= 0.75f)
+            {
+                projectRootCache[filePath] = path;
+                return path;
+            }
+        }
+
+        // 2nd approach: Go up until there is a sudden drop in the percentage
+        const int maxDepth = 5;
+        int currentDepth = 0;
+        float previousPercentage = 1.0f;
+        string previousPath = string.Empty;
+
+        for (string? path = Path.GetDirectoryName(filePath); currentDepth <= maxDepth && !string.IsNullOrEmpty(path); previousPath = path, path = Path.GetDirectoryName(path), currentDepth++) {
+            float currentPercentage = GetTasFilePercentage(path);
+            if (previousPercentage - currentPercentage >= 0.2f || currentPercentage <= 0.75f) {
+                return previousPath;
+            }
+        }
+
+        // No good solution could be found
+        return Path.GetDirectoryName(filePath)!;
+
+        static float GetTasFilePercentage(string path) {
+            string[] allFiles = Directory.GetFiles(path, "*", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.Directory | FileAttributes.Hidden });
+
+            return allFiles.Count(file => file.EndsWith(".tas")) /
+                   // Ignore documentation in the total
+                   Math.Max(1.0f, allFiles.Count(file => !file.EndsWith(".md") && !file.EndsWith(".txt")));
         }
     }
 
@@ -2767,7 +2883,7 @@ public sealed class Editor : Drawable {
         Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length);
     }
 
-    private void OnInsertRoomName() => InsertLine($"{RoomLabelPrefix}{CommunicationWrapper.LevelName}");
+    private void OnInsertRoomName() => InsertLine($"#lvl_{CommunicationWrapper.LevelName}");
 
     private void OnInsertTime() => InsertLine($"#{CommunicationWrapper.ChapterTime}");
 

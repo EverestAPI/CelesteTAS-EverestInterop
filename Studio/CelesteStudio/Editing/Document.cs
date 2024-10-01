@@ -140,7 +140,7 @@ public class Document : IDisposable {
     private void OnTextChanged(Dictionary<int, string> insertions, Dictionary<int, string> deletions) => TextChanged.Invoke(this, insertions, deletions);
 
     private Document(string? filePath) {
-        FilePath = filePath ?? string.Empty;
+        FilePath = filePath == null ? string.Empty : Path.GetFullPath(filePath);
 
         bool validPath = !string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath);
         CurrentLines = !validPath ? [] : File.ReadAllLines(filePath!).ToList();
