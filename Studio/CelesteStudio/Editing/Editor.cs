@@ -54,13 +54,27 @@ public sealed class Editor : Drawable {
             Recalc();
             ScrollCaretIntoView();
 
-            // Detect user-preference
-            roomLabelStartIndex = 0;
-            foreach (var line in document.Lines) {
-                var match = RoomLabelRegex.Match(line);
-                if (match is { Success: true, Groups.Count: >= 3} && int.TryParse(match.Groups[2].Value, out int startIndex)) {
-                    roomLabelStartIndex = startIndex;
-                    break;
+            // Detect user-preference for room indexing
+            DetectPreference();
+            UpdateRoomLabelIndices();
+
+            Settings.Changed += () => {
+                DetectPreference();
+                UpdateRoomLabelIndices();
+            };
+
+            void DetectPreference() {
+                if (Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.Disabled) {
+                    return;
+                }
+
+                roomLabelStartIndex = 0;
+                foreach ((string line, _, _) in IterateDocumentLines(includeReads: Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.IncludeReads)) {
+                    var match = RoomLabelRegex.Match(line);
+                    if (match is { Success: true, Groups.Count: >= 3} && int.TryParse(match.Groups[2].Value, out int startIndex)) {
+                        roomLabelStartIndex = startIndex;
+                        return;
+                    }
                 }
             }
 
@@ -111,61 +125,70 @@ public sealed class Editor : Drawable {
                     TotalFrameCount += actionLine.FrameCount;
                 }
 
-                /*
-                Studio.Instance.GameInfoPanel.TotalFrames = TotalFrameCount;
-                Studio.Instance.GameInfoPanel.UpdateGameInfo();
-                */
-
-                if (Settings.Instance.AutoIndexRoomLabels) {
-                    // room label without indexing -> lines of all occurrences
-                    Dictionary<string, List<int>> roomLabels = [];
-                    // Allows the user to edit labels without them being auto-trimmed
-                    string untrimmedLabel = string.Empty;
-
-                    for (int row = 0; row < Document.Lines.Count; row++) {
-                        string line = Document.Lines[row];
-                        var match = RoomLabelRegex.Match(line);
-                        if (!match.Success) {
-                            continue;
-                        }
-
-                        string label = match.Groups[1].Value.Trim();
-                        if (row == Document.Caret.Row) {
-                            untrimmedLabel = match.Groups[1].Value;
-                        }
-
-                        if (roomLabels.TryGetValue(label, out var list)) {
-                            list.Add(row);
-                        } else {
-                            roomLabels[label] = [row];
-                        }
-                    }
-
-                    using var __ = Document.Update(raiseEvents: false);
-                    foreach ((string label, var occurrences) in roomLabels) {
-                        if (occurrences.Count == 1) {
-                            string writtenLabel = occurrences[0] == Document.Caret.Row
-                                ? untrimmedLabel
-                                : label;
-
-                            Document.ReplaceLine(occurrences[0], $"{RoomLabelPrefix}{writtenLabel}");
-                            continue;
-                        }
-
-                        for (int i = 0; i < occurrences.Count; i++) {
-                            string writtenLabel = occurrences[0] == Document.Caret.Row
-                                ? untrimmedLabel
-                                : label;
-
-                            Document.ReplaceLine(occurrences[i], $"{RoomLabelPrefix}{writtenLabel} ({i + roomLabelStartIndex})");
-                        }
-                    }
-                }
-
+                UpdateRoomLabelIndices();
                 Recalc();
                 ScrollCaretIntoView();
 
                 TextChanged(document, insertions, deletions);
+            }
+
+            void UpdateRoomLabelIndices() {
+                if (Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.Disabled) {
+                    return;
+                }
+
+                // room label without indexing -> lines of all occurrences
+                Dictionary<string, List<(int Row, bool Update)>> roomLabels = [];
+                // Allows the user to edit labels without them being auto-trimmed
+                string untrimmedLabel = string.Empty;
+
+                foreach ((string line, int row, string filePath) in IterateDocumentLines(includeReads: Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.IncludeReads)) {
+                    var match = RoomLabelRegex.Match(line);
+                    if (!match.Success) {
+                        continue;
+                    }
+
+                    bool isCurrentFile = filePath == string.Empty;
+
+                    string label = match.Groups[1].Value.Trim();
+                    if (row == Document.Caret.Row && isCurrentFile) {
+                        untrimmedLabel = match.Groups[1].Value;
+                    }
+
+                    if (roomLabels.TryGetValue(label, out var list)) {
+                        list.Add((row, isCurrentFile));
+                    } else {
+                        roomLabels[label] = [(row, isCurrentFile)];
+                    }
+                }
+
+                using var __ = Document.Update(raiseEvents: false);
+                foreach ((string label, var occurrences) in roomLabels) {
+                    if (occurrences.Count == 1) {
+                        if (!occurrences[0].Update) {
+                            continue;
+                        }
+
+                        string writtenLabel = occurrences[0].Row == Document.Caret.Row
+                            ? untrimmedLabel
+                            : label;
+
+                        Document.ReplaceLine(occurrences[0].Row, $"{RoomLabelPrefix}{writtenLabel}");
+                        continue;
+                    }
+
+                    for (int i = 0; i < occurrences.Count; i++) {
+                        if (!occurrences[i].Update) {
+                            continue;
+                        }
+
+                        string writtenLabel = occurrences[i].Row == Document.Caret.Row
+                            ? untrimmedLabel
+                            : label;
+
+                        Document.ReplaceLine(occurrences[i].Row, $"{RoomLabelPrefix}{writtenLabel} ({i + roomLabelStartIndex})");
+                    }
+                }
             }
         }
     }
@@ -751,7 +774,7 @@ public sealed class Editor : Drawable {
 
         // Convert to action lines, if possible
         foreach (int row in rows) {
-            string? line = Document.Lines[row];
+            string line = Document.Lines[row];
             if (!ActionLine.TryParse(line, out var actionLine)) {
                 continue;
             }
@@ -804,6 +827,81 @@ public sealed class Editor : Drawable {
                     Document.ReplaceLine(topRow,    (topLine.Value    with { FrameCount = Math.Max(topLine.Value.FrameCount    - 1, 0)                    }).ToString());
                     Document.ReplaceLine(bottomRow, (bottomLine.Value with { FrameCount = Math.Min(bottomLine.Value.FrameCount + 1, ActionLine.MaxFrames) }).ToString());
                 }
+            }
+        }
+    }
+
+    /// Iterates over all lines of the document, optionally following Read-commands
+    private IEnumerable<(string Line, int Row, string File)> IterateDocumentLines(bool includeReads) {
+        if (!includeReads) {
+            for (int row = 0; row < Document.Lines.Count; row++) {
+                yield return (Document.Lines[row], row, string.Empty);
+            }
+
+            yield break;
+        }
+
+        Dictionary<string, string[]> fileCache = []; // path -> lines
+        Stack<(string Path, int CurrRow, int EndRow)> fileStack = [];
+
+        fileCache[string.Empty] = Document.Lines.ToArray();
+        fileStack.Push((string.Empty, 0, Document.Lines.Count - 1));
+
+        while (fileStack.TryPop(out var file)) {
+            (string path, int currRow, int endRow) = file;
+            string[] lines = fileCache[path];
+
+            for (int row = currRow; row <= endRow; row++) {
+                string line = lines[row];
+
+                if (!CommandLine.TryParse(line, out var commandLine) ||
+                    !commandLine.IsCommand("Read") || commandLine.Arguments.Length < 1)
+                {
+                    yield return (line, row, path);
+                    continue;
+                }
+
+                // Follow Read-command
+                if (Path.GetDirectoryName(Studio.Instance.Editor.Document.FilePath) is not { } documentDir) {
+                    continue;
+                }
+
+                string fullPath = Path.Combine(documentDir, $"{commandLine.Arguments[0]}.tas");
+                if (!File.Exists(fullPath)) {
+                    continue;
+                }
+
+                if (!fileCache.TryGetValue(fullPath, out string[]? cacheLines)) {
+                    fileCache[fullPath] = cacheLines = File.ReadAllLines(fullPath);
+                }
+
+                var readLines = cacheLines
+                    .Select((readLine, i) => (line: readLine, i))
+                    .ToArray();
+
+                int? startLabelRow = null;
+                if (commandLine.Arguments.Length > 1) {
+                    (var label, startLabelRow) = readLines
+                        .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[1]}");
+                    if (label == null) {
+                        continue;
+                    }
+                }
+                int? endLabelRow = null;
+                if (commandLine.Arguments.Length > 2) {
+                    (var label, endLabelRow) = readLines
+                        .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[2]}");
+                    if (label == null) {
+                        continue;
+                    }
+                }
+
+                startLabelRow ??= 0;
+                endLabelRow ??= readLines.Length - 1;
+
+                fileStack.Push((path, row + 1, endRow)); // Store current state
+                fileStack.Push((fullPath, startLabelRow.Value, endLabelRow.Value - 1)); // Setup next state
+                break;
             }
         }
     }
@@ -1137,7 +1235,7 @@ public sealed class Editor : Drawable {
         }
 
         // If nothing handled this, and it's not a character, send it anyway
-        if (Settings.Instance.SendInputsToCeleste && Settings.Instance.SendInputsNonWritable && !Platform.Instance.IsWpf && CommunicationWrapper.Connected && !isTyping && !sendInputs && !e.Handled && e.KeyChar == char.MaxValue && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
+        if (Settings.Instance.SendInputsToCeleste && Settings.Instance.SendInputsNonWritable && !Platform.IsWpf && CommunicationWrapper.Connected && !isTyping && !sendInputs && !e.Handled && e.KeyChar == char.MaxValue && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
             e.Handled = true;
             return;
         }
@@ -1337,6 +1435,8 @@ public sealed class Editor : Drawable {
 
         return () => {
             int row = Document.Caret.Row;
+
+            using var __ = Document.Update(raiseEvents: false);
             Document.ReplaceLine(row, quickEdit.Value.ActualText);
 
             ClearQuickEdits();

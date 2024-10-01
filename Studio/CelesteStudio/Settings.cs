@@ -21,6 +21,7 @@ using Tomlet.Models;
 
 namespace CelesteStudio;
 
+public enum AutoRoomIndexing { Disabled, CurrentFile, IncludeReads }
 public enum InsertDirection { Above, Below }
 public enum CaretInsertPosition { AfterInsert, PreviousPosition }
 public enum CommandSeparator { Space, Comma, CommaSpace }
@@ -112,7 +113,7 @@ public sealed class Settings {
 
     public bool AutoSave { get; set; } = true;
     public bool AutoRemoveMutuallyExclusiveActions { get; set; } = true;
-    public bool AutoIndexRoomLabels { get; set; } = true;
+    public AutoRoomIndexing AutoIndexRoomLabels { get; set; } = AutoRoomIndexing.CurrentFile;
     public bool SyncCaretWithPlayback { get; set; } = true;
 
     public bool SendInputsToCeleste { get; set; } = true;

@@ -89,6 +89,7 @@ public static class StringExtensions {
                 lines++;
                 continue;
             }
+
             // \r is either alone or a \r\n
             if (str[i] == '\r') {
                 lines++;
@@ -99,6 +100,34 @@ public static class StringExtensions {
         }
 
         return lines;
+    }
+
+    /// Splits each line into its own string, accounting for LF, CRLF and CR line endings
+    public static IEnumerable<string> SplitLines(this string str) {
+        int startIdx = 0;
+        for (int i = 0; i < str.Length; i++) {
+            // \n is always a newline
+            if (str[i] == '\n') {
+                yield return str[startIdx..i];
+                startIdx = i + 1;
+                continue;
+            }
+
+            // \r is either alone or a \r\n
+            if (str[i] == '\r') {
+                yield return str[startIdx..i];
+
+                if (i + 1 < str.Length && str[i + 1] == '\n') {
+                    i++;
+                }
+
+                startIdx = i + 1;
+            }
+        }
+
+        if (startIdx != str.Length) {
+            yield return str[startIdx..];
+        }
     }
 }
 

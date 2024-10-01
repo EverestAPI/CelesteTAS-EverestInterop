@@ -40,7 +40,7 @@ public static class Migrator {
         bool studioV2Present = File.Exists(Path.Combine(Studio.CelesteDirectory ?? string.Empty, "Celeste Studio.toml"));
 
 #if DEBUG
-        // Always apply the latest migration in debug builds
+        // Update to the latest migration in debug builds
         newVersion = migrations[^1].Version;
 #else
         newVersion = Assembly.GetExecutingAssembly().GetName().Version!;
@@ -55,6 +55,12 @@ public static class Migrator {
         } else {
             oldVersion = Version.TryParse(File.ReadAllText(LatestVersionPath), out var version) ? version : newVersion;
         }
+#if DEBUG
+        // Always apply the latest migration in debug builds
+        if (migrations[^2].Version < oldVersion) {
+            oldVersion = migrations[^2].Version;
+        }
+#endif
 
         File.WriteAllText(LatestVersionPath, newVersion.ToString(3));
 
