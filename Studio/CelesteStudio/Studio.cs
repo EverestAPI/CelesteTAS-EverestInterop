@@ -599,6 +599,7 @@ public sealed class Studio : Form {
                     MenuUtils.CreateSettingToggle("On Inputs", nameof(Settings.SendInputsOnActionLines)),
                     MenuUtils.CreateSettingToggle("On Comments", nameof(Settings.SendInputsOnComments)),
                     MenuUtils.CreateSettingToggle("On Commands", nameof(Settings.SendInputsOnCommands)),
+                    MenuUtils.CreateSettingToggle("Always send non-writable Inputs", nameof(Settings.SendInputsNonWritable)),
                     new SeparatorMenuItem(),
                     MenuUtils.CreateSettingNumberInput("Typing Timeout", nameof(Settings.SendInputsTypingTimeout), 0.0f, 5.0f, 0.1f),
                 }},

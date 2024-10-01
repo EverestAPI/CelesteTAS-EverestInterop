@@ -119,6 +119,7 @@ public sealed class Settings {
     public bool SendInputsOnActionLines { get; set; } = true;
     public bool SendInputsOnCommands { get; set; } = true;
     public bool SendInputsOnComments { get; set; } = false;
+    public bool SendInputsNonWritable { get; set; } = true;
     public float SendInputsTypingTimeout { get; set; } = 0.3f;
 
     public float ScrollSpeed { get; set; } = 0.0f; // A value <= 0.0f means to use the native scrollable

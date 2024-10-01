@@ -1126,7 +1126,7 @@ public sealed class Editor : Drawable {
                 // ..that also means OnTextInput won't be called..
                 if (Eto.Platform.Instance.IsMac) {
                     e.Handled = true;
-                    if (e.KeyChar != ushort.MaxValue) {
+                    if (e.KeyChar != char.MaxValue) {
                         OnTextInput(new TextInputEventArgs(e.KeyChar.ToString()));
                     }
                 } else {
@@ -1137,7 +1137,7 @@ public sealed class Editor : Drawable {
         }
 
         // If nothing handled this, and it's not a character, send it anyway
-        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && !isTyping && !sendInputs && !e.Handled && e.KeyChar == ushort.MaxValue && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
+        if (Settings.Instance.SendInputsToCeleste && Settings.Instance.SendInputsNonWritable && CommunicationWrapper.Connected && !isTyping && !sendInputs && !e.Handled && e.KeyChar == char.MaxValue && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
             e.Handled = true;
             return;
         }
@@ -1164,7 +1164,7 @@ public sealed class Editor : Drawable {
             (Settings.Instance.SendInputsOnActionLines && isActionLine) ||
             (Settings.Instance.SendInputsOnComments && isComment) ||
             (Settings.Instance.SendInputsOnCommands && !isActionLine && !isComment) ||
-            e.KeyChar == ushort.MaxValue;
+            (Settings.Instance.SendInputsNonWritable && e.KeyChar == ushort.MaxValue);
 
         if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && !isTyping && sendInputs && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: true)) {
             e.Handled = true;
