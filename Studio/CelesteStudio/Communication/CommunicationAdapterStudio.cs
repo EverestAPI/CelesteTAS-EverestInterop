@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CelesteStudio.Util;
+using Eto.Forms;
 using StudioCommunication;
 using StudioCommunication.Util;
 
@@ -33,6 +34,28 @@ public sealed class CommunicationAdapterStudio(
     protected override void FullReset() {
         CommunicationWrapper.Stop();
         CommunicationWrapper.Start();
+    }
+
+    protected override void OnProtocolVersionMismatch(ushort otherVersion) {
+        Application.Instance.AsyncInvoke(() => {
+            if (otherVersion > ProtocolVersion) {
+                MessageBox.Show("""
+                                Failed to connect to CelesteTAS!
+                                Your Celeste Studio version is outdated.
+                                Make sure to get the latest version of both CelesteTAS and Celeste Studio.
+                                """,
+                    "Celeste Studio outdated", MessageBoxType.Error);
+            } else {
+                MessageBox.Show("""
+                                Failed to connect to CelesteTAS!
+                                Your CelesteTAS version is outdated.
+                                Make sure to get the latest version of both CelesteTAS and Celeste Studio.
+                                """,
+                    "CelesteTAS outdated", MessageBoxType.Error);
+            }
+        });
+
+        CommunicationWrapper.Stop();
     }
 
     protected override void OnConnectionChanged() {
@@ -102,7 +125,7 @@ public sealed class CommunicationAdapterStudio(
                     case GameDataType.CommandHash:
                         gameData[gameDataType] = reader.ReadInt32();
                         break;
-                    
+
                     case GameDataType.LevelInfo:
                         gameData[gameDataType] = reader.ReadObject<LevelInfo>();
                         break;

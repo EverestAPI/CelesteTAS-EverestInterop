@@ -54,6 +54,10 @@ public abstract class CommunicationAdapterBase : IDisposable {
 
     private readonly List<(MessageID, Action<BinaryWriter>)> queuedWrites = [];
 
+    /// Indicates ABI compatibility between two adapters
+    protected const ushort ProtocolVersion = 1;
+    private const int PingMessageSize = sizeof(ushort);
+
     private const int MessageCountOffset = 4;
     private const int MessagesOffset = MessageCountOffset + 1;
 
@@ -202,7 +206,12 @@ public abstract class CommunicationAdapterBase : IDisposable {
                                 LogError("Messages ended early! Something probably got corrupted!");
                                 break;
                             } else if (messageId == MessageID.Ping) {
-                                // Just sent to keep up the connection
+                                // Sent to keep up the connection
+                                ushort version = reader.ReadUInt16();
+                                if (version != ProtocolVersion) {
+                                    OnProtocolVersionMismatch(version);
+                                    Connected = false;
+                                }
                             } else if (messageId == MessageID.Reset) {
                                 LogVerbose("Received message Reset");
                                 // Fully restart ourselves. Called async to avoid deadlocks
@@ -244,11 +253,11 @@ public abstract class CommunicationAdapterBase : IDisposable {
                         byte count = reader.ReadByte();
 
                         if (count == 0) {
-                            // The Ping message has no data attached and there aren't any other messages
                             writeStream.Position = 0;
-                            writer.Write(1);
+                            writer.Write(PingMessageSize + 1);
                             writer.Write((byte)1);
                             writer.Write((byte)MessageID.Ping);
+                            writer.Write(ProtocolVersion);
                         }
 
                         lastPing = now;
@@ -308,8 +317,9 @@ public abstract class CommunicationAdapterBase : IDisposable {
         writeStream.Write(BitConverter.GetBytes(newOffset));
     }
 
-    protected abstract void FullReset();
+    protected virtual void OnProtocolVersionMismatch(ushort otherVersion) { }
     protected abstract void OnConnectionChanged();
+    protected abstract void FullReset();
     protected abstract void HandleMessage(MessageID messageId, BinaryReader reader);
 
     protected abstract void LogInfo(string message);
