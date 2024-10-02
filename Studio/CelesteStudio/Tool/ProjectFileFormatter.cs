@@ -203,7 +203,7 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
         // room label without indexing -> lines of all occurrences
         Dictionary<string, List<(int Row, bool Update)>> roomLabels = [];
 
-        foreach ((string line, int row, string file) in editor.IterateDocumentLines(includeReads, filePath)) {
+        foreach ((string line, int row, string file, _) in editor.IterateDocumentLines(includeReads, filePath)) {
             var match = Editor.RoomLabelRegex.Match(line);
             if (!match.Success) {
                 continue;

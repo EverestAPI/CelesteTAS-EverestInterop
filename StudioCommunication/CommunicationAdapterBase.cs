@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 namespace StudioCommunication;
 
 public abstract class CommunicationAdapterBase : IDisposable {
+    /// Which side of communication the adapter is on
     protected enum Location { Celeste, Studio }
 
     private bool connected = false;

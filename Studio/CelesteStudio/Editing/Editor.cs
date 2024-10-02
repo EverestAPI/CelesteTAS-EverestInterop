@@ -70,7 +70,7 @@ public sealed class Editor : Drawable {
                 }
 
                 roomLabelStartIndex = 0;
-                foreach ((string line, _, _) in IterateDocumentLines(includeReads: Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.IncludeReads)) {
+                foreach ((string line, _, _, _) in IterateDocumentLines(includeReads: Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.IncludeReads)) {
                     var match = RoomLabelRegex.Match(line);
                     if (match is { Success: true, Groups.Count: >= 3} && int.TryParse(match.Groups[2].Value, out int startIndex)) {
                         roomLabelStartIndex = startIndex;
@@ -143,7 +143,7 @@ public sealed class Editor : Drawable {
                 // Allows the user to edit labels without them being auto-trimmed
                 string untrimmedLabel = string.Empty;
 
-                foreach ((string line, int row, string filePath) in IterateDocumentLines(includeReads: Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.IncludeReads)) {
+                foreach ((string line, int row, string filePath, _) in IterateDocumentLines(includeReads: Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.IncludeReads)) {
                     var match = RoomLabelRegex.Match(line);
                     if (!match.Success) {
                         continue;
@@ -175,7 +175,9 @@ public sealed class Editor : Drawable {
                             : label;
 
                         if (!rowsToIgnore.Contains(occurrences[0].Row)) {
-                            Task.Run(async () => await RefactorLabelName(Document.Lines[occurrences[0].Row]["#".Length..], $"lvl_{label}").ConfigureAwait(false));
+                            string oldLabel = Document.Lines[occurrences[0].Row]["#".Length..];
+                            string newLabel = $"lvl_{label}";
+                            Task.Run(async () => await RefactorLabelName(oldLabel, newLabel).ConfigureAwait(false));
                         }
                         Document.ReplaceLine(occurrences[0].Row, $"#lvl_{writtenLabel}");
                         continue;
@@ -191,7 +193,9 @@ public sealed class Editor : Drawable {
                             : label;
 
                         if (!rowsToIgnore.Contains(occurrences[i].Row)) {
-                            Task.Run(async () => await RefactorLabelName(Document.Lines[occurrences[i].Row]["#".Length..], $"lvl_{label} ({i + roomLabelStartIndex})").ConfigureAwait(false));
+                            string oldLabel = Document.Lines[occurrences[i].Row]["#".Length..];
+                            string newLabel = $"lvl_{label} ({i + roomLabelStartIndex})";
+                            Task.Run(async () => await RefactorLabelName(oldLabel, newLabel).ConfigureAwait(false));
                         }
                         Document.ReplaceLine(occurrences[i].Row, $"#lvl_{writtenLabel} ({i + roomLabelStartIndex})");
                     }
@@ -840,7 +844,7 @@ public sealed class Editor : Drawable {
     public static readonly Dictionary<string, string[]> FileCache = [];
 
     /// Iterates over all lines of the document, optionally following Read-commands
-    public IEnumerable<(string Line, int Row, string File)> IterateDocumentLines(bool includeReads, string? filePath = null) {
+    public IEnumerable<(string Line, int Row, string File, CommandLine? TargetCommand)> IterateDocumentLines(bool includeReads, string? filePath = null) {
         filePath ??= Document.FilePath;
         if (!FileCache.ContainsKey(filePath) && filePath != Document.FilePath) {
             FileCache[filePath] = File.ReadAllLines(filePath);
@@ -850,18 +854,17 @@ public sealed class Editor : Drawable {
             string[] lines = filePath == Document.FilePath ? Document.Lines.ToArray() : FileCache[filePath];
 
             for (int row = 0; row < lines.Length; row++) {
-                yield return (lines[row], row, filePath);
+                yield return (lines[row], row, filePath, null);
             }
 
             yield break;
         }
 
-        Stack<(string Path, int CurrRow, int EndRow)> fileStack = [];
-
-        fileStack.Push((filePath, 0, Document.Lines.Count - 1));
+        Stack<(string Path, int CurrRow, int EndRow, CommandLine? TargetCommand)> fileStack = [];
+        fileStack.Push((filePath, 0, Document.Lines.Count - 1, null));
 
         while (fileStack.TryPop(out var file)) {
-            (string path, int currRow, int endRow) = file;
+            (string path, int currRow, int endRow, var targetCommand) = file;
             string[] lines = path == Document.FilePath ? Document.Lines.ToArray() : FileCache[path];
 
             for (int row = currRow; row <= endRow && row < lines.Length; row++) {
@@ -870,7 +873,7 @@ public sealed class Editor : Drawable {
                 if (!CommandLine.TryParse(line, out var commandLine) ||
                     !commandLine.IsCommand("Read") || commandLine.Arguments.Length < 1)
                 {
-                    yield return (line, row, path);
+                    yield return (line, row, path, targetCommand);
                     continue;
                 }
 
@@ -912,8 +915,8 @@ public sealed class Editor : Drawable {
                 startLabelRow ??= 0;
                 endLabelRow ??= readLines.Length - 1;
 
-                fileStack.Push((path, row + 1, endRow)); // Store current state
-                fileStack.Push((fullPath, startLabelRow.Value, endLabelRow.Value - 1)); // Setup next state
+                fileStack.Push((path, row + 1, endRow, targetCommand)); // Store current state
+                fileStack.Push((fullPath, startLabelRow.Value, endLabelRow.Value - 1, commandLine)); // Setup next state
                 break;
             }
         }

@@ -393,9 +393,8 @@ public sealed class Studio : Form {
             return;
 
         string simpleConsoleCommand = CommunicationWrapper.GetConsoleCommand(simple: true);
-        CommunicationWrapper.GetModURL();
         LevelInfo? levelInfo = CommunicationWrapper.GetLevelInfo();
-        
+
         string initText = $"RecordCount: 1{Document.NewLine}";
         if (levelInfo != null && !string.IsNullOrWhiteSpace(levelInfo?.ModUrl)) {
             initText = levelInfo?.ModUrl + initText;
@@ -488,6 +487,28 @@ public sealed class Studio : Form {
         }
 
         File.WriteAllText(filePath, Editor.Document.Text);
+        OpenFile(filePath);
+    }
+
+    private void OnIntegrateReadFiles() {
+        var dialog = new SaveFileDialog {
+            Filters = { new FileFilter("TAS", ".tas") },
+            Directory = new Uri(GetFilePickerDirectory()),
+            FileName = Path.GetDirectoryName(Editor.Document.FilePath) + "/" + Path.GetFileNameWithoutExtension(Editor.Document.FilePath) + "_Integrated.tas"
+        };
+        Console.WriteLine($"f {Editor.Document.FilePath} & {Path.GetDirectoryName(Editor.Document.FilePath) + Path.GetFileNameWithoutExtension(Editor.Document.FilePath) + "_Integrated.tas"}");
+
+        if (dialog.ShowDialog(this) != DialogResult.Ok) {
+            return;
+        }
+
+        string filePath = dialog.FileName;
+        if (Path.GetExtension(filePath) != ".tas") {
+            filePath += ".tas";
+        }
+
+        IntegrateReadFiles.Generate(Editor.Document.FilePath, filePath);
+
         OpenFile(filePath);
     }
 
@@ -587,7 +608,6 @@ public sealed class Studio : Form {
                 MenuEntry.File_Save.ToAction(OnSaveFile),
                 MenuEntry.File_SaveAs.ToAction(OnSaveFileAs),
                 new SeparatorMenuItem(),
-                MenuUtils.CreateAction("&Integrate Read Files"),
                 MenuUtils.CreateAction("&Convert to LibTAS Movie..."),
                 new SeparatorMenuItem(),
                 recordTasButton,
@@ -666,14 +686,15 @@ public sealed class Studio : Form {
                 MenuUtils.CreateGameSettingNumberInput("Slow Forward Speed", nameof(GameSettings.SlowForwardSpeed), minSlowForwardSpeed, maxSlowForwardSpeed, 0.1f),
             }},
             new SubMenuItem { Text = "&Tools", Items = {
-                MenuUtils.CreateAction("Project File Formatter", Keys.None, ProjectFileFormatterDialog.Show),
+                MenuUtils.CreateAction("&Project File Formatter", Keys.None, ProjectFileFormatterDialog.Show),
+                MenuUtils.CreateAction("&Integrate Read Files", Keys.None, OnIntegrateReadFiles),
                 new SeparatorMenuItem(),
-                MenuUtils.CreateAction("Jadderline", Keys.None, () => {
+                MenuUtils.CreateAction("&Jadderline", Keys.None, () => {
                     jadderlineForm ??= new();
                     jadderlineForm.Show();
                     jadderlineForm.Closed += (_, _) => jadderlineForm = null;
                 }),
-                MenuUtils.CreateAction("Featherline", Keys.None, () => {
+                MenuUtils.CreateAction("&Featherline", Keys.None, () => {
                     featherlineForm ??= new();
                     featherlineForm.Show();
                     featherlineForm.Closed += (_, _) => featherlineForm = null;
