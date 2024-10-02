@@ -1,8 +1,8 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Eto.Forms;
+using System;
 
-namespace CelesteStudio.Util;
+namespace StudioCommunication.Util;
 
 public static class ProcessHelper
 {
@@ -14,7 +14,7 @@ public static class ProcessHelper
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
             Process.Start("open", [path]);
         } else {
-            MessageBox.Show($"Cannot open '{path}' in it's default app, since platform is not recognized", MessageBoxType.Error);
+            throw new NotImplementedException($"Unsupported platform: {RuntimeInformation.OSDescription} with {RuntimeInformation.OSArchitecture}");
         }
     }
 

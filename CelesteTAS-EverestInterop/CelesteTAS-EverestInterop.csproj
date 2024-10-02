@@ -46,17 +46,27 @@
         <PackageReference Include="JetBrains.Profiler.Api" Version="1.1.8" Condition="'$(Configuration)' == 'Debug'" />
     </ItemGroup>
 
+    <ItemGroup>
+        <CelesteAssets Include="everest.yaml" />
+        <CelesteAssets Include="Dialog\**\*" />
+        <CelesteAssets Include="Graphics\**\*" />
+    </ItemGroup>
+
     <Target Name="CopyFiles" AfterTargets="Build">
+        <!-- Assemblies -->
         <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)$(AssemblyName).pdb" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)StudioCommunication.dll" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)StudioCommunication.pdb" DestinationFolder="..\bin" />
 
-        <Copy SourceFiles="EverestInterop\Lua\env.lua" DestinationFiles="..\bin\env.lua" />
-
         <Copy SourceFiles="$(OutputPath)ICSharpCode.SharpZipLib.dll" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)MemoryPack.Core.dll" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)JetBrains.Profiler.Api.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
+        
+        <!-- Assets -->
+        <Message Text="@(CelesteAssets)" />
+        <Copy SourceFiles="Source\EverestInterop\Lua\env.lua" DestinationFiles="..\bin\env.lua" />
+        <Copy SourceFiles="@(CelesteAssets)" DestinationFiles="..\%(Identity)" />
     </Target>
 
     <Target Name="PackageMod" AfterTargets="CopyFiles" Condition="'$(Configuration)' == 'Release'">

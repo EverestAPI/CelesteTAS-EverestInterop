@@ -3,29 +3,48 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Threading.Tasks;
+using Tomlet.Models;
 
 namespace CelesteStudio.Migration;
 
 public static class Migrator {
+    public static string BackupDirectory => Path.Combine(Settings.BaseConfigPath, "LegacySettings");
     private static string LatestVersionPath => Path.Combine(Settings.BaseConfigPath, ".latest-version");
 
     private static readonly (Version Version, Action? PreLoad, Action? PostLoad)[] migrations = [
-        (new Version(3, 0, 0), null, MigrateV3_0_0.PostLoad)
+        (new Version(3, 0, 0), MigrateV3_0_0.PreLoad, null),
+        (new Version(3, 2, 0), MigrateV3_2_0.PreLoad, null),
     ];
 
     private static Version oldVersion = null!, newVersion = null!;
     private static readonly List<(string versionName, Stream stream)> changelogs = [];
 
+    public static void WriteSettings(TomlDocument document) {
+        // Write to another file and then move that over, to avoid getting interrupted while writing and corrupting the settings
+        var tmpFile = Settings.SettingsPath + ".tmp";
+        File.WriteAllText(tmpFile, document.SerializedValue);
+        File.Move(tmpFile, Settings.SettingsPath, overwrite: true);
+    }
+
     /// Migrates settings and other configurations from the last used to the current version
     /// Also shows changelog dialogs when applicable
     public static void ApplyPreLoadMigrations() {
+        if (!Directory.Exists(BackupDirectory)) {
+            Directory.CreateDirectory(BackupDirectory);
+        }
+
         bool firstV3Launch = !File.Exists(LatestVersionPath);
 
         // Assumes Studio was properly installed by CelesteTAS
-        bool studioV2Present = File.Exists(Path.Combine(Studio.CelesteDirectory ?? string.Empty, "Celeste Studio.exe"));
+        // Need to check .toml since .exe and .pdb were already deleted by CelesteTAS
+        bool studioV2Present = File.Exists(Path.Combine(Studio.CelesteDirectory ?? string.Empty, "Celeste Studio.toml"));
 
+#if DEBUG
+        // Update to the latest migration in debug builds
+        newVersion = migrations[^1].Version;
+#else
         newVersion = Assembly.GetExecutingAssembly().GetName().Version!;
+#endif
         if (firstV3Launch) {
             if (studioV2Present) {
                 oldVersion = new Version(2, 0, 0);
@@ -36,10 +55,19 @@ public static class Migrator {
         } else {
             oldVersion = Version.TryParse(File.ReadAllText(LatestVersionPath), out var version) ? version : newVersion;
         }
+#if DEBUG
+        // Always apply the latest migration in debug builds
+        if (migrations[^2].Version < oldVersion) {
+            oldVersion = migrations[^2].Version;
+        }
+#endif
 
         File.WriteAllText(LatestVersionPath, newVersion.ToString(3));
 
-        if (oldVersion == newVersion) {
+        if (oldVersion.Major == newVersion.Major &&
+            oldVersion.Minor == newVersion.Minor &&
+            oldVersion.Build == newVersion.Build)
+        {
             return;
         }
 

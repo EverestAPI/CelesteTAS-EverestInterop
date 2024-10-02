@@ -24,6 +24,10 @@ internal static class LogUtil {
     }
 #endif
 
+    public static void LogException(this Exception e) {
+        Logger.LogDetailed(e, Tag);
+    }
+
     public static void LogException(this Exception e, string header, LogLevel logLevel = LogLevel.Error) {
         header.Log(logLevel);
         Logger.LogDetailed(e, Tag);

@@ -20,7 +20,7 @@ public static class CommunicationWrapper {
 
     private static CommunicationAdapterStudio? comm;
 
-    private static StudioState state = new();
+    public static StudioState State { get; private set; } = new();
     private static Dictionary<HotkeyID, List<WinFormsKeys>> bindings = [];
     private static GameSettings settings = new();
     private static CommandInfo[] commands = [];
@@ -49,8 +49,8 @@ public static class CommunicationWrapper {
         Application.Instance.AsyncInvoke(() => ConnectionChanged?.Invoke());
     }
     private static void OnStateChanged(StudioState newState) {
-        var prevState = state;
-        state = newState;
+        var prevState = State;
+        State = newState;
         Application.Instance.AsyncInvoke(() => StateUpdated?.Invoke(prevState, newState));
     }
     private static void OnLinesChanged(Dictionary<int, string> updateLines) {
@@ -151,18 +151,18 @@ public static class CommunicationWrapper {
     public static GameSettings GameSettings => settings;
     public static CommandInfo[] Commands => commands;
 
-    public static int CurrentLine => Connected ? state.CurrentLine : -1;
-    public static string CurrentLineSuffix => Connected ? state.CurrentLineSuffix : string.Empty;
-    public static int CurrentFrameInTas => Connected ? state.CurrentFrameInTas : -1;
-    public static int CurrentFrameInInput => Connected ? state.CurrentFrameInInput : -1;
-    public static int TotalFrames => Connected ? state.TotalFrames : -1;
-    public static int SaveStateLine => Connected ? state.SaveStateLine : -1;
-    public static States TasStates => Connected ? state.tasStates : States.None;
-    public static string GameInfo => Connected ? state.GameInfo : string.Empty;
-    public static string LevelName => Connected ? state.LevelName : string.Empty;
-    public static string ChapterTime => Connected ? state.ChapterTime : string.Empty;
-    public static bool ShowSubpixelIndicator => Connected && state.ShowSubpixelIndicator;
-    public static (float X, float Y) SubpixelRemainder => Connected ? state.SubpixelRemainder : (0.0f, 0.0f);
+    public static int CurrentLine => Connected ? State.CurrentLine : -1;
+    public static string CurrentLineSuffix => Connected ? State.CurrentLineSuffix : string.Empty;
+    public static int CurrentFrameInTas => Connected ? State.CurrentFrameInTas : -1;
+    public static int CurrentFrameInInput => Connected ? State.CurrentFrameInInput : -1;
+    public static int TotalFrames => Connected ? State.TotalFrames : -1;
+    public static int SaveStateLine => Connected ? State.SaveStateLine : -1;
+    public static States TasStates => Connected ? State.tasStates : States.None;
+    public static string GameInfo => Connected ? State.GameInfo : string.Empty;
+    public static string LevelName => Connected ? State.LevelName : string.Empty;
+    public static string ChapterTime => Connected ? State.ChapterTime : string.Empty;
+    public static bool ShowSubpixelIndicator => Connected && State.ShowSubpixelIndicator;
+    public static (float X, float Y) SubpixelRemainder => Connected ? State.SubpixelRemainder : (0.0f, 0.0f);
 
     public static string GetConsoleCommand(bool simple) {
         if (!Connected) {

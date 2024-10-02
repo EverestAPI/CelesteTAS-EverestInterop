@@ -1,8 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
 namespace StudioCommunication.Util;
+
+public static class NumberExtensions {
+    public static T Mod<T>(this T x, T m) where T : INumber<T> => (x % m + m) % m;
+}
 
 public static class StringExtensions {
     private static readonly string format = "0.".PadRight(339, '#');
@@ -19,6 +24,34 @@ public static class StringExtensions {
         } else {
             return value.ToString($"F{decimals}");
         }
+    }
+
+    private static readonly string[] sizeSuffixes = ["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
+    public static (string Amount, string Suffix) HumanReadableBytes<T>(this T value, int decimals = 1) where T : INumber<T>
+    {
+        if (value < T.Zero) {
+            (string amount, string suffix) = HumanReadableBytes(-value, decimals);
+            return ("-" + amount, suffix);
+        }
+        if (value == T.Zero) {
+            return (string.Format($"{{0:n{decimals}}}", 0), sizeSuffixes[0]);
+        }
+
+        // mag is 0 for bytes, 1 for KiB, 2, for MiB, etc.
+        int mag = (int)Math.Log(double.CreateChecked(value), 1024);
+
+        // 1L << (mag * 10) == 2 ^ (10 * mag)
+        // (i.e. the number of bytes in the unit corresponding to mag)
+        decimal adjustedSize = decimal.CreateChecked(value) / (1L << (mag * 10));
+
+        // Make adjustment when the value is large enough that it would round up to 1000 or more
+        if (Math.Round(adjustedSize, decimals) >= 1000)
+        {
+            mag += 1;
+            adjustedSize /= 1024;
+        }
+
+        return (string.Format($"{{0:n{decimals}}}", adjustedSize), sizeSuffixes[mag]);
     }
 
     /// Replaces the specified range inside the string and returns the result
@@ -43,6 +76,57 @@ public static class StringExtensions {
             }
 
             return hash1 + (hash2*1566083941);
+        }
+    }
+
+    /// Counts the amount of lines, accounting for LF, CRLF and CR line endings
+    public static int CountLines(this string str) {
+        int lines = 1;
+
+        for (int i = 0; i < str.Length; i++) {
+            // \n is always a newline
+            if (str[i] == '\n') {
+                lines++;
+                continue;
+            }
+
+            // \r is either alone or a \r\n
+            if (str[i] == '\r') {
+                lines++;
+                if (i + 1 < str.Length && str[i + 1] == '\n') {
+                    i++;
+                }
+            }
+        }
+
+        return lines;
+    }
+
+    /// Splits each line into its own string, accounting for LF, CRLF and CR line endings
+    public static IEnumerable<string> SplitLines(this string str) {
+        int startIdx = 0;
+        for (int i = 0; i < str.Length; i++) {
+            // \n is always a newline
+            if (str[i] == '\n') {
+                yield return str[startIdx..i];
+                startIdx = i + 1;
+                continue;
+            }
+
+            // \r is either alone or a \r\n
+            if (str[i] == '\r') {
+                yield return str[startIdx..i];
+
+                if (i + 1 < str.Length && str[i + 1] == '\n') {
+                    i++;
+                }
+
+                startIdx = i + 1;
+            }
+        }
+
+        if (startIdx != str.Length) {
+            yield return str[startIdx..];
         }
     }
 }

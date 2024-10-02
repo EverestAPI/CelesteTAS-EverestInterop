@@ -14,12 +14,16 @@ using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
 using StudioCommunication;
+using StudioCommunication.Util;
 using WrapLine = (string Line, int Index);
 using WrapEntry = (int StartOffset, (string Line, int Index)[] Lines);
 
 namespace CelesteStudio.Editing;
 
 public sealed class Editor : Drawable {
+    /// Reports insertions and deletions of the underlying document
+    public event Action<Document, Dictionary<int, string>, Dictionary<int, string>> TextChanged = (_, _, _) => {};
+
     private Document? document;
     public Document Document {
         get => document!;
@@ -45,19 +49,43 @@ public sealed class Editor : Drawable {
 
             // Reset various state
             ActivePopupMenu = null;
+            FileCache.Clear(); // Unrelated to the file, but good to refresh semi-regularly
 
             FixInvalidInputs();
             Recalc();
             ScrollCaretIntoView();
 
-            // Detect user-preference
-            roomLabelStartIndex = 0;
-            foreach (var line in document.Lines) {
-                var match = RoomLabelRegex.Match(line);
-                if (match is { Success: true, Groups.Count: >= 3} && int.TryParse(match.Groups[2].Value, out int startIndex)) {
-                    roomLabelStartIndex = startIndex;
-                    break;
+            // Detect user-preference for room indexing
+            DetectPreference();
+            UpdateRoomLabelIndices([]);
+
+            Settings.Changed += () => {
+                DetectPreference();
+                UpdateRoomLabelIndices([]);
+            };
+
+            void DetectPreference() {
+                if (Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.Disabled) {
+                    return;
                 }
+
+                roomLabelStartIndex = 0;
+                foreach ((string line, _, _) in IterateDocumentLines(includeReads: Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.IncludeReads)) {
+                    var match = RoomLabelRegex.Match(line);
+                    if (match is { Success: true, Groups.Count: >= 3} && int.TryParse(match.Groups[2].Value, out int startIndex)) {
+                        roomLabelStartIndex = startIndex;
+                        return;
+                    }
+                }
+            }
+
+            // Calculate total frame count
+            TotalFrameCount = 0;
+            foreach (string line in document.Lines) {
+                if (!ActionLine.TryParse(line, out var actionLine)) {
+                    continue;
+                }
+                TotalFrameCount += actionLine.FrameCount;
             }
 
             // Auto-collapses folds which are too long
@@ -79,74 +107,98 @@ public sealed class Editor : Drawable {
 
             return;
 
-            void HandleTextChanged(Document _, int minRow, int maxRow) {
+            void HandleTextChanged(Document _, Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
                 lastModification = DateTime.UtcNow;
 
-                ConvertToActionLines(minRow, maxRow);
+                ConvertToActionLines(insertions.Keys);
 
-                // Need to update total frame count
-                int totalFrames = 0;
-                foreach (var line in document.Lines) {
-                    if (!ActionLine.TryParse(line, out var actionLine)) {
+                // Adjust total frame count
+                foreach (string deletion in deletions.Values) {
+                    if (!ActionLine.TryParse(deletion, out var actionLine)) {
                         continue;
                     }
-                    totalFrames += actionLine.FrameCount;
+                    TotalFrameCount -= actionLine.FrameCount;
                 }
-                Studio.Instance.GameInfoPanel.TotalFrames = totalFrames;
-                Studio.Instance.GameInfoPanel.UpdateGameInfo();
-
-                if (Settings.Instance.AutoIndexRoomLabels) {
-                    // room label without indexing -> lines of all occurrences
-                    Dictionary<string, List<int>> roomLabels = [];
-                    // Allows the user to edit labels without them being auto-trimmed
-                    string untrimmedLabel = string.Empty;
-
-                    for (int row = 0; row < Document.Lines.Count; row++) {
-                        string line = Document.Lines[row];
-                        var match = RoomLabelRegex.Match(line);
-                        if (!match.Success) {
-                            continue;
-                        }
-
-                        string label = match.Groups[1].Value.Trim();
-                        if (row == Document.Caret.Row) {
-                            untrimmedLabel = match.Groups[1].Value;
-                        }
-
-                        if (roomLabels.TryGetValue(label, out var list))
-                            list.Add(row);
-                        else
-                            roomLabels[label] = [row];
+                foreach (string insertion in insertions.Values) {
+                    if (!ActionLine.TryParse(insertion, out var actionLine)) {
+                        continue;
                     }
-
-                    using var __ = Document.Update(raiseEvents: false);
-                    foreach ((string label, var occurrences) in roomLabels) {
-                        if (occurrences.Count == 1) {
-                            string writtenLabel = occurrences[0] == Document.Caret.Row
-                                ? untrimmedLabel
-                                : label;
-
-                            Document.ReplaceLine(occurrences[0], $"{RoomLabelPrefix}{writtenLabel}");
-                            continue;
-                        }
-
-                        for (int i = 0; i < occurrences.Count; i++) {
-                            string writtenLabel = occurrences[0] == Document.Caret.Row
-                                ? untrimmedLabel
-                                : label;
-
-                            Document.ReplaceLine(occurrences[i], $"{RoomLabelPrefix}{writtenLabel} ({i + roomLabelStartIndex})");
-                        }
-                    }
+                    TotalFrameCount += actionLine.FrameCount;
                 }
 
+                UpdateRoomLabelIndices(rowsToIgnore: insertions.Keys.ToArray());
                 Recalc();
                 ScrollCaretIntoView();
+
+                TextChanged(document, insertions, deletions);
+            }
+
+            void UpdateRoomLabelIndices(int[] rowsToIgnore) {
+                if (Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.Disabled) {
+                    return;
+                }
+
+                // room label without indexing -> lines of all occurrences
+                Dictionary<string, List<(int Row, bool Update)>> roomLabels = [];
+                // Allows the user to edit labels without them being auto-trimmed
+                string untrimmedLabel = string.Empty;
+
+                foreach ((string line, int row, string filePath) in IterateDocumentLines(includeReads: Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.IncludeReads)) {
+                    var match = RoomLabelRegex.Match(line);
+                    if (!match.Success) {
+                        continue;
+                    }
+
+                    bool isCurrentFile = filePath == Document.FilePath;
+
+                    string label = match.Groups[1].Value.Trim();
+                    if (row == Document.Caret.Row && isCurrentFile) {
+                        untrimmedLabel = match.Groups[1].Value;
+                    }
+
+                    if (roomLabels.TryGetValue(label, out var list)) {
+                        list.Add((row, isCurrentFile));
+                    } else {
+                        roomLabels[label] = [(row, isCurrentFile)];
+                    }
+                }
+
+                using var __ = Document.Update(raiseEvents: false);
+                foreach ((string label, var occurrences) in roomLabels) {
+                    if (occurrences.Count == 1) {
+                        if (!occurrences[0].Update) {
+                            continue;
+                        }
+
+                        string writtenLabel = occurrences[0].Row == Document.Caret.Row
+                            ? untrimmedLabel
+                            : label;
+
+                        if (!rowsToIgnore.Contains(occurrences[0].Row)) {
+                            Task.Run(async () => await RefactorLabelName(Document.Lines[occurrences[0].Row]["#".Length..], $"lvl_{label}").ConfigureAwait(false));
+                        }
+                        Document.ReplaceLine(occurrences[0].Row, $"#lvl_{writtenLabel}");
+                        continue;
+                    }
+
+                    for (int i = 0; i < occurrences.Count; i++) {
+                        if (!occurrences[i].Update) {
+                            continue;
+                        }
+
+                        string writtenLabel = occurrences[i].Row == Document.Caret.Row
+                            ? untrimmedLabel
+                            : label;
+
+                        if (!rowsToIgnore.Contains(occurrences[i].Row)) {
+                            Task.Run(async () => await RefactorLabelName(Document.Lines[occurrences[i].Row]["#".Length..], $"lvl_{label} ({i + roomLabelStartIndex})").ConfigureAwait(false));
+                        }
+                        Document.ReplaceLine(occurrences[i].Row, $"#lvl_{writtenLabel} ({i + roomLabelStartIndex})");
+                    }
+                }
             }
         }
     }
-
-    private const string RoomLabelPrefix = "#lvl_";
 
     private readonly Scrollable scrollable;
     // These values need to be stored, since WPF doesn't like accessing them directly from the scrollable
@@ -176,8 +228,10 @@ public sealed class Editor : Drawable {
     /// Auto-complete entries for commands and snippets
     private readonly List<PopupMenu.Entry> baseAutoCompleteEntries = [];
 
-    // Cancellation token for fetching command-argument auto-complete entries
+    /// Cancellation token for fetching command-argument auto-complete entries
     private CancellationTokenSource? commandAutoCompleteTokenSource;
+    /// Index of the currently fetched entries, to prevent flashing "Loading..." while typing
+    private int lastAutoCompleteArgumentIndex = -1;
 
     // These should be ordered from most specific to most applicable.
     private readonly ContextAction[] contextActions = [
@@ -208,6 +262,9 @@ public sealed class Editor : Drawable {
     /// User-preference for the starting index of room labels
     private int roomLabelStartIndex;
 
+    /// Current total frame count (including commands if connected to Celeste)
+    public int TotalFrameCount;
+
     // Offset from the left accounting for line numbers
     private float textOffsetX;
 
@@ -236,7 +293,7 @@ public sealed class Editor : Drawable {
     private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
     private static readonly Regex AllBreakpointRegex = new(@"^\s*#*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex TimestampRegex = new(@"^\s*#+\s*(\d+:)?\d{1,2}:\d{2}\.\d{3}\(\d+\)", RegexOptions.Compiled);
-    private static readonly Regex RoomLabelRegex = new($@"^{RoomLabelPrefix}([^\(\)]*)(?:\s\((\d+)\))?$", RegexOptions.Compiled);
+    public static readonly Regex RoomLabelRegex = new(@"^#lvl_([^\(\)]*)(?:\s\((\d+)\))?$", RegexOptions.Compiled);
 
     public Editor(Document document, Scrollable scrollable) {
         this.document = document;
@@ -275,6 +332,10 @@ public sealed class Editor : Drawable {
         };
 
         CommunicationWrapper.StateUpdated += (prevState, state) => {
+            if (state.tasStates.HasFlag(States.Enable) && !state.tasStates.HasFlag(States.FrameStep)) {
+                TotalFrameCount = state.TotalFrames;
+            }
+
             if (prevState.CurrentLine == state.CurrentLine &&
                 prevState.SaveStateLine == state.SaveStateLine &&
                 prevState.CurrentLineSuffix == state.CurrentLineSuffix) {
@@ -446,8 +507,10 @@ public sealed class Editor : Drawable {
     /// Recalculates all values and invalidates the paint.
     private void Recalc() {
         // Ensure there is always at least 1 line
-        if (Document.Lines.Count == 0)
+        if (Document.Lines.Count == 0) {
+            using var __ = Document.Update(raiseEvents: false);
             Document.InsertLine(0, string.Empty);
+        }
 
         // Snap caret
         Document.Caret.Row = Math.Clamp(Document.Caret.Row, 0, Document.Lines.Count - 1);
@@ -700,6 +763,8 @@ public sealed class Editor : Drawable {
 
     /// Ensures that parsable action-line has the correct format
     public bool TryParseAndFormatActionLine(int row, out ActionLine actionLine) {
+        using var __ = Document.Update(raiseEvents: false);
+
         if (ActionLine.TryParse(Document.Lines[row], out actionLine)) {
             Document.ReplaceLine(row, actionLine.ToString());
             return true;
@@ -709,28 +774,27 @@ public sealed class Editor : Drawable {
     }
 
     /// Applies the correct action-line formatting to all specified lines
-    private void ConvertToActionLines(int startRow, int endRow) {
-        int minRow = Math.Min(startRow, endRow);
-        int maxRow = Math.Max(startRow, endRow);
-
+    private void ConvertToActionLines(IEnumerable<int> rows) {
         using var __ = Document.Update(raiseEvents: false);
 
         // Convert to action lines, if possible
-        for (int row = minRow; row <= Math.Min(maxRow, Document.Lines.Count - 1); row++) {
-            var line = Document.Lines[row];
-            if (ActionLine.TryParse(line, out var actionLine)) {
-                var newLine = actionLine.ToString();
-
-                if (Document.Caret.Row == row) {
-                    if (Document.Caret.Col == line.Length) {
-                        Document.Caret.Col = newLine.Length;
-                    } else {
-                        Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
-                    }
-                }
-
-                Document.ReplaceLine(row, newLine);
+        foreach (int row in rows) {
+            string line = Document.Lines[row];
+            if (!ActionLine.TryParse(line, out var actionLine)) {
+                continue;
             }
+
+            string newLine = actionLine.ToString();
+
+            if (Document.Caret.Row == row) {
+                if (Document.Caret.Col == line.Length) {
+                    Document.Caret.Col = newLine.Length;
+                } else {
+                    Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
+                }
+            }
+
+            Document.ReplaceLine(row, newLine);
         }
     }
 
@@ -769,6 +833,257 @@ public sealed class Editor : Drawable {
                     Document.ReplaceLine(bottomRow, (bottomLine.Value with { FrameCount = Math.Min(bottomLine.Value.FrameCount + 1, ActionLine.MaxFrames) }).ToString());
                 }
             }
+        }
+    }
+
+    /// Caches the file contents in lines of external files
+    public static readonly Dictionary<string, string[]> FileCache = [];
+
+    /// Iterates over all lines of the document, optionally following Read-commands
+    public IEnumerable<(string Line, int Row, string File)> IterateDocumentLines(bool includeReads, string? filePath = null) {
+        filePath ??= Document.FilePath;
+        if (!FileCache.ContainsKey(filePath) && filePath != Document.FilePath) {
+            FileCache[filePath] = File.ReadAllLines(filePath);
+        }
+
+        if (!includeReads) {
+            string[] lines = filePath == Document.FilePath ? Document.Lines.ToArray() : FileCache[filePath];
+
+            for (int row = 0; row < lines.Length; row++) {
+                yield return (lines[row], row, filePath);
+            }
+
+            yield break;
+        }
+
+        Stack<(string Path, int CurrRow, int EndRow)> fileStack = [];
+
+        fileStack.Push((filePath, 0, Document.Lines.Count - 1));
+
+        while (fileStack.TryPop(out var file)) {
+            (string path, int currRow, int endRow) = file;
+            string[] lines = path == Document.FilePath ? Document.Lines.ToArray() : FileCache[path];
+
+            for (int row = currRow; row <= endRow && row < lines.Length; row++) {
+                string line = lines[row];
+
+                if (!CommandLine.TryParse(line, out var commandLine) ||
+                    !commandLine.IsCommand("Read") || commandLine.Arguments.Length < 1)
+                {
+                    yield return (line, row, path);
+                    continue;
+                }
+
+                // Follow Read-command
+                if (Path.GetDirectoryName(path) is not { } documentDir) {
+                    continue;
+                }
+
+                string fullPath = Path.Combine(documentDir, $"{commandLine.Arguments[0]}.tas");
+                if (!File.Exists(fullPath)) {
+                    continue;
+                }
+
+                if (!FileCache.TryGetValue(fullPath, out string[]? cacheLines)) {
+                    FileCache[fullPath] = cacheLines = File.ReadAllLines(fullPath);
+                }
+
+                var readLines = cacheLines
+                    .Select((readLine, i) => (line: readLine, i))
+                    .ToArray();
+
+                int? startLabelRow = null;
+                if (commandLine.Arguments.Length > 1) {
+                    (var label, startLabelRow) = readLines
+                        .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[1]}");
+                    if (label == null) {
+                        continue;
+                    }
+                }
+                int? endLabelRow = null;
+                if (commandLine.Arguments.Length > 2) {
+                    (var label, endLabelRow) = readLines
+                        .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[2]}");
+                    if (label == null) {
+                        continue;
+                    }
+                }
+
+                startLabelRow ??= 0;
+                endLabelRow ??= readLines.Length - 1;
+
+                fileStack.Push((path, row + 1, endRow)); // Store current state
+                fileStack.Push((fullPath, startLabelRow.Value, endLabelRow.Value - 1)); // Setup next state
+                break;
+            }
+        }
+    }
+
+    public readonly SemaphoreSlim RefactorSemaphore = new(1);
+
+    /// Changes the name of a label, updating all references to it in the project
+    public async Task RefactorLabelName(string oldLabel, string newLabel, string? filePath = null) {
+        if (oldLabel == newLabel) {
+            return; // Already has that name
+        }
+
+        filePath ??= Document.FilePath;
+        string projectRoot = FindProjectRoot(filePath);
+
+        // Find all commands which reference this label
+        List<(string FilePath, int Row, CommandLine Line)> commands = [];
+
+        await RefactorSemaphore.WaitAsync().ConfigureAwait(false);
+        Console.WriteLine($"Performing label refactor for '{oldLabel}' => '{newLabel}' file '{filePath}'");
+
+        try {
+            // External Read-commands
+            string[] files = Directory.GetFiles(projectRoot, "*.tas", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.Hidden });
+            foreach (string file in files) {
+                if (file == filePath || Directory.Exists(file)) {
+                    continue;
+                }
+
+                if (!FileCache.TryGetValue(file, out string[]? lines)) {
+                    FileCache[file] = lines = await File.ReadAllLinesAsync(file).ConfigureAwait(false);
+                }
+
+                for (int row = 0; row < lines.Length; row++) {
+                    string line = lines[row];
+                    if (CommandLine.TryParse(line, out var commandLine) && commandLine.IsCommand("Read") &&
+                        // Verify command points to our file
+                        commandLine.Arguments.Length >= 1 && string.Equals(
+                            Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file)!, $"{commandLine.Arguments[0]}.tas")),
+                            Path.GetFullPath(filePath),
+                            StringComparison.OrdinalIgnoreCase
+                        ) && (
+                            // Check in start label
+                            commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel ||
+                            // Check in end label
+                            commandLine.Arguments.Length >= 3 && commandLine.Arguments[2] == oldLabel))
+                    {
+                        commands.Add((file, row, commandLine));
+                    }
+                }
+            }
+            // Internal Play-commands
+            string[]? internalLines;
+            if (filePath == Document.FilePath) {
+                internalLines = Document.Lines.ToArray();
+            } else if (!FileCache.TryGetValue(filePath, out internalLines)) {
+                FileCache[filePath] = internalLines = await File.ReadAllLinesAsync(filePath).ConfigureAwait(false);
+            }
+
+            for (int row = 0; row < internalLines.Length; row++) {
+                string line = internalLines[row];
+                if (CommandLine.TryParse(line, out var commandLine) && commandLine.IsCommand("Play") && (
+                        // Check in start label
+                        commandLine.Arguments.Length >= 1 && commandLine.Arguments[0] == oldLabel ||
+                        // Check in end label
+                        commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel))
+                {
+                    commands.Add((string.Empty, row, commandLine));
+                }
+            }
+
+
+            // Apply changes to external Read-command
+            foreach ((string file, int row, var commandLine) in commands) {
+                if (!commandLine.IsCommand("Read")) {
+                    continue;
+                }
+
+                // Start label
+                if (commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel) {
+                    commandLine.Arguments[1] = newLabel;
+                }
+                // End label
+                if (commandLine.Arguments.Length >= 3 && commandLine.Arguments[2] == oldLabel) {
+                    commandLine.Arguments[2] = newLabel;
+                }
+
+                string[] lines = FileCache[file];
+                lines[row] = commandLine.ToString();
+
+                await File.WriteAllTextAsync(file, Document.FormatLinesToText(lines)).ConfigureAwait(false);
+                Console.WriteLine($"Edited command '{commandLine.OriginalText}' => '{commandLine}' file {file} line {row}");
+            }
+            // Apply changes to internal Play-command
+            using var __ = Document.Update(raiseEvents: false);
+            foreach ((_, int row, var commandLine) in commands) {
+                if (!commandLine.IsCommand("Play")) {
+                    continue;
+                }
+
+                // Start label
+                if (commandLine.Arguments.Length >= 1 && commandLine.Arguments[0] == oldLabel) {
+                    commandLine.Arguments[0] = newLabel;
+                }
+                // End label
+                if (commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel) {
+                    commandLine.Arguments[1] = newLabel;
+                }
+
+                if (filePath == Document.FilePath) {
+                    Document.ReplaceLine(row, commandLine.ToString());
+                } else {
+                    string[] lines = FileCache[filePath];
+                    lines[row] = commandLine.ToString();
+
+                    await File.WriteAllTextAsync(filePath, Document.FormatLinesToText(lines)).ConfigureAwait(false);
+                    Console.WriteLine($"Edited command '{commandLine.OriginalText}' => '{commandLine}' file {filePath} line {row}");
+                }
+            }
+
+            Console.WriteLine($"Label refactor for '{oldLabel}' => '{newLabel}' done");
+        } catch (Exception ex) {
+            Console.WriteLine($"Failed to refactor room label: {ex}");
+        } finally {
+            RefactorSemaphore.Release();
+        }
+    }
+
+    private static readonly Dictionary<string, string> projectRootCache = [];
+
+    /// Locates a probable root directory for the current TAS project
+    public static string FindProjectRoot(string filePath) {
+        if (projectRootCache.TryGetValue(filePath, out string? projectRoot)) {
+            return projectRoot;
+        }
+
+        // 1st approach: Search for a Git repository
+        for (string? path = Path.GetDirectoryName(filePath); !string.IsNullOrEmpty(path); path = Path.GetDirectoryName(path)) {
+            if (Directory.Exists(Path.Combine(path, ".git")) &&
+                // Require at least 75% of files in the repo to be TAS files
+                GetTasFilePercentage(path) >= 0.75f)
+            {
+                projectRootCache[filePath] = path;
+                return path;
+            }
+        }
+
+        // 2nd approach: Go up until there is a sudden drop in the percentage
+        const int maxDepth = 5;
+        int currentDepth = 0;
+        float previousPercentage = 1.0f;
+        string previousPath = string.Empty;
+
+        for (string? path = Path.GetDirectoryName(filePath); currentDepth <= maxDepth && !string.IsNullOrEmpty(path); previousPath = path, path = Path.GetDirectoryName(path), currentDepth++) {
+            float currentPercentage = GetTasFilePercentage(path);
+            if (previousPercentage - currentPercentage >= 0.2f || currentPercentage <= 0.75f) {
+                return previousPath;
+            }
+        }
+
+        // No good solution could be found
+        return Path.GetDirectoryName(filePath)!;
+
+        static float GetTasFilePercentage(string path) {
+            string[] allFiles = Directory.GetFiles(path, "*", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.Directory | FileAttributes.Hidden });
+
+            return allFiles.Count(file => file.EndsWith(".tas")) /
+                   // Ignore documentation in the total
+                   Math.Max(1.0f, allFiles.Count(file => !file.EndsWith(".md") && !file.EndsWith(".txt")));
         }
     }
 
@@ -928,7 +1243,7 @@ public sealed class Editor : Drawable {
         if (e.Key != Keys.None) {
             // Check for menu items
             var items = ContextMenu.Items
-                .Concat(Studio.Instance.GameInfoPanel.ContextMenu.Items)
+                .Concat(Studio.Instance.GameInfo.ContextMenu.Items)
                 .Concat(Studio.Instance.Menu.Items)
                 .Concat(Studio.Instance.GlobalHotkeys);
             foreach (var item in items) {
@@ -1036,7 +1351,6 @@ public sealed class Editor : Drawable {
 
                             Document.Selection.Start.Row++;
                             Document.Selection.End.Row++;
-                            Document.Caret.Row++;
                         } else if (Document.Caret.Row < Document.Lines.Count - 1 && Document.Selection.Empty) {
                             Document.SwapLines(Document.Caret.Row, Document.Caret.Row + 1);
                             Document.Caret.Row++;
@@ -1080,6 +1394,22 @@ public sealed class Editor : Drawable {
                 OnToggleCommentText();
                 e.Handled = true;
                 break;
+            case Keys.F2:
+            {
+                // Rename label
+                string line = Document.Lines[Document.Caret.Row];
+                if (Comment.IsLabel(line)) {
+                    string oldLabel = line["#".Length..];
+                    string newLabel = RenameLabelDialog.Show(oldLabel);
+
+                    Task.Run(async () => await RefactorLabelName(oldLabel, newLabel).ConfigureAwait(false));
+
+                    using var __ = Document.Update();
+                    Document.ReplaceLine(Document.Caret.Row, $"#{newLabel}");
+                }
+                e.Handled = true;
+                break;
+            }
             default:
                 if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _) && CalculationExtensions.TryParse(e.KeyChar) is { } op) {
                     StartCalculation(op);
@@ -1090,7 +1420,7 @@ public sealed class Editor : Drawable {
                 // ..that also means OnTextInput won't be called..
                 if (Eto.Platform.Instance.IsMac) {
                     e.Handled = true;
-                    if (e.KeyChar != ushort.MaxValue) {
+                    if (e.KeyChar != char.MaxValue) {
                         OnTextInput(new TextInputEventArgs(e.KeyChar.ToString()));
                     }
                 } else {
@@ -1101,7 +1431,7 @@ public sealed class Editor : Drawable {
         }
 
         // If nothing handled this, and it's not a character, send it anyway
-        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && !isTyping && !sendInputs && !e.Handled && e.KeyChar == ushort.MaxValue && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
+        if (Settings.Instance.SendInputsToCeleste && Settings.Instance.SendInputsNonWritable && !Platform.IsWpf && CommunicationWrapper.Connected && !isTyping && !sendInputs && !e.Handled && e.KeyChar == char.MaxValue && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
             e.Handled = true;
             return;
         }
@@ -1128,7 +1458,7 @@ public sealed class Editor : Drawable {
             (Settings.Instance.SendInputsOnActionLines && isActionLine) ||
             (Settings.Instance.SendInputsOnComments && isComment) ||
             (Settings.Instance.SendInputsOnCommands && !isActionLine && !isComment) ||
-            e.KeyChar == ushort.MaxValue;
+            (Settings.Instance.SendInputsNonWritable && !Platform.IsWpf && e.KeyChar == ushort.MaxValue);
 
         if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && !isTyping && sendInputs && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: true)) {
             e.Handled = true;
@@ -1237,6 +1567,7 @@ public sealed class Editor : Drawable {
     private void CloseAutoCompletePopup() {
         if (ActivePopupMenu == autoCompleteMenu) {
             ActivePopupMenu = null;
+            lastAutoCompleteArgumentIndex = -1;
         }
     }
     private void CloseContextActionsPopup() {
@@ -1300,6 +1631,8 @@ public sealed class Editor : Drawable {
 
         return () => {
             int row = Document.Caret.Row;
+
+            using var __ = Document.Update(raiseEvents: false);
             Document.ReplaceLine(row, quickEdit.Value.ActualText);
 
             ClearQuickEdits();
@@ -1340,7 +1673,11 @@ public sealed class Editor : Drawable {
     }
 
     private void UpdateAutoComplete(bool open = true) {
-        var line = Document.Lines[Document.Caret.Row][..Document.Caret.Col].TrimStart();
+        string line = Document.Lines[Document.Caret.Row];
+        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, line.Length);
+
+        // Ignore text to the right of the caret to auto-completion
+        line = line[..Document.Caret.Col].TrimStart();
 
         // Don't auto-complete on comments or action lines
         if (line.StartsWith('#') || ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) {
@@ -1352,6 +1689,7 @@ public sealed class Editor : Drawable {
             ActivePopupMenu = autoCompleteMenu;
         }
         if (ActivePopupMenu == null) {
+            lastAutoCompleteArgumentIndex = -1;
             return;
         }
 
@@ -1365,6 +1703,7 @@ public sealed class Editor : Drawable {
             autoCompleteMenu.Entries.Clear();
             autoCompleteMenu.Entries.AddRange(baseAutoCompleteEntries);
             autoCompleteMenu.Filter = line;
+            lastAutoCompleteArgumentIndex = -1;
         } else {
             var command = CommunicationWrapper.Commands.FirstOrDefault(cmd => string.Equals(cmd.Name, commandLine.Value.Command, StringComparison.OrdinalIgnoreCase));
 
@@ -1376,12 +1715,21 @@ public sealed class Editor : Drawable {
                 Disabled = true,
             };
 
-            if (!string.IsNullOrEmpty(command.Name)) {
+            if (!string.IsNullOrEmpty(command.Name) && command.HasArguments) {
                 var lastArgRegion = commandLine.Value.Regions[^1];
 
                 commandAutoCompleteTokenSource?.Cancel();
                 commandAutoCompleteTokenSource?.Dispose();
                 commandAutoCompleteTokenSource = new CancellationTokenSource();
+
+                // Don't clear on same argument to prevent flashing "Loading..."
+                if (lastAutoCompleteArgumentIndex != commandLine.Value.Arguments.Length) {
+                    autoCompleteMenu.Entries.Clear();
+                    autoCompleteMenu.Entries.Add(loadingEntry);
+                    autoCompleteMenu.Recalc();
+                    Recalc();
+                }
+                lastAutoCompleteArgumentIndex = commandLine.Value.Arguments.Length;
 
                 var token = commandAutoCompleteTokenSource.Token;
                 Task.Run(async () => {
@@ -1410,6 +1758,8 @@ public sealed class Editor : Drawable {
                             DisplayText = entry.Name,
                             ExtraText = entry.Extra,
                             OnUse = () => {
+                                using var __ = Document.Update();
+
                                 string insert = entry.FullName;
 
                                 var selectedQuickEdit = GetQuickEdits()
@@ -2614,7 +2964,7 @@ public sealed class Editor : Drawable {
         Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length);
     }
 
-    private void OnInsertRoomName() => InsertLine($"{RoomLabelPrefix}{CommunicationWrapper.LevelName}");
+    private void OnInsertRoomName() => InsertLine($"#lvl_{CommunicationWrapper.LevelName}");
 
     private void OnInsertTime() => InsertLine($"#{CommunicationWrapper.ChapterTime}");
 
@@ -3221,7 +3571,7 @@ public sealed class Editor : Drawable {
 
     protected override void OnPaint(PaintEventArgs e) {
         // Doing this in Recalc() seems to cause issues for some reason, but it needs to happen regularly
-        Studio.Instance.GameInfoPanel.UpdateGameInfo();
+        //Studio.Instance.GameInfoPanel.UpdateGameInfo();
 
         e.Graphics.AntiAlias = true;
 

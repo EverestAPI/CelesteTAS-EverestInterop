@@ -15,7 +15,6 @@ public static class Extensions
     public static string[] SplitDocumentLines(this string self, StringSplitOptions options = StringSplitOptions.None) => self.Split(Document.NewLine, options);
 
     public static int Digits(this int self) => Math.Abs(self).ToString().Length;
-    public static T Mod<T>(this T x, T m) where T : INumber<T> => (x % m + m) % m;
 
     public static T[] GetArrayRange<T>(this List<T> list, Range range) {
         var (start, length) = range.GetOffsetAndLength(list.Count);

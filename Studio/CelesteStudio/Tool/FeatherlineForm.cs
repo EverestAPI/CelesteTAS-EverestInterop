@@ -92,26 +92,26 @@ public sealed class FeatherlineForm : Form {
                 }
             }
         };
-        Resizable = false;  
+        Resizable = false;
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
     }
-    
+
     protected override void OnClosing(CancelEventArgs e) {
         GAManager.abortAlgorithm = true;
         progressDialog?.Close();
-        
+
         base.OnClosing(e);
     }
-    
+
     private void CreateMenu() {
         Menu = new MenuBar { // TODO: add help window
             AboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
                 Studio.ShowAboutDialog(new AboutDialog {
-                    ProgramName = "Jadderline",
-                    ProgramDescription = "Utility for doing an optimal jelly ladder.",
+                    ProgramName = "Featherline",
+                    ProgramDescription = "Utility for (nearly) optimal analog feather movement.",
                     Version = Version,
 
-                    Developers = ["atpx8", "EllaTAS", "Kataiser", "Mika", "psyGamer", "TheRoboMan", "tntfalle"],
+                    Developers = ["atpx8", "EllaTAS", "Kataiser", "Mika", "psyGamer", "TheRoboMan"],
                     Logo = Icon,
                 }, this);
             }),
@@ -167,10 +167,10 @@ public sealed class FeatherlineForm : Form {
                 getInfo.Enabled = true;
                 GAManager.abortAlgorithm = true;
             };
-            
+
             run.Enabled = false;
             getInfo.Enabled = false;
-            
+
             Featherline.Settings.TextReporter = progressDialog.textReporter;
             Featherline.Settings.ProgressReporter = progressDialog.progressReporter;
 
@@ -211,8 +211,8 @@ public sealed class FeatherlineForm : Form {
                         run.Text = "Run";
                         run.Enabled = true;
                         getInfo.Enabled = true;
-                        
-                        MessageBox.Show("Done! You can now copy the inputs into your TAS.");
+
+                        MessageBox.Show("Done! You can now copy the inputs into your TAS.", "Done");
                     });
                 } catch (Exception ex) {
                     Console.Error.WriteLine("Failed to run Featherline:");
@@ -228,7 +228,7 @@ public sealed class FeatherlineForm : Form {
             });
         } else {
             GAManager.abortAlgorithm = true;
-            
+
             run.Enabled = true;
             getInfo.Enabled = true;
         }

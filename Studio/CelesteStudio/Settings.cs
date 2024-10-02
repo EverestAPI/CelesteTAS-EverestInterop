@@ -11,6 +11,7 @@ using CelesteStudio.Util;
 using Eto;
 using Eto.Drawing;
 using Eto.Forms;
+using StudioCommunication.Util;
 using System.Diagnostics;
 using System.Net;
 using Tomlet;
@@ -20,10 +21,12 @@ using Tomlet.Models;
 
 namespace CelesteStudio;
 
+public enum AutoRoomIndexing { Disabled, CurrentFile, IncludeReads }
 public enum InsertDirection { Above, Below }
 public enum CaretInsertPosition { AfterInsert, PreviousPosition }
 public enum CommandSeparator { Space, Comma, CommaSpace }
 public enum LineNumberAlignment { Left, Right }
+public enum GameInfoType { Disabled, Panel, Popout }
 
 public sealed class Settings {
     public static string BaseConfigPath {
@@ -110,13 +113,14 @@ public sealed class Settings {
 
     public bool AutoSave { get; set; } = true;
     public bool AutoRemoveMutuallyExclusiveActions { get; set; } = true;
-    public bool AutoIndexRoomLabels { get; set; } = true;
+    public AutoRoomIndexing AutoIndexRoomLabels { get; set; } = AutoRoomIndexing.CurrentFile;
     public bool SyncCaretWithPlayback { get; set; } = true;
 
     public bool SendInputsToCeleste { get; set; } = true;
     public bool SendInputsOnActionLines { get; set; } = true;
     public bool SendInputsOnCommands { get; set; } = true;
     public bool SendInputsOnComments { get; set; } = false;
+    public bool SendInputsNonWritable { get; set; } = true;
     public float SendInputsTypingTimeout { get; set; } = 0.3f;
 
     public float ScrollSpeed { get; set; } = 0.0f; // A value <= 0.0f means to use the native scrollable
@@ -140,8 +144,9 @@ public sealed class Settings {
     #endregion
     #region View
 
-    public bool ShowGameInfo { get; set; } = true;
+    public GameInfoType GameInfo { get; set; } = GameInfoType.Panel;
     public bool ShowSubpixelIndicator { get; set; } = true;
+    public float MaxGameInfoHeight { get; set; } = 0.3f;
     public float SubpixelIndicatorScale { get; set; } = 2.5f;
 
     public bool AlwaysOnTop { get; set; } = false;
@@ -154,7 +159,6 @@ public sealed class Settings {
     public Point LastLocation { get; set; } = Point.Empty;
     public Size LastSize { get; set; } = new(400, 600);
 
-    public bool GameInfoPopoutOpen { get; set; } = false;
     public bool GameInfoPopoutTopmost { get; set; } = false;
     public Point GameInfoPopoutLocation { get; set; } = Point.Empty;
     public Size GameInfoPopoutSize { get; set; } = new(400, 250);

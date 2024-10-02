@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using CelesteStudio.Communication;
 using CelesteStudio.Data;
 using CelesteStudio.Dialog;
@@ -17,7 +16,8 @@ using Eto.Drawing;
 using FontDialog = CelesteStudio.Dialog.FontDialog;
 using Eto.Forms.ThemedControls;
 using StudioCommunication;
-using System.Runtime.InteropServices;
+using StudioCommunication.Util;
+using System.Collections.Generic;
 
 namespace CelesteStudio;
 
@@ -31,6 +31,9 @@ public sealed class Studio : Form {
         Version = $"v{Assembly.GetExecutingAssembly().GetName().Version!.ToString(3)}{VersionSuffix}";
     }
 
+    /// Event which will be called before Studio exits
+    public event Action Exiting = () => { };
+
     /// Platform-specific callback to handle new windows
     public readonly Action<Window> WindowCreationCallback;
 
@@ -40,9 +43,16 @@ public sealed class Studio : Form {
     /// Path to the Celeste install or null if it couldn't be found
     public static string? CelesteDirectory { get; private set; }
 
+    /// For some **UNHOLY** reasons, not calling Content.UpdateLayout() in RecalculateLayout() places during startup causes themeing to crash.
+    /// _However_, while this hack is active, you can't resize the window, so this has to be disabled again as soon as possible...
+    /// I would personally like to burn WPF to the ground ._.
+    public bool WPFHackEnabled = true;
+
     public readonly Editor Editor;
-    public readonly GameInfoPanel GameInfoPanel;
-    private readonly Scrollable EditorScrollable;
+    public readonly GameInfo GameInfo;
+
+    private readonly Scrollable editorScrollable;
+    private readonly GameInfoPanel gameInfoPanel;
 
     private JadderlineForm? jadderlineForm;
     private FeatherlineForm? featherlineForm;
@@ -158,34 +168,40 @@ public sealed class Studio : Form {
 
         // Setup editor
         {
-            EditorScrollable = new Scrollable {
+            editorScrollable = new Scrollable {
                 Width = Size.Width,
                 Height = Size.Height,
             }.FixBorder();
-            Editor = new Editor(Document.Dummy, EditorScrollable);
-            EditorScrollable.Content = Editor;
+            Editor = new Editor(Document.Dummy, editorScrollable);
+            editorScrollable.Content = Editor;
 
             // On GTK, prevent the scrollable from reacting to Home/End
             if (Eto.Platform.Instance.IsGtk) {
-                EditorScrollable.KeyDown += (_, e) => e.Handled = true;
+                editorScrollable.KeyDown += (_, e) => e.Handled = true;
             }
 
-            GameInfoPanel = new GameInfoPanel();
+            // Needs to be done after the Editor is set up
+            GameInfo = new GameInfo();
+            gameInfoPanel = new GameInfoPanel();
 
             Content = new StackLayout {
                 Padding = 0,
                 Items = {
-                    EditorScrollable,
-                    GameInfoPanel
+                    editorScrollable,
+                    gameInfoPanel
                 }
             };
 
-            SizeChanged += (_, _) => RecalculateLayout();
             Shown += (_, _) => {
-                GameInfoPanel.UpdateLayout();
+                gameInfoPanel.UpdateLayout();
                 RecalculateLayout();
             };
-
+            SizeChanged += (_, _) => {
+                RecalculateLayout();
+            };
+            gameInfoPanel.SizeChanged += (_, _) => {
+                RecalculateLayout();
+            };
 
             ApplySettings();
 
@@ -200,7 +216,8 @@ public sealed class Studio : Form {
                 OpenFile(args[0]);
             } else if (Settings.Instance.RecentFiles.Count > 0 &&
                        !string.IsNullOrWhiteSpace(Settings.Instance.RecentFiles[0]) &&
-                       File.Exists(Settings.Instance.RecentFiles[0])) {
+                       File.Exists(Settings.Instance.RecentFiles[0]))
+            {
                 // Re-open last file if possible
                 OpenFile(Settings.Instance.RecentFiles[0]);
             } else {
@@ -270,11 +287,21 @@ public sealed class Studio : Form {
         ];
     }
 
-    public void RecalculateLayout() {
-        GameInfoPanel.Width = ClientSize.Width;
-        EditorScrollable.Size = new Size(
+    private void RecalculateLayout() {
+        gameInfoPanel.Width = ClientSize.Width;
+        editorScrollable.Size = new Size(
             Math.Max(0, ClientSize.Width),
-            Math.Max(0, ClientSize.Height - GameInfoPanel.Height));
+            Math.Max(0, ClientSize.Height - Math.Max(0, gameInfoPanel.Height)));
+
+        // Calling UpdateLayout() seems to be required on GTK but causes issues on WPF
+        // TODO: Figure out how macOS handles this
+        if (Eto.Platform.Instance.IsGtk) {
+            gameInfoPanel.UpdateLayout();
+            editorScrollable.UpdateLayout();
+            Content.UpdateLayout();
+        } else if (Eto.Platform.Instance.IsWpf && WPFHackEnabled) {
+            Content.UpdateLayout();
+        }
     }
 
     private void ApplySettings() {
@@ -312,6 +339,8 @@ public sealed class Studio : Form {
 
         CommunicationWrapper.SendPath(string.Empty);
         CommunicationWrapper.Stop();
+
+        Exiting();
 
         base.OnClosing(e);
     }
@@ -425,7 +454,7 @@ public sealed class Studio : Form {
             Settings.Instance.LastSaveDirectory = Path.GetDirectoryName(filePath)!;
         }
 
-        void UpdateTitle(Document _0, int _1, int _2) {
+        void UpdateTitle(Document _0, Dictionary<int, string> _1, Dictionary<int, string> _2) {
             Title = TitleBarText;
         }
     }
@@ -534,6 +563,18 @@ public sealed class Studio : Form {
         }) { MenuText = "Delete All Files" });
         backupsMenu.Enabled = backupFiles.Length != 0;
 
+        // Don't display Settings.SendInputsNonWritable on WPF, since it's not supported there
+        var inputSendingMenu = new SubMenuItem { Text = "&Input Sending", Items = {
+                MenuUtils.CreateSettingToggle("On Inputs", nameof(Settings.SendInputsOnActionLines)),
+                MenuUtils.CreateSettingToggle("On Comments", nameof(Settings.SendInputsOnComments)),
+                MenuUtils.CreateSettingToggle("On Commands", nameof(Settings.SendInputsOnCommands)),
+        }};
+        if (!Platform.IsWpf) {
+            inputSendingMenu.Items.Add(MenuUtils.CreateSettingToggle("Always send non-writable Inputs", nameof(Settings.SendInputsNonWritable)));
+        }
+        inputSendingMenu.Items.Add(new SeparatorMenuItem());
+        inputSendingMenu.Items.Add(MenuUtils.CreateSettingNumberInput("Typing Timeout", nameof(Settings.SendInputsTypingTimeout), 0.0f, 5.0f, 0.1f));
+
         MenuItem[] items = [
             new SubMenuItem { Text = "&File", Items = {
                 MenuEntry.File_New.ToAction(OnNewFile),
@@ -566,18 +607,12 @@ public sealed class Studio : Form {
             new SubMenuItem { Text = "&Preferences", Items = {
                 MenuUtils.CreateSettingToggle("&Auto Save File", nameof(Settings.AutoSave)),
                 MenuUtils.CreateSettingToggle("Auto Remove Mutually Exclusive Actions", nameof(Settings.AutoRemoveMutuallyExclusiveActions)),
-                MenuUtils.CreateSettingToggle("Auto-Index Room Labels", nameof(Settings.AutoIndexRoomLabels)),
+                MenuUtils.CreateSettingEnum<AutoRoomIndexing>("Auto-Index Room Labels", nameof(Settings.AutoIndexRoomLabels), ["Disabled", "Current File", "Include Read-commands"]),
                 MenuUtils.CreateSettingToggle("Sync &Caret with Playback", nameof(Settings.SyncCaretWithPlayback)),
                 MenuEntry.Settings_SendInputs.ToSettingToggle(nameof(Settings.SendInputsToCeleste), enabled => {
                     Editor.ShowToastMessage($"{(enabled ? "Enabled" : "Disabled")} Sending Inputs to Celeste", Editor.DefaultToastTime);
                 }),
-                new SubMenuItem { Text = "&Input Sending", Items = {
-                    MenuUtils.CreateSettingToggle("On Inputs", nameof(Settings.SendInputsOnActionLines)),
-                    MenuUtils.CreateSettingToggle("On Comments", nameof(Settings.SendInputsOnComments)),
-                    MenuUtils.CreateSettingToggle("On Commands", nameof(Settings.SendInputsOnCommands)),
-                    new SeparatorMenuItem(),
-                    MenuUtils.CreateSettingNumberInput("Typing Timeout", nameof(Settings.SendInputsTypingTimeout), 0.0f, 5.0f, 0.1f),
-                }},
+                inputSendingMenu,
                 MenuUtils.CreateSettingNumberInput("Scroll Speed", nameof(Settings.ScrollSpeed), 0.0f, 30.0f, 1),
                 MenuUtils.CreateSettingNumberInput("Max Unfolded Lines", nameof(Settings.MaxUnfoldedLines), 0, int.MaxValue, 1),
                 MenuUtils.CreateSettingEnum<InsertDirection>("Insert Direction", nameof(Settings.InsertDirection), ["Above Current Line", "Below Current Line"]),
@@ -585,7 +620,9 @@ public sealed class Studio : Form {
                 MenuUtils.CreateSettingEnum<CommandSeparator>("Command Separator", nameof(Settings.CommandSeparator), ["Space (\" \")", "Comma (\",\")", "Space + Comma (\", \")"]),
             }},
             new SubMenuItem { Text = "&View", Items = {
-                MenuEntry.View_ShowGameInfo.ToSettingToggle(nameof(Settings.ShowGameInfo)),
+                // TODO: Use MenuEntry.View_ShowGameInfo again
+                MenuUtils.CreateSettingEnum<GameInfoType>("Game Info", nameof(Settings.GameInfo), ["Disabled", "Panel", "Popout"]),
+                MenuUtils.CreateSettingNumberInput("Maximum Game Info Height", nameof(Settings.MaxGameInfoHeight), 0.1f, 0.9f, 0.05f, percent => $"{percent * 100.0f:F0}%"),
                 MenuEntry.View_ShowSubpixelIndicator.ToSettingToggle(nameof(Settings.ShowSubpixelIndicator)),
                 MenuUtils.CreateSettingNumberInput("Subpixel Indicator Scale", nameof(Settings.SubpixelIndicatorScale), 0.1f, 10.0f, 0.25f),
                 new SeparatorMenuItem(),
@@ -629,6 +666,8 @@ public sealed class Studio : Form {
                 MenuUtils.CreateGameSettingNumberInput("Slow Forward Speed", nameof(GameSettings.SlowForwardSpeed), minSlowForwardSpeed, maxSlowForwardSpeed, 0.1f),
             }},
             new SubMenuItem { Text = "&Tools", Items = {
+                MenuUtils.CreateAction("Project File Formatter", Keys.None, ProjectFileFormatterDialog.Show),
+                new SeparatorMenuItem(),
                 MenuUtils.CreateAction("Jadderline", Keys.None, () => {
                     jadderlineForm ??= new();
                     jadderlineForm.Show();

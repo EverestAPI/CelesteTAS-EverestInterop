@@ -1,58 +1,15 @@
 using System;
-using System.ComponentModel;
-using System.Linq;
 using System.Text;
 using CelesteStudio.Communication;
 using CelesteStudio.Data;
-using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
 using StudioCommunication.Util;
+using System.ComponentModel;
 
 namespace CelesteStudio.Editing;
 
-public class GameInfoPanel : Panel {
-    private sealed class PopoutButton : Drawable {
-        private const int IconSize = 20;
-        private const int BackgroundPadding = 5;
-
-        public Action? Click;
-        public void PerformClick() => Click?.Invoke();
-
-        public PopoutButton() {
-            Width = Height = IconSize + BackgroundPadding * 2;
-        }
-
-        protected override void OnPaint(PaintEventArgs e) {
-            var mouse = PointFromScreen(Mouse.Position);
-
-            Color bgColor = Settings.Instance.Theme.PopoutButtonBg;
-            if (mouse.X >= 0.0f && mouse.X <= Width && mouse.Y >= 0.0f && mouse.Y <= Height) {
-                if (Mouse.Buttons.HasFlag(MouseButtons.Primary)) {
-                    bgColor = Settings.Instance.Theme.PopoutButtonSelected;
-                } else {
-                    bgColor = Settings.Instance.Theme.PopoutButtonHovered;
-                }
-            }
-
-            e.Graphics.FillPath(bgColor, GraphicsPath.GetRoundRect(new RectangleF(0.0f, 0.0f, Width, Height), BackgroundPadding * 1.5f));
-
-            e.Graphics.TranslateTransform(BackgroundPadding, BackgroundPadding);
-            e.Graphics.ScaleTransform(IconSize);
-            e.Graphics.FillPath(Settings.Instance.Theme.StatusFg, Assets.PopoutPath);
-        }
-
-        protected override void OnMouseDown(MouseEventArgs e) => Invalidate();
-        protected override void OnMouseUp(MouseEventArgs e) {
-            PerformClick();
-            Invalidate();
-        }
-
-        protected override void OnMouseMove(MouseEventArgs e) => Invalidate();
-        protected override void OnMouseEnter(MouseEventArgs e) => Invalidate();
-        protected override void OnMouseLeave(MouseEventArgs e) => Invalidate();
-    }
-
+public sealed class GameInfo : Panel {
     private sealed class SubpixelIndicator : Drawable {
         protected override void OnPaint(PaintEventArgs e) {
             var remainder = CommunicationWrapper.SubpixelRemainder;
@@ -105,351 +62,199 @@ public class GameInfoPanel : Panel {
         }
     }
 
-    private sealed class PopoutForm : Form {
-        public readonly Label Label;
-        public readonly SubpixelIndicator SubpixelIndicator;
-
-        public PopoutForm(GameInfoPanel gameInfoPanel) {
-            Title = "Game Info";
-            Icon = Assets.AppIcon;
-            MinimumSize = new Size(250, 100);
-
-            Label = new Label {
-                Text = gameInfoPanel.label.Text,
-                TextColor = Settings.Instance.Theme.StatusFg,
-                Font = FontManager.StatusFont,
-                Wrap = WrapMode.None,
-            };
-            SubpixelIndicator = new SubpixelIndicator { Width = 100, Height = 100 };
-            SubpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
-            SubpixelIndicator.Invalidate();
-
-            var textArea = new TextArea {
-                Text = string.Empty,
-                TextColor = Settings.Instance.Theme.StatusFg,
-                Font = FontManager.StatusFont,
-                Wrap = false,
-            };
-            var doneButton = new Button { Text = "Done" };
-            var cancelButton = new Button { Text = "Cancel" };
-            var buttonsPanel = new StackLayout {
-                Padding = 5,
-                Spacing = 5,
-                Orientation = Orientation.Horizontal,
-                Items = { doneButton, cancelButton },
-            };
-
-            var showPanel = new StackLayout { Padding = 10, Items = { Label, SubpixelIndicator } };
-            var editPanel = new StackLayout { Padding = 10, Items = { textArea, buttonsPanel } };
-
-            doneButton.Click += (_, _) => {
-                CommunicationWrapper.SetCustomInfoTemplate(textArea.Text);
-                Content = showPanel;
-            };
-            cancelButton.Click += (_, _) => {
-                Content = showPanel;
-            };
-
-            textArea.TextChanged += (_, _) => {
-                int lineCount = textArea.Text.ReplaceLineEndings(Document.NewLine.ToString()).Count(c => c == Document.NewLine) + 1;
-                textArea.Height = (int)((lineCount + 1) * textArea.Font.LineHeight()) + 2;
-
-                UpdateLayout();
-                Studio.Instance.RecalculateLayout();
-            };
-            SizeChanged += (_, _) => textArea.Width = Math.Max(0, ClientSize.Width - Padding.Left - Padding.Right);
-
-            Content = showPanel;
-            BackgroundColor = Settings.Instance.Theme.StatusBg;
-
-            Settings.ThemeChanged += () => {
-                Label.TextColor = Settings.Instance.Theme.StatusFg;
-                textArea.TextColor = Settings.Instance.Theme.StatusFg;
-                BackgroundColor = Settings.Instance.Theme.StatusBg;
-                SubpixelIndicator.Invalidate();
-            };
-
-            var editCustomInfoItem = MenuEntry.Status_EditCustomInfoTemplate.ToAction(() => {
-                Content = editPanel;
-                textArea.Text = CommunicationWrapper.GetCustomInfoTemplate();
-            });
-            editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
-            CommunicationWrapper.ConnectionChanged += () => editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
-
-            var alwaysOnTopCheckbox = MenuEntry.StatusPopout_AlwaysOnTop.ToCheckbox();
-            alwaysOnTopCheckbox.CheckedChanged += (_, _) => {
-                Topmost = Settings.Instance.GameInfoPopoutTopmost = alwaysOnTopCheckbox.Checked;
-                Settings.Save();
-            };
-            alwaysOnTopCheckbox.Checked = Settings.Instance.GameInfoPopoutTopmost;
-
-            ContextMenu = new ContextMenu {
-                Items  = {
-                    MenuEntry.Status_CopyGameInfoToClipboard.ToAction(() => {
-                        if (CommunicationWrapper.GetExactGameInfo() is var exactGameInfo && !string.IsNullOrWhiteSpace(exactGameInfo)) {
-                            Clipboard.Instance.Clear();
-                            Clipboard.Instance.Text = exactGameInfo;
-                        }
-                    }),
-                    MenuEntry.Status_ReconnectStudioCeleste.ToAction(CommunicationWrapper.ForceReconnect),
-                    new SeparatorMenuItem(),
-                    editCustomInfoItem,
-                    MenuEntry.Status_ClearWatchEntityInfo.ToAction(CommunicationWrapper.ClearWatchEntityInfo),
-                    new SeparatorMenuItem(),
-                    alwaysOnTopCheckbox
-                }
-            };
-
-            Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
-            Shown += (_, _) => {
-                Size = Settings.Instance.GameInfoPopoutSize;
-                if (!Settings.Instance.GameInfoPopoutLocation.IsZero) {
-                    var lastLocation = Settings.Instance.GameInfoPopoutLocation;
-                    var lastSize = Settings.Instance.GameInfoPopoutSize;
-
-                    // Clamp to screen
-                    var screen = Screen.FromRectangle(new RectangleF(lastLocation, lastSize));
-                    if (lastLocation.X < screen.WorkingArea.Left) {
-                        lastLocation = lastLocation with { X = (int)screen.WorkingArea.Left };
-                    } else if (lastLocation.X + lastSize.Width > screen.WorkingArea.Right) {
-                        lastLocation = lastLocation with { X = (int)screen.WorkingArea.Right - lastSize.Width };
-                    }
-                    if (lastLocation.Y < screen.WorkingArea.Top) {
-                        lastLocation = lastLocation with { Y = (int)screen.WorkingArea.Top };
-                    } else if (lastLocation.Y + lastSize.Height > screen.WorkingArea.Bottom) {
-                        lastLocation = lastLocation with { Y = (int)screen.WorkingArea.Bottom - lastSize.Height };
-                    }
-                    Location = lastLocation;
-                }
-            };
-        }
-
-        protected override void OnClosing(CancelEventArgs e) {
-            Settings.Instance.GameInfoPopoutLocation = Location;
-            Settings.Instance.GameInfoPopoutSize = Size;
-            Settings.Save();
-
-            base.OnClosing(e);
-        }
-
-        protected override void OnMouseDown(MouseEventArgs e) {
-            if (e.Buttons.HasFlag(MouseButtons.Alternate)) {
-                ContextMenu.Show();
-                e.Handled = true;
-                return;
-            }
-
-            base.OnMouseDown(e);
-        }
-    }
-
     private const string DisconnectedText = "Searching...";
 
-    public int TotalFrames;
+    public bool EditingTemplate => Content == editPanel;
 
-    private readonly Label label;
+    // The StackLayouts don't fit the exact content size on their own..
+    public int ActualWidth => EditingTemplate
+        ? (int)(Math.Max(infoTemplateArea.GetPreferredSize().Width, buttonsPanel.GetPreferredSize().Width))
+        : (int)(Math.Max(Math.Max(frameInfo.GetPreferredSize().Width, gameStatus.GetPreferredSize().Width), subpixelIndicator.Visible ? subpixelIndicator.GetPreferredSize().Width : 0));
+    public int ActualHeight => EditingTemplate
+        ? (int)(infoTemplateArea.GetPreferredSize().Height + buttonsPanel.GetPreferredSize().Height)
+        : (int)(frameInfo.GetPreferredSize().Height + gameStatus.GetPreferredSize().Height + (subpixelIndicator.Visible ? subpixelIndicator.GetPreferredSize().Height : 0));
+
+    public int AvailableWidth {
+        set => infoTemplateArea.Width = Math.Max(0, value);
+    }
+
+    private readonly Label frameInfo;
+    private readonly Label gameStatus;
     private readonly SubpixelIndicator subpixelIndicator;
 
-    private readonly TextArea textArea;
+    private readonly TextArea infoTemplateArea;
+    private readonly Panel buttonsPanel;
 
-    private readonly StackLayout showPanel;
-    private readonly StackLayout editPanel;
+    private readonly Panel showPanel;
+    private readonly Panel editPanel;
 
-    // macOS seems to still count invisible objects for the height, so we have to do this...
-    public int ActualHeight => Padding.Top + Padding.Bottom + (showPanel.Visible
-        ? showPanel.Height
-        : editPanel.Height);
+    // Re-use builder to avoid allocations
+    private readonly StringBuilder frameInfoBuilder = new();
 
-    private PopoutForm? popoutForm;
+    public GameInfo() {
+        Padding = 0;
 
-    public GameInfoPanel() {
-        label = new Label {
-            Text = DisconnectedText,
+        frameInfo = new Label {
+            Text = string.Empty,
             TextColor = Settings.Instance.Theme.StatusFg,
             Font = FontManager.StatusFont,
             Wrap = WrapMode.None,
         };
+        RecalcFrameInfo();
+        gameStatus = new Label {
+            Text = string.Empty,
+            TextColor = Settings.Instance.Theme.StatusFg,
+            Font = FontManager.StatusFont,
+            Wrap = WrapMode.None,
+        };
+        RecalcGameStatus();
         subpixelIndicator = new SubpixelIndicator { Width = 100, Height = 100 };
         subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
         subpixelIndicator.Invalidate();
 
-        textArea = new TextArea {
-            Text = DisconnectedText,
+        infoTemplateArea = new TextArea {
+            Text = string.Empty,
             TextColor = Settings.Instance.Theme.StatusFg,
             Font = FontManager.StatusFont,
             Wrap = false,
         };
+
         var doneButton = new Button { Text = "Done" };
         var cancelButton = new Button { Text = "Cancel" };
-        var buttonsPanel = new StackLayout {
+        buttonsPanel = new StackLayout {
             Padding = 5,
             Spacing = 5,
             Orientation = Orientation.Horizontal,
             Items = { doneButton, cancelButton },
         };
 
-        showPanel = new StackLayout { Items = { label, subpixelIndicator } };
-        editPanel = new StackLayout { Items = { textArea, buttonsPanel }, Visible = false };
+        showPanel = new StackLayout { Padding = 0, Items = { frameInfo, gameStatus, subpixelIndicator } };
+        editPanel = new StackLayout { Padding = 0, Items = { infoTemplateArea, buttonsPanel } };
 
-        Studio.Instance.Closed += (_, _) => {
-            Settings.Instance.GameInfoPopoutOpen = popoutForm != null;
-            Settings.Save();
+        Content = showPanel;
+
+        // Responsive size based on text
+        infoTemplateArea.TextChanged += (_, _) => {
+            int lineCount = infoTemplateArea.Text.CountLines();
+            // Always have an empty line at the bottom
+            infoTemplateArea.Height = (int)((lineCount + 1) * infoTemplateArea.Font.LineHeight()) + 2;
         };
 
-        var popoutButton = new PopoutButton { Visible = false };
-        popoutButton.Click += () => {
-            popoutForm ??= new(this);
-            popoutForm.Closed += (_, _) => {
-                label.Text = popoutForm.Label.Text;
-                popoutForm = null;
-
-                Visible = Settings.Instance.ShowGameInfo;
-                subpixelIndicator.Invalidate();
-                UpdateGameInfo();
-                UpdateLayout();
-                Studio.Instance.RecalculateLayout();
-            };
-            popoutForm.Show();
-
-            Visible = false;
-            subpixelIndicator.Invalidate();
-            UpdateGameInfo();
-            UpdateLayout();
-            Studio.Instance.RecalculateLayout();
-        };
-        Studio.Instance.Closed += (_, _) => popoutForm?.Close();
-
-        // Only show popout button while hovering Info HUD
-        MouseEnter += (_, _) => popoutButton.Visible = true;
-        MouseLeave += (_, _) => popoutButton.Visible = false;
-
+        // Finish editing info template
         doneButton.Click += (_, _) => {
-            CommunicationWrapper.SetCustomInfoTemplate(textArea.Text);
-            showPanel.Visible = popoutButton.Visible = true;
-            editPanel.Visible = false;
-            UpdateLayout();
-            Studio.Instance.RecalculateLayout();
+            CommunicationWrapper.SetCustomInfoTemplate(infoTemplateArea.Text);
+            Content = showPanel;
+            OnSizeChanged(EventArgs.Empty);
         };
         cancelButton.Click += (_, _) => {
-            showPanel.Visible = popoutButton.Visible = true;
-            editPanel.Visible = false;
-            UpdateLayout();
-            Studio.Instance.RecalculateLayout();
+            Content = showPanel;
+            OnSizeChanged(EventArgs.Empty);
         };
 
-        BackgroundColor = Settings.Instance.Theme.StatusBg;
-
-        Settings.Changed += () => {
-            Visible = Settings.Instance.ShowGameInfo && popoutForm == null;
-            if (popoutForm == null) {
-                subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
-                subpixelIndicator.Invalidate();
-            } else {
-                popoutForm.SubpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
-                popoutForm.SubpixelIndicator.Invalidate();
-            }
-            UpdateLayout();
-            Studio.Instance.RecalculateLayout();
+        // Update displayed data
+        Studio.Instance.Editor.TextChanged += (_, _, _) => {
+            RecalcFrameInfo();
         };
+        CommunicationWrapper.ConnectionChanged += () => {
+            RecalcFrameInfo();
+            RecalcGameStatus();
+            subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
+            subpixelIndicator.Invalidate();
+        };
+        CommunicationWrapper.StateUpdated += (_, _) => {
+            RecalcFrameInfo();
+            RecalcGameStatus();
+            subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
+            subpixelIndicator.Invalidate();
+        };
+
+        // Manually forward size changes, since the StackLayouts won't do it..
+        frameInfo.SizeChanged += ForwardSize;
+        gameStatus.SizeChanged += ForwardSize;
+        subpixelIndicator.SizeChanged += ForwardSize;
+
+        infoTemplateArea.SizeChanged += ForwardSize;
+        buttonsPanel.SizeChanged += ForwardSize;
+
+        void ForwardSize(object? _1, EventArgs _2) {
+            Content.Width = ActualWidth;
+            Content.Height = ActualHeight;
+            OnSizeChanged(EventArgs.Empty);
+        }
+
+        // React to settings changes
         Settings.ThemeChanged += () => {
-            label.TextColor = Settings.Instance.Theme.StatusFg;
-            textArea.TextColor = Settings.Instance.Theme.StatusFg;
-            BackgroundColor = Settings.Instance.Theme.StatusBg;
+            frameInfo.TextColor = Settings.Instance.Theme.StatusFg;
+            gameStatus.TextColor = Settings.Instance.Theme.StatusFg;
+            infoTemplateArea.TextColor = Settings.Instance.Theme.StatusFg;
             subpixelIndicator.Invalidate();
         };
         Settings.FontChanged += () => {
-            label.Font = FontManager.StatusFont;
-            textArea.Font = FontManager.StatusFont;
+            frameInfo.Font = FontManager.StatusFont;
+            gameStatus.Font = FontManager.StatusFont;
+            infoTemplateArea.Font = FontManager.StatusFont;
             subpixelIndicator.Invalidate();
-            UpdateLayout();
-            Studio.Instance.RecalculateLayout();
         };
+    }
 
-        var layout = new PixelLayout();
-        layout.Add(showPanel, 0, 0);
-        layout.Add(editPanel, 0, 0);
-        layout.Add(popoutButton, ClientSize.Width - popoutButton.Width - Padding.Right * 2, 0);
-
-        Padding = 5;
-
-        label.SizeChanged += (_, _) => {
-            UpdateLayout();
-            Studio.Instance.RecalculateLayout();
-        };
-        textArea.TextChanged += (_, _) => {
-            int lineCount = textArea.Text.ReplaceLineEndings(Document.NewLine.ToString()).Count(c => c == Document.NewLine) + 1;
-            textArea.Height = (int)((lineCount + 1) * textArea.Font.LineHeight()) + 2;
-
-            UpdateLayout();
-            Studio.Instance.RecalculateLayout();
-        };
-        SizeChanged += (_, _) => {
-            layout.Move(popoutButton, ClientSize.Width - Padding.Left - Padding.Right - popoutButton.Width, 0);
-            textArea.Width = Math.Max(0, ClientSize.Width - Padding.Left - Padding.Right);
-        };
-
-        Content = layout;
-        ContextMenu = CreateMenu();
-        Settings.KeyBindingsChanged += () => ContextMenu = CreateMenu();
-
-        CommunicationWrapper.StateUpdated += (prevState, state) => {
-            if (popoutForm == null) {
-                subpixelIndicator.Visible = state.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
-                subpixelIndicator.Invalidate();
-            } else {
-                popoutForm.SubpixelIndicator.Visible = state.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
-                popoutForm.SubpixelIndicator.Invalidate();
-            }
-
-            if (!Settings.Instance.ShowGameInfo || prevState.GameInfo == state.GameInfo)
-                return;
-
-            if (prevState.TotalFrames != state.TotalFrames)
-                TotalFrames = state.TotalFrames;
-
-            UpdateGameInfo();
-        };
-        CommunicationWrapper.ConnectionChanged += UpdateGameInfo;
-
-        if (Settings.Instance.GameInfoPopoutOpen) {
-            Load += (_, _) => popoutButton.PerformClick();
+    protected override void OnMouseDown(MouseEventArgs e) {
+        // Context menu doesn't open on its own for some reason
+        if (e.Buttons.HasFlag(MouseButtons.Alternate)) {
+            ContextMenu.Show();
+            e.Handled = true;
+            return;
         }
-        Shown += (_, _) => UpdateGameInfo();
 
-        ContextMenu CreateMenu() {
-            var editCustomInfoItem = MenuEntry.Status_EditCustomInfoTemplate.ToAction(() => {
-                showPanel.Visible = popoutButton.Visible = false;
-                editPanel.Visible = true;
-                textArea.Text = CommunicationWrapper.GetCustomInfoTemplate();
-            });
-            editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
-            CommunicationWrapper.ConnectionChanged += () => editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
+        base.OnMouseDown(e);
+    }
 
-            return new ContextMenu {
-                Items = {
-                    MenuEntry.Status_CopyGameInfoToClipboard.ToAction(() => {
-                        if (CommunicationWrapper.GetExactGameInfo() is var exactGameInfo && !string.IsNullOrWhiteSpace(exactGameInfo)) {
-                            Clipboard.Instance.Clear();
-                            Clipboard.Instance.Text = exactGameInfo;
-                        }
-                    }),
-                    MenuEntry.Status_ReconnectStudioCeleste.ToAction(CommunicationWrapper.ForceReconnect),
-                    new SeparatorMenuItem(),
-                    editCustomInfoItem,
-                    MenuEntry.Status_ClearWatchEntityInfo.ToAction(CommunicationWrapper.ClearWatchEntityInfo),
-                }
+    public void SetupContextMenu(GameInfoPopout? popout = null) {
+        var editCustomInfoItem = MenuEntry.Status_EditCustomInfoTemplate.ToAction(() => {
+            Content = editPanel;
+            OnSizeChanged(EventArgs.Empty);
+            infoTemplateArea.Text = CommunicationWrapper.GetCustomInfoTemplate();
+        });
+        editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
+        CommunicationWrapper.ConnectionChanged += () => editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
+
+        ContextMenu = new ContextMenu {
+            Items  = {
+                MenuEntry.Status_CopyGameInfoToClipboard.ToAction(() => {
+                    if (CommunicationWrapper.GetExactGameInfo() is var exactGameInfo && !string.IsNullOrWhiteSpace(exactGameInfo)) {
+                        Clipboard.Instance.Clear();
+                        Clipboard.Instance.Text = exactGameInfo;
+                    }
+                }),
+                MenuEntry.Status_ReconnectStudioCeleste.ToAction(CommunicationWrapper.ForceReconnect),
+                new SeparatorMenuItem(),
+                editCustomInfoItem,
+                MenuEntry.Status_ClearWatchEntityInfo.ToAction(CommunicationWrapper.ClearWatchEntityInfo),
+            }
+        };
+
+        if (popout != null) {
+            var alwaysOnTopCheckbox = MenuEntry.StatusPopout_AlwaysOnTop.ToCheckbox();
+            alwaysOnTopCheckbox.CheckedChanged += (_, _) => {
+                popout.Topmost = Settings.Instance.GameInfoPopoutTopmost = alwaysOnTopCheckbox.Checked;
+                Settings.Save();
             };
+            popout.Topmost = alwaysOnTopCheckbox.Checked = Settings.Instance.GameInfoPopoutTopmost;
+
+            ContextMenu.Items.Add(new SeparatorMenuItem());
+            ContextMenu.Items.Add(alwaysOnTopCheckbox);
         }
     }
 
-    public void UpdateGameInfo() {
-        var frameInfo = new StringBuilder();
-        if (CommunicationWrapper.CurrentFrameInTas > 0) {
-            frameInfo.Append($"{CommunicationWrapper.CurrentFrameInTas}/");
-        }
-        frameInfo.Append(TotalFrames.ToString());
+    private void RecalcFrameInfo() {
+        frameInfoBuilder.Clear();
 
-        var document = Application.Instance.Invoke(() => Studio.Instance.Editor.Document);
+        if (CommunicationWrapper.Connected && CommunicationWrapper.CurrentFrameInTas > 0) {
+            frameInfoBuilder.Append(CommunicationWrapper.CurrentFrameInTas);
+            frameInfoBuilder.Append('/');
+        }
+        frameInfoBuilder.Append(Studio.Instance.Editor.TotalFrameCount);
+
+        var document = Studio.Instance.Editor.Document;
         if (!document.Selection.Empty) {
             int minRow = document.Selection.Min.Row;
             int maxRow = document.Selection.Max.Row;
@@ -462,28 +267,254 @@ public class GameInfoPanel : Panel {
                 selectedFrames += actionLine.FrameCount;
             }
 
-            frameInfo.Append($" Selected: {selectedFrames}");
+            frameInfoBuilder.Append(" Selected: ");
+            frameInfoBuilder.Append(selectedFrames);
         }
 
-        var newText = $"{frameInfo}{Environment.NewLine}" + (CommunicationWrapper.Connected && CommunicationWrapper.GameInfo is { } gameInfo
-            ? gameInfo.Trim()
-            : DisconnectedText);
-
-        Application.Instance.InvokeAsync(() => {
-            if (popoutForm != null) {
-                popoutForm.Label.Text = newText;
-                popoutForm.SubpixelIndicator.Invalidate();
-            } else {
-                label.Text = newText;
-                subpixelIndicator.Invalidate();
-            }
-        });
+        frameInfo.Text = frameInfoBuilder.ToString();
     }
 
-    protected override void OnMouseDown(MouseEventArgs e) {
-        if (e.Buttons.HasFlag(MouseButtons.Alternate))
-            ContextMenu.Show();
+    private void RecalcGameStatus() {
+        gameStatus.Text = CommunicationWrapper.Connected && CommunicationWrapper.GameInfo is { } gameInfo && !string.IsNullOrEmpty(gameInfo)
+            ? gameInfo
+            : DisconnectedText;
+    }
+}
 
-        base.OnMouseDown(e);
+public sealed class GameInfoPanel : Panel {
+    private sealed class PopoutButton : Drawable {
+        public const int ButtonSize = IconSize + BackgroundPadding * 2;
+
+        private const int IconSize = 20;
+        private const int BackgroundPadding = 5;
+
+        public Action? Click;
+        private void PerformClick() => Click?.Invoke();
+
+        public PopoutButton() {
+            Width = Height = ButtonSize;
+        }
+
+        protected override void OnPaint(PaintEventArgs e) {
+            var mouse = PointFromScreen(Mouse.Position);
+
+            Color bgColor = Settings.Instance.Theme.PopoutButtonBg;
+            if (mouse.X >= 0.0f && mouse.X <= Width && mouse.Y >= 0.0f && mouse.Y <= Height) {
+                if (Mouse.Buttons.HasFlag(MouseButtons.Primary)) {
+                    bgColor = Settings.Instance.Theme.PopoutButtonSelected;
+                } else {
+                    bgColor = Settings.Instance.Theme.PopoutButtonHovered;
+                }
+            }
+
+            e.Graphics.FillPath(bgColor, GraphicsPath.GetRoundRect(new RectangleF(0.0f, 0.0f, Width, Height), BackgroundPadding * 1.5f));
+
+            e.Graphics.TranslateTransform(BackgroundPadding, BackgroundPadding);
+            e.Graphics.ScaleTransform(IconSize);
+            e.Graphics.FillPath(Settings.Instance.Theme.StatusFg, Assets.PopoutPath);
+        }
+
+        protected override void OnMouseDown(MouseEventArgs e) => Invalidate();
+        protected override void OnMouseUp(MouseEventArgs e) {
+            PerformClick();
+            Invalidate();
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e) => Invalidate();
+        protected override void OnMouseEnter(MouseEventArgs e) => Invalidate();
+        protected override void OnMouseLeave(MouseEventArgs e) => Invalidate();
+    }
+
+    public GameInfoPanel() {
+        var gameInfo = Studio.Instance.GameInfo;
+        gameInfo.SetupContextMenu();
+
+        var scrollable = new Scrollable {
+            Padding = 0,
+            Border = BorderType.None,
+            Content = gameInfo,
+        };
+
+        var layout = new PixelLayout();
+        layout.Add(scrollable, 0, 0);
+
+        GameInfoPopout? popoutForm = null;
+        bool forceClosePopout = false;
+
+        Studio.Instance.Exiting += () => {
+            forceClosePopout = true;
+            popoutForm?.Close();
+            forceClosePopout = false;
+        };
+
+        var popoutButton = new PopoutButton { Visible = false };
+        popoutButton.Click += () => {
+            Settings.Instance.GameInfo = GameInfoType.Popout;
+            Settings.OnChanged();
+            Settings.Save();
+        };
+
+        // Only show popout button while hovering Info HUD
+        MouseEnter += (_, _) => popoutButton.Visible = !gameInfo.EditingTemplate;
+        MouseLeave += (_, _) => popoutButton.Visible = false;
+
+        layout.Add(popoutButton, ClientSize.Width - Padding.Left - Padding.Right - PopoutButton.ButtonSize, 0);
+
+        SizeChanged += (_, _) => {
+            if (popoutForm == null) {
+                gameInfo.AvailableWidth = ClientSize.Width - Padding.Left - Padding.Right;
+            }
+            LimitSize();
+        };
+
+        Studio.Instance.SizeChanged += (_, _) => LimitSize();
+        gameInfo.SizeChanged += (_, _) => LimitSize();
+
+        Padding = 10;
+        Content = layout;
+
+        Load += (_, _) => {
+            UpdateGameInfoStatus();
+        };
+
+        BackgroundColor = Settings.Instance.Theme.StatusBg;
+        Settings.Changed += () => {
+            UpdateGameInfoStatus();
+        };
+        Settings.ThemeChanged += () => {
+            BackgroundColor = Settings.Instance.Theme.StatusBg;
+        };
+
+        return;
+
+        void LimitSize() {
+            if (popoutForm != null) {
+                return;
+            }
+
+            // Causes the game-info to fit to the scrollable again
+            scrollable.Content = gameInfo;
+
+            // Limit height to certain percentage of entire the window
+            scrollable.Size = new Size(
+                Math.Max(0, ClientSize.Width - Padding.Left - Padding.Right),
+                Math.Min(gameInfo.ActualHeight + Padding.Top + Padding.Bottom, (int)(Studio.Instance.Height * Settings.Instance.MaxGameInfoHeight)) - Padding.Top - Padding.Bottom);
+
+            // Don't show while editing template (cause overlap)
+            popoutButton.Visible = !gameInfo.EditingTemplate;
+
+            // Account for scroll bar
+            bool scrollBarVisible = gameInfo.Height > scrollable.Height;
+            layout.Move(popoutButton, ClientSize.Width - Padding.Left - Padding.Right - PopoutButton.ButtonSize - (scrollBarVisible ? Studio.ScrollBarSize : 0), 0);
+        }
+
+        void UpdateGameInfoStatus() {
+            switch (Settings.Instance.GameInfo) {
+                case GameInfoType.Disabled:
+                    forceClosePopout = true;
+                    popoutForm?.Close();
+                    forceClosePopout = false;
+
+                    Visible = false;
+                    OnSizeChanged(EventArgs.Empty); // Changing Visible doesn't send size events
+                    break;
+
+                case GameInfoType.Panel:
+                    forceClosePopout = true;
+                    popoutForm?.Close();
+                    forceClosePopout = false;
+
+                    Visible = true;
+                    OnSizeChanged(EventArgs.Empty); // Changing Visible doesn't send size events
+                    break;
+
+                case GameInfoType.Popout:
+                    if (popoutForm != null) {
+                        return;
+                    }
+
+                    scrollable.Content = null;
+
+                    popoutForm ??= new GameInfoPopout();
+                    popoutForm.Closed += (_, _) => {
+                        popoutForm.Content = null;
+                        popoutForm = null;
+
+                        scrollable.Content = gameInfo;
+                        if (!forceClosePopout) {
+                            Settings.Instance.GameInfo = GameInfoType.Panel;
+                            Settings.OnChanged();
+                            Settings.Save();
+                        }
+                    };
+                    popoutForm.Show();
+
+                    Visible = false;
+                    OnSizeChanged(EventArgs.Empty); // Changing Visible doesn't send size events
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+    }
+}
+public sealed class GameInfoPopout : Form {
+    public GameInfoPopout() {
+        var gameInfo = Studio.Instance.GameInfo;
+        gameInfo.SetupContextMenu(this);
+
+        var scrollable = new Scrollable {
+            Padding = 0,
+            Border = BorderType.None,
+            Content = gameInfo,
+        };
+
+        Title = "Game Info";
+        Icon = Assets.AppIcon;
+        MinimumSize = new Size(300, 100);
+
+        Padding = 10;
+        Content = scrollable;
+        BackgroundColor = Settings.Instance.Theme.StatusBg;
+        Settings.ThemeChanged += () => {
+            BackgroundColor = Settings.Instance.Theme.StatusBg;
+        };
+
+        SizeChanged += (_, _) => {
+            gameInfo.AvailableWidth = ClientSize.Width - Padding.Left - Padding.Right;
+        };
+
+        Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
+        Shown += (_, _) => {
+            Size = Settings.Instance.GameInfoPopoutSize;
+            if (!Settings.Instance.GameInfoPopoutLocation.IsZero) {
+                var lastLocation = Settings.Instance.GameInfoPopoutLocation;
+                var lastSize = Settings.Instance.GameInfoPopoutSize;
+
+                // Clamp to screen
+                var screen = Screen.FromRectangle(new RectangleF(lastLocation, lastSize));
+                if (lastLocation.X < screen.WorkingArea.Left) {
+                    lastLocation = lastLocation with { X = (int)screen.WorkingArea.Left };
+                } else if (lastLocation.X + lastSize.Width > screen.WorkingArea.Right) {
+                    lastLocation = lastLocation with { X = (int)screen.WorkingArea.Right - lastSize.Width };
+                }
+                if (lastLocation.Y < screen.WorkingArea.Top) {
+                    lastLocation = lastLocation with { Y = (int)screen.WorkingArea.Top };
+                } else if (lastLocation.Y + lastSize.Height > screen.WorkingArea.Bottom) {
+                    lastLocation = lastLocation with { Y = (int)screen.WorkingArea.Bottom - lastSize.Height };
+                }
+                Location = lastLocation;
+            }
+
+            gameInfo.AvailableWidth = ClientSize.Width - Padding.Left - Padding.Right;
+        };
+    }
+
+    protected override void OnClosing(CancelEventArgs e) {
+        Settings.Instance.GameInfoPopoutLocation = Location;
+        Settings.Instance.GameInfoPopoutSize = Size;
+        Settings.Save();
+
+        base.OnClosing(e);
     }
 }
