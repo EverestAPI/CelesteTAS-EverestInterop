@@ -102,6 +102,10 @@ public sealed class CommunicationAdapterStudio(
                     case GameDataType.CommandHash:
                         gameData[gameDataType] = reader.ReadInt32();
                         break;
+                    
+                    case GameDataType.LevelInfo:
+                        gameData[gameDataType] = reader.ReadObject<LevelInfo>();
+                        break;
                 }
                 gameDataPending[gameDataType] = false;
 

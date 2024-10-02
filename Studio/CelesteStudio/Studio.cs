@@ -392,16 +392,21 @@ public sealed class Studio : Form {
         if (!ShouldDiscardChanges())
             return;
 
+        string simpleConsoleCommand = CommunicationWrapper.GetConsoleCommand(simple: true);
+        CommunicationWrapper.GetModURL();
+        LevelInfo? levelInfo = CommunicationWrapper.GetLevelInfo();
+        
         string initText = $"RecordCount: 1{Document.NewLine}";
-        if (CommunicationWrapper.Connected) {
-            if (CommunicationWrapper.GetConsoleCommand(simple: true) is var simpleConsoleCommand && !string.IsNullOrWhiteSpace(simpleConsoleCommand)) {
-                initText += $"{Document.NewLine}{simpleConsoleCommand}{Document.NewLine}   1{Document.NewLine}";
-                if (CommunicationWrapper.GetModURL() is var modUrl && !string.IsNullOrWhiteSpace(modUrl)) {
-                    initText = modUrl + initText;
-                }
-            }
+        if (levelInfo != null && !string.IsNullOrWhiteSpace(levelInfo?.ModUrl)) {
+            initText = levelInfo?.ModUrl + initText;
+        }
+        if (!string.IsNullOrWhiteSpace(simpleConsoleCommand)) {
+            initText += $"{Document.NewLine}{simpleConsoleCommand}{Document.NewLine}   1{Document.NewLine}";
         }
         initText += $"{Document.NewLine}#Start{Document.NewLine}";
+        if (levelInfo?.WakeupTime is { } wakeupTime) {
+            initText += wakeupTime.ToString().PadLeft(ActionLine.MaxFramesDigits) + Document.NewLine;
+        }
 
         File.WriteAllText(Document.ScratchFile, initText);
         OpenFile(Document.ScratchFile);

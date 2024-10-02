@@ -192,6 +192,13 @@ public static class CommunicationWrapper {
 
         return (string?)comm!.RequestGameData(GameDataType.ExactGameInfo).Result ?? string.Empty;
     }
+    public static LevelInfo? GetLevelInfo() {
+        if (!Connected) {
+            return null;
+        }
+
+        return (LevelInfo?)comm!.RequestGameData(GameDataType.LevelInfo).Result;
+    }
 
     // The hashcode is stored instead of the actual key, since it is used as an identifier in responses from Celeste
     private static readonly Dictionary<int, (List<CommandAutoCompleteEntry> Entries, bool Done)> autoCompleteEntryCache = [];

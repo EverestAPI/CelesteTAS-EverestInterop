@@ -177,6 +177,34 @@ public static class GameData {
         return string.Empty;
     }
 
+    public static int? GetWakeupTime() {
+        if (Engine.Scene is not Level level) {
+            return null;
+        }
+
+        AreaData areaData = AreaData.Get(level);
+
+        int? wakeupTime = areaData.IntroType switch {
+            // Player.IntroTypes.Transition => expr,
+            Player.IntroTypes.Respawn => 36,
+            // Player.IntroTypes.WalkInRight => expr,
+            // Player.IntroTypes.WalkInLeft => expr,
+            // Player.IntroTypes.Jump => expr,
+            Player.IntroTypes.WakeUp => 190,
+            // Player.IntroTypes.Fall => expr,
+            // Player.IntroTypes.TempleMirrorVoid => expr,
+            Player.IntroTypes.None => null,
+            // Player.IntroTypes.ThinkForABit => expr,
+            _ => null,
+        };
+
+        if (wakeupTime == null) {
+            $"Couldn't determine wakeup time for intro type '{areaData.IntroType}'".Log(LogLevel.Warn);
+        }
+
+        return wakeupTime;
+    }
+
     public static GameState? GetGameState() {
         if (Engine.Scene is not Level level) {
             return null;
