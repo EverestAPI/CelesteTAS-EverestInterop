@@ -26,6 +26,12 @@ public readonly record struct CommandLine(
 
     public static CommandLine? Parse(string line) => TryParse(line, out var commandLine) ? commandLine : null;
     public static bool TryParse(string line, out CommandLine commandLine) {
+        string lineTrimmed = line.TrimStart();
+        if (string.IsNullOrEmpty(lineTrimmed) || !char.IsLetter(lineTrimmed[0])) {
+            commandLine = default;
+            return false;
+        }
+
         var separatorMatch = SeparatorRegex.Match(line);
         if (!separatorMatch.Success || separatorMatch.Length == 0) {
             // No arguments
@@ -66,7 +72,7 @@ public readonly record struct CommandLine(
 
             char curr = line[i];
             switch (curr) {
-                case '"':
+                case '"' when groupStack.Count == 0 || groupStack.Peek() == '"':
                     if (groupStack.Count > 0 && groupStack.Peek() == '"') {
                         groupStack.Pop();
                     } else {
