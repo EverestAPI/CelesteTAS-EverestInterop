@@ -128,6 +128,10 @@ public sealed class PopupMenu : Scrollable {
         }
 
         protected override void OnMouseWheel(MouseEventArgs e) {
+            // Update selected entry on scroll
+            menu.Scroll += OnScroll;
+            Console.WriteLine(e.Delta.Height);
+
             if (Settings.Instance.ScrollSpeed > 0.0f) {
                 // Manually scroll to respect our scroll speed
                 menu.ScrollPosition = menu.ScrollPosition with {
@@ -137,6 +141,18 @@ public sealed class PopupMenu : Scrollable {
             }
 
             base.OnMouseWheel(e);
+
+            return;
+
+            void OnScroll(object? _1, EventArgs _2) {
+                int mouseRow = (int)((PointFromScreen(Mouse.Position).Y - Settings.Instance.Theme.PopupMenuBorderPadding) / menu.EntryHeight);
+                if (mouseRow >= 0 && mouseRow < menu.shownEntries.Length && !menu.shownEntries[mouseRow].Disabled) {
+                    menu.SelectedEntry = mouseRow;
+                    lastMouseSelection = Mouse.Position;
+                }
+
+                menu.Scroll -= OnScroll;
+            }
         }
     }
 
