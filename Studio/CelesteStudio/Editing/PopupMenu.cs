@@ -101,9 +101,10 @@ public sealed class PopupMenu : Scrollable {
             if (mouseRow >= 0 && mouseRow < menu.shownEntries.Length && !menu.shownEntries[mouseRow].Disabled) {
                 Cursor = Cursors.Pointer;
 
-                if ((e.Location - lastMouseSelection).LengthSquared >= MinMouseTravelDistance * MinMouseTravelDistance) {
+                // Only update selection if mouse has actually moved
+                if ((Mouse.Position - lastMouseSelection).LengthSquared >= MinMouseTravelDistance * MinMouseTravelDistance) {
                     menu.SelectedEntry = mouseRow;
-                    lastMouseSelection = e.Location;
+                    lastMouseSelection = Mouse.Position;
                 }
             } else {
                 Cursor = null;
