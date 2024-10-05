@@ -22,11 +22,6 @@ internal static class StudioUpdateBanner {
 
     [Load]
     private static void Load() {
-        // Downloading Studio... 45.5MB / 63.5MB [74.13%]
-        // Installing Studio... || Updating Studio...
-        // Studio successfully installed || Studio successfully updated
-        // Studio install failed || Studio update failed
-
         typeof(Engine)
             .GetMethodInfo(nameof(Engine.Update))
             .IlHook((cur, _) => {
@@ -147,7 +142,7 @@ internal static class StudioUpdateBanner {
             case State.Download:
                 left += PaddingSmall;
 
-                DrawText(ref left, $"Downloading Studio v{StudioHelper.CurrentStudioVersion}{new string('.', dotCount)}", $"Downloading Studio v{StudioHelper.CurrentStudioVersion}...", 1.0f, Color.White, draw);
+                DrawText(ref left, $"Downloading Celeste TAS Studio v{StudioHelper.CurrentStudioVersion}{new string('.', dotCount)}", $"Downloading Celeste TAS Studio v{StudioHelper.CurrentStudioVersion}...", 1.0f, Color.White, draw);
 
                 left += PaddingLarge;
 
@@ -186,25 +181,25 @@ internal static class StudioUpdateBanner {
 
             case State.Install:
                 left += PaddingSmall;
-                DrawText(ref left, $"Installing Studio v{StudioHelper.CurrentStudioVersion}{new string('.', dotCount)}", $"Installing Studio v{StudioHelper.CurrentStudioVersion}...", 1.0f, Color.White, draw);
+                DrawText(ref left, $"Installing Celeste TAS Studio v{StudioHelper.CurrentStudioVersion}{new string('.', dotCount)}", $"Installing Celeste TAS Studio v{StudioHelper.CurrentStudioVersion}...", 1.0f, Color.White, draw);
                 left += PaddingSmall;
                 break;
 
             case State.Success:
                 left += PaddingSmall;
-                DrawText(ref left, $"Studio v{StudioHelper.CurrentStudioVersion} successfully installed", $"Studio v{StudioHelper.CurrentStudioVersion} successfully installed", 1.0f, Color.LightGreen, draw);
+                DrawText(ref left, $"Celeste TAS Studio v{StudioHelper.CurrentStudioVersion} successfully installed", $"Celeste TAS Studio v{StudioHelper.CurrentStudioVersion} successfully installed", 1.0f, Color.LightGreen, draw);
                 left += PaddingSmall;
                 break;
 
             case State.Failure:
                 left += PaddingSmall;
-                DrawText(ref left, $"Studio v{StudioHelper.CurrentStudioVersion} install failed!", $"Studio v{StudioHelper.CurrentStudioVersion} install failed!", 1.0f, Color.IndianRed, draw);
+                DrawText(ref left, $"Celeste TAS Studio v{StudioHelper.CurrentStudioVersion} install failed!", $"Celeste TAS Studio v{StudioHelper.CurrentStudioVersion} install failed!", 1.0f, Color.IndianRed, draw);
                 left += PaddingSmall;
                 break;
 
             case State.Launch:
                 left += PaddingSmall;
-                DrawText(ref left, $"Launching Studio{new string('.', dotCount)}", "Launching Studio...", 1.0f, Color.LightSkyBlue, draw);
+                DrawText(ref left, $"Launching Celeste TAS Studio{new string('.', dotCount)}", "Launching Celeste TAS Studio...", 1.0f, Color.LightSkyBlue, draw);
                 left += PaddingSmall;
                 break;
 
