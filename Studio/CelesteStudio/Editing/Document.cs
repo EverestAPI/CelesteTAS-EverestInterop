@@ -348,18 +348,33 @@ public class Document : IDisposable {
 
     /// Ring buffer containing patches to go between undo-states
     public sealed class UndoStack(int bufferSize = 256) {
-        /// Represents the state of the document at a certain point in time, in relation to other entries
-        public record struct Entry(Patch[] patches, Dictionary<int, List<Anchor>> anchors, CaretPosition caret);
+        /// Represents a change in the document state
+        public record struct Diff(Patch[] Patches, Dictionary<int, List<Anchor>> Anchors, CaretPosition Caret);
+
+        /// Represents the state of the document at a certain point in time
+        private record struct State(Dictionary<int, List<Anchor>> Anchors, CaretPosition Caret);
 
         private int curr = 0, head = 0, tail = 0;
-        private readonly Entry[] stack = new Entry[bufferSize];
+        private readonly State[] stateStack = new State[bufferSize];
+        private readonly Patch[][] patchStack = new Patch[bufferSize][];
 
-        public void Push(QueuedUpdate update) {
-            stack[head] = new Entry(
-                update.Patches.ToArray(),
-                update.Document.CurrentAnchors.ToDictionary(e => e.Key, e => e.Value.Select(anchor => anchor.Clone()).ToList()),
-                update.Document.Caret
-            );
+        private State preparedState;
+
+        /// Prepares the document state to be pushed, once the patches are pushed
+        public void PrepareState(Document document) {
+            preparedState = new State(
+                document.CurrentAnchors.ToDictionary(e => e.Key, e => e.Value.Select(anchor => anchor.Clone()).ToList()),
+                document.Caret);
+        }
+        /// Immediately store the document state
+        public void StoreState(Document document) {
+            PrepareState(document);
+            stateStack[curr] = preparedState;
+        }
+        /// Pushes the patches onto the stack, creating a new undo-state
+        public void PushPatches(IEnumerable<Patch> patches) {
+            stateStack[curr] = preparedState;
+            patchStack[curr] = patches.ToArray();
 
             head = curr = (curr + 1).Mod(bufferSize);
             if (head == tail) {
@@ -367,26 +382,36 @@ public class Document : IDisposable {
             }
         }
 
-        /// Returns an entry containing the data to go to the previous one
-        public Entry? Undo() {
+        /// Returns a diff containing the data to go to the previous one
+        public Diff? Undo() {
             if (curr == tail) {
                 return null;
             }
 
             curr = (curr - 1).Mod(bufferSize);
-            return new Entry(
-                stack[curr].patches.Reverse().ToArray(),
-                stack[curr].anchors.ToDictionary(e => e.Key, e => e.Value.Select(anchor => anchor.Clone()).ToList()),
-                stack[curr].caret);
+            return new Diff(
+                patchStack[curr]
+                    .Select(patch => patch.CopySwapped())
+                    .Reverse()
+                    .ToArray(),
+                stateStack[curr].Anchors.ToDictionary(e => e.Key, e => e.Value.Select(anchor => anchor.Clone()).ToList()),
+                stateStack[curr].Caret);
         }
-        /// Returns an entry containing the data to go to the next one
-        public Entry? Redo() {
+        /// Returns a diff containing the data to go to the next one
+        public Diff? Redo() {
             if (curr == head) {
                 return null;
             }
 
-            curr = (curr + 1).Mod(bufferSize);
-            return stack[curr];
+            int next = (curr + 1).Mod(bufferSize);
+            var diff = new Diff(
+                patchStack[curr]
+                    .Select(patch => patch.Copy())
+                    .ToArray(),
+                stateStack[next].Anchors.ToDictionary(e => e.Key, e => e.Value.Select(anchor => anchor.Clone()).ToList()),
+                stateStack[next].Caret);
+            curr = next;
+            return diff;
         }
     }
 
@@ -402,6 +427,7 @@ public class Document : IDisposable {
             this.raiseEvents = raiseEvents;
 
             document.updateStack.Push(this);
+            document.undoStack.PrepareState(document);
         }
 
         public void Dispose() {
@@ -413,12 +439,15 @@ public class Document : IDisposable {
 
             if (Document.updateStack.Count == 0) {
                 if (raiseEvents) {
-                    var totalPatch = Patches.Aggregate(Patch.Merge);
+                    var totalPatch = Patches
+                        .Select(patch => patch.Copy())
+                        .Aggregate(Patch.Merge);
+                    totalPatch.CleanupNoOps();
                     if (totalPatch.Insertions.Count == 0 && totalPatch.Deletions.Count == 0) {
                         return;
                     }
 
-                    Document.undoStack.Push(this);
+                    Document.undoStack.PushPatches(Patches);
                     Document.OnTextChanged(totalPatch.Insertions, totalPatch.Deletions);
 
                     if (Settings.Instance.AutoSave) {
@@ -475,8 +504,8 @@ public class Document : IDisposable {
             Insertions[row] = line;
         }
 
-        public void Dispose() {
-            // Clean-up no-ops
+        /// Removes insertions and deletions which cancel out
+        public void CleanupNoOps() {
             var commonRows = Insertions.Keys.Intersect(Deletions.Keys);
             foreach (var row in commonRows) {
                 if (Insertions[row] == Deletions[row]) {
@@ -484,6 +513,10 @@ public class Document : IDisposable {
                     Deletions.Remove(row);
                 }
             }
+        }
+
+        public void Dispose() {
+            CleanupNoOps();
             if (Insertions.Count == 0 && Deletions.Count == 0) {
                 return;
             }
@@ -502,28 +535,36 @@ public class Document : IDisposable {
             }
             return patch;
         }
+        public Patch CopySwapped() {
+            var patch = new Patch(document, update);
+            foreach ((int row, string line) in Insertions) {
+                patch.Deletions[row] = line;
+            }
+            foreach ((int row, string line) in Deletions) {
+                patch.Insertions[row] = line;
+            }
+            return patch;
+        }
 
         public static Patch Merge(Patch a, Patch b) {
-            var result = a.Copy();
-
             foreach ((int row, string line) in b.Deletions) {
-                if (!result.Insertions.Remove(row)) {
-                    result.Deletions.Add(row, line);
+                if (!a.Insertions.Remove(row)) {
+                    a.Deletions.Add(row, line);
                 }
 
-                foreach ((int insertionRow, string insertionLine) in result.Insertions) {
+                foreach ((int insertionRow, string insertionLine) in a.Insertions) {
                     if (insertionRow >= row) {
-                        result.Insertions[insertionRow - 1] = insertionLine;
-                        result.Insertions.Remove(insertionRow);
+                        a.Insertions[insertionRow - 1] = insertionLine;
+                        a.Insertions.Remove(insertionRow);
                     }
                 }
             }
 
             foreach ((int row, string line) in b.Insertions) {
-                result.Insertions.Add(row, line);
+                a.Insertions.Add(row, line);
             }
 
-            return result;
+            return a;
         }
     }
 
@@ -532,7 +573,7 @@ public class Document : IDisposable {
 
     private void ApplyPatch(Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
         // Delete from end to beginning to avoid offsetting lines
-        foreach ((int row, _) in deletions.OrderBy(e => e.Key).Reverse()) {
+        foreach ((int row, string line) in deletions.OrderBy(e => e.Key).Reverse()) {
             CurrentLines.RemoveAt(row);
         }
         foreach ((int row, string line) in insertions.OrderBy(e => e.Key)) {
@@ -541,30 +582,43 @@ public class Document : IDisposable {
     }
 
     public void Undo() {
-        if (undoStack.Undo() is not { } entry) {
+        undoStack.StoreState(this);
+        if (undoStack.Undo() is not { } diff) {
             return;
         }
 
         // Un-apply patches (already reversed)
-        foreach (var patch in entry.patches) {
-            ApplyPatch(patch.Deletions, patch.Insertions);
+        foreach (var patch in diff.Patches) {
+            ApplyPatch(patch.Insertions, patch.Deletions);
         }
 
-        CurrentAnchors = entry.anchors;
-        Caret = entry.caret;
+        var totalPatch = diff.Patches.Aggregate(Patch.Merge);
+        totalPatch.CleanupNoOps();
+        if (totalPatch.Insertions.Count > 0 && totalPatch.Deletions.Count > 0) {
+            OnTextChanged(totalPatch.Insertions, totalPatch.Deletions);
+        }
+
+        CurrentAnchors = diff.Anchors;
+        Caret = diff.Caret;
     }
     public void Redo() {
-        if (undoStack.Redo() is not { } entry) {
+        if (undoStack.Redo() is not { } diff) {
             return;
         }
 
         // Re-apply patches
-        foreach (var patch in entry.patches) {
+        foreach (var patch in diff.Patches) {
             ApplyPatch(patch.Insertions, patch.Deletions);
         }
 
-        CurrentAnchors = entry.anchors;
-        Caret = entry.caret;
+        var totalPatch = diff.Patches.Aggregate(Patch.Merge);
+        totalPatch.CleanupNoOps();
+        if (totalPatch.Insertions.Count > 0 && totalPatch.Deletions.Count > 0) {
+            OnTextChanged(totalPatch.Insertions, totalPatch.Deletions);
+        }
+
+        CurrentAnchors = diff.Anchors;
+        Caret = diff.Caret;
     }
 
     public void Insert(string text) => Caret = Insert(Caret, text);
