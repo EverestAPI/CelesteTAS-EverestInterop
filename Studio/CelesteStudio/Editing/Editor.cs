@@ -1683,7 +1683,7 @@ public sealed class Editor : Drawable {
         line = line[..Document.Caret.Col].TrimStart();
 
         // Don't auto-complete on comments or action lines
-        if (line.StartsWith('#') || ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) {
+        if (line.StartsWith('#') || line.StartsWith('*') || ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) {
             CloseAutoCompletePopup();
             return;
         }
