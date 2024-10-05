@@ -114,6 +114,7 @@ public sealed class Settings {
     public bool AutoSave { get; set; } = true;
     public bool AutoRemoveMutuallyExclusiveActions { get; set; } = true;
     public AutoRoomIndexing AutoIndexRoomLabels { get; set; } = AutoRoomIndexing.CurrentFile;
+    public bool AutoSelectFullActionLine { get; set; } = true;
     public bool SyncCaretWithPlayback { get; set; } = true;
 
     public bool SendInputsToCeleste { get; set; } = true;

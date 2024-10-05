@@ -3226,9 +3226,9 @@ public sealed class Editor : Drawable {
             Document.Selection.End = Document.Caret;
 
             // If the selection is multi-line, always select the entire start/end line if it's an action line
-            if (Document.Selection.Start.Row != Document.Selection.End.Row) {
-                var startLine = Document.Lines[Document.Selection.Start.Row];
-                var endLine = Document.Lines[Document.Selection.End.Row];
+            if (Settings.Instance.AutoSelectFullActionLine && Document.Selection.Start.Row != Document.Selection.End.Row) {
+                string startLine = Document.Lines[Document.Selection.Start.Row];
+                string endLine = Document.Lines[Document.Selection.End.Row];
                 if (ActionLine.Parse(startLine) != null) {
                     Document.Selection.Start.Col = Document.Selection.Start < Document.Selection.End ? 0 : startLine.Length;
                 }

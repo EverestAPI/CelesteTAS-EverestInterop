@@ -628,6 +628,7 @@ public sealed class Studio : Form {
                 MenuUtils.CreateSettingToggle("&Auto Save File", nameof(Settings.AutoSave)),
                 MenuUtils.CreateSettingToggle("Auto Remove Mutually Exclusive Actions", nameof(Settings.AutoRemoveMutuallyExclusiveActions)),
                 MenuUtils.CreateSettingEnum<AutoRoomIndexing>("Auto-Index Room Labels", nameof(Settings.AutoIndexRoomLabels), ["Disabled", "Current File", "Include Read-commands"]),
+                MenuUtils.CreateSettingToggle("Auto-Select Full Input line", nameof(Settings.AutoSelectFullActionLine)),
                 MenuUtils.CreateSettingToggle("Sync &Caret with Playback", nameof(Settings.SyncCaretWithPlayback)),
                 MenuEntry.Settings_SendInputs.ToSettingToggle(nameof(Settings.SendInputsToCeleste), enabled => {
                     Editor.ShowToastMessage($"{(enabled ? "Enabled" : "Disabled")} Sending Inputs to Celeste", Editor.DefaultToastTime);
