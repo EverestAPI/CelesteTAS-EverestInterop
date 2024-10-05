@@ -84,7 +84,7 @@ public readonly record struct Command(
     public static bool Parsing { get; private set; }
 
     public void Invoke() => Attribute.Execute(CommandLine, StudioLine, FilePath, FileLine);
-    public bool Is(string commandName) => CommandLine.IsCommand(commandName);
+    public bool Is(string commandName) => Attribute.IsName(commandName);
 
     public string[] Args => CommandLine.Arguments;
     public string LineText => CommandLine.Arguments.Length == 0 ? Attribute.Name : $"{Attribute.Name}{DefaultSeparator}{string.Join(DefaultSeparator, CommandLine.Arguments)}";
