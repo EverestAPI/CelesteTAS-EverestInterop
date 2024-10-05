@@ -228,8 +228,45 @@ public sealed class Studio : Form {
         CommunicationWrapper.Start();
     }
 
-    // Dialogs should always be focused over the editor / tools, but not other OS windows
-    public static void RegisterDialog(Eto.Forms.Dialog dialog) {
+    /// Properly registers a window
+    public static void RegisterWindow(Window window, Window? parent = null, bool centerWindow = true) {
+        parent ??= window.ParentWindow;
+
+        window.Icon = Assets.AppIcon;
+        window.ShowInTaskbar = true;
+
+        // Apply theming on WPF
+        window.Load += (_, _) => Instance.WindowCreationCallback(window);
+
+        if (centerWindow) {
+            window.Shown += (_, _) => {
+                // Center on parent
+                var location = parent.Location + new Point((parent.Width - window.Width) / 2, (parent.Height - window.Height) / 2);
+
+                // Clamp to screen
+                var screen = Screen.FromRectangle(new RectangleF(location, window.Size));
+                if (location.X < screen.WorkingArea.Left) {
+                    location = location with { X = (int)screen.WorkingArea.Left };
+                } else if (location.X + window.Width > screen.WorkingArea.Right) {
+                    location = location with { X = (int)screen.WorkingArea.Right - window.Width };
+                }
+                if (location.Y < screen.WorkingArea.Top) {
+                    location = location with { Y = (int)screen.WorkingArea.Top };
+                } else if (location.Y + window.Height > screen.WorkingArea.Bottom) {
+                    location = location with { Y = (int)screen.WorkingArea.Bottom - window.Height };
+                }
+
+                window.Location = location;
+            };
+        }
+    }
+
+    /// Properly registers a dialog window
+    public static void RegisterDialog(Eto.Forms.Dialog dialog, Window? parent = null, bool centerWindow = true) {
+        RegisterWindow(dialog);
+
+        // Dialogs should always be focused over the editor / tools, but not other OS windows
+
         // For some reason macOS can just revive dialogs from the dead
         // Thankfully Topmost already behaves how we want on macOS
         if (Eto.Platform.Instance.IsMac) {

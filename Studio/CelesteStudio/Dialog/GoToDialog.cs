@@ -59,8 +59,6 @@ public class GoToDialog : Dialog<int> {
                 }
             }
         };
-        Icon = Assets.AppIcon;
-        Studio.RegisterDialog(this);
 
         DefaultButton = new Button((_, _) => Close((int)lineSelector.Value - 1)) { Text = "&Go" };
         AbortButton = new Button((_, _) => Close(document.Caret.Row)) { Text = "&Cancel" };
@@ -68,8 +66,7 @@ public class GoToDialog : Dialog<int> {
         PositiveButtons.Add(DefaultButton);
         NegativeButtons.Add(AbortButton);
 
-        Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
-        Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
+        Studio.RegisterDialog(this);
     }
 
     public static int Show(Document document) => new GoToDialog(document).ShowModal();

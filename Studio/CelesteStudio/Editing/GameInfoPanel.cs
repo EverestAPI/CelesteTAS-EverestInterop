@@ -470,7 +470,6 @@ public sealed class GameInfoPopout : Form {
         };
 
         Title = "Game Info";
-        Icon = Assets.AppIcon;
         MinimumSize = new Size(300, 100);
 
         Padding = 10;
@@ -484,7 +483,7 @@ public sealed class GameInfoPopout : Form {
             gameInfo.AvailableWidth = ClientSize.Width - Padding.Left - Padding.Right;
         };
 
-        Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
+        Studio.RegisterWindow(this, centerWindow: false);
         Shown += (_, _) => {
             Size = Settings.Instance.GameInfoPopoutSize;
             if (!Settings.Instance.GameInfoPopoutLocation.IsZero) {

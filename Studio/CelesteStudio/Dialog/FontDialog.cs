@@ -96,8 +96,6 @@ public class FontDialog : Dialog<bool> {
 
         Title = "Font";
         Content = CreateDialogContent();
-        Icon = Assets.AppIcon;
-        Studio.RegisterDialog(this);
 
         DefaultButton = new Button((_, _) => Close(true)) { Text = "&OK" };
         AbortButton = new Button((_, _) => Close(false)) { Text = "&Cancel" };
@@ -123,8 +121,7 @@ public class FontDialog : Dialog<bool> {
             });
         }
 
-        Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
-        Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
+        Studio.RegisterDialog(this);
     }
 
     private Control CreateDialogContent() {
