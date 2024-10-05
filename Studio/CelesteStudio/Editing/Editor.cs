@@ -3151,6 +3151,11 @@ public sealed class Editor : Drawable {
                 scrollY = (int)(carY + yLookAhead - (scrollableSize.Height));
         }
 
+        // Avoid jittering while the game info panel keeps changing size (for example while running to a breakpoint)
+        if (center && Math.Abs(scrollY - scrollablePosition.Y) < Font.LineHeight()) {
+            scrollY = scrollablePosition.Y;
+        }
+
         scrollable.ScrollPosition = new Point(
             Math.Max(0, scrollX),
             Math.Max(0, scrollY));
