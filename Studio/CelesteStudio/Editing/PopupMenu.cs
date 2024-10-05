@@ -284,8 +284,14 @@ public sealed class PopupMenu : Scrollable {
     }
 
     public bool HandleKeyDown(KeyEventArgs e, bool useTabComplete) {
-        if (!Visible)
+        if (!Visible) {
             return false;
+        }
+
+        // Don't consume inputs if nothing is interactable
+        if (shownEntries.All(entry => entry.Disabled)) {
+            return false;
+        }
 
         if (e.Key == Keys.Up) {
             MoveSelection(-1);
