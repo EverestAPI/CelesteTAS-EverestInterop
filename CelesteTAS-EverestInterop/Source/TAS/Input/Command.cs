@@ -1,4 +1,5 @@
 using Celeste.Mod;
+using Celeste.Mod.Helpers;
 using StudioCommunication;
 using System;
 using System.Collections.Generic;
@@ -127,8 +128,9 @@ public readonly record struct Command(
 
     [Initialize]
     private static void CollectCommands() {
+        // TODO: Re-collect commands if mod is loaded late (i.e. through installing dependencies)
         Commands.Clear();
-        Commands.AddRange(typeof(CelesteTasModule).Assembly.GetTypesSafe()
+        Commands.AddRange(FakeAssembly.GetFakeEntryAssembly().GetTypesSafe()
             .SelectMany(type => type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
             .Where(method => method.GetCustomAttribute<TasCommandAttribute>() != null)
             .Select(method => {
