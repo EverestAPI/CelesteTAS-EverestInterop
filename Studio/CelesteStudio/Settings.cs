@@ -197,84 +197,7 @@ public sealed class Settings {
     #endregion
 
     public static void Load() {
-        // Register mappings
-        TomletMain.RegisterMapper(
-            point => new TomlTable { Entries = { { "X", new TomlLong(point.X) }, { "Y", new TomlLong(point.Y) } } },
-            tomlValue => {
-                if (tomlValue is not TomlTable table)
-                    throw new TomlTypeMismatchException(typeof(TomlTable), tomlValue.GetType(), typeof(Point));
-                if (table.GetValue("X") is not TomlLong x)
-                    throw new TomlTypeMismatchException(typeof(TomlLong), table.GetValue("X").GetType(), typeof(int));
-                if (table.GetValue("Y") is not TomlLong y)
-                    throw new TomlTypeMismatchException(typeof(TomlLong), table.GetValue("Y").GetType(), typeof(int));
-                return new Point((int)x.Value, (int)y.Value);
-            });
-        TomletMain.RegisterMapper(
-            size => new TomlTable { Entries = { { "W", new TomlLong(size.Width) }, { "H", new TomlLong(size.Height) } } },
-            tomlValue => {
-                if (tomlValue is not TomlTable table)
-                    throw new TomlTypeMismatchException(typeof(TomlTable), tomlValue.GetType(), typeof(Size));
-                if (table.GetValue("W") is not TomlLong w)
-                    throw new TomlTypeMismatchException(typeof(TomlLong), table.GetValue("W").GetType(), typeof(int));
-                if (table.GetValue("H") is not TomlLong h)
-                    throw new TomlTypeMismatchException(typeof(TomlLong), table.GetValue("H").GetType(), typeof(int));
-                return new Size((int)w.Value, (int)h.Value);
-            });
-        TomletMain.RegisterMapper(
-            snippet => new TomlTable { Entries = {
-                { "Enabled", TomlBoolean.ValueOf(snippet!.Enabled) },
-                { "Hotkey", new TomlString(snippet.Hotkey.HotkeyToString("+")) },
-                { "Shortcut", new TomlString(snippet.Shortcut) },
-                { "Insert", new TomlString(snippet.Insert) }
-            } },
-            tomlValue => {
-                if (tomlValue is not TomlTable table)
-                    throw new TomlTypeMismatchException(typeof(TomlTable), tomlValue.GetType(), typeof(Snippet));
-                if (table.GetValue("Enabled") is not TomlBoolean enabled)
-                    throw new TomlTypeMismatchException(typeof(TomlBoolean), table.GetValue("Enabled").GetType(), typeof(bool));
-                if (table.GetValue("Hotkey") is not TomlString hotkey)
-                    throw new TomlTypeMismatchException(typeof(TomlString), table.GetValue("Hotkey").GetType(), typeof(Keys));
-                if (table.GetValue("Shortcut") is not TomlString shortcut)
-                    throw new TomlTypeMismatchException(typeof(TomlString), table.GetValue("Shortcut").GetType(), typeof(string));
-                if (table.GetValue("Insert") is not TomlString insert)
-                    throw new TomlTypeMismatchException(typeof(TomlString), table.GetValue("Insert").GetType(), typeof(string));
-                return new Snippet {
-                    Enabled = enabled.Value,
-                    Insert = insert.Value.ReplaceLineEndings(Document.NewLine.ToString()),
-                    Hotkey = hotkey.Value.HotkeyFromString("+"),
-                    Shortcut = shortcut.Value.ReplaceLineEndings(Document.NewLine.ToString())
-                };
-            });
-        TomletMain.RegisterMapper(
-            color => new TomlString(color.ToHex()),
-            tomlValue => {
-                if (tomlValue is not TomlString str)
-                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(Color));
-                if (!Color.TryParse(str.Value, out Color color))
-                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(Color));
-                return color;
-            });
-        TomletMain.RegisterMapper(
-            fontStyle => new TomlString(fontStyle.ToString()),
-            tomlValue => {
-                if (tomlValue is not TomlString fontStyle)
-                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(FontStyle));
-                return Enum.TryParse<FontStyle>(fontStyle.Value, out var style) ? style : FontStyle.None;
-            });
-        TomletMain.RegisterMapper(
-            entry => new TomlString(entry.ToString()),
-            tomlValue => {
-                if (tomlValue is not TomlString entry)
-                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(MenuEntry));
-                return Enum.Parse<MenuEntry>(entry.Value);
-            });
-        TomletMain.RegisterMapper(
-            hotkey => new TomlString(hotkey.HotkeyToString("+")),
-            tomlValue => {
-                if (tomlValue is not TomlString hotkey)
-                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(Keys));
-                return hotkey.Value.HotkeyFromString("+");
-            });
+        RegisterMappings();
 
         // Apply default settings, so that nothing is in an invalid state before loading
         OnChanged();
@@ -384,6 +307,98 @@ public sealed class Settings {
             Console.Error.WriteLine(ex);
         }
         FeatherlineSettings.Save();
+    }
+
+    public static void Reset() {
+        Instance = new();
+
+        allowSaving = true;
+        RegisterMappings();
+        Save();
+
+        OnChanged();
+        OnThemeChanged();
+        OnFontChanged();
+    }
+
+    private static void RegisterMappings() {
+        TomletMain.RegisterMapper(
+            point => new TomlTable { Entries = { { "X", new TomlLong(point.X) }, { "Y", new TomlLong(point.Y) } } },
+            tomlValue => {
+                if (tomlValue is not TomlTable table)
+                    throw new TomlTypeMismatchException(typeof(TomlTable), tomlValue.GetType(), typeof(Point));
+                if (table.GetValue("X") is not TomlLong x)
+                    throw new TomlTypeMismatchException(typeof(TomlLong), table.GetValue("X").GetType(), typeof(int));
+                if (table.GetValue("Y") is not TomlLong y)
+                    throw new TomlTypeMismatchException(typeof(TomlLong), table.GetValue("Y").GetType(), typeof(int));
+                return new Point((int)x.Value, (int)y.Value);
+            });
+        TomletMain.RegisterMapper(
+            size => new TomlTable { Entries = { { "W", new TomlLong(size.Width) }, { "H", new TomlLong(size.Height) } } },
+            tomlValue => {
+                if (tomlValue is not TomlTable table)
+                    throw new TomlTypeMismatchException(typeof(TomlTable), tomlValue.GetType(), typeof(Size));
+                if (table.GetValue("W") is not TomlLong w)
+                    throw new TomlTypeMismatchException(typeof(TomlLong), table.GetValue("W").GetType(), typeof(int));
+                if (table.GetValue("H") is not TomlLong h)
+                    throw new TomlTypeMismatchException(typeof(TomlLong), table.GetValue("H").GetType(), typeof(int));
+                return new Size((int)w.Value, (int)h.Value);
+            });
+        TomletMain.RegisterMapper(
+            snippet => new TomlTable { Entries = {
+                { "Enabled", TomlBoolean.ValueOf(snippet!.Enabled) },
+                { "Hotkey", new TomlString(snippet.Hotkey.HotkeyToString("+")) },
+                { "Shortcut", new TomlString(snippet.Shortcut) },
+                { "Insert", new TomlString(snippet.Insert) }
+            } },
+            tomlValue => {
+                if (tomlValue is not TomlTable table)
+                    throw new TomlTypeMismatchException(typeof(TomlTable), tomlValue.GetType(), typeof(Snippet));
+                if (table.GetValue("Enabled") is not TomlBoolean enabled)
+                    throw new TomlTypeMismatchException(typeof(TomlBoolean), table.GetValue("Enabled").GetType(), typeof(bool));
+                if (table.GetValue("Hotkey") is not TomlString hotkey)
+                    throw new TomlTypeMismatchException(typeof(TomlString), table.GetValue("Hotkey").GetType(), typeof(Keys));
+                if (table.GetValue("Shortcut") is not TomlString shortcut)
+                    throw new TomlTypeMismatchException(typeof(TomlString), table.GetValue("Shortcut").GetType(), typeof(string));
+                if (table.GetValue("Insert") is not TomlString insert)
+                    throw new TomlTypeMismatchException(typeof(TomlString), table.GetValue("Insert").GetType(), typeof(string));
+                return new Snippet {
+                    Enabled = enabled.Value,
+                    Insert = insert.Value.ReplaceLineEndings(Document.NewLine.ToString()),
+                    Hotkey = hotkey.Value.HotkeyFromString("+"),
+                    Shortcut = shortcut.Value.ReplaceLineEndings(Document.NewLine.ToString())
+                };
+            });
+        TomletMain.RegisterMapper(
+            color => new TomlString(color.ToHex()),
+            tomlValue => {
+                if (tomlValue is not TomlString str)
+                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(Color));
+                if (!Color.TryParse(str.Value, out Color color))
+                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(Color));
+                return color;
+            });
+        TomletMain.RegisterMapper(
+            fontStyle => new TomlString(fontStyle.ToString()),
+            tomlValue => {
+                if (tomlValue is not TomlString fontStyle)
+                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(FontStyle));
+                return Enum.TryParse<FontStyle>(fontStyle.Value, out var style) ? style : FontStyle.None;
+            });
+        TomletMain.RegisterMapper(
+            entry => new TomlString(entry.ToString()),
+            tomlValue => {
+                if (tomlValue is not TomlString entry)
+                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(MenuEntry));
+                return Enum.Parse<MenuEntry>(entry.Value);
+            });
+        TomletMain.RegisterMapper(
+            hotkey => new TomlString(hotkey.HotkeyToString("+")),
+            tomlValue => {
+                if (tomlValue is not TomlString hotkey)
+                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(Keys));
+                return hotkey.Value.HotkeyFromString("+");
+            });
     }
 }
 

@@ -1,4 +1,6 @@
 using CelesteStudio.Dialog;
+using Eto.Forms;
+using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -77,7 +79,38 @@ public static class Migrator {
 
         foreach (var (version, preLoad, _) in migrations) {
             if (version > oldVersion && version <= newVersion) {
-                preLoad?.Invoke();
+                TryAgain:
+                try {
+                    preLoad?.Invoke();
+                } catch (Exception ex) {
+                    Console.Error.WriteLine($"Failed to apply migration to v{version}");
+                    Console.Error.WriteLine(ex);
+
+                    switch (SettingsErrorDialog.Show(ex)) {
+                        case SettingsErrorAction.TryAgain:
+                            goto TryAgain;
+                        case SettingsErrorAction.Reset:
+                            Settings.Reset();
+                            break;
+                        case SettingsErrorAction.Edit:
+                            ProcessHelper.OpenInDefaultApp(Settings.SettingsPath);
+                            MessageBox.Show(
+                                $"""
+                                The settings file should've opened itself.
+                                If not, you can find it under the following path: {Settings.SettingsPath}
+                                Once you're done, press OK.
+                                """);
+
+                            goto TryAgain;
+                        case SettingsErrorAction.Exit:
+                            Environment.Exit(1);
+                            return;
+
+                        case SettingsErrorAction.None:
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                }
 
                 string versionName = version.ToString(3);
                 if (asm.GetManifestResourceStream($"Changelogs/v{versionName}.md") is { } stream) {
