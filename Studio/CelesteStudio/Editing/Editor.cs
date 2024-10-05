@@ -2880,6 +2880,11 @@ public sealed class Editor : Drawable {
             var line = Document.Lines[row];
             var lineTrimmed = line.TrimStart();
 
+            // Ignore blank lines
+            if (string.IsNullOrEmpty(lineTrimmed) || lineTrimmed == "# ") {
+                continue;
+            }
+
             if (lineTrimmed.StartsWith('#')) {
                 if((Comment.IsLabel(lineTrimmed) && !ActionLine.TryParse(lineTrimmed[1..], out _)) ||
                    lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed))
