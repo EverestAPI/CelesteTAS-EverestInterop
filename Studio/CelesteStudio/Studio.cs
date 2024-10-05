@@ -230,7 +230,7 @@ public sealed class Studio : Form {
 
     /// Properly registers a window
     public static void RegisterWindow(Window window, Window? parent = null, bool centerWindow = true) {
-        parent ??= window.ParentWindow;
+        parent ??= Studio.Instance;
 
         window.Icon = Assets.AppIcon;
         window.ShowInTaskbar = true;
@@ -245,6 +245,7 @@ public sealed class Studio : Form {
 
                 // Clamp to screen
                 var screen = Screen.FromRectangle(new RectangleF(location, window.Size));
+                //System.Console.WriteLine($"Screen: {screen.Bounds} | {screen.WorkingArea} / Window @ {window.Location} with {window.Size} ({window.Width},{window.Height}) | Center {location} Parent {parent.Location}");
                 if (location.X < screen.WorkingArea.Left) {
                     location = location with { X = (int)screen.WorkingArea.Left };
                 } else if (location.X + window.Width > screen.WorkingArea.Right) {
@@ -263,7 +264,7 @@ public sealed class Studio : Form {
 
     /// Properly registers a dialog window
     public static void RegisterDialog(Eto.Forms.Dialog dialog, Window? parent = null, bool centerWindow = true) {
-        RegisterWindow(dialog);
+        RegisterWindow(dialog, parent, centerWindow);
 
         // Dialogs should always be focused over the editor / tools, but not other OS windows
 

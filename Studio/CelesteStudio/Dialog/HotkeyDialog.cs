@@ -102,7 +102,7 @@ public class HotkeyDialog : Dialog<Keys> {
             }
         };
 
-        Studio.RegisterDialog(this);
+        Studio.RegisterDialog(this, ParentWindow);
     }
 
     public static Keys Show(Window parent, Keys currentHotkey, Dictionary<MenuEntry, Keys>? keyBindings, List<Snippet>? snippets) {
