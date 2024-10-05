@@ -165,7 +165,8 @@ public static class StudioHelper {
                 
                 NOTE: 
                     There are known issues with Celeste Studio v3 on Windows 7.
-                    If possible, try to update to at least Windows 10, otherwise it is recommended to continue using Celeste Studio v2 with the latest CelesteTAS v3.39.x in the mean time. (Only major bugs will be fixed in that version! No features will be backported!)
+                    If possible, try to update to at least Windows 10, otherwise it is recommended to continue using Celeste Studio v2 with the latest CelesteTAS v3.39.x in the mean time. (You can find the legacy releases here: https://github.com/psyGamer/CelesteTAS-EverestInterop/releases) 
+                    (Note Only major bugs will be fixed in that version! No features will be backported!)
                 """;
 
             File.WriteAllText(path, text);
