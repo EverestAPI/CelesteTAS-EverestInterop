@@ -2831,26 +2831,32 @@ public sealed class Editor : Drawable {
         for (int row = minRow; row <= maxRow; row++) {
             var line = Document.Lines[row];
             if (allCommented && CommentedBreakpointRegex.IsMatch(line)) {
-                int hashIdx = line.IndexOf('#');
-                Document.ReplaceLine(row, line.Remove(hashIdx, 1));
+                int hashIdx = line.IndexOf("# ", StringComparison.Ordinal);
+                Document.ReplaceLine(row, line.Remove(hashIdx, "# ".Length));
 
                 // Shift everything over
-                if (row == minRow)
-                    Document.Selection.Start.Col--;
-                if (row == maxRow)
-                    Document.Selection.End.Col--;
-                if (row == Document.Caret.Row)
-                    Document.Caret.Col--;
+                if (row == minRow) {
+                    Document.Selection.Start.Col -= "# ".Length;
+                }
+                if (row == maxRow) {
+                    Document.Selection.End.Col -= "# ".Length;
+                }
+                if (row == Document.Caret.Row) {
+                    Document.Caret.Col -= "# ".Length;
+                }
             } else if (!allCommented && UncommentedBreakpointRegex.IsMatch(line)) {
-                Document.ReplaceLine(row, $"#{line}");
+                Document.ReplaceLine(row, $"# {line}");
 
                 // Shift everything over
-                if (row == minRow)
-                    Document.Selection.Start.Col++;
-                if (row == maxRow)
-                    Document.Selection.End.Col++;
-                if (row == Document.Caret.Row)
-                    Document.Caret.Col++;
+                if (row == minRow) {
+                    Document.Selection.Start.Col += "# ".Length;
+                }
+                if (row == maxRow) {
+                    Document.Selection.End.Col += "# ".Length;
+                }
+                if (row == Document.Caret.Row) {
+                    Document.Caret.Col += "# ".Length;
+                }
             }
         }
 
@@ -2883,26 +2889,32 @@ public sealed class Editor : Drawable {
                     continue;
                 }
 
-                int hashIdx = line.IndexOf('#');
-                Document.ReplaceLine(row, line.Remove(hashIdx, 1));
+                int hashIdx = line.IndexOf("# ", StringComparison.Ordinal);
+                Document.ReplaceLine(row, line.Remove(hashIdx, "# ".Length));
 
                 // Shift everything over
-                if (row == minRow)
-                    Document.Selection.Start.Col--;
-                if (row == maxRow)
-                    Document.Selection.End.Col--;
-                if (row == Document.Caret.Row)
-                    Document.Caret.Col--;
+                if (row == minRow) {
+                    Document.Selection.Start.Col -= "# ".Length;
+                }
+                if (row == maxRow) {
+                    Document.Selection.End.Col -= "# ".Length;
+                }
+                if (row == Document.Caret.Row) {
+                    Document.Caret.Col -= "# ".Length;
+                }
             } else {
-                Document.ReplaceLine(row, $"#{line}");
+                Document.ReplaceLine(row, $"# {line}");
 
                 // Shift everything over
-                if (row == minRow)
-                    Document.Selection.Start.Col++;
-                if (row == maxRow)
-                    Document.Selection.End.Col++;
-                if (row == Document.Caret.Row)
-                    Document.Caret.Col++;
+                if (row == minRow) {
+                    Document.Selection.Start.Col += "# ".Length;
+                }
+                if (row == maxRow) {
+                    Document.Selection.End.Col += "# ".Length;
+                }
+                if (row == Document.Caret.Row) {
+                    Document.Caret.Col += "# ".Length;
+                }
             }
         }
 
@@ -2938,26 +2950,32 @@ public sealed class Editor : Drawable {
             var line = Document.Lines[row];
 
             if (allCommented) {
-                int hashIdx = line.IndexOf('#');
-                Document.ReplaceLine(row, line.Remove(hashIdx, 1));
+                int hashIdx = line.IndexOf("# ", StringComparison.Ordinal);
+                Document.ReplaceLine(row, line.Remove(hashIdx, "# ".Length));
 
                 // Shift everything over
-                if (row == minRow)
-                    Document.Selection.Start.Col--;
-                if (row == maxRow)
-                    Document.Selection.End.Col--;
-                if (row == Document.Caret.Row)
-                    Document.Caret.Col--;
+                if (row == minRow) {
+                    Document.Selection.Start.Col -= "# ".Length;
+                }
+                if (row == maxRow) {
+                    Document.Selection.End.Col -= "# ".Length;
+                }
+                if (row == Document.Caret.Row) {
+                    Document.Caret.Col -= "# ".Length;
+                }
             } else {
-                Document.ReplaceLine(row, $"#{line}");
+                Document.ReplaceLine(row, $"# {line}");
 
                 // Shift everything over
-                if (row == minRow)
-                    Document.Selection.Start.Col++;
-                if (row == maxRow)
-                    Document.Selection.End.Col++;
-                if (row == Document.Caret.Row)
-                    Document.Caret.Col++;
+                if (row == minRow) {
+                    Document.Selection.Start.Col += "# ".Length;
+                }
+                if (row == maxRow) {
+                    Document.Selection.End.Col += "# ".Length;
+                }
+                if (row == Document.Caret.Row) {
+                    Document.Caret.Col += "# ".Length;
+                }
             }
         }
 
