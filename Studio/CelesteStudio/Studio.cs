@@ -709,8 +709,8 @@ public sealed class Studio : Form {
         var whatsNewItem = MenuUtils.CreateAction("What's new?", Keys.None, () => {
             var asm = Assembly.GetExecutingAssembly();
             // TODO: Don't hardcode the current changelog
-            if (asm.GetManifestResourceStream($"Changelogs/v3.0.0.md") is { } stream) {
-                WhatsNewDialog.Show($"What's new in Studio v3.0.0?", new StreamReader(stream).ReadToEnd());
+            if (asm.GetManifestResourceStream("Changelogs/v3.2.0.md") is { } stream) {
+                WhatsNewDialog.Show("What's new in Studio v3.2.0?", new StreamReader(stream).ReadToEnd());
             }
         });
         var aboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
