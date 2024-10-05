@@ -8,7 +8,7 @@ using System.IO;
 
 namespace CelesteStudio.Dialog;
 
-public enum SettingsErrorAction { TryAgain, Reset, Edit, None }
+public enum SettingsErrorAction { TryAgain, Reset, Edit, Exit, None }
 
 public class SettingsErrorDialog : Dialog<SettingsErrorAction> {
     private SettingsErrorDialog(Exception ex) {
@@ -23,39 +23,36 @@ public class SettingsErrorDialog : Dialog<SettingsErrorAction> {
                     This is either caused by a corrupted settings file, or a bug in Studio.
                     Please consider reporting this, with the error below attached.
                     """ },
-                new Expander {
-                    Header = new Label { Text = "Show error message" },
-                    Content = new StackLayout {
-                        Spacing = 10,
-                        Items = {
-                            new TextArea {
-                                Text = ex.ToString(),
-                                ReadOnly = true,
-                                Width = 500,
-                                Height = 200,
-                            },
-                            new Button((_, _) => {
-                                Clipboard.Instance.Clear();
-                                Clipboard.Instance.Text =
-                                    // Add some additional info to the report
-                                    $"""
-                                    Celeste Studio {Studio.Version}
-                                    Platform: {Platform.Instance}
-                                    {DateTime.Now.ToString(CultureInfo.InvariantCulture)}
+                new StackLayout {
+                    Spacing = 10,
+                    Items = {
+                        new TextArea {
+                            Text = ex.ToString(),
+                            ReadOnly = true,
+                            Width = 500,
+                            Height = 200,
+                        },
+                        new Button((_, _) => {
+                            Clipboard.Instance.Clear();
+                            Clipboard.Instance.Text =
+                                // Add some additional info to the report
+                                $"""
+                                Celeste Studio {Studio.Version}
+                                Platform: {Platform.Instance}
+                                {DateTime.Now.ToString(CultureInfo.InvariantCulture)}
 
-                                    Stacktrace:
-                                    ```
-                                    {ex}
-                                    ```
-                                    Settings File:
-                                    ```
-                                    {File.ReadAllText(Settings.SettingsPath)}
-                                    ```
-                                    """
-                                    // Prevent usernames from appearing inside reports
-                                    .Replace(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "~");
-                            }) { Text = "Copy error report to clipboard" }
-                        }
+                                Stacktrace:
+                                ```
+                                {ex}
+                                ```
+                                Settings File:
+                                ```
+                                {File.ReadAllText(Settings.SettingsPath)}
+                                ```
+                                """
+                                // Prevent usernames from appearing inside reports
+                                .Replace(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "~");
+                        }) { Text = "Copy error report to clipboard" }
                     }
                 },
                 new StackLayout {
@@ -66,6 +63,7 @@ public class SettingsErrorDialog : Dialog<SettingsErrorAction> {
                         new Button((_, _) => Close(SettingsErrorAction.TryAgain)) { Text = "Try again" },
                         new Button((_, _) => Close(SettingsErrorAction.Reset)) { Text = "Reset settings to default" },
                         new Button((_, _) => Close(SettingsErrorAction.Edit)) { Text = "Manually edit settings file" },
+                        new Button((_, _) => Close(SettingsErrorAction.Exit)) { Text = "Exit Studio" },
                     }
                 },
             },
@@ -81,7 +79,7 @@ public class SettingsErrorDialog : Dialog<SettingsErrorAction> {
 
     protected override void OnClosing(CancelEventArgs e) {
         if (Result == SettingsErrorAction.None) {
-            MessageBox.Show("Please choose one of the three actions!");
+            MessageBox.Show("Please choose one of the four actions!");
             e.Cancel = true;
             return;
         }

@@ -345,6 +345,10 @@ public sealed class Settings {
                             """);
 
                         goto TryAgain;
+                    case SettingsErrorAction.Exit:
+                        Environment.Exit(1);
+                        return;
+
                     case SettingsErrorAction.None:
                     default:
                         throw new ArgumentOutOfRangeException();
