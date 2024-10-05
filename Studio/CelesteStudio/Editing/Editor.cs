@@ -2683,8 +2683,7 @@ public sealed class Editor : Drawable {
         var clipboardText = Clipboard.Instance.Text.ReplaceLineEndings(Document.NewLine.ToString());
 
         // Prevent splitting the action-line in half or inserting garbage into the middle
-        if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _))
-        {
+        if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) {
             // Trim leading / trailing blank lines
             var insertLines = clipboardText.Trim(Document.NewLine).SplitDocumentLines();
 

@@ -573,7 +573,7 @@ public class Document : IDisposable {
 
     private void ApplyPatch(Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
         // Delete from end to beginning to avoid offsetting lines
-        foreach ((int row, string line) in deletions.OrderBy(e => e.Key).Reverse()) {
+        foreach ((int row, _) in deletions.OrderBy(e => e.Key).Reverse()) {
             CurrentLines.RemoveAt(row);
         }
         foreach ((int row, string line) in insertions.OrderBy(e => e.Key)) {
@@ -692,7 +692,7 @@ public class Document : IDisposable {
             patch.InsertRange(pos.Row + 1, newLines[1..]);
             pos.Row += newLines.Length - 1;
             pos.Col = newLines[^1].Length;
-            patch.Modify(pos.Row, CurrentLines[pos.Row] + right);
+            patch.Modify(pos.Row, newLines[^1] + right);
         }
 
         return pos;
