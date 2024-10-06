@@ -25,7 +25,7 @@ public static class StudioHelper {
 
     // These values will automatically get filled in by the Build.yml/Release.yml actions
     private const bool   DoubleZipArchive        = false; //DOUBLE_ZIP_ARCHIVE
-    public  const string CurrentStudioVersion    = "##STUDIO_VERSION##";
+    public  const string CurrentStudioVersion    = "3.2.1";
 
     private const string DownloadURL_Windows_x64 = "##URL_WINDOWS_x64##";
     private const string DownloadURL_Linux_x64   = "##URL_LINUX_x64##";
