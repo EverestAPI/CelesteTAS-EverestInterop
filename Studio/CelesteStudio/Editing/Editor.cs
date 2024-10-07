@@ -442,6 +442,8 @@ public sealed class Editor : Drawable {
                 MenuEntry.Editor_InsertRoomName.ToAction(OnInsertRoomName),
                 MenuEntry.Editor_InsertCurrentTime.ToAction(OnInsertTime),
                 MenuEntry.Editor_RemoveAllTimestamps.ToAction(() => RemoveLinesMatching(TimestampRegex)),
+                MenuEntry.Editor_InsertCurrentPosition.ToAction(OnInsertPosition),
+                MenuEntry.Editor_InsertCurrentPosition.ToAction(OnInsertSpeed),
                 MenuEntry.Editor_InsertModInfo.ToAction(OnInsertModInfo),
                 MenuEntry.Editor_InsertConsoleLoadCommand.ToAction(OnInsertConsoleLoadCommand),
                 MenuEntry.Editor_InsertSimpleConsoleLoadCommand.ToAction(OnInsertSimpleConsoleLoadCommand),
@@ -2992,6 +2994,18 @@ public sealed class Editor : Drawable {
     private void OnInsertRoomName() => InsertLine($"#lvl_{CommunicationWrapper.LevelName}");
 
     private void OnInsertTime() => InsertLine($"#{CommunicationWrapper.ChapterTime}");
+
+    private void OnInsertPosition() {
+        string xPos = (CommunicationWrapper.PlayerPosition.X + CommunicationWrapper.PlayerPositionRemainder.X).ToFormattedString(CommunicationWrapper.GameSettings.PositionDecimals);
+        string yPos = (CommunicationWrapper.PlayerPosition.Y + CommunicationWrapper.PlayerPositionRemainder.Y).ToFormattedString(CommunicationWrapper.GameSettings.PositionDecimals);
+        InsertLine($"# Pos: {xPos}, {yPos}");
+    }
+
+    private void OnInsertSpeed() {
+        string xSpeed = CommunicationWrapper.PlayerSpeed.X.ToFormattedString(CommunicationWrapper.GameSettings.SpeedDecimals);
+        string ySpeed = CommunicationWrapper.PlayerSpeed.Y.ToFormattedString(CommunicationWrapper.GameSettings.SpeedDecimals);
+        InsertLine($"# Speed: {xSpeed}, {ySpeed}");
+    }
 
     private void OnInsertModInfo() {
         if (CommunicationWrapper.GetModInfo() is var modInfo && !string.IsNullOrWhiteSpace(modInfo)) {

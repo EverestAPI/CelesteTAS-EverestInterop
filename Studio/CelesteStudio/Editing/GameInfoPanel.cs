@@ -12,7 +12,7 @@ namespace CelesteStudio.Editing;
 public sealed class GameInfo : Panel {
     private sealed class SubpixelIndicator : Drawable {
         protected override void OnPaint(PaintEventArgs e) {
-            var remainder = CommunicationWrapper.SubpixelRemainder;
+            var remainder = CommunicationWrapper.PlayerPositionRemainder;
 
             float subpixelLeft = (float)Math.Round(remainder.X + 0.5f, CommunicationWrapper.GameSettings.SubpixelIndicatorDecimals, MidpointRounding.AwayFromZero);
             float subpixelTop = (float)Math.Round(remainder.Y + 0.5f, CommunicationWrapper.GameSettings.SubpixelIndicatorDecimals, MidpointRounding.AwayFromZero);
