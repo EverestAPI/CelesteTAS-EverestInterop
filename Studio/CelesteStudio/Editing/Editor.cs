@@ -2991,20 +2991,32 @@ public sealed class Editor : Drawable {
         Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length);
     }
 
-    private void OnInsertRoomName() => InsertLine($"#lvl_{CommunicationWrapper.LevelName}");
+    private void OnInsertRoomName() {
+        if (CommunicationWrapper.Connected) {
+            InsertLine($"#lvl_{CommunicationWrapper.LevelName}");
+        }
+    }
 
-    private void OnInsertTime() => InsertLine($"#{CommunicationWrapper.ChapterTime}");
+    private void OnInsertTime() {
+        if (CommunicationWrapper.Connected) {
+            InsertLine($"#{CommunicationWrapper.ChapterTime}");
+        }
+    }
 
     private void OnInsertPosition() {
-        string xPos = (CommunicationWrapper.PlayerPosition.X + CommunicationWrapper.PlayerPositionRemainder.X).ToFormattedString(CommunicationWrapper.GameSettings.PositionDecimals);
-        string yPos = (CommunicationWrapper.PlayerPosition.Y + CommunicationWrapper.PlayerPositionRemainder.Y).ToFormattedString(CommunicationWrapper.GameSettings.PositionDecimals);
-        InsertLine($"# Pos: {xPos}, {yPos}");
+        if (CommunicationWrapper.Connected) {
+            string xPos = (CommunicationWrapper.PlayerPosition.X + CommunicationWrapper.PlayerPositionRemainder.X).ToFormattedString(CommunicationWrapper.GameSettings.PositionDecimals);
+            string yPos = (CommunicationWrapper.PlayerPosition.Y + CommunicationWrapper.PlayerPositionRemainder.Y).ToFormattedString(CommunicationWrapper.GameSettings.PositionDecimals);
+            InsertLine($"# Pos: {xPos}, {yPos}");
+        }
     }
 
     private void OnInsertSpeed() {
-        string xSpeed = CommunicationWrapper.PlayerSpeed.X.ToFormattedString(CommunicationWrapper.GameSettings.SpeedDecimals);
-        string ySpeed = CommunicationWrapper.PlayerSpeed.Y.ToFormattedString(CommunicationWrapper.GameSettings.SpeedDecimals);
-        InsertLine($"# Speed: {xSpeed}, {ySpeed}");
+        if (CommunicationWrapper.Connected) {
+            string xSpeed = CommunicationWrapper.PlayerSpeed.X.ToFormattedString(CommunicationWrapper.GameSettings.SpeedDecimals);
+            string ySpeed = CommunicationWrapper.PlayerSpeed.Y.ToFormattedString(CommunicationWrapper.GameSettings.SpeedDecimals);
+            InsertLine($"# Speed: {xSpeed}, {ySpeed}");
+        }
     }
 
     private void OnInsertModInfo() {
