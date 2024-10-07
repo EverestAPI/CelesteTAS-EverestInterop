@@ -547,21 +547,53 @@ public class Document : IDisposable {
         }
 
         public static Patch Merge(Patch a, Patch b) {
-            foreach ((int row, string line) in b.Deletions) {
-                if (!a.Insertions.Remove(row)) {
-                    a.Deletions.Add(row, line);
-                }
-
-                foreach ((int insertionRow, string insertionLine) in a.Insertions) {
-                    if (insertionRow >= row) {
-                        a.Insertions[insertionRow - 1] = insertionLine;
-                        a.Insertions.Remove(insertionRow);
-                    }
-                }
+            // Cancel out deletions / insertions
+            foreach (var row in a.Insertions.Keys.Intersect(b.Deletions.Keys)) {
+                a.Insertions.Remove(row);
+                b.Deletions.Remove(row);
             }
 
+            List<int> keysToShift = [];
+
+            // Shift down deletions in B
+            foreach ((int row, _) in a.Deletions.OrderBy(entry => entry.Key).Reverse()) {
+                keysToShift.AddRange(b.Deletions.Keys.Where(key => key >= row));
+            }
+            foreach (int key in keysToShift) {
+                string value = b.Deletions[key];
+                b.Deletions[key + 1] = value;
+                b.Deletions.Remove(key);
+            }
+            keysToShift.Clear();
+
+            // Shift up deletions in B
+            foreach ((int row, _) in a.Insertions.OrderBy(entry => entry.Key)) {
+                keysToShift.AddRange(b.Deletions.Keys.Where(key => key > row));
+            }
+            foreach (int key in keysToShift) {
+                string value = a.Insertions[key];
+                a.Insertions[key - 1] = value;
+                a.Insertions.Remove(key);
+            }
+            keysToShift.Clear();
+
+            // Shift down insertions in A
+            foreach ((int row, _) in b.Insertions.OrderBy(entry => entry.Key).Reverse()) {
+                keysToShift.AddRange(a.Insertions.Keys.Where(key => key >= row));
+            }
+            foreach (int key in keysToShift) {
+                string value = a.Insertions[key];
+                a.Insertions[key + 1] = value;
+                a.Insertions.Remove(key);
+            }
+            keysToShift.Clear();
+
+            // Merge
             foreach ((int row, string line) in b.Insertions) {
-                a.Insertions.Add(row, line);
+                a.Insertions[row] = line;
+            }
+            foreach ((int row, string line) in b.Deletions) {
+                a.Deletions[row] = line;
             }
 
             return a;
