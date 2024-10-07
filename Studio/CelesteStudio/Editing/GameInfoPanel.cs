@@ -398,7 +398,7 @@ public sealed class GameInfoPanel : Panel {
             // Limit height to certain percentage of entire the window
             scrollable.Size = new Size(
                 Math.Max(0, ClientSize.Width - Padding.Left - Padding.Right),
-                Math.Clamp(gameInfo.ActualHeight + Padding.Top + Padding.Bottom, 0, (int)(Studio.Instance.Height * Settings.Instance.MaxGameInfoHeight)) - Padding.Top - Padding.Bottom);
+                Math.Max(0, Math.Min(gameInfo.ActualHeight + Padding.Top + Padding.Bottom, (int)(Studio.Instance.Height * Settings.Instance.MaxGameInfoHeight)) - Padding.Top - Padding.Bottom));
 
             // Don't show while editing template (cause overlap)
             popoutButton.Visible = !gameInfo.EditingTemplate;
