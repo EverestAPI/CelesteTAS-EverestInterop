@@ -25,7 +25,7 @@ public static class StudioHelper {
 
     // These values will automatically get filled in by the Build.yml/Release.yml actions
     private const bool   DoubleZipArchive        = false; //DOUBLE_ZIP_ARCHIVE
-    public  const string CurrentStudioVersion    = "3.2.1";
+    public  const string CurrentStudioVersion    = "##STUDIO_VERSION##";
 
     private const string DownloadURL_Windows_x64 = "##URL_WINDOWS_x64##";
     private const string DownloadURL_Linux_x64   = "##URL_LINUX_x64##";
@@ -93,11 +93,15 @@ public static class StudioHelper {
             $"Celeste Studio version mismatch: Expected '{CurrentStudioVersion}', found '{installedVersion}'. Installing current version...".Log();
 
             Task.Run(async () => {
-                // Kill all Studio instances to avoid issues with file usage
-                foreach (var process in Process.GetProcesses().Where(process => process.ProcessName is "CelesteStudio" or "Celeste Studio")) {
+                // Close all Studio instances to avoid issues with file usage
+                foreach (var process in Process.GetProcesses().Where(process => process.ProcessName is "CelesteStudio" or "CelesteStudio.WPF" or "CelesteStudio.GTK" or "CelesteStudio.Mac" or "Celeste Studio")) {
                     $"Closing process {process} ({process.Id})...".Log(LogLevel.Verbose);
                     process.Terminate();
                     await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10.0f)).ConfigureAwait(false);
+
+                    // Make sure it's _really_ closed
+                    process.Kill();
+                    await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5.0f)).ConfigureAwait(false);
                     "Process terminated".Log(LogLevel.Verbose);
                 }
 
