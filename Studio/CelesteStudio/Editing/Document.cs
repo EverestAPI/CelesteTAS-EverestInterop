@@ -430,6 +430,8 @@ public class Document : IDisposable {
             document.undoStack.PrepareState(document);
         }
 
+        /// Pushes the modification onto the undo-stack and raises events if enabled
+        /// Automatically called with the using-syntax
         public void Dispose() {
             Document.updateStack.Pop();
 
@@ -471,32 +473,38 @@ public class Document : IDisposable {
 
     /// Represents a small modification of the document with insertions and deletions
     public readonly struct Patch(Document document, QueuedUpdate? update = null) : IDisposable {
-        // Insertions are at the lines where the new text will be
-        // Deletions are at the lines where the line currently is
-        public readonly Dictionary<int, string> Insertions = [], Deletions = [];
+        /// Insertions at the lines where the new text will be (after deletions are applied!)
+        public readonly Dictionary<int, string> Insertions = [];
+        /// Deletions at the lines where the line currently is (before insertions are applied!)
+        public readonly Dictionary<int, string> Deletions = [];
 
         private readonly QueuedUpdate update = update ?? document.updateStack.Peek();
 
+        /// Inserts the line at the specified row
         public void Insert(int row, string line) {
             Insertions[row] = line;
         }
+        /// Inserts the lines, starting at the specified row
         public void InsertRange(int row, IEnumerable<string> lines) {
             foreach (string line in lines) {
                 Insertions[row++] = line;
             }
         }
 
+        /// Removes the specified row
         public void Delete(int row) {
             if (!Insertions.Remove(row)) {
                 Deletions.Add(row, document.CurrentLines[row]);
             }
         }
+        /// Removes an inclusive range from minRow..maxRow
         public void DeleteRange(int minRow, int maxRow) {
             for (int row = minRow; row <= maxRow; row++) {
                 Delete(row);
             }
         }
 
+        /// Replaces a single line
         public void Modify(int row, string line) {
             if (!Insertions.Remove(row)) {
                 Deletions.Add(row, document.CurrentLines[row]);
@@ -515,6 +523,8 @@ public class Document : IDisposable {
             }
         }
 
+        /// Applies the patch to the document and adds it to the update
+        /// Automatically called with the using-syntax
         public void Dispose() {
             CleanupNoOps();
             if (Insertions.Count == 0 && Deletions.Count == 0) {
@@ -525,6 +535,7 @@ public class Document : IDisposable {
             update.Patches.Add(this);
         }
 
+        /// Creates a deep copy
         public Patch Copy() {
             var patch = new Patch(document, update);
             foreach ((int row, string line) in Insertions) {
@@ -535,6 +546,7 @@ public class Document : IDisposable {
             }
             return patch;
         }
+        /// Creates a deep copy with insertions / deletions swapped
         public Patch CopySwapped() {
             var patch = new Patch(document, update);
             foreach ((int row, string line) in Insertions) {
@@ -546,6 +558,7 @@ public class Document : IDisposable {
             return patch;
         }
 
+        /// Merges the patches A and B, where A is based on the initial state and B is based on after A is applied
         public static Patch Merge(Patch a, Patch b) {
             // Cancel out deletions / insertions
             foreach (var row in a.Insertions.Keys.Intersect(b.Deletions.Keys)) {
@@ -553,40 +566,43 @@ public class Document : IDisposable {
                 b.Deletions.Remove(row);
             }
 
-            List<int> keysToShift = [];
+            List<int> rowsToShift = [];
 
             // Shift down deletions in B
-            foreach ((int row, _) in a.Deletions.OrderBy(entry => entry.Key).Reverse()) {
-                keysToShift.AddRange(b.Deletions.Keys.Where(key => key >= row));
+            foreach ((int aRow, _) in a.Deletions.OrderBy(entry => entry.Key)) {
+                rowsToShift.Clear();
+                rowsToShift.AddRange(b.Deletions.Keys.Where(bRow => bRow >= aRow));
+
+                foreach (int row in rowsToShift.OrderBy(row => row)) {
+                    string value = b.Deletions[row];
+                    b.Deletions[row + 1] = value;
+                    b.Deletions.Remove(row);
+                }
             }
-            foreach (int key in keysToShift) {
-                string value = b.Deletions[key];
-                b.Deletions[key + 1] = value;
-                b.Deletions.Remove(key);
-            }
-            keysToShift.Clear();
 
             // Shift up deletions in B
-            foreach ((int row, _) in a.Insertions.OrderBy(entry => entry.Key)) {
-                keysToShift.AddRange(b.Deletions.Keys.Where(key => key > row));
+            foreach ((int aRow, _) in a.Insertions.OrderBy(entry => entry.Key).Reverse()) {
+                rowsToShift.Clear();
+                rowsToShift.AddRange(b.Deletions.Keys.Where(bRow => bRow > aRow));
+
+                foreach (int row in rowsToShift.OrderBy(row => row).Reverse()) {
+                    string value = b.Deletions[row];
+                    b.Deletions[row - 1] = value;
+                    b.Deletions.Remove(row);
+                }
             }
-            foreach (int key in keysToShift) {
-                string value = a.Insertions[key];
-                a.Insertions[key - 1] = value;
-                a.Insertions.Remove(key);
-            }
-            keysToShift.Clear();
 
             // Shift down insertions in A
-            foreach ((int row, _) in b.Insertions.OrderBy(entry => entry.Key).Reverse()) {
-                keysToShift.AddRange(a.Insertions.Keys.Where(key => key >= row));
+            foreach ((int bRow, _) in b.Insertions.OrderBy(entry => entry.Key)) {
+                rowsToShift.Clear();
+                rowsToShift.AddRange(a.Insertions.Keys.Where(aRow => aRow >= bRow));
+
+                foreach (int row in rowsToShift.OrderBy(row => row)) {
+                    string value = b.Deletions[row];
+                    b.Deletions[row + 1] = value;
+                    b.Deletions.Remove(row);
+                }
             }
-            foreach (int key in keysToShift) {
-                string value = a.Insertions[key];
-                a.Insertions[key + 1] = value;
-                a.Insertions.Remove(key);
-            }
-            keysToShift.Clear();
 
             // Merge
             foreach ((int row, string line) in b.Insertions) {
