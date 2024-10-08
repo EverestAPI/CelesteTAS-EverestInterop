@@ -51,6 +51,8 @@ internal static class CelesteTasMenu {
                     StudioHelper.LaunchStudio();
                 }
             }));
+            subMenu.Add(new TextMenu.OnOff("Show Studio Update Banner".ToDialogText(), TasSettings.ShowStudioUpdateBanner).Change(value =>
+                TasSettings.ShowStudioUpdateBanner = value));
             subMenu.Add(new TextMenu.OnOff("Attempt To Connect To Studio".ToDialogText(), TasSettings.AttemptConnectStudio).Change(value => {
                 TasSettings.AttemptConnectStudio = value;
                 CommunicationWrapper.ChangeStatus();

@@ -425,6 +425,7 @@ public class CelesteTasSettings : EverestModuleSettings {
 
     public bool RestoreSettings { get; set; } = false;
     public bool LaunchStudioAtBoot { get; set; } = false;
+    public bool ShowStudioUpdateBanner { get; set; } = true;
 
     [YamlMember(Alias = "AttemptConnectStudio")]
     public bool _AttemptConnectStudio { get; set; } = true;

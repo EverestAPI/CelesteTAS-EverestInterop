@@ -37,7 +37,7 @@ internal static class StudioUpdateBanner {
                 }
             });
 
-        var t = Task.Run(async () => {
+        Task.Run(async () => {
             // Wait for font / dialog to be loaded
             while ((Engine.Scene is GameLoader loader && !loader.dialogLoaded) || !GFX.Loaded || Dialog.Languages == null || !Dialog.Languages.ContainsKey(Settings.EnglishLanguage) || Font == null) {
                 await Task.Delay(10).ConfigureAwait(false);
@@ -63,7 +63,7 @@ internal static class StudioUpdateBanner {
     private static PixelFont Font => Dialog.Languages[Settings.EnglishLanguage].Font;
     private static float FontFaceSize => Dialog.Languages[Settings.EnglishLanguage].FontFaceSize;
 
-    private const int BannerY = 60; // Same as speedrun timer
+    private const int BannerY = 150; // Slightly under the speedrun timer
     private const int TextY = BannerY + 23;
 
     private const float PaddingVerySmall = 16.0f;
@@ -81,7 +81,8 @@ internal static class StudioUpdateBanner {
     private static int dotCount;
 
     private static void Update() {
-        if (!loaded || !Dialog.Languages.ContainsKey(Settings.EnglishLanguage) || Font == null) {
+        if (!loaded || !TasSettings.ShowStudioUpdateBanner || !Dialog.Languages.ContainsKey(Settings.EnglishLanguage) || Font == null) {
+            bannerWidth = Calc.Approach(bannerWidth, 0.0f, BannerSpeed * Engine.RawDeltaTime);
             return;
         }
 
@@ -114,7 +115,7 @@ internal static class StudioUpdateBanner {
     }
 
     private static void Render() {
-        if (!loaded || !Dialog.Languages.ContainsKey(Settings.EnglishLanguage) || Font == null) {
+        if (!loaded || bannerWidth <= 0.001f || !Dialog.Languages.ContainsKey(Settings.EnglishLanguage) || Font == null) {
             return;
         }
 
