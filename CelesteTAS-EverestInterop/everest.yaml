@@ -1,5 +1,5 @@
 - Name: CelesteTAS
-  Version: 3.41.2
+  Version: 3.41.3
   DLL: bin/CelesteTAS-EverestInterop.dll
   Dependencies:
     - Name: EverestCore
