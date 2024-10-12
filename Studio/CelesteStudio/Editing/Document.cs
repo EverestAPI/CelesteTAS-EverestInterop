@@ -573,7 +573,7 @@ public class Document : IDisposable {
                 rowsToShift.Clear();
                 rowsToShift.AddRange(b.Deletions.Keys.Where(bRow => bRow >= aRow));
 
-                foreach (int row in rowsToShift.OrderBy(row => row)) {
+                foreach (int row in rowsToShift.OrderBy(row => row).Reverse()) {
                     string value = b.Deletions[row];
                     b.Deletions[row + 1] = value;
                     b.Deletions.Remove(row);
@@ -585,7 +585,7 @@ public class Document : IDisposable {
                 rowsToShift.Clear();
                 rowsToShift.AddRange(b.Deletions.Keys.Where(bRow => bRow > aRow));
 
-                foreach (int row in rowsToShift.OrderBy(row => row).Reverse()) {
+                foreach (int row in rowsToShift.OrderBy(row => row)) {
                     string value = b.Deletions[row];
                     b.Deletions[row - 1] = value;
                     b.Deletions.Remove(row);
@@ -597,10 +597,22 @@ public class Document : IDisposable {
                 rowsToShift.Clear();
                 rowsToShift.AddRange(a.Insertions.Keys.Where(aRow => aRow >= bRow));
 
+                foreach (int row in rowsToShift.OrderBy(row => row).Reverse()) {
+                    string value = a.Insertions[row];
+                    a.Insertions[row + 1] = value;
+                    a.Insertions.Remove(row);
+                }
+            }
+
+            // Shift up insertions in A
+            foreach ((int bRow, _) in b.Deletions.OrderBy(entry => entry.Key)) {
+                rowsToShift.Clear();
+                rowsToShift.AddRange(a.Insertions.Keys.Where(aRow => aRow > bRow));
+
                 foreach (int row in rowsToShift.OrderBy(row => row)) {
-                    string value = b.Deletions[row];
-                    b.Deletions[row + 1] = value;
-                    b.Deletions.Remove(row);
+                    string value = a.Insertions[row];
+                    a.Insertions[row - 1] = value;
+                    a.Insertions.Remove(row);
                 }
             }
 
