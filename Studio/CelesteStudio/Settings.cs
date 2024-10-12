@@ -212,30 +212,31 @@ public sealed class Settings {
                 Instance.KeyBindings = Instance._keyBindings.ToDictionary(pair => Enum.Parse<MenuEntry>(pair.Key), pair => pair.Value);
 
                 // Apply default values if fields are missing in a theme
-                var customThemes = toml.GetSubTable(nameof(CustomThemes));
-                foreach (var (themeName, themeFields) in customThemes.Entries) {
-                    if (themeFields is not TomlTable themeTable) {
-                        continue;
-                    }
-
-                    var currentTheme = Instance.CustomThemes[themeName];
-                    var fallbackTheme = currentTheme.DarkMode
-                        ? Theme.BuiltinThemes[Theme.BuiltinDark]
-                        : Theme.BuiltinThemes[Theme.BuiltinLight];
-
-                    // Need to box the theme, since it's a struct
-                    var currentThemeBox = (object)currentTheme;
-
-                    foreach (var field in typeof(Theme).GetFields(BindingFlags.Public | BindingFlags.Instance)) {
-                        if (!themeTable.ContainsKey(field.Name)) {
-                            var fallbackValue = field.GetValue(fallbackTheme);
-                            field.SetValue(currentThemeBox, fallbackValue);
-
-                            Console.WriteLine($"Warning: Custom theme '{themeName}' is missing field '{field.Name}'! Defaulting to {fallbackValue}");
+                if (toml.TryGetValue(nameof(CustomThemes), out var customThemesValue) && customThemesValue is TomlTable customThemes) {
+                    foreach ((string themeName, var themeFields) in customThemes.Entries) {
+                        if (themeFields is not TomlTable themeTable) {
+                            continue;
                         }
-                    }
 
-                    Instance.CustomThemes[themeName] = (Theme)currentThemeBox;
+                        var currentTheme = Instance.CustomThemes[themeName];
+                        var fallbackTheme = currentTheme.DarkMode
+                            ? Theme.BuiltinThemes[Theme.BuiltinDark]
+                            : Theme.BuiltinThemes[Theme.BuiltinLight];
+
+                        // Need to box the theme, since it's a struct
+                        var currentThemeBox = (object)currentTheme;
+
+                        foreach (var field in typeof(Theme).GetFields(BindingFlags.Public | BindingFlags.Instance)) {
+                            if (!themeTable.ContainsKey(field.Name)) {
+                                var fallbackValue = field.GetValue(fallbackTheme);
+                                field.SetValue(currentThemeBox, fallbackValue);
+
+                                Console.WriteLine($"Warning: Custom theme '{themeName}' is missing field '{field.Name}'! Defaulting to {fallbackValue}");
+                            }
+                        }
+
+                        Instance.CustomThemes[themeName] = (Theme)currentThemeBox;
+                    }
                 }
 
                 OnChanged();
