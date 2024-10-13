@@ -1637,7 +1637,7 @@ public sealed class Editor : Drawable {
         return () => {
             int row = Document.Caret.Row;
 
-            using var __ = Document.Update(raiseEvents: false);
+            using var __ = Document.Update();
             Document.ReplaceLine(row, quickEdit.Value.ActualText);
 
             ClearQuickEdits();

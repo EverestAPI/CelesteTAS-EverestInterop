@@ -426,8 +426,10 @@ public class Document : IDisposable {
             Document = document;
             this.raiseEvents = raiseEvents;
 
+            if (document.updateStack.Count == 0) {
+                document.undoStack.PrepareState(document);
+            }
             document.updateStack.Push(this);
-            document.undoStack.PrepareState(document);
         }
 
         /// Pushes the modification onto the undo-stack and raises events if enabled
