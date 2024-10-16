@@ -2635,6 +2635,7 @@ public sealed class Editor : Drawable {
 
     private void OnCut() {
         using var __ = Document.Update();
+        ClearQuickEdits();
 
         OnCopy();
 
@@ -2770,6 +2771,7 @@ public sealed class Editor : Drawable {
 
     private void OnDeleteSelectedLines() {
         using var __ = Document.Update();
+        ClearQuickEdits();
 
         int minRow = Document.Selection.Min.Row;
         int maxRow = Document.Selection.Max.Row;
