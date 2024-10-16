@@ -662,6 +662,12 @@ public class Document : IDisposable {
 
         CurrentAnchors = diff.Anchors;
         Caret = diff.Caret;
+
+        if (Settings.Instance.AutoSave) {
+            Save();
+        } else {
+            Dirty = true;
+        }
     }
     public void Redo() {
         if (undoStack.Redo() is not { } diff) {
@@ -681,6 +687,12 @@ public class Document : IDisposable {
 
         CurrentAnchors = diff.Anchors;
         Caret = diff.Caret;
+
+        if (Settings.Instance.AutoSave) {
+            Save();
+        } else {
+            Dirty = true;
+        }
     }
 
     public void Insert(string text) => Caret = Insert(Caret, text);
