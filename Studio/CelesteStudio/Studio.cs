@@ -416,7 +416,7 @@ public sealed class Studio : Form {
 
     private string GetFilePickerDirectory() {
         string fallbackDir = string.IsNullOrWhiteSpace(Settings.Instance.LastSaveDirectory)
-            ? Path.Combine(CelesteDirectory ?? string.Empty, "TAS Files")
+            ? Path.Combine(CelesteDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "TAS Files")
             : Settings.Instance.LastSaveDirectory;
 
         string dir = Editor.Document.FilePath == Document.ScratchFile
