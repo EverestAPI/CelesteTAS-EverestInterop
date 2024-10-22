@@ -217,6 +217,10 @@ public sealed class Editor : Drawable {
     public PopupMenu? ActivePopupMenu {
         get => activePopupMenu;
         set {
+            if (activePopupMenu == value) {
+                return;
+            }
+
             if (activePopupMenu != null && value == null) {
                 activePopupMenu.Visible = false;
             }
@@ -329,10 +333,19 @@ public sealed class Editor : Drawable {
             scrollablePosition = scrollable.ScrollPosition;
             Invalidate();
         };
-        // Update wrapped lines
         scrollable.SizeChanged += (_, _) => {
-            scrollableSize = scrollable.ClientSize;
-            Recalc();
+            // Ignore vertical and small horizontal size changes
+            scrollableSize.Height = scrollable.ClientSize.Height;
+            if (Math.Abs(scrollableSize.Width - scrollable.ClientSize.Width) <= 0.1f) {
+                return;
+            }
+
+            scrollableSize.Width = scrollable.ClientSize.Width;
+
+            // Update wrapped lines
+            if (Settings.Instance.WordWrapComments) {
+                Recalc();
+            }
         };
 
         CommunicationWrapper.StateUpdated += (prevState, state) => {
