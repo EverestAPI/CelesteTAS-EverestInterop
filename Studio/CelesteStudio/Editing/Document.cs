@@ -320,9 +320,12 @@ public class Document : IDisposable {
         }
     }
     public void RemoveAnchorsIf(Predicate<Anchor> predicate) {
+        List<Anchor> removedAnchors = [];
         foreach ((int _, List<Anchor> list) in CurrentAnchors) {
+            removedAnchors.AddRange(list.Where(anchor => predicate(anchor)));
             list.RemoveAll(predicate);
         }
+        removedAnchors.ForEach(anchor => anchor.OnRemoved?.Invoke());
     }
     public Anchor? FindFirstAnchor(Func<Anchor, bool> predicate) {
         foreach ((int _, List<Anchor> list) in CurrentAnchors) {
@@ -741,8 +744,8 @@ public class Document : IDisposable {
 
                     // Invalidate in between
                     if (pos.Col >= anchor.MinCol && pos.Col <= anchor.MaxCol) {
-                        anchor.OnRemoved?.Invoke();
                         anchors.Remove(anchor);
+                        anchor.OnRemoved?.Invoke();
                         continue;
                     }
                     if (pos.Col >= anchor.MinCol) {
@@ -788,6 +791,16 @@ public class Document : IDisposable {
             int newLineCount = text.Count(c => c == NewLine) + 1;
             Caret.Row += newLineCount;
         }
+
+        // Move anchors below down
+        for (int currRow = CurrentLines.Count - 1; currRow > row; currRow--) {
+            if (CurrentAnchors.Remove(currRow, out var belowAnchors)) {
+                CurrentAnchors[currRow + newLines.Length - 1] = belowAnchors;
+                foreach (var anchor in belowAnchors) {
+                    anchor.Row += newLines.Length - 1;
+                }
+            }
+        }
     }
     public void InsertLines(int row, string[] newLines) {
         using var patch = new Patch(this);
@@ -796,6 +809,16 @@ public class Document : IDisposable {
 
         if (Caret.Row >= row) {
             Caret.Row += newLines.Length;
+        }
+
+        // Move anchors below down
+        for (int currRow = CurrentLines.Count - 1; currRow > row; currRow--) {
+            if (CurrentAnchors.Remove(currRow, out var belowAnchors)) {
+                CurrentAnchors[currRow + newLines.Length - 1] = belowAnchors;
+                foreach (var anchor in belowAnchors) {
+                    anchor.Row += newLines.Length - 1;
+                }
+            }
         }
     }
 
@@ -825,6 +848,23 @@ public class Document : IDisposable {
             int newLineCount = newLines.Length > 0 ? newLines.Length-1 : 0;
             Caret.Row += newLineCount;
         }
+
+        // Remove anchors
+        if (CurrentAnchors.TryGetValue(row, out var anchors)) {
+            CurrentAnchors[row] = [];
+            foreach (var anchor in anchors) {
+                anchor.OnRemoved?.Invoke();
+            }
+        }
+        // Move anchors below down
+        for (int currRow = CurrentLines.Count - 1; currRow > row + 1 ; currRow--) {
+            if (CurrentAnchors.Remove(currRow, out var belowAnchors)) {
+                CurrentAnchors[currRow + newLines.Length - 2] = belowAnchors;
+                foreach (var anchor in belowAnchors) {
+                    anchor.Row += newLines.Length - 2;
+                }
+            }
+        }
     }
 
     public void SwapLines(int rowA, int rowB) {
@@ -832,6 +872,13 @@ public class Document : IDisposable {
 
         patch.Modify(rowA, CurrentLines[rowB]);
         patch.Modify(rowB, CurrentLines[rowA]);
+
+        // Swap anchors
+        var aAnchors = CurrentAnchors.TryGetValue(rowA, out var anchors) ? anchors : [];
+        var bAnchors = CurrentAnchors.TryGetValue(rowA, out anchors) ? anchors : [];
+        
+        CurrentAnchors[rowA] = bAnchors;
+        CurrentAnchors[rowB] = aAnchors;
     }
 
     public void RemoveRange(CaretPosition start, CaretPosition end) {
@@ -859,8 +906,8 @@ public class Document : IDisposable {
                         continue;
                     }
 
-                    anchor.OnRemoved?.Invoke();
                     anchors.Remove(anchor);
+                    anchor.OnRemoved?.Invoke();
                 }
             }
         }
@@ -913,8 +960,8 @@ public class Document : IDisposable {
                     // Remove entirely when it's 0 wide
                     anchor.MinCol == anchor.MaxCol && startCol <= anchor.MinCol && endCol >= anchor.MaxCol)
                 {
-                    anchor.OnRemoved?.Invoke();
                     anchors.Remove(anchor);
+                    anchor.OnRemoved?.Invoke();
                 }
 
                 if (endCol <= anchor.MinCol) {
@@ -933,12 +980,50 @@ public class Document : IDisposable {
     public void RemoveLine(int row) {
         using var patch = new Patch(this);
         patch.Delete(row);
+
+        // Remove anchors
+        if (CurrentAnchors.TryGetValue(row, out var anchors)) {
+            CurrentAnchors[row] = [];
+            foreach (var anchor in anchors) {
+                anchor.OnRemoved?.Invoke();
+            }
+        }
+
+        // Move anchors below up
+        for (int currRow = row + 1; currRow < CurrentLines.Count; currRow++) {
+            if (CurrentAnchors.Remove(currRow, out var aboveAnchors)) {
+                CurrentAnchors[currRow - 1] = aboveAnchors;
+                foreach (var anchor in aboveAnchors) {
+                    anchor.Row -= 1;
+                }
+            }
+        }
     }
 
     /// Removes an inclusive range of lines from min..max
     public void RemoveLines(int min, int max) {
         using var patch = new Patch(this);
         patch.DeleteRange(min, max);
+
+        // Remove anchors
+        for (int row = min; row <= max; row++) {
+            if (CurrentAnchors.TryGetValue(row, out var anchors)) {
+                CurrentAnchors[row] = [];
+                foreach (var anchor in anchors) {
+                    anchor.OnRemoved?.Invoke();
+                }
+            }
+        }
+
+        // Move anchors below up
+        for (int currRow = max + 1; currRow < CurrentLines.Count; currRow++) {
+            if (CurrentAnchors.Remove(currRow, out var aboveAnchors)) {
+                CurrentAnchors[currRow - (max - min)] = aboveAnchors;
+                foreach (var anchor in aboveAnchors) {
+                    anchor.Row -= max - min;
+                }
+            }
+        }
     }
 
     /// Replaces the inclusive range startCol..endCol with text inside the line
