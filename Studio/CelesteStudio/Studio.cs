@@ -427,7 +427,8 @@ public sealed class Studio : Form {
             Directory.CreateDirectory(dir);
         }
 
-        return dir;
+        // URIs don't support relative paths on their own
+        return Path.GetFullPath(dir);
     }
 
     private void OnNewFile() {
