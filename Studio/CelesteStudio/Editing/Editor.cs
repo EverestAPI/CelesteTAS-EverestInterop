@@ -456,7 +456,7 @@ public sealed class Editor : Drawable {
                 MenuEntry.Editor_InsertCurrentTime.ToAction(OnInsertTime),
                 MenuEntry.Editor_RemoveAllTimestamps.ToAction(() => RemoveLinesMatching(TimestampRegex)),
                 MenuEntry.Editor_InsertCurrentPosition.ToAction(OnInsertPosition),
-                MenuEntry.Editor_InsertCurrentPosition.ToAction(OnInsertSpeed),
+                MenuEntry.Editor_InsertCurrentSpeed.ToAction(OnInsertSpeed),
                 MenuEntry.Editor_InsertModInfo.ToAction(OnInsertModInfo),
                 MenuEntry.Editor_InsertConsoleLoadCommand.ToAction(OnInsertConsoleLoadCommand),
                 MenuEntry.Editor_InsertSimpleConsoleLoadCommand.ToAction(OnInsertSimpleConsoleLoadCommand),
