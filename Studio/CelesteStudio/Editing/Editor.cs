@@ -209,6 +209,8 @@ public sealed class Editor : Drawable {
     private Point scrollablePosition;
     private Size scrollableSize;
 
+    private int previousMaxDigits = -1;
+
     private readonly PixelLayout pixelLayout = new();
     private readonly PopupMenu autoCompleteMenu = new();
     private readonly PopupMenu contextActionsMenu = new();
@@ -303,6 +305,8 @@ public sealed class Editor : Drawable {
     private static readonly Regex TimestampRegex = new(@"^\s*#+\s*(\d+:)?\d{1,2}:\d{2}\.\d{3}\(\d+\)", RegexOptions.Compiled);
     public static readonly Regex RoomLabelRegex = new(@"^#lvl_([^\(\)]*)(?:\s\((\d+)\))?$", RegexOptions.Compiled);
 
+    private const int offscreenLinePadding = 3;
+
     public Editor(Document document, Scrollable scrollable) {
         this.document = document;
         this.scrollable = scrollable;
@@ -331,6 +335,16 @@ public sealed class Editor : Drawable {
         // Need to redraw the line numbers when scrolling horizontally
         scrollable.Scroll += (_, _) => {
             scrollablePosition = scrollable.ScrollPosition;
+
+            int bottomVisualRow = (int)((scrollablePosition.Y + scrollableSize.Height) / Font.LineHeight()) + offscreenLinePadding;
+            int bottomRow = Math.Min(Document.Lines.Count - 1, GetActualRow(bottomVisualRow));
+
+            int maxDigits = bottomRow.Digits();
+            if (previousMaxDigits != maxDigits) {
+                Recalc();
+            }
+            previousMaxDigits = maxDigits;
+
             Invalidate();
         };
         scrollable.SizeChanged += (_, _) => {
@@ -702,16 +716,19 @@ public sealed class Editor : Drawable {
         // Clear invalid foldings
         Document.RemoveAnchorsIf(anchor => anchor.UserData is CollapseAnchorData && foldings.All(fold => fold.MinRow != anchor.Row));
 
+        int bottomVisualRow = (int)((scrollablePosition.Y + scrollableSize.Height) / Font.LineHeight()) + offscreenLinePadding;
+        int bottomRow = Math.Min(Document.Lines.Count - 1, GetActualRow(bottomVisualRow));
+
         // Calculate line numbers width
         const float foldButtonPadding = 5.0f;
         bool hasFoldings = Settings.Instance.ShowFoldIndicators && foldings.Count != 0;
         // Only when the alignment is to the left, the folding indicator can fit into the existing space
         float foldingWidth = !hasFoldings ? 0.0f : Settings.Instance.LineNumberAlignment switch {
              LineNumberAlignment.Left => Font.CharWidth() * (foldings[^1].MinRow.Digits() + 1) + foldButtonPadding,
-             LineNumberAlignment.Right => Font.CharWidth() * (Document.Lines.Count.Digits() + 1) + foldButtonPadding,
+             LineNumberAlignment.Right => Font.CharWidth() * (bottomRow.Digits() + 1) + foldButtonPadding,
              _ => throw new UnreachableException(),
         };
-        textOffsetX = Math.Max(foldingWidth, Font.CharWidth() * Document.Lines.Count.Digits()) + LineNumberPadding * 3.0f;
+        textOffsetX = Math.Max(foldingWidth, Font.CharWidth() * bottomRow.Digits()) + LineNumberPadding * 3.0f;
 
         const float paddingRight = 50.0f;
         const float paddingBottom = 100.0f;
@@ -3620,8 +3637,6 @@ public sealed class Editor : Drawable {
         // To be reused below. Kinda annoying how C# handles out parameter conflicts
         WrapEntry wrap;
 
-        const int offscreenLinePadding = 3;
-
         int topVisualRow = (int)(scrollablePosition.Y / Font.LineHeight()) - offscreenLinePadding;
         int bottomVisualRow = (int)((scrollablePosition.Y + scrollableSize.Height) / Font.LineHeight()) + offscreenLinePadding;
         int topRow = Math.Max(0, GetActualRow(topVisualRow));
@@ -3837,7 +3852,7 @@ public sealed class Editor : Drawable {
                 if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Left) {
                     e.Graphics.DrawText(Font, textColor, scrollablePosition.X + LineNumberPadding, yPos, numberString);
                 } else if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Right) {
-                    float ident = Font.CharWidth() * (Document.Lines.Count.Digits() - (row + 1).Digits());
+                    float ident = Font.CharWidth() * (bottomRow - (row + 1).Digits());
                     e.Graphics.DrawText(Font, textColor, scrollablePosition.X + LineNumberPadding + ident, yPos, numberString);
                 }
 
