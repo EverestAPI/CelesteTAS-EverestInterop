@@ -6,6 +6,7 @@
         <RuntimeIdentifiers>linux-x64;linux-arm;linux-arm64</RuntimeIdentifiers>
 
         <RestoreSources>$(RestoreSources);https://www.myget.org/F/eto/api/v3/index.json;https://api.nuget.org/v3/index.json</RestoreSources>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
@@ -20,6 +21,8 @@
 
         <!-- Use a CI-build, since that contains a fix for some issues -->
         <PackageReference Include="Eto.Platform.Gtk" Version="2.8.4-ci-20240710.9879198421" />
+
+        <PackageReference Include="Tracy.NET" Version="0.11.1.7" Enabled="true" ProfileAllMethods="true"/>
     </ItemGroup>
 
 </Project>

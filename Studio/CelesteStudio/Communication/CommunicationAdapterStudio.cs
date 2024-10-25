@@ -7,6 +7,7 @@ using CelesteStudio.Util;
 using Eto.Forms;
 using StudioCommunication;
 using StudioCommunication.Util;
+using TracyNET;
 
 namespace CelesteStudio.Communication;
 
@@ -249,7 +250,18 @@ public sealed class CommunicationAdapterStudio(
         return gameData[gameDataType];
     }
 
-    protected override void LogInfo(string message) => Console.WriteLine($"[Info] Studio Communication @ Studio: {message}");
-    protected override void LogVerbose(string message) => Console.WriteLine($"[Verbose] Studio Communication @ Studio: {message}");
-    protected override void LogError(string message) => Console.Error.WriteLine($"[Error] Studio Communication @ Studio: {message}");
+    protected override void LogInfo(string message) {
+        Console.WriteLine($"[Info] Studio Communication @ Studio: {message}");
+        Tracy.Message($"[Info] StudioCom: {message}", 0x14AAC7);
+    }
+
+    protected override void LogVerbose(string message) {
+        Console.WriteLine($"[Verbose] Studio Communication @ Studio: {message}");
+        Tracy.Message($"[Verbose] StudioCom: {message}", 0xB91CD0);
+    }
+
+    protected override void LogError(string message) {
+        Console.Error.WriteLine($"[Error] Studio Communication @ Studio: {message}");
+        Tracy.Message($"[Error] StudioCom: {message}", 0xD33C2A);
+    }
 }
