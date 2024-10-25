@@ -297,6 +297,10 @@ public sealed class Editor : Drawable {
     // Simple math operations like +, -, *, / can be performed on action line's frame counts
     private CalculationState? calculationState = null;
 
+    // Retain previous settings from Find-dialog
+    private string lastFindQuery = string.Empty;
+    private bool lastFindMatchCase = false;
+
     private static readonly Regex UncommentedBreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
     private static readonly Regex AllBreakpointRegex = new(@"^\s*#*\*\*\*", RegexOptions.Compiled);
@@ -2757,11 +2761,11 @@ public sealed class Editor : Drawable {
     }
 
     private void OnFind() {
-        if (Document.Selection.Empty) {
-            FindDialog.Show(this, string.Empty);
-        } else {
-            FindDialog.Show(this, Document.GetSelectedText());
+        if (!Document.Selection.Empty) {
+            lastFindQuery = Document.GetSelectedText();
         }
+
+        FindDialog.Show(this, ref lastFindQuery, ref lastFindMatchCase);
     }
 
     private void OnGoTo() {
