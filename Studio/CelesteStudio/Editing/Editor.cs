@@ -2596,7 +2596,10 @@ public sealed class Editor : Drawable {
     private void OnEnter(bool splitLines, bool up) {
         using var __ = Document.Update();
 
-        var line = Document.Lines[Document.Caret.Row];
+        string line = Document.Lines[Document.Caret.Row];
+
+        // Auto-split on first and last column since nothing is broken there
+        splitLines = splitLines || Document.Caret.Col == 0 || Document.Caret.Col == line.Length;
 
         int offset = up ? 0 : 1;
         if (!splitLines || ActionLine.TryParse(line, out _)) {
