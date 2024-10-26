@@ -37,6 +37,7 @@ public abstract class SkiaDrawable : Drawable {
         }
         catch (Exception ex)
         {
+            Console.WriteLine(ex);
             e.Graphics.DrawText(Fonts.Monospace(12.0f), Colors.Red, PointF.Empty, ex.ToString());
         }
     }

@@ -1,3 +1,4 @@
+using CelesteStudio.Controls;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -10,7 +11,7 @@ using SkiaSharp;
 namespace CelesteStudio.Dialog;
 
 public class FontDialog : Dialog<bool> {
-    private class FontPreview : Drawable {
+    private class FontPreview : SkiaDrawable {
         private SKFont font = null!;
         private SyntaxHighlighter? highlighter;
 
@@ -30,7 +31,9 @@ public class FontDialog : Dialog<bool> {
             Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.Background;
         }
 
-        protected override void OnPaint(PaintEventArgs e) {
+        protected override void Draw(PaintEventArgs e, SKSurface surface, SKImageInfo imageInfo) {
+            surface.Canvas.Clear();
+
             if (highlighter == null)
                 return;
 
@@ -49,15 +52,12 @@ public class FontDialog : Dialog<bool> {
             float yPos = 0.0f;
             float maxWidth = 0.0f;
             foreach (var line in previewText) {
-                // Actually measure the fonts to avoid caching issues
-                // highlighter.DrawLine(e.Graphics, 0.0f, yPos, line, new SyntaxHighlighter.DrawLineOptions { MeasureReal = true });
+                highlighter.DrawLine(surface.Canvas, 0.0f, yPos, line);
                 maxWidth = Math.Max(maxWidth, font.MeasureWidth(line));
                 yPos += font.LineHeight();
             }
 
             Size = new((int)maxWidth, (int)yPos);
-
-            base.OnPaint(e);
         }
     }
 

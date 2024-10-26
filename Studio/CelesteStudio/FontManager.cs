@@ -116,7 +116,9 @@ public static class FontManager {
             return width;
         }
 
-        widthCache[font] = width = font.Metrics.AverageCharacterWidth * font.ScaleX;
+        font.MeasureText([font.GetGlyph('X')]);
+        //widthCache[font] = width = font.Metrics.AverageCharacterWidth * font.ScaleX;
+        widthCache[font] = width = font.MeasureText([font.GetGlyph('X')]);
         return width;
     }
     public static float MeasureWidth(this SKFont font, string text) {
