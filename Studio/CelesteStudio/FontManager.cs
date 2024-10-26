@@ -5,6 +5,7 @@ using System.Reflection;
 using Eto.Drawing;
 using SkiaSharp;
 using System;
+using System.Diagnostics;
 
 namespace CelesteStudio;
 
@@ -17,7 +18,7 @@ public static class FontManager {
 #endif
 
     private static Font? editorFontRegular, editorFontBold, editorFontItalic, editorFontBoldItalic, statusFont, popupFont;
-    private static SKFont? skEditorFontRegular;
+    private static SKFont? skEditorFontRegular, skEditorFontBold, skEditorFontItalic, skEditorFontBoldItalic;
 
     public static Font EditorFontRegular    => editorFontRegular    ??= CreateEditor(FontStyle.None);
     public static Font EditorFontBold       => editorFontBold       ??= CreateEditor(FontStyle.Bold);
@@ -26,7 +27,10 @@ public static class FontManager {
     public static Font StatusFont           => statusFont           ??= CreateStatus();
     public static Font PopupFont            => popupFont            ??= CreatePopup();
 
-    public static SKFont SKEditorFontRegular => skEditorFontRegular ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom * (4.0f/3.0f));
+    public static SKFont SKEditorFontRegular    => skEditorFontRegular    ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, FontStyle.None);
+    public static SKFont SKEditorFontBold       => skEditorFontBold       ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, FontStyle.Bold);
+    public static SKFont SKEditorFontItalic     => skEditorFontItalic     ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, FontStyle.Italic);
+    public static SKFont SKEditorFontBoldItalic => skEditorFontBoldItalic ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, FontStyle.Bold | FontStyle.Italic);
 
     private static FontFamily? builtinFontFamily;
     public static Font CreateFont(string fontFamily, float size, FontStyle style = FontStyle.None) {
@@ -47,21 +51,36 @@ public static class FontManager {
         }
     }
 
-    public static SKFont CreateSKFont(string fontFamily, float size) {
+    public static SKFont CreateSKFont(string fontFamily, float size, FontStyle style) {
+        // TODO: Don't hardcode this
+        const float dpi = 96.0f / 72.0f;
+
         if (Platform.Instance.IsMac && fontFamily == FontFamilyBuiltin) {
             // The built-in font is broken on macOS for some reason, so fallback to a system font
             fontFamily = "Monaco";
         }
 
         if (fontFamily == FontFamilyBuiltin) {
-            var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("JetBrainsMono/JetBrainsMono-Regular");
+            var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(style switch {
+                FontStyle.None => "JetBrainsMono/JetBrainsMono-Regular",
+                FontStyle.Bold => "JetBrainsMono/JetBrainsMono-Bold",
+                FontStyle.Italic => "JetBrainsMono/JetBrainsMono-Italic",
+                FontStyle.Bold | FontStyle.Italic => "JetBrainsMono/JetBrainsMono-BoldItalic",
+                _ => throw new UnreachableException(),
+            });
             var typeface = SKTypeface.FromStream(stream);
 
-            return new SKFont(typeface, size) { LinearMetrics = true };
+            return new SKFont(typeface, size * dpi) { LinearMetrics = true };
         } else {
-            var typeface = SKTypeface.FromFamilyName(fontFamily, SKFontStyleWeight.Light, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright);
+            var typeface = style switch {
+                FontStyle.None => SKTypeface.FromFamilyName(fontFamily, SKFontStyleWeight.Light, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright),
+                FontStyle.Bold => SKTypeface.FromFamilyName(fontFamily, SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright),
+                FontStyle.Italic => SKTypeface.FromFamilyName(fontFamily, SKFontStyleWeight.Light, SKFontStyleWidth.Normal, SKFontStyleSlant.Italic),
+                FontStyle.Bold | FontStyle.Italic => SKTypeface.FromFamilyName(fontFamily, SKFontStyleWeight.Bold, SKFontStyleWidth.Normal, SKFontStyleSlant.Italic),
+                _ => throw new UnreachableException(),
+            };
 
-            return new SKFont(typeface, size) { LinearMetrics = true };
+            return new SKFont(typeface, size * dpi) { LinearMetrics = true };
         }
     }
 

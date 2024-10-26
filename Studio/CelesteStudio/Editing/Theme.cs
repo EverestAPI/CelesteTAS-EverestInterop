@@ -12,7 +12,7 @@ public struct Style(Color foregroundColor, Color? backgroundColor = null, FontSt
 
     public FontStyle FontStyle = fontStyle;
 
-    public StylePaint CreatePaint() => new(CreateForegroundPaint(), CreateBackgroundPaint());
+    public StylePaint CreatePaint() => new(CreateForegroundPaint(), CreateBackgroundPaint(), FontStyle);
 
     public SKPaint CreateForegroundPaint(SKPaintStyle style = SKPaintStyle.Fill) =>
         new() { ColorF = ForegroundColor.ToSkia(), Style = style, IsAntialias = true };
@@ -20,17 +20,14 @@ public struct Style(Color foregroundColor, Color? backgroundColor = null, FontSt
         BackgroundColor == null ? null : new() { ColorF = BackgroundColor.Value.ToSkia(), Style = style, IsAntialias = true };
 }
 
-public readonly struct StylePaint(SKPaint foregroundColor, SKPaint? backgroundColor = null) : IDisposable {
-    public readonly SKPaint ForegroundColor = foregroundColor;
-    public readonly SKPaint? BackgroundColor = backgroundColor;
-
+public readonly record struct StylePaint(SKPaint ForegroundColor, SKPaint? BackgroundColor = null, FontStyle FontStyle = FontStyle.None) : IDisposable {
     public void Dispose() {
         ForegroundColor.Dispose();
         BackgroundColor?.Dispose();
     }
 }
 
-public struct Theme {
+public struct Theme() {
     // Editor
     public Color Background;
     public Color Caret;
@@ -92,9 +89,22 @@ public struct Theme {
     public StylePaint CommentPaint => _comment ??= Comment.CreatePaint();
     public SKPaint CommentBoxPaint => _commentBox ??= Comment.CreateForegroundPaint(SKPaintStyle.Stroke);
 
-    public bool DarkMode;
+    public void InvalidateCache() {
+        _actionPaint?.Dispose();
+        _anglePaint?.Dispose();
+        _breakpointPaint?.Dispose();
+        _savestateBreakpointPaint?.Dispose();
+        _delimiter?.Dispose();
+        _command?.Dispose();
+        _frame?.Dispose();
+        _comment?.Dispose();
+        _commentBox?.Dispose();
 
-    public Theme() { }
+        _actionPaint = _anglePaint = _breakpointPaint = _savestateBreakpointPaint = _delimiter = _command = _frame = _comment = null;
+        _commentBox = null;
+    }
+
+    public bool DarkMode;
 
     public const string BuiltinLight = "Light";
     public const string BuiltinDark = "Dark";

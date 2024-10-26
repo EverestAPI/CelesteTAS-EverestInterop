@@ -47,8 +47,8 @@ public sealed class Settings {
     public static event Action? Changed;
     public static void OnChanged() => Changed?.Invoke();
 
-    public static event Action? ThemeChanged;
-    public static void OnThemeChanged() => ThemeChanged?.Invoke();
+    public static event Action ThemeChanged = () => Instance.Theme.InvalidateCache();
+    public static void OnThemeChanged() => ThemeChanged.Invoke();
 
     public static event Action FontChanged = FontManager.OnFontChanged;
     public static void OnFontChanged() => FontChanged.Invoke();

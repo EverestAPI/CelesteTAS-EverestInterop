@@ -325,9 +325,9 @@ public sealed class Editor : SkiaDrawable {
 
         Focus();
 
-        highlighter = new(FontManager.EditorFontRegular, FontManager.EditorFontBold, FontManager.EditorFontItalic, FontManager.EditorFontBoldItalic);
+        highlighter = new(FontManager.SKEditorFontRegular, FontManager.SKEditorFontBold, FontManager.SKEditorFontItalic, FontManager.SKEditorFontBoldItalic);
         Settings.FontChanged += () => {
-            highlighter = new(FontManager.EditorFontRegular, FontManager.EditorFontBold, FontManager.EditorFontItalic, FontManager.EditorFontBoldItalic);
+            highlighter = new(FontManager.SKEditorFontRegular, FontManager.SKEditorFontBold, FontManager.SKEditorFontItalic, FontManager.SKEditorFontBoldItalic);
             Recalc();
         };
 
@@ -3546,7 +3546,7 @@ public sealed class Editor : SkiaDrawable {
 
     private void UpdateMouseCursor(PointF location, Keys modifiers) {
         // Maybe a bit out-of-place here, but this is required to update the underline of line links
-        // Invalidate();
+        Invalidate();
 
         if (modifiers.HasCommonModifier() && LocationToLineLink(location) != null) {
             Cursor = Cursors.Pointer;
@@ -3679,17 +3679,6 @@ public sealed class Editor : SkiaDrawable {
                 continue;
             }
 
-            // Underline current line link
-            if (Keyboard.Modifiers.HasCommonModifier() && LocationToLineLink(PointFromScreen(Mouse.Position)) is { } linkAnchor && linkAnchor.Row == row) {
-                highlighter.DrawLine(canvas, textOffsetX, yPos, line, new SyntaxHighlighter.DrawLineOptions {
-                    UnderlineStart = linkAnchor.MinCol,
-                    UnderlineEnd = linkAnchor.MaxCol,
-                });
-
-                yPos += Font.LineHeight();
-                continue;
-            }
-
             if (commentLineWraps.TryGetValue(row, out wrap)) {
                 for (int i = 0; i < wrap.Lines.Length; i++) {
                     var subLine = wrap.Lines[i].Line;
@@ -3704,6 +3693,20 @@ public sealed class Editor : SkiaDrawable {
             }
         }
 
+        // Underline current line-link
+        if (Keyboard.Modifiers.HasCommonModifier() && LocationToLineLink(PointFromScreen(Mouse.Position)) is { } linkAnchor) {
+            strokePaint.Color = Settings.Instance.Theme.CommandPaint.ForegroundColor.Color; // Only commands can have line-links anyway
+            strokePaint.StrokeWidth = 1.0f;
+            strokePaint.StrokeCap = SKStrokeCap.Round;
+
+            float y = actualToVisualRows[linkAnchor.Row] * Font.LineHeight();
+
+            canvas.DrawLine(
+                x0: textOffsetX + linkAnchor.MinCol * Font.CharWidth(), y0: y + Font.Offset() + Font.Metrics.UnderlinePosition ?? 0.0f + 1.0f,
+                x1: textOffsetX + (linkAnchor.MaxCol + 1) * Font.CharWidth(), y1: y + Font.Offset() + Font.Metrics.UnderlinePosition ?? 0.0f + 1.0f,
+                strokePaint);
+        }
+
         // Draw quick-edits
         foreach (var anchor in GetQuickEdits()) {
             const float padding = 1.0f;
@@ -3716,14 +3719,12 @@ public sealed class Editor : SkiaDrawable {
                             Document.Caret.Col >= anchor.MinCol &&
                             Document.Caret.Col <= anchor.MaxCol;
 
-            using var boxPaint = new SKPaint();
-            boxPaint.Color = selected ? SKColors.White : SKColors.Gray;
-            boxPaint.StrokeWidth = selected ? 2.0f : 1.0f;
-            boxPaint.Style = SKPaintStyle.Stroke;
+            strokePaint.Color = selected ? SKColors.White : SKColors.Gray;
+            strokePaint.StrokeWidth = selected ? 2.0f : 1.0f;
 
             canvas.DrawRect(
                 x + textOffsetX - padding, y - padding, w + padding * 2.0f, Font.LineHeight() + padding * 2.0f,
-                boxPaint);
+                strokePaint);
         }
 
         // Draw suffix text
@@ -3759,6 +3760,7 @@ public sealed class Editor : SkiaDrawable {
         // Draw caret
         if (HasFocus) {
             strokePaint.ColorF = Settings.Instance.Theme.Caret.ToSkia();
+            strokePaint.StrokeWidth = 1.0f;
             canvas.DrawLine(carX, carY, carX, carY + Font.LineHeight() - 1, strokePaint);
         }
 

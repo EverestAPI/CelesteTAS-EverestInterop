@@ -31,15 +31,15 @@ public struct LineStyle {
 public class SyntaxHighlighter {
     private const int MaxCacheSize = 32767;
 
-    private readonly Dictionary<string, LineStyle> cache = new();
+    private readonly Dictionary<string, LineStyle> cache = [];
     private StylePaint[] styles = [];
 
-    private readonly Font regularFont;
-    private readonly Font boldFont;
-    private readonly Font italicFont;
-    private readonly Font boldItalicFont;
+    private readonly SKFont regularFont;
+    private readonly SKFont boldFont;
+    private readonly SKFont italicFont;
+    private readonly SKFont boldItalicFont;
 
-    public SyntaxHighlighter(Font regularFont, Font boldFont, Font italicFont, Font boldItalicFont) {
+    public SyntaxHighlighter(SKFont regularFont, SKFont boldFont, SKFont italicFont, SKFont boldItalicFont) {
         LoadTheme(Settings.Instance.Theme);
         Settings.ThemeChanged += () => LoadTheme(Settings.Instance.Theme);
 
@@ -55,18 +55,7 @@ public class SyntaxHighlighter {
         styles = [theme.ActionPaint, theme.AnglePaint, theme.BreakpointPaint, theme.SavestateBreakpointPaint, theme.DelimiterPaint, theme.CommandPaint, theme.CommentPaint, theme.FramePaint];
     }
 
-    public struct DrawLineOptions() {
-        // Required to prevent a weird macOS font crash
-        public bool MeasureReal = false;
-
-        // Region which should be underlined
-        public int UnderlineStart = -1;
-        public int UnderlineEnd = -1;
-    }
-
-    public void DrawLine(SKCanvas canvas, float x, float y, string line, DrawLineOptions? options = null) {
-        options ??= new();
-
+    public void DrawLine(SKCanvas canvas, float x, float y, string line) {
         float xOff = 0.0f;
 
         foreach (var segment in GetLineStyle(line).Segments) {
@@ -77,15 +66,13 @@ public class SyntaxHighlighter {
 
             var style = styles[(int)segment.Type];
 
-            // var font = style.FontStyle switch {
-            //     FontStyle.None => regularFont,
-            //     FontStyle.Bold => boldFont,
-            //     FontStyle.Italic => italicFont,
-            //     FontStyle.Bold | FontStyle.Italic => boldItalicFont,
-            //     _ => throw new UnreachableException(),
-            // };
-            // TODO: Respect font style
-            var font = FontManager.SKEditorFontRegular;
+            var font = style.FontStyle switch {
+                FontStyle.None => regularFont,
+                FontStyle.Bold => boldFont,
+                FontStyle.Italic => italicFont,
+                FontStyle.Bold | FontStyle.Italic => boldItalicFont,
+                _ => throw new UnreachableException(),
+            };
 
             string str = line[segment.StartIdx..(segment.EndIdx + 1)];
             float width = font.MeasureWidth(str);
@@ -94,24 +81,7 @@ public class SyntaxHighlighter {
                 canvas.DrawRect(x + xOff, y, width, font.LineHeight(), bgColor);
             }
 
-            int underlineStart = Math.Max(segment.StartIdx, options.Value.UnderlineStart);
-            int underlineEnd = Math.Min(segment.EndIdx, options.Value.UnderlineEnd);
-
-            // TODO: Handle underlines
-            // if (underlineStart <= underlineEnd && underlineStart >= segment.StartIdx && underlineEnd <= segment.EndIdx)
-            // {
-            //     var underlineFont = font.WithFontDecoration(FontDecoration.Underline);
-            //
-            //     string left = line[..underlineStart];
-            //     string middle = line[underlineStart..(underlineEnd + 1)];
-            //     string right = line[(underlineEnd + 1)..];
-            //
-            //     canvas.DrawText(font,          style.ForegroundColor, x + xOff, y, left);
-            //     canvas.DrawText(underlineFont, style.ForegroundColor, x + xOff + font.MeasureWidth(left), y, middle);
-            //     canvas.DrawText(font,          style.ForegroundColor, x + xOff + font.MeasureWidth(left) + underlineFont.MeasureWidth(middle), y, right);
-            // } else {
-                canvas.DrawText(str, x + xOff, y + font.Offset(), font, style.ForegroundColor);
-            // }
+            canvas.DrawText(str, x + xOff, y + font.Offset(), font, style.ForegroundColor);
 
             xOff += width;
         }
