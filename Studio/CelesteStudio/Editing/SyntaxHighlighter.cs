@@ -32,7 +32,7 @@ public class SyntaxHighlighter {
     private const int MaxCacheSize = 32767;
 
     private readonly Dictionary<string, LineStyle> cache = new();
-    private Style[] styles = [];
+    private StylePaint[] styles = [];
 
     private readonly Font regularFont;
     private readonly Font boldFont;
@@ -52,7 +52,7 @@ public class SyntaxHighlighter {
     private void LoadTheme(Theme theme) {
         cache.Clear();
         // IMPORTANT: Must be the same order as the StyleType enum!
-        styles = [theme.Action, theme.Angle, theme.Breakpoint, theme.SavestateBreakpoint, theme.Delimiter, theme.Command, theme.Comment, theme.Frame];
+        styles = [theme.ActionPaint, theme.AnglePaint, theme.BreakpointPaint, theme.SavestateBreakpointPaint, theme.DelimiterPaint, theme.CommandPaint, theme.CommentPaint, theme.FramePaint];
     }
 
     public struct DrawLineOptions() {
@@ -91,11 +91,7 @@ public class SyntaxHighlighter {
             float width = font.MeasureWidth(str);
 
             if (style.BackgroundColor is { } bgColor) {
-                using var paint = new SKPaint();
-                paint.Color = bgColor.ToSkia();
-                paint.Style = SKPaintStyle.Fill;
-                paint.IsAntialias = true;
-                canvas.DrawRect(x + xOff, y, width, font.LineHeight(), paint);
+                canvas.DrawRect(x + xOff, y, width, font.LineHeight(), bgColor);
             }
 
             int underlineStart = Math.Max(segment.StartIdx, options.Value.UnderlineStart);
@@ -114,12 +110,7 @@ public class SyntaxHighlighter {
             //     canvas.DrawText(underlineFont, style.ForegroundColor, x + xOff + font.MeasureWidth(left), y, middle);
             //     canvas.DrawText(font,          style.ForegroundColor, x + xOff + font.MeasureWidth(left) + underlineFont.MeasureWidth(middle), y, right);
             // } else {
-                using var textPaint = new SKPaint();
-                textPaint.Color = style.ForegroundColor.ToSkia();
-                // textPaint.Style = SKPaintStyle.Fill;
-                textPaint.IsAntialias = true;
-                textPaint.TextAlign = SKTextAlign.Left;
-                canvas.DrawText(str, x + xOff, y + font.Offset(), font, textPaint);
+                canvas.DrawText(str, x + xOff, y + font.Offset(), font, style.ForegroundColor);
             // }
 
             xOff += width;

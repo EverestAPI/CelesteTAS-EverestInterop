@@ -3546,7 +3546,7 @@ public sealed class Editor : SkiaDrawable {
 
     private void UpdateMouseCursor(PointF location, Keys modifiers) {
         // Maybe a bit out-of-place here, but this is required to update the underline of line links
-        Invalidate();
+        // Invalidate();
 
         if (modifiers.HasCommonModifier() && LocationToLineLink(location) != null) {
             Cursor = Cursors.Pointer;
@@ -3624,8 +3624,12 @@ public sealed class Editor : SkiaDrawable {
         var canvas = surface.Canvas;
         canvas.Clear();
 
-        // Adjust unit to points instead of pixels
-        //canvas.Scale(e.Graphics.PixelsPerPoint);
+        using var strokePaint = new SKPaint();
+        strokePaint.Style = SKPaintStyle.Stroke;
+
+        using var fillPaint = new SKPaint();
+        fillPaint.Style = SKPaintStyle.Fill;
+        fillPaint.IsAntialias = true;
 
         // To be reused below. Kinda annoying how C# handles out parameter conflicts
         WrapEntry wrap;
@@ -3638,10 +3642,6 @@ public sealed class Editor : SkiaDrawable {
         int bottomRow = Math.Min(Document.Lines.Count - 1, GetActualRow(bottomVisualRow));
 
         // Draw text
-        using var commentPaint = new SKPaint();
-        commentPaint.Color = Settings.Instance.Theme.Comment.ForegroundColor.ToSkia();
-        commentPaint.IsAntialias = true;
-
         float yPos = actualToVisualRows[topRow] * Font.LineHeight();
         for (int row = topRow; row <= bottomRow; row++) {
             string line = Document.Lines[row];
@@ -3656,7 +3656,7 @@ public sealed class Editor : SkiaDrawable {
                         var subLine = wrap.Lines[i].Line;
                         float xIdent = i == 0 ? 0 : wrap.StartOffset * Font.CharWidth();
 
-                        canvas.DrawText(subLine, textOffsetX + xIdent, yPos, Font, commentPaint);
+                        canvas.DrawText(subLine, textOffsetX + xIdent, yPos, Font, Settings.Instance.Theme.CommentPaint.ForegroundColor);
                         yPos += Font.LineHeight();
                         width = Math.Max(width, Font.MeasureWidth(subLine) + xIdent);
                         height += Font.LineHeight();
@@ -3668,15 +3668,12 @@ public sealed class Editor : SkiaDrawable {
                     height = Font.LineHeight();
                 }
 
-                using var boxPaint = new SKPaint();
-                boxPaint.Color = commentPaint.Color;
-                boxPaint.Style = SKPaintStyle.Stroke;
                 canvas.DrawRect(
                     x: Font.CharWidth() * collapse.StartCol + textOffsetX - foldingPadding,
                     y: yPos - height - foldingPadding,
                     w: width - Font.CharWidth() * collapse.StartCol + foldingPadding * 2.0f,
                     h: height + foldingPadding * 2.0f,
-                    boxPaint);
+                    Settings.Instance.Theme.CommentBoxPaint);
 
                 row = collapse.MaxRow;
                 continue;
@@ -3698,7 +3695,7 @@ public sealed class Editor : SkiaDrawable {
                     var subLine = wrap.Lines[i].Line;
                     float xIdent = i == 0 ? 0 : wrap.StartOffset * Font.CharWidth();
 
-                    canvas.DrawText(subLine, textOffsetX + xIdent, yPos, Font, commentPaint);
+                    canvas.DrawText(subLine, textOffsetX + xIdent, yPos, Font, Settings.Instance.Theme.CommentPaint.ForegroundColor);
                     yPos += Font.LineHeight();
                 }
             } else {
@@ -3723,6 +3720,7 @@ public sealed class Editor : SkiaDrawable {
             boxPaint.Color = selected ? SKColors.White : SKColors.Gray;
             boxPaint.StrokeWidth = selected ? 2.0f : 1.0f;
             boxPaint.Style = SKPaintStyle.Stroke;
+
             canvas.DrawRect(
                 x + textOffsetX - padding, y - padding, w + padding * 2.0f, Font.LineHeight() + padding * 2.0f,
                 boxPaint);
@@ -3738,13 +3736,11 @@ public sealed class Editor : SkiaDrawable {
             const float padding = 10.0f;
             float suffixWidth = font.MeasureWidth(CommunicationWrapper.CurrentLineSuffix);
 
-            using var suffixPaint = new SKPaint();
-            suffixPaint.Color = Settings.Instance.Theme.PlayingFrame.ToSkia();
-            suffixPaint.IsAntialias = true;
+            fillPaint.ColorF = Settings.Instance.Theme.PlayingFrame.ToSkia();
             canvas.DrawText(CommunicationWrapper.CurrentLineSuffix,
                 x: scrollablePosition.X + scrollableSize.Width - suffixWidth - padding,
                 y: actualToVisualRows[CommunicationWrapper.CurrentLine] * font.LineHeight()+ Font.Offset(),
-                suffixPaint);
+                fillPaint);
         }
 
         var caretPos = GetVisualPosition(Document.Caret);
@@ -3752,42 +3748,33 @@ public sealed class Editor : SkiaDrawable {
         float carY = Font.LineHeight() * caretPos.Row;
 
         // Highlight caret line
-        using var highlightPaint = new SKPaint();
-        highlightPaint.Color = Settings.Instance.Theme.CurrentLine.ToSkia();
-        highlightPaint.Style = SKPaintStyle.Fill;
-        highlightPaint.IsAntialias = true;
+        fillPaint.ColorF = Settings.Instance.Theme.CurrentLine.ToSkia();
         canvas.DrawRect(
             x: scrollablePosition.X,
             y: carY,
             w: scrollable.Width,
             h: Font.LineHeight(),
-            highlightPaint);
+            fillPaint);
 
         // Draw caret
         if (HasFocus) {
-            using var caretPaint = new SKPaint();
-            caretPaint.Color = Settings.Instance.Theme.Caret.ToSkia();
-            caretPaint.Style = SKPaintStyle.Stroke;
-            caretPaint.IsAntialias = true;
-            canvas.DrawLine(carX, carY, carX, carY + Font.LineHeight() - 1, caretPaint);
+            strokePaint.ColorF = Settings.Instance.Theme.Caret.ToSkia();
+            canvas.DrawLine(carX, carY, carX, carY + Font.LineHeight() - 1, strokePaint);
         }
 
         // Draw selection
         if (!Document.Selection.Empty) {
-            using var selectionPaint = new SKPaint();
-            selectionPaint.Color = Settings.Instance.Theme.Selection.ToSkia();
-            selectionPaint.Style = SKPaintStyle.Fill;
-            selectionPaint.IsAntialias = true;
-
             var min = GetVisualPosition(Document.Selection.Min);
             var max = GetVisualPosition(Document.Selection.Max);
+
+            fillPaint.ColorF = Settings.Instance.Theme.Selection.ToSkia();
 
             if (min.Row == max.Row) {
                 float x = Font.CharWidth() * min.Col + textOffsetX;
                 float w = Font.CharWidth() * (max.Col - min.Col);
                 float y = Font.LineHeight() * min.Row;
                 float h = Font.LineHeight();
-                canvas.DrawRect(x, y, w, h, selectionPaint);
+                canvas.DrawRect(x, y, w, h, fillPaint);
             } else {
                 var visualLine = GetVisualLine(min.Row);
 
@@ -3796,33 +3783,24 @@ public sealed class Editor : SkiaDrawable {
                 float x = Font.CharWidth() * min.Col + textOffsetX - extendLeft;
                 float w = visualLine.Length == 0 ? 0.0f : Font.MeasureWidth(visualLine[min.Col..]);
                 float y = Font.LineHeight() * min.Row;
-                canvas.DrawRect(x, y, w + extendLeft, Font.LineHeight(), selectionPaint);
+                canvas.DrawRect(x, y, w + extendLeft, Font.LineHeight(), fillPaint);
 
                 // Cull off-screen lines
                 for (int i = Math.Max(min.Row + 1, topVisualRow); i < Math.Min(max.Row, bottomVisualRow); i++) {
                     // Draw at least half a character for each line
                     w = Font.CharWidth() * Math.Max(0.5f, GetVisualLine(i).Length);
                     y = Font.LineHeight() * i;
-                    canvas.DrawRect(textOffsetX - LineNumberPadding, y, w + LineNumberPadding, Font.LineHeight(), selectionPaint);
+                    canvas.DrawRect(textOffsetX - LineNumberPadding, y, w + LineNumberPadding, Font.LineHeight(), fillPaint);
                 }
 
                 w = Font.MeasureWidth(GetVisualLine(max.Row)[..max.Col]);
                 y = Font.LineHeight() * max.Row;
-                canvas.DrawRect(textOffsetX - LineNumberPadding, y, w + LineNumberPadding, Font.LineHeight(), selectionPaint);
+                canvas.DrawRect(textOffsetX - LineNumberPadding, y, w + LineNumberPadding, Font.LineHeight(), fillPaint);
             }
         }
 
         // Draw calculate operation
         if (calculationState is not null) {
-            using var calcFgPaint = new SKPaint();
-            calcFgPaint.Color = Settings.Instance.Theme.CalculateFg.ToSkia();
-            calcFgPaint.Style = SKPaintStyle.Fill;
-            calcFgPaint.IsAntialias = true;
-            using var calcBgPaint = new SKPaint();
-            calcBgPaint.Color = Settings.Instance.Theme.CalculateBg.ToSkia();
-            calcBgPaint.Style = SKPaintStyle.Fill;
-            calcBgPaint.IsAntialias = true;
-
             string calculateLine = $"{calculationState.Operator.Char()}{calculationState.Operand}";
 
             float padding = Font.CharWidth() * 0.5f;
@@ -3831,68 +3809,54 @@ public sealed class Editor : SkiaDrawable {
             float w = Font.CharWidth() * calculateLine.Length + 2 * padding;
             float h = Font.LineHeight();
 
-            canvas.DrawRoundRect(x, y, w, h, 4.0f, 4.0f, calcBgPaint);
-            canvas.DrawText(calculateLine, x + padding, y+ Font.Offset(), Font, calcFgPaint);
+            fillPaint.ColorF = Settings.Instance.Theme.CalculateBg.ToSkia();
+            canvas.DrawRoundRect(x, y, w, h, 4.0f, 4.0f, fillPaint);
+            fillPaint.ColorF = Settings.Instance.Theme.CalculateFg.ToSkia();
+            canvas.DrawText(calculateLine, x + padding, y+ Font.Offset(), Font, fillPaint);
         }
 
         // Draw line numbers
         {
-            using var lineBgPaint = new SKPaint();
-            lineBgPaint.Color = Settings.Instance.Theme.Background.ToSkia();
-            lineBgPaint.Style = SKPaintStyle.Fill;
-            lineBgPaint.IsAntialias = true;
-
+            fillPaint.ColorF = Settings.Instance.Theme.Background.ToSkia();
             canvas.DrawRect(
                 x: scrollablePosition.X,
                 y: scrollablePosition.Y,
                 w: textOffsetX - LineNumberPadding,
                 h: scrollableSize.Height,
-                lineBgPaint);
+                fillPaint);
 
             // Highlight playing / savestate line
             if (CommunicationWrapper.Connected) {
                 if (CommunicationWrapper.CurrentLine != -1 && CommunicationWrapper.CurrentLine < actualToVisualRows.Length) {
-                    using var playingPaint = new SKPaint();
-                    playingPaint.Color = Settings.Instance.Theme.Background.ToSkia();
-                    playingPaint.Style = SKPaintStyle.Fill;
-                    playingPaint.IsAntialias = true;
-
+                    fillPaint.ColorF = Settings.Instance.Theme.PlayingLineBg.ToSkia();
                     canvas.DrawRect(
                         x: scrollablePosition.X,
                         y: actualToVisualRows[CommunicationWrapper.CurrentLine] * Font.LineHeight(),
                         w: textOffsetX - LineNumberPadding,
                         h: Font.LineHeight(),
-                        playingPaint);
+                        fillPaint);
                 }
                 if (CommunicationWrapper.SaveStateLine != -1 && CommunicationWrapper.SaveStateLine < actualToVisualRows.Length) {
-                    using var savestatePaint = new SKPaint();
-                    savestatePaint.Color = Settings.Instance.Theme.Background.ToSkia();
-                    savestatePaint.Style = SKPaintStyle.Fill;
-                    savestatePaint.IsAntialias = true;
-
+                    fillPaint.ColorF = Settings.Instance.Theme.SavestateBg.ToSkia();
                     if (CommunicationWrapper.SaveStateLine == CommunicationWrapper.CurrentLine) {
                         canvas.DrawRect(
                             x: scrollablePosition.X,
                             y: actualToVisualRows[CommunicationWrapper.SaveStateLine] * Font.LineHeight(),
                             w: 5.0f,
                             h: Font.LineHeight(),
-                            savestatePaint);
+                            fillPaint);
                     } else {
                         canvas.DrawRect(
                             x: scrollablePosition.X,
                             y: actualToVisualRows[CommunicationWrapper.SaveStateLine] * Font.LineHeight(),
                             w: textOffsetX - LineNumberPadding,
                             h: Font.LineHeight(),
-                            savestatePaint);
+                            fillPaint);
                     }
                 }
             }
 
             yPos = actualToVisualRows[topRow] * Font.LineHeight();
-
-            using var textPaint = new SKPaint();
-            textPaint.Style = SKPaintStyle.Fill;
-            textPaint.IsAntialias = true;
 
             for (int row = topRow; row <= bottomRow; row++) {
                 int oldRow = row;
@@ -3903,17 +3867,19 @@ public sealed class Editor : SkiaDrawable {
                 bool isSaveStateLine = CommunicationWrapper.SaveStateLine >= 0 && CommunicationWrapper.SaveStateLine < actualToVisualRows.Length &&
                                        actualToVisualRows[CommunicationWrapper.SaveStateLine] == actualToVisualRows[row];
 
-                textPaint.Color = isPlayingLine
-                    ? Settings.Instance.Theme.PlayingLineFg.ToSkia()
-                    : isSaveStateLine
-                        ? Settings.Instance.Theme.SavestateFg.ToSkia()
-                        : Settings.Instance.Theme.LineNumber.ToSkia();
+                if (isPlayingLine) {
+                    fillPaint.ColorF = Settings.Instance.Theme.PlayingLineFg.ToSkia();
+                } else if (isSaveStateLine) {
+                    fillPaint.ColorF = Settings.Instance.Theme.SavestateFg.ToSkia();
+                } else {
+                    fillPaint.ColorF = Settings.Instance.Theme.LineNumber.ToSkia();
+                }
 
                 if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Left) {
-                    canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding, yPos+ Font.Offset(), Font, textPaint);
+                    canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding, yPos+ Font.Offset(), Font, fillPaint);
                 } else if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Right) {
                     float ident = Font.CharWidth() * (Document.Lines.Count.Digits() - (row + 1).Digits());
-                    canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding + ident, yPos+ Font.Offset(), Font, textPaint);
+                    canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding + ident, yPos+ Font.Offset(), Font, fillPaint);
                 }
 
                 bool collapsed = false;
@@ -3928,7 +3894,7 @@ public sealed class Editor : SkiaDrawable {
                         dy: yPos + (Font.LineHeight() - Font.CharWidth()) / 2.0f);
                     canvas.Scale(Font.CharWidth());
 
-                    canvas.DrawPath(collapsed ? Assets.CollapseClosedPath : Assets.CollapseOpenPath, textPaint);
+                    canvas.DrawPath(collapsed ? Assets.CollapseClosedPath : Assets.CollapseOpenPath, fillPaint);
 
                     canvas.Restore();
                 }
@@ -3940,14 +3906,11 @@ public sealed class Editor : SkiaDrawable {
                 }
             }
 
-            using var separatorPaint = new SKPaint();
-            separatorPaint.Color = Settings.Instance.Theme.ServiceLine.ToSkia();
-            separatorPaint.Style = SKPaintStyle.Stroke;
-            separatorPaint.IsAntialias = true;
+            strokePaint.ColorF = Settings.Instance.Theme.ServiceLine.ToSkia();
             canvas.DrawLine(
                 x0: scrollablePosition.X + textOffsetX - LineNumberPadding, y0: 0.0f,
                 x1: scrollablePosition.X + textOffsetX - LineNumberPadding, y1: yPos + scrollableSize.Height,
-                separatorPaint);
+                strokePaint);
         }
 
         // Draw toast message box
@@ -3959,25 +3922,19 @@ public sealed class Editor : SkiaDrawable {
             float x = scrollablePosition.X + (scrollableSize.Width - width) / 2.0f;
             float y = scrollablePosition.Y + (scrollableSize.Height - height) / 2.0f;
 
-            using var popupBgPaint = new SKPaint();
-            popupBgPaint.Color = Settings.Instance.Theme.PopupMenuBg.ToSkia();
-            popupBgPaint.Style = SKPaintStyle.Fill;
-            popupBgPaint.IsAntialias = true;
-
             float padding = Settings.Instance.Theme.PopupMenuBorderPadding;
+
+            fillPaint.ColorF = Settings.Instance.Theme.PopupMenuBg.ToSkia();
             canvas.DrawRoundRect(
                 x: x - padding, y: y - padding,
                 w: width + padding * 2.0f, h: height + padding * 2.0f,
                 rx: Settings.Instance.Theme.PopupMenuBorderRounding, ry: Settings.Instance.Theme.PopupMenuBorderRounding,
-                popupBgPaint);
+                fillPaint);
 
-            using var popupFgPaint = new SKPaint();
-            popupFgPaint.Color = Settings.Instance.Theme.PopupMenuFg.ToSkia();
-            popupFgPaint.Style = SKPaintStyle.Fill;
-            popupFgPaint.IsAntialias = true;
+            fillPaint.ColorF = Settings.Instance.Theme.PopupMenuFg.ToSkia();
             foreach (var line in lines) {
                 // TODO: Use PopupFont
-                canvas.DrawText(line, x, y+ Font.Offset(), Font, popupFgPaint);
+                canvas.DrawText(line, x, y+ Font.Offset(), Font, fillPaint);
                 y += Font.LineHeight();
             }
         }

@@ -94,9 +94,8 @@ public static class Extensions
         return -1;
     }
 
-    public static SKColor ToSkia(this Color color) {
-        return new SKColor((byte)(color.R * byte.MaxValue), (byte)(color.G * byte.MaxValue), (byte)(color.B * byte.MaxValue), (byte)(color.A * byte.MaxValue));
-    }
+    public static SKColorF ToSkia(this Color color) => new(color.R, color.G, color.B, color.A);
+    public static Color ToEto(this SKColorF color) => new(color.Red, color.Green, color.Blue, color.Alpha);
 
     private static readonly MethodInfo? m_FixScrollable = Assembly.GetEntryAssembly()?.GetType("CelesteStudio.WPF.Program")?.GetMethod("FixScrollable", BindingFlags.Public | BindingFlags.Static);
     public static Scrollable FixBorder(this Scrollable scrollable) {

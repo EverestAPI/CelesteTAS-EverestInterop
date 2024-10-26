@@ -1,14 +1,33 @@
+using CelesteStudio.Util;
 using Eto.Drawing;
+using SkiaSharp;
+using System;
 using System.Collections.Generic;
 
 namespace CelesteStudio.Editing;
 
 public struct Style(Color foregroundColor, Color? backgroundColor = null, FontStyle fontStyle = FontStyle.None) {
-    // TODO: Convert to preferably SKPaint, otherwise SKColor
     public Color ForegroundColor = foregroundColor;
     public Color? BackgroundColor = backgroundColor;
 
     public FontStyle FontStyle = fontStyle;
+
+    public StylePaint CreatePaint() => new(CreateForegroundPaint(), CreateBackgroundPaint());
+
+    public SKPaint CreateForegroundPaint(SKPaintStyle style = SKPaintStyle.Fill) =>
+        new() { ColorF = ForegroundColor.ToSkia(), Style = style, IsAntialias = true };
+    public SKPaint? CreateBackgroundPaint(SKPaintStyle style = SKPaintStyle.Fill) =>
+        BackgroundColor == null ? null : new() { ColorF = BackgroundColor.Value.ToSkia(), Style = style, IsAntialias = true };
+}
+
+public readonly struct StylePaint(SKPaint foregroundColor, SKPaint? backgroundColor = null) : IDisposable {
+    public readonly SKPaint ForegroundColor = foregroundColor;
+    public readonly SKPaint? BackgroundColor = backgroundColor;
+
+    public void Dispose() {
+        ForegroundColor.Dispose();
+        BackgroundColor?.Dispose();
+    }
 }
 
 public struct Theme {
@@ -59,9 +78,23 @@ public struct Theme {
     public Style Frame;
     public Style Comment;
 
+    // Cache SKPaints
+    private StylePaint? _actionPaint, _anglePaint, _breakpointPaint, _savestateBreakpointPaint, _delimiter, _command, _frame, _comment;
+    private SKPaint? _commentBox;
+
+    public StylePaint ActionPaint => _actionPaint ??= Action.CreatePaint();
+    public StylePaint AnglePaint => _anglePaint ??= Angle.CreatePaint();
+    public StylePaint BreakpointPaint => _breakpointPaint ??= Breakpoint.CreatePaint();
+    public StylePaint SavestateBreakpointPaint => _savestateBreakpointPaint ??= SavestateBreakpoint.CreatePaint();
+    public StylePaint DelimiterPaint => _delimiter ??= Delimiter.CreatePaint();
+    public StylePaint CommandPaint => _command ??= Command.CreatePaint();
+    public StylePaint FramePaint => _frame ??= Frame.CreatePaint();
+    public StylePaint CommentPaint => _comment ??= Comment.CreatePaint();
+    public SKPaint CommentBoxPaint => _commentBox ??= Comment.CreateForegroundPaint(SKPaintStyle.Stroke);
+
     public bool DarkMode;
 
-    public Theme() {}
+    public Theme() { }
 
     public const string BuiltinLight = "Light";
     public const string BuiltinDark = "Dark";
