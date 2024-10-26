@@ -3732,7 +3732,7 @@ public sealed class Editor : SkiaDrawable {
             CommunicationWrapper.CurrentLine != -1 &&
             CommunicationWrapper.CurrentLine < actualToVisualRows.Length)
         {
-            var font = FontManager.EditorFontBold;
+            var font = FontManager.SKEditorFontBold;
 
             const float padding = 10.0f;
             float suffixWidth = font.MeasureWidth(CommunicationWrapper.CurrentLineSuffix);
@@ -3740,8 +3740,8 @@ public sealed class Editor : SkiaDrawable {
             fillPaint.ColorF = Settings.Instance.Theme.PlayingFrame.ToSkia();
             canvas.DrawText(CommunicationWrapper.CurrentLineSuffix,
                 x: scrollablePosition.X + scrollableSize.Width - suffixWidth - padding,
-                y: actualToVisualRows[CommunicationWrapper.CurrentLine] * font.LineHeight()+ Font.Offset(),
-                fillPaint);
+                y: actualToVisualRows[CommunicationWrapper.CurrentLine] * font.LineHeight() + font.Offset(),
+                font, fillPaint);
         }
 
         var caretPos = GetVisualPosition(Document.Caret);
