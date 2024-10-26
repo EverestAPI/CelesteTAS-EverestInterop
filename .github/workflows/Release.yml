@@ -52,7 +52,7 @@ jobs:
 
       - name: Build
         run: |
-          dotnet build CelesteTAS-EverestInterop -c Release -p:DefineConstants=INSTALL_STUDIO
+          dotnet build CelesteTAS-EverestInterop -c Release -p:DefineConstants=INSTALL_STUDIO -p:UseSymlinks=false
 
       - name: Create release
         uses: marvinpinto/action-automatic-releases@latest

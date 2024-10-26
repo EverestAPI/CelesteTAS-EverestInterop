@@ -46,14 +46,8 @@
         <PackageReference Include="JetBrains.Profiler.Api" Version="1.1.8" Condition="'$(Configuration)' == 'Debug'" />
     </ItemGroup>
 
-    <ItemGroup>
-        <CelesteAssets Include="everest.yaml" />
-        <CelesteAssets Include="Dialog\**\*" />
-        <CelesteAssets Include="Graphics\**\*" />
-    </ItemGroup>
-
-    <Target Name="CopyFiles" AfterTargets="Build">
-        <!-- Assemblies -->
+    <!-- Assemblies -->
+    <Target Name="CopyAssemblies" AfterTargets="Build">
         <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)$(AssemblyName).pdb" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)StudioCommunication.dll" DestinationFolder="..\bin" />
@@ -62,11 +56,30 @@
         <Copy SourceFiles="$(OutputPath)ICSharpCode.SharpZipLib.dll" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)MemoryPack.Core.dll" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)JetBrains.Profiler.Api.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
+    </Target>
 
-        <!-- Assets -->
-        <Message Text="@(CelesteAssets)" />
+    <!-- Assets (use symlinks in debug builds on POSIX, since MSBuild is useless) -->
+    <Target Name="LinkAssets" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug' and '$(OS)' == 'Unix' and $(UseSymlinks) != false">
+        <Copy SourceFiles="" DestinationFiles="..\bin\env.lua" UseSymboliclinksIfPossible="true" />
+
+        <Exec Command="rm -rf ../bin/env.lua &amp;&amp; ln -s CelesteTAS-EverestInterop/Source/EverestInterop/Lua/env.lua ../bin/env.lua"/>
+
+        <Exec Command="rm -rf ../everest.yaml &amp;&amp; ln -s CelesteTAS-EverestInterop/everest.yaml ../everest.yaml"/>
+        <Exec Command="rm -rf ../Dialog &amp;&amp; ln -s CelesteTAS-EverestInterop/Dialog ../Dialog"/>
+        <Exec Command="rm -rf ../Graphics &amp;&amp; ln -s CelesteTAS-EverestInterop/Graphics ../Graphics"/>
+    </Target>
+    <Target Name="CopyAssets" AfterTargets="Build" Condition="'$(Configuration)' != 'Debug' or '$(OS)' != 'Unix' or $(UseSymlinks) == false">
+        <ItemGroup>
+            <CelesteAssets Include="everest.yaml" />
+            <CelesteAssets Include="Dialog\**\*" />
+            <CelesteAssets Include="Graphics\**\*" />
+        </ItemGroup>
+
+        <!-- Clean-up potential symlinks -->
+        <RemoveDir Directories="..\Dialog;..\Graphics"/>
+
         <Copy SourceFiles="Source\EverestInterop\Lua\env.lua" DestinationFiles="..\bin\env.lua" />
-        <Copy SourceFiles="@(CelesteAssets)" DestinationFiles="..\%(Identity)" UseSymboliclinksIfPossible="'$(Configuration)' == 'Debug'" />
+        <Copy SourceFiles="@(CelesteAssets)" DestinationFiles="..\%(Identity)"/>
     </Target>
 
     <Target Name="PackageMod" AfterTargets="CopyFiles" Condition="'$(Configuration)' == 'Release'">
