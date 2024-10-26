@@ -217,6 +217,10 @@ public sealed class Editor : Drawable {
     public PopupMenu? ActivePopupMenu {
         get => activePopupMenu;
         set {
+            if (activePopupMenu == value) {
+                return;
+            }
+
             if (activePopupMenu != null && value == null) {
                 activePopupMenu.Visible = false;
             }
@@ -329,10 +333,19 @@ public sealed class Editor : Drawable {
             scrollablePosition = scrollable.ScrollPosition;
             Invalidate();
         };
-        // Update wrapped lines
         scrollable.SizeChanged += (_, _) => {
-            scrollableSize = scrollable.ClientSize;
-            Recalc();
+            // Ignore vertical and small horizontal size changes
+            scrollableSize.Height = scrollable.ClientSize.Height;
+            if (Math.Abs(scrollableSize.Width - scrollable.ClientSize.Width) <= 0.1f) {
+                return;
+            }
+
+            scrollableSize.Width = scrollable.ClientSize.Width;
+
+            // Update wrapped lines
+            if (Settings.Instance.WordWrapComments) {
+                Recalc();
+            }
         };
 
         CommunicationWrapper.StateUpdated += (prevState, state) => {
@@ -442,6 +455,8 @@ public sealed class Editor : Drawable {
                 MenuEntry.Editor_InsertRoomName.ToAction(OnInsertRoomName),
                 MenuEntry.Editor_InsertCurrentTime.ToAction(OnInsertTime),
                 MenuEntry.Editor_RemoveAllTimestamps.ToAction(() => RemoveLinesMatching(TimestampRegex)),
+                MenuEntry.Editor_InsertCurrentPosition.ToAction(OnInsertPosition),
+                MenuEntry.Editor_InsertCurrentSpeed.ToAction(OnInsertSpeed),
                 MenuEntry.Editor_InsertModInfo.ToAction(OnInsertModInfo),
                 MenuEntry.Editor_InsertConsoleLoadCommand.ToAction(OnInsertConsoleLoadCommand),
                 MenuEntry.Editor_InsertSimpleConsoleLoadCommand.ToAction(OnInsertSimpleConsoleLoadCommand),
@@ -1633,10 +1648,10 @@ public sealed class Editor : Drawable {
         }
 
         return () => {
-            int row = Document.Caret.Row;
+            var oldCaret = Document.Caret;
 
-            using var __ = Document.Update(raiseEvents: false);
-            Document.ReplaceLine(row, quickEdit.Value.ActualText);
+            using var __ = Document.Update();
+            Document.ReplaceLine(oldCaret.Row, quickEdit.Value.ActualText);
 
             ClearQuickEdits();
 
@@ -1647,19 +1662,15 @@ public sealed class Editor : Drawable {
 
                     // Quick-edit selections are relative, not absolute
                     Document.AddAnchor(new Anchor {
-                        Row = selection.Min.Row + row,
+                        Row = selection.Min.Row + oldCaret.Row,
                         MinCol = selection.Min.Col, MaxCol = selection.Max.Col,
                         UserData = new QuickEditAnchorData { Index = i, DefaultText = defaultText },
                         OnRemoved = ClearQuickEdits,
                     });
                 }
                 SelectQuickEditIndex(0);
-            } else {
-                // Just jump to the end of the insert
-                int newLines = quickEdit.Value.ActualText.Count(c => c == Document.NewLine);
-
-                Document.Caret.Row = Math.Min(Document.Lines.Count - 1, Document.Caret.Row + newLines);
-                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+            } else if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.PreviousPosition) {
+                Document.Caret = ClampCaret(oldCaret);
             }
 
             if (hasArguments) {
@@ -2048,14 +2059,9 @@ public sealed class Editor : Drawable {
             }
             SelectQuickEditIndex(0);
         } else if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.AfterInsert) {
-            if (Settings.Instance.InsertDirection == InsertDirection.Above) {
-                Document.Caret.Row = row;
-                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
-            } else if (Settings.Instance.InsertDirection == InsertDirection.Below) {
-                int newLines = quickEdit.ActualText.Count(c => c == Document.NewLine);
-                Document.Caret.Row = row + newLines;
-                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
-            }
+            int newLines = quickEdit.ActualText.Count(c => c == Document.NewLine);
+            Document.Caret.Row = row + newLines;
+            Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
         } else {
             Document.Caret = oldCaret;
         }
@@ -2830,32 +2836,26 @@ public sealed class Editor : Drawable {
         for (int row = minRow; row <= maxRow; row++) {
             var line = Document.Lines[row];
             if (allCommented && CommentedBreakpointRegex.IsMatch(line)) {
-                int hashIdx = line.IndexOf("# ", StringComparison.Ordinal);
-                Document.ReplaceLine(row, line.Remove(hashIdx, "# ".Length));
+                int hashIdx = line.IndexOf('#');
+                Document.ReplaceLine(row, line.Remove(hashIdx, 1));
 
                 // Shift everything over
-                if (row == minRow) {
-                    Document.Selection.Start.Col -= "# ".Length;
-                }
-                if (row == maxRow) {
-                    Document.Selection.End.Col -= "# ".Length;
-                }
-                if (row == Document.Caret.Row) {
-                    Document.Caret.Col -= "# ".Length;
-                }
+                if (row == minRow)
+                    Document.Selection.Start.Col--;
+                if (row == maxRow)
+                    Document.Selection.End.Col--;
+                if (row == Document.Caret.Row)
+                    Document.Caret.Col--;
             } else if (!allCommented && UncommentedBreakpointRegex.IsMatch(line)) {
-                Document.ReplaceLine(row, $"# {line}");
+                Document.ReplaceLine(row, $"#{line}");
 
                 // Shift everything over
-                if (row == minRow) {
-                    Document.Selection.Start.Col += "# ".Length;
-                }
-                if (row == maxRow) {
-                    Document.Selection.End.Col += "# ".Length;
-                }
-                if (row == Document.Caret.Row) {
-                    Document.Caret.Col += "# ".Length;
-                }
+                if (row == minRow)
+                    Document.Selection.Start.Col++;
+                if (row == maxRow)
+                    Document.Selection.End.Col++;
+                if (row == Document.Caret.Row)
+                    Document.Caret.Col++;
             }
         }
 
@@ -2893,32 +2893,26 @@ public sealed class Editor : Drawable {
                     continue;
                 }
 
-                int hashIdx = line.IndexOf("# ", StringComparison.Ordinal);
-                Document.ReplaceLine(row, line.Remove(hashIdx, "# ".Length));
+                int hashIdx = line.IndexOf('#');
+                Document.ReplaceLine(row, line.Remove(hashIdx, 1));
 
                 // Shift everything over
-                if (row == minRow) {
-                    Document.Selection.Start.Col -= "# ".Length;
-                }
-                if (row == maxRow) {
-                    Document.Selection.End.Col -= "# ".Length;
-                }
-                if (row == Document.Caret.Row) {
-                    Document.Caret.Col -= "# ".Length;
-                }
+                if (row == minRow)
+                    Document.Selection.Start.Col--;
+                if (row == maxRow)
+                    Document.Selection.End.Col--;
+                if (row == Document.Caret.Row)
+                    Document.Caret.Col--;
             } else {
-                Document.ReplaceLine(row, $"# {line}");
+                Document.ReplaceLine(row, $"#{line}");
 
                 // Shift everything over
-                if (row == minRow) {
-                    Document.Selection.Start.Col += "# ".Length;
-                }
-                if (row == maxRow) {
-                    Document.Selection.End.Col += "# ".Length;
-                }
-                if (row == Document.Caret.Row) {
-                    Document.Caret.Col += "# ".Length;
-                }
+                if (row == minRow)
+                    Document.Selection.Start.Col++;
+                if (row == maxRow)
+                    Document.Selection.End.Col++;
+                if (row == Document.Caret.Row)
+                    Document.Caret.Col++;
             }
         }
 
@@ -2954,32 +2948,26 @@ public sealed class Editor : Drawable {
             var line = Document.Lines[row];
 
             if (allCommented) {
-                int hashIdx = line.IndexOf("# ", StringComparison.Ordinal);
-                Document.ReplaceLine(row, line.Remove(hashIdx, "# ".Length));
+                int hashIdx = line.IndexOf('#');
+                Document.ReplaceLine(row, line.Remove(hashIdx, 1));
 
                 // Shift everything over
-                if (row == minRow) {
-                    Document.Selection.Start.Col -= "# ".Length;
-                }
-                if (row == maxRow) {
-                    Document.Selection.End.Col -= "# ".Length;
-                }
-                if (row == Document.Caret.Row) {
-                    Document.Caret.Col -= "# ".Length;
-                }
+                if (row == minRow)
+                    Document.Selection.Start.Col--;
+                if (row == maxRow)
+                    Document.Selection.End.Col--;
+                if (row == Document.Caret.Row)
+                    Document.Caret.Col--;
             } else {
-                Document.ReplaceLine(row, $"# {line}");
+                Document.ReplaceLine(row, $"#{line}");
 
                 // Shift everything over
-                if (row == minRow) {
-                    Document.Selection.Start.Col += "# ".Length;
-                }
-                if (row == maxRow) {
-                    Document.Selection.End.Col += "# ".Length;
-                }
-                if (row == Document.Caret.Row) {
-                    Document.Caret.Col += "# ".Length;
-                }
+                if (row == minRow)
+                    Document.Selection.Start.Col++;
+                if (row == maxRow)
+                    Document.Selection.End.Col++;
+                if (row == Document.Caret.Row)
+                    Document.Caret.Col++;
             }
         }
 
@@ -2989,9 +2977,33 @@ public sealed class Editor : Drawable {
         Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length);
     }
 
-    private void OnInsertRoomName() => InsertLine($"#lvl_{CommunicationWrapper.LevelName}");
+    private void OnInsertRoomName() {
+        if (CommunicationWrapper.Connected) {
+            InsertLine($"#lvl_{CommunicationWrapper.LevelName}");
+        }
+    }
 
-    private void OnInsertTime() => InsertLine($"#{CommunicationWrapper.ChapterTime}");
+    private void OnInsertTime() {
+        if (CommunicationWrapper.Connected) {
+            InsertLine($"#{CommunicationWrapper.ChapterTime}");
+        }
+    }
+
+    private void OnInsertPosition() {
+        if (CommunicationWrapper.Connected) {
+            string xPos = (CommunicationWrapper.PlayerPosition.X + CommunicationWrapper.PlayerPositionRemainder.X).ToFormattedString(CommunicationWrapper.GameSettings.PositionDecimals);
+            string yPos = (CommunicationWrapper.PlayerPosition.Y + CommunicationWrapper.PlayerPositionRemainder.Y).ToFormattedString(CommunicationWrapper.GameSettings.PositionDecimals);
+            InsertLine($"# Pos: {xPos}, {yPos}");
+        }
+    }
+
+    private void OnInsertSpeed() {
+        if (CommunicationWrapper.Connected) {
+            string xSpeed = CommunicationWrapper.PlayerSpeed.X.ToFormattedString(CommunicationWrapper.GameSettings.SpeedDecimals);
+            string ySpeed = CommunicationWrapper.PlayerSpeed.Y.ToFormattedString(CommunicationWrapper.GameSettings.SpeedDecimals);
+            InsertLine($"# Speed: {xSpeed}, {ySpeed}");
+        }
+    }
 
     private void OnInsertModInfo() {
         if (CommunicationWrapper.GetModInfo() is var modInfo && !string.IsNullOrWhiteSpace(modInfo)) {

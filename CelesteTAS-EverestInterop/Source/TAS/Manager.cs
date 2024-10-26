@@ -225,28 +225,33 @@ public static class Manager {
             return;
         }
 
-        Vector2 remainder = Engine.Scene?.Tracker.GetEntity<Player>()?.movementCounter ?? Vector2.Zero;
-        if (Engine.Scene is Level level && level.GetPlayer() is { } player) {
-            remainder = player.movementCounter;
-        } else if (Engine.Scene is Emulator emulator && emulator.game?.objects.FirstOrDefault(o => o is Classic.player) is Classic.player classicPlayer) {
-            remainder = classicPlayer.rem;
-        }
-
-        InputFrame previous = Controller.Previous;
-        StudioState state = new() {
+        var previous = Controller.Previous;
+        var state = new StudioState {
             CurrentLine = previous?.Line ?? -1,
             CurrentLineSuffix = $"{Controller.CurrentFrameInInput + (previous?.FrameOffset ?? 0)}{previous?.RepeatString ?? ""}",
             CurrentFrameInTas = Controller.CurrentFrameInTas,
             CurrentFrameInInput = Controller.CurrentFrameInInput,
             TotalFrames = Controller.Inputs.Count,
             SaveStateLine = Savestates.StudioHighlightLine,
+
             tasStates = States,
             GameInfo = GameInfo.StudioInfo,
             LevelName = GameInfo.LevelName,
             ChapterTime = GameInfo.ChapterTime,
+
             ShowSubpixelIndicator = TasSettings.InfoSubpixelIndicator && Engine.Scene is Level or Emulator,
-            SubpixelRemainder = (remainder.X, remainder.Y),
         };
+
+        if (Engine.Scene is Level level && level.GetPlayer() is { } player) {
+            state.PlayerPosition = (player.Position.X, player.Position.Y);
+            state.PlayerPositionRemainder = (player.PositionRemainder.X, player.PositionRemainder.Y);
+            state.PlayerSpeed = (player.Speed.X, player.Speed.Y);
+        } else if (Engine.Scene is Emulator emulator && emulator.game?.objects.FirstOrDefault(o => o is Classic.player) is Classic.player classicPlayer) {
+            state.PlayerPosition = (classicPlayer.x, classicPlayer.y);
+            state.PlayerPositionRemainder = (classicPlayer.rem.X, classicPlayer.rem.Y);
+            state.PlayerSpeed = (classicPlayer.spd.X, classicPlayer.spd.Y);
+        }
+
         CommunicationWrapper.SendState(state);
     }
 

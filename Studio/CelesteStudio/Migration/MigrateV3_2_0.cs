@@ -11,7 +11,7 @@ public static class MigrateV3_2_0 {
 
         if (document.TryGetValue("ShowGameInfo", out var gameInfoValue) && gameInfoValue is TomlBoolean gameInfo) {
             if (gameInfo.Value) {
-                if (document.GetBoolean("GameInfoPopoutOpen")) {
+                if (document.TryGetValue("GameInfoPopoutOpen", out var popoutOpenValue) && popoutOpenValue is TomlBoolean popoutOpen && popoutOpen.Value) {
                     document.Put("GameInfo", "Popout");
                 } else {
                     document.Put("GameInfo", "Panel");

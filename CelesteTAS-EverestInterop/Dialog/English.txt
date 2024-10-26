@@ -102,6 +102,7 @@ TAS_CENTER_CAMERA_HORIZONTALLY_ONLY= Center Camera Horizontally Only
 TAS_RESTORE_SETTINGS=                Restore All Settings when TAS Stop
 TAS_LAUNCH_STUDIO_AT_BOOT=           Launch Studio at Boot
 TAS_ATTEMPT_TO_CONNECT_TO_STUDIO=    Attempt To Connect To Studio
+TAS_SHOW_STUDIO_UPDATE_BANNER=       Show Studio Update Banner
 TAS_HIDE_FREEZE_FRAMES=              Hide Freeze Frames during TAS
 TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_1=When a freeze frame is encountered, run it and continue to the next frame
 TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_2=before rendering. Applies only while a TAS is active.

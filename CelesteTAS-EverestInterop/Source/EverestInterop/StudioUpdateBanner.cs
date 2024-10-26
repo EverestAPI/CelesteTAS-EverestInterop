@@ -1,7 +1,6 @@
 using Celeste;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 using Monocle;
 using MonoMod.Cil;
 using TAS.Module;
@@ -9,7 +8,6 @@ using TAS.Utils;
 using Commands = Monocle.Commands;
 using StudioCommunication.Util;
 using System;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace TAS.EverestInterop;
@@ -22,11 +20,6 @@ internal static class StudioUpdateBanner {
 
     [Load]
     private static void Load() {
-        // Downloading Studio... 45.5MB / 63.5MB [74.13%]
-        // Installing Studio... || Updating Studio...
-        // Studio successfully installed || Studio successfully updated
-        // Studio install failed || Studio update failed
-
         typeof(Engine)
             .GetMethodInfo(nameof(Engine.Update))
             .IlHook((cur, _) => {
@@ -44,7 +37,7 @@ internal static class StudioUpdateBanner {
                 }
             });
 
-        var t = Task.Run(async () => {
+        Task.Run(async () => {
             // Wait for font / dialog to be loaded
             while ((Engine.Scene is GameLoader loader && !loader.dialogLoaded) || !GFX.Loaded || Dialog.Languages == null || !Dialog.Languages.ContainsKey(Settings.EnglishLanguage) || Font == null) {
                 await Task.Delay(10).ConfigureAwait(false);
@@ -70,8 +63,8 @@ internal static class StudioUpdateBanner {
     private static PixelFont Font => Dialog.Languages[Settings.EnglishLanguage].Font;
     private static float FontFaceSize => Dialog.Languages[Settings.EnglishLanguage].FontFaceSize;
 
-    private const int BannerY = 60; // Same as speedrun timer
-    private const int TextY = BannerY + 44;
+    private const int BannerY = 150; // Slightly under the speedrun timer
+    private const int TextY = BannerY + 23;
 
     private const float PaddingVerySmall = 16.0f;
     private const float PaddingSmall = 32.0f;
@@ -88,7 +81,8 @@ internal static class StudioUpdateBanner {
     private static int dotCount;
 
     private static void Update() {
-        if (!loaded || !Dialog.Languages.ContainsKey(Settings.EnglishLanguage) || Font == null) {
+        if (!loaded || !TasSettings.ShowStudioUpdateBanner || !Dialog.Languages.ContainsKey(Settings.EnglishLanguage) || Font == null) {
+            bannerWidth = Calc.Approach(bannerWidth, 0.0f, BannerSpeed * Engine.RawDeltaTime);
             return;
         }
 
@@ -121,7 +115,7 @@ internal static class StudioUpdateBanner {
     }
 
     private static void Render() {
-        if (!loaded || !Dialog.Languages.ContainsKey(Settings.EnglishLanguage) || Font == null) {
+        if (!loaded || bannerWidth <= 0.001f || !Dialog.Languages.ContainsKey(Settings.EnglishLanguage) || Font == null) {
             return;
         }
 
@@ -147,64 +141,66 @@ internal static class StudioUpdateBanner {
             case State.Download:
                 left += PaddingSmall;
 
-                DrawText(ref left, $"Downloading Studio v{StudioHelper.CurrentStudioVersion}{new string('.', dotCount)}", $"Downloading Studio v{StudioHelper.CurrentStudioVersion}...", 1.0f, Color.White, draw);
+                DrawText(ref left, $"Downloading Celeste TAS Studio v{StudioHelper.CurrentStudioVersion}{new string('.', dotCount)}", $"Downloading Celeste TAS Studio v{StudioHelper.CurrentStudioVersion}...", 1.0f, Color.White, draw);
+
+                const float progressSize = 0.8f;
 
                 left += PaddingLarge;
 
                 (string downloadedAmount, string downloadedSuffix) = DownloadedBytes.HumanReadableBytes(decimals: 2);
-                DrawDecimal(ref left, downloadedAmount, 1.0f, draw);
-                left += PaddingVerySmall;
-                DrawText(ref left, downloadedSuffix, downloadedSuffix, 0.8f, Calc.HexToColor("7a6f6d"), draw);
+                DrawDecimal(ref left, downloadedAmount, progressSize, draw);
+                left += PaddingVerySmall * progressSize;
+                DrawText(ref left, downloadedSuffix, downloadedSuffix, 0.75f * progressSize, Calc.HexToColor("7a6f6d"), draw);
 
-                left += PaddingSmall;
-                DrawText(ref left, "/", "/", 1.0f, Calc.HexToColor("7a6f6d"), draw);
-                left += PaddingSmall;
+                left += PaddingSmall * progressSize;
+                DrawText(ref left, "/", "/", progressSize, Calc.HexToColor("7a6f6d"), draw);
+                left += PaddingSmall * progressSize;
 
                 (string totalAmount, string totalSuffix) = TotalBytes.HumanReadableBytes(decimals: 2);
-                DrawDecimal(ref left, totalAmount, 1.0f, draw);
-                left += PaddingVerySmall;
-                DrawText(ref left, totalSuffix, totalSuffix, 0.8f, Calc.HexToColor("7a6f6d"), draw);
+                DrawDecimal(ref left, totalAmount, progressSize, draw);
+                left += PaddingVerySmall * progressSize;
+                DrawText(ref left, totalSuffix, totalSuffix, 0.75f * progressSize, Calc.HexToColor("7a6f6d"), draw);
 
-                left += PaddingLarge;
+                left += PaddingLarge * progressSize;
 
                 (string speedAmount, string speedSuffix) = BytesPerSecond.HumanReadableBytes(decimals: 2);
-                DrawText(ref left, "(", "(", 0.8f, Calc.HexToColor("7a6f6d"), draw);
-                DrawDecimal(ref left, speedAmount, 1.0f, draw);
-                left += PaddingVerySmall;
-                DrawText(ref left, speedSuffix + "/s)", speedSuffix + "/s)", 0.8f, Calc.HexToColor("7a6f6d"), draw);
+                DrawText(ref left, "(", "(", 0.75f * progressSize, Calc.HexToColor("7a6f6d"), draw);
+                DrawDecimal(ref left, speedAmount, progressSize, draw);
+                left += PaddingVerySmall * progressSize;
+                DrawText(ref left, speedSuffix + "/s)", speedSuffix + "/s)", 0.75f * progressSize, Calc.HexToColor("7a6f6d"), draw);
 
-                left += PaddingLarge;
+                left += PaddingLarge * progressSize;
 
                 string progress = ((float)DownloadedBytes / (float)TotalBytes * 100.0f).ToString("0.00");
-                DrawText(ref left, "[", "[", 0.8f, Calc.HexToColor("7a6f6d"), draw);
-                DrawDecimal(ref left, progress, 1.0f, draw);
-                left += PaddingVerySmall;
-                DrawText(ref left, "%]", "%]", 0.8f, Calc.HexToColor("7a6f6d"), draw);
+                DrawText(ref left, "[", "[", 0.75f * progressSize, Calc.HexToColor("7a6f6d"), draw);
+                DrawDecimal(ref left, progress, progressSize, draw);
+                left += PaddingVerySmall * progressSize;
+                DrawText(ref left, "%]", "%]", 0.75f * progressSize, Calc.HexToColor("7a6f6d"), draw);
 
                 left += PaddingSmall;
                 break;
 
             case State.Install:
                 left += PaddingSmall;
-                DrawText(ref left, $"Installing Studio v{StudioHelper.CurrentStudioVersion}{new string('.', dotCount)}", $"Installing Studio v{StudioHelper.CurrentStudioVersion}...", 1.0f, Color.White, draw);
+                DrawText(ref left, $"Installing Celeste TAS Studio v{StudioHelper.CurrentStudioVersion}{new string('.', dotCount)}", $"Installing Celeste TAS Studio v{StudioHelper.CurrentStudioVersion}...", 1.0f, Color.White, draw);
                 left += PaddingSmall;
                 break;
 
             case State.Success:
                 left += PaddingSmall;
-                DrawText(ref left, $"Studio v{StudioHelper.CurrentStudioVersion} successfully installed", $"Studio v{StudioHelper.CurrentStudioVersion} successfully installed", 1.0f, Color.LightGreen, draw);
+                DrawText(ref left, $"Celeste TAS Studio v{StudioHelper.CurrentStudioVersion} successfully installed", $"Celeste TAS Studio v{StudioHelper.CurrentStudioVersion} successfully installed", 1.0f, Color.LightGreen, draw);
                 left += PaddingSmall;
                 break;
 
             case State.Failure:
                 left += PaddingSmall;
-                DrawText(ref left, $"Studio v{StudioHelper.CurrentStudioVersion} install failed!", $"Studio v{StudioHelper.CurrentStudioVersion} install failed!", 1.0f, Color.IndianRed, draw);
+                DrawText(ref left, $"Celeste TAS Studio v{StudioHelper.CurrentStudioVersion} install failed!", $"Celeste TAS Studio v{StudioHelper.CurrentStudioVersion} install failed!", 1.0f, Color.IndianRed, draw);
                 left += PaddingSmall;
                 break;
 
             case State.Launch:
                 left += PaddingSmall;
-                DrawText(ref left, $"Launching Studio{new string('.', dotCount)}", "Launching Studio...", 1.0f, Color.LightSkyBlue, draw);
+                DrawText(ref left, $"Launching Celeste TAS Studio{new string('.', dotCount)}", "Launching Celeste TAS Studio...", 1.0f, Color.LightSkyBlue, draw);
                 left += PaddingSmall;
                 break;
 
@@ -215,14 +211,15 @@ internal static class StudioUpdateBanner {
 
     private static void DrawText(ref float left, string text, string measureText, float scale, Color color, bool draw = true) {
         if (draw) {
-            float currWidth = ActiveFont.Measure(text).X * scale;
-            ActiveFont.DrawOutline(text,
-                position: new Vector2(left + currWidth, TextY - 5.0f * scale),
-                justify: Vector2.One,
+            ActiveFont.Font.DrawCommonBaseline(text, ActiveFont.BaseSize,
+                position: new Vector2(left, TextY/* + 15.0f * scale*/),
+                justify: Vector2.Zero,
                 scale: new Vector2(scale),
                 color,
                 stroke: 2.0f * scale,
-                strokeColor: Color.Black);
+                strokeColor: Color.Black,
+                edgeDepth: 0.0f,
+                edgeColor: Color.Transparent);
         }
 
         float fullWidth = ActiveFont.Measure(measureText).X * scale;
@@ -231,27 +228,28 @@ internal static class StudioUpdateBanner {
 
     private static void DrawDecimal(ref float left, string text, float scale, bool draw = true) {
         float s = scale;
-        float y = TextY;
         var baseColor = Color.White;
         var smallColor = Color.LightGray;
 
         foreach (char c in text) {
             if (c == '.') {
                 s = scale * 0.7f;
-                y -= 5.0f * scale;
+                // y -= 5.0f * scale;
             }
 
             var color = (c == ':' || c == '.' || s < scale) ? smallColor : baseColor;
             float advance = (c is ':' or '.' ? SpeedrunTimerDisplay.spacerWidth : SpeedrunTimerDisplay.numberWidth) * s;
 
             if (draw) {
-                Font.DrawOutline(FontFaceSize, c.ToString(),
-                    position: new Vector2(left + advance / 2.0f, y),
-                    justify: new Vector2(0.5f, 1f),
+                Font.DrawCommonBaseline(c.ToString(), FontFaceSize,
+                    position: new Vector2(left, TextY),
+                    justify: new Vector2(0.0f, 0.0f),
                     scale: new Vector2(s),
                     color,
                     stroke: 2.0f,
-                    strokeColor: Color.Black);
+                    strokeColor: Color.Black,
+                    edgeDepth: 0.0f,
+                    edgeColor: Color.Transparent);
             }
 
             left += advance;

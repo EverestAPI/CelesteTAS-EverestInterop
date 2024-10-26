@@ -108,6 +108,10 @@ public sealed class Studio : Form {
             Console.WriteLine($"Closing process {process.ProcessName} ({process.Id})...");
             process.Terminate();
             process.WaitForExit(TimeSpan.FromSeconds(10.0f));
+
+            // Make sure it's _really_ closed
+            process.Kill();
+            process.WaitForExit(TimeSpan.FromSeconds(5.0f));
         }
 
         // Ensure config directory exists
@@ -423,7 +427,8 @@ public sealed class Studio : Form {
             Directory.CreateDirectory(dir);
         }
 
-        return dir;
+        // URIs don't support relative paths on their own
+        return Path.GetFullPath(dir);
     }
 
     private void OnNewFile() {
