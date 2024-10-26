@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Eto.Drawing;
+using SkiaSharp;
+using System;
 
 namespace CelesteStudio;
 
@@ -15,6 +17,7 @@ public static class FontManager {
 #endif
 
     private static Font? editorFontRegular, editorFontBold, editorFontItalic, editorFontBoldItalic, statusFont, popupFont;
+    private static SKFont? skEditorFontRegular;
 
     public static Font EditorFontRegular    => editorFontRegular    ??= CreateEditor(FontStyle.None);
     public static Font EditorFontBold       => editorFontBold       ??= CreateEditor(FontStyle.Bold);
@@ -22,6 +25,8 @@ public static class FontManager {
     public static Font EditorFontBoldItalic => editorFontBoldItalic ??= CreateEditor(FontStyle.Bold | FontStyle.Italic);
     public static Font StatusFont           => statusFont           ??= CreateStatus();
     public static Font PopupFont            => popupFont            ??= CreatePopup();
+
+    public static SKFont SKEditorFontRegular => skEditorFontRegular ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom);
 
     private static FontFamily? builtinFontFamily;
     public static Font CreateFont(string fontFamily, float size, FontStyle style = FontStyle.None) {
@@ -39,6 +44,20 @@ public static class FontManager {
             return new Font(builtinFontFamily, size, style);
         } else {
             return new Font(fontFamily, size, style);
+        }
+    }
+
+    public static SKFont CreateSKFont(string fontFamily, float size) {
+        if (Platform.Instance.IsMac && fontFamily == FontFamilyBuiltin) {
+            // The built-in font is broken on macOS for some reason, so fallback to a system font
+            fontFamily = "Monaco";
+        }
+
+        if (fontFamily == FontFamilyBuiltin) {
+            using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("JetBrainsMono/JetBrainsMono-Regular");
+            return new SKFont(SKTypeface.FromStream(stream), size);
+        } else {
+            return new SKFont(SKTypeface.FromFamilyName(fontFamily), size);
         }
     }
 
@@ -79,6 +98,10 @@ public static class FontManager {
         charWidthCache.Clear();
 
         editorFontRegular = editorFontBold = editorFontItalic = editorFontBoldItalic = statusFont = popupFont = null;
+
+        skEditorFontRegular?.Dispose();
+
+        skEditorFontRegular = null;
     }
 
     private static Font CreateEditor(FontStyle style) => CreateFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, style);

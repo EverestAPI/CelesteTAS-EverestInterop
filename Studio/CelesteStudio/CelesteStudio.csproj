@@ -22,12 +22,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Eto.Forms" Version="2.8.3" />
-        <PackageReference Include="Samboy063.Tomlet" Version="5.3.1" />
-        <PackageReference Include="Markdig" Version="0.37.0" />
+        <PackageReference Include="Eto.Forms" Version="2.8.3"/>
+        <PackageReference Include="Eto.SkiaDraw" Version="0.2.0"/>
 
-        <ProjectReference Include="..\..\StudioCommunication\StudioCommunication.csproj" />
-        <ProjectReference Include="..\..\external\Featherline\Featherline.csproj" />
+        <PackageReference Include="Samboy063.Tomlet" Version="5.3.1"/>
+        <PackageReference Include="Markdig" Version="0.37.0"/>
+
+        <ProjectReference Include="..\..\StudioCommunication\StudioCommunication.csproj"/>
+        <ProjectReference Include="..\..\external\Featherline\Featherline.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

@@ -13,6 +13,8 @@ using CelesteStudio.Editing.ContextActions;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
+using Eto.SkiaDraw;
+using SkiaSharp;
 using StudioCommunication;
 using StudioCommunication.Util;
 using WrapLine = (string Line, int Index);
@@ -20,7 +22,7 @@ using WrapEntry = (int StartOffset, (string Line, int Index)[] Lines);
 
 namespace CelesteStudio.Editing;
 
-public sealed class Editor : Drawable {
+public sealed class Editor : SkiaDrawable {
     /// Reports insertions and deletions of the underlying document
     public event Action<Document, Dictionary<int, string>, Dictionary<int, string>> TextChanged = (_, _, _) => {};
 
@@ -3618,10 +3620,13 @@ public sealed class Editor : Drawable {
 
     #region Drawing
 
-    protected override void OnPaint(PaintEventArgs e) {
-        // Doing this in Recalc() seems to cause issues for some reason, but it needs to happen regularly
-        //Studio.Instance.GameInfoPanel.UpdateGameInfo();
+    protected override void OnPaint(SKPaintEventArgs e) {
+        e.Surface.Canvas.Clear();
 
+        var font = FontManager.SKEditorFontRegular;
+        e.Surface.Canvas.DrawText("Hello World", 10.0f, 10.0f, font, new SKPaint { Color = SKColors.Aqua, IsAntialias = true });
+
+        /*
         e.Graphics.AntiAlias = true;
 
         // To be reused below. Kinda annoying how C# handles out parameter conflicts
@@ -3896,6 +3901,7 @@ public sealed class Editor : Drawable {
         }
 
         base.OnPaint(e);
+        */
     }
 
     #endregion
