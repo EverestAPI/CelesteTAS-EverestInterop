@@ -5,6 +5,7 @@ using System.Numerics;
 using CelesteStudio.Editing;
 using Eto.Drawing;
 using Eto.Forms;
+using SkiaSharp;
 using System.Reflection;
 using Range = System.Range;
 
@@ -91,6 +92,10 @@ public static class Extensions
         }
 
         return -1;
+    }
+
+    public static SKColor ToSkia(this Color color) {
+        return new SKColor((byte)(color.R * byte.MaxValue), (byte)(color.G * byte.MaxValue), (byte)(color.B * byte.MaxValue), (byte)(color.A * byte.MaxValue));
     }
 
     private static readonly MethodInfo? m_FixScrollable = Assembly.GetEntryAssembly()?.GetType("CelesteStudio.WPF.Program")?.GetMethod("FixScrollable", BindingFlags.Public | BindingFlags.Static);

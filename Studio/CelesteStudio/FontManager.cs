@@ -54,7 +54,7 @@ public static class FontManager {
         }
 
         if (fontFamily == FontFamilyBuiltin) {
-            using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("JetBrainsMono/JetBrainsMono-Regular");
+            var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("JetBrainsMono/JetBrainsMono-Regular");
             return new SKFont(SKTypeface.FromStream(stream), size);
         } else {
             return new SKFont(SKTypeface.FromFamilyName(fontFamily), size);
@@ -85,6 +85,22 @@ public static class FontManager {
         }
 
         return font.CharWidth() * text.Length;
+    }
+
+    private static readonly Dictionary<SKFont, float> widthCache = [];
+    public static float CharWidth(this SKFont font) {
+        if (widthCache.TryGetValue(font, out float width)) {
+            return width;
+        }
+
+        widthCache[font] = font.Metrics.AverageCharacterWidth;
+        return font.Metrics.AverageCharacterWidth;
+    }
+    public static float MeasureWidth(this SKFont font, string text) {
+        return font.CharWidth() * text.Length;
+    }
+    public static float LineHeight(this SKFont font) {
+        return font.Spacing;
     }
 
     public static void OnFontChanged() {

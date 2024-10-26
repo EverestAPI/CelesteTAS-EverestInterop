@@ -4,6 +4,7 @@ using System.Diagnostics;
 using CelesteStudio.Data;
 using CelesteStudio.Util;
 using Eto.Drawing;
+using SkiaSharp;
 
 namespace CelesteStudio.Editing;
 
@@ -63,8 +64,7 @@ public class SyntaxHighlighter {
         public int UnderlineEnd = -1;
     }
 
-
-    public void DrawLine(Graphics graphics, float x, float y, string line, DrawLineOptions? options = null) {
+    public void DrawLine(SKCanvas canvas, float x, float y, string line, DrawLineOptions? options = null) {
         options ??= new();
 
         float xOff = 0.0f;
@@ -77,38 +77,49 @@ public class SyntaxHighlighter {
 
             var style = styles[(int)segment.Type];
 
-            var font = style.FontStyle switch {
-                FontStyle.None => regularFont,
-                FontStyle.Bold => boldFont,
-                FontStyle.Italic => italicFont,
-                FontStyle.Bold | FontStyle.Italic => boldItalicFont,
-                _ => throw new UnreachableException(),
-            };
+            // var font = style.FontStyle switch {
+            //     FontStyle.None => regularFont,
+            //     FontStyle.Bold => boldFont,
+            //     FontStyle.Italic => italicFont,
+            //     FontStyle.Bold | FontStyle.Italic => boldItalicFont,
+            //     _ => throw new UnreachableException(),
+            // };
+            // TODO: Respect font style
+            var font = FontManager.SKEditorFontRegular;
 
-            var str = line[segment.StartIdx..(segment.EndIdx + 1)];
-            float width = font.MeasureWidth(str, options.Value.MeasureReal);
+            string str = line[segment.StartIdx..(segment.EndIdx + 1)];
+            float width = font.MeasureWidth(str);
 
             if (style.BackgroundColor is { } bgColor) {
-                graphics.FillRectangle(bgColor, x + xOff, y, width, font.LineHeight());
+                using var paint = new SKPaint();
+                paint.Color = bgColor.ToSkia();
+                paint.Style = SKPaintStyle.Fill;
+                paint.IsAntialias = true;
+                canvas.DrawRect(x + xOff, y, width, font.LineHeight(), paint);
             }
 
             int underlineStart = Math.Max(segment.StartIdx, options.Value.UnderlineStart);
             int underlineEnd = Math.Min(segment.EndIdx, options.Value.UnderlineEnd);
 
-            if (underlineStart <= underlineEnd && underlineStart >= segment.StartIdx && underlineEnd <= segment.EndIdx)
-            {
-                var underlineFont = font.WithFontDecoration(FontDecoration.Underline);
-
-                string left = line[..underlineStart];
-                string middle = line[underlineStart..(underlineEnd + 1)];
-                string right = line[(underlineEnd + 1)..];
-
-                graphics.DrawText(font,          style.ForegroundColor, x + xOff, y, left);
-                graphics.DrawText(underlineFont, style.ForegroundColor, x + xOff + font.MeasureWidth(left), y, middle);
-                graphics.DrawText(font,          style.ForegroundColor, x + xOff + font.MeasureWidth(left) + underlineFont.MeasureWidth(middle), y, right);
-            } else {
-                graphics.DrawText(font, style.ForegroundColor, x + xOff, y, str);
-            }
+            // TODO: Handle underlines
+            // if (underlineStart <= underlineEnd && underlineStart >= segment.StartIdx && underlineEnd <= segment.EndIdx)
+            // {
+            //     var underlineFont = font.WithFontDecoration(FontDecoration.Underline);
+            //
+            //     string left = line[..underlineStart];
+            //     string middle = line[underlineStart..(underlineEnd + 1)];
+            //     string right = line[(underlineEnd + 1)..];
+            //
+            //     canvas.DrawText(font,          style.ForegroundColor, x + xOff, y, left);
+            //     canvas.DrawText(underlineFont, style.ForegroundColor, x + xOff + font.MeasureWidth(left), y, middle);
+            //     canvas.DrawText(font,          style.ForegroundColor, x + xOff + font.MeasureWidth(left) + underlineFont.MeasureWidth(middle), y, right);
+            // } else {
+                using var textPaint = new SKPaint();
+                textPaint.Color = style.ForegroundColor.ToSkia();
+                // textPaint.Style = SKPaintStyle.Fill;
+                textPaint.IsAntialias = true;
+                canvas.DrawText(str, x + xOff, y - font.Metrics.Ascent, font, textPaint);
+            // }
 
             xOff += width;
         }

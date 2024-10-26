@@ -262,7 +262,7 @@ public sealed class Editor : SkiaDrawable {
         new UseLineLink(MenuEntry.ContextActions_GoToPlayLine),
     ];
 
-    private Font Font => FontManager.EditorFontRegular;
+    private SKFont Font => FontManager.SKEditorFontRegular;
     private SyntaxHighlighter highlighter;
     private const float LineNumberPadding = 5.0f;
 
@@ -3621,13 +3621,8 @@ public sealed class Editor : SkiaDrawable {
     #region Drawing
 
     protected override void OnPaint(SKPaintEventArgs e) {
-        e.Surface.Canvas.Clear();
-
-        var font = FontManager.SKEditorFontRegular;
-        e.Surface.Canvas.DrawText("Hello World", 10.0f, 10.0f, font, new SKPaint { Color = SKColors.Aqua, IsAntialias = true });
-
-        /*
-        e.Graphics.AntiAlias = true;
+        var canvas = e.Surface.Canvas;
+        canvas.Clear();
 
         // To be reused below. Kinda annoying how C# handles out parameter conflicts
         WrapEntry wrap;
@@ -3640,7 +3635,9 @@ public sealed class Editor : SkiaDrawable {
         int bottomRow = Math.Min(Document.Lines.Count - 1, GetActualRow(bottomVisualRow));
 
         // Draw text
-        using var commentBrush = new SolidBrush(Settings.Instance.Theme.Comment.ForegroundColor);
+        using var commentPaint = new SKPaint();
+        commentPaint.Color = Settings.Instance.Theme.Comment.ForegroundColor.ToSkia();
+        commentPaint.IsAntialias = true;
 
         float yPos = actualToVisualRows[topRow] * Font.LineHeight();
         for (int row = topRow; row <= bottomRow; row++) {
@@ -3656,23 +3653,27 @@ public sealed class Editor : SkiaDrawable {
                         var subLine = wrap.Lines[i].Line;
                         float xIdent = i == 0 ? 0 : wrap.StartOffset * Font.CharWidth();
 
-                        e.Graphics.DrawText(Font, commentBrush, textOffsetX + xIdent, yPos, subLine);
+                        canvas.DrawText(subLine, textOffsetX + xIdent, yPos, Font, commentPaint);
                         yPos += Font.LineHeight();
                         width = Math.Max(width, Font.MeasureWidth(subLine) + xIdent);
                         height += Font.LineHeight();
                     }
                 } else {
-                    highlighter.DrawLine(e.Graphics, textOffsetX, yPos, line);
+                    highlighter.DrawLine(canvas, textOffsetX, yPos, line);
                     yPos += Font.LineHeight();
                     width = Font.MeasureWidth(line);
                     height = Font.LineHeight();
                 }
 
-                e.Graphics.DrawRectangle(Settings.Instance.Theme.Comment.ForegroundColor,
-                    Font.CharWidth() * collapse.StartCol + textOffsetX - foldingPadding,
-                    yPos - height - foldingPadding,
-                    width - Font.CharWidth() * collapse.StartCol + foldingPadding * 2.0f,
-                    height + foldingPadding * 2.0f);
+                using var boxPaint = new SKPaint();
+                boxPaint.Color = commentPaint.Color;
+                boxPaint.Style = SKPaintStyle.Stroke;
+                canvas.DrawRect(
+                    x: Font.CharWidth() * collapse.StartCol + textOffsetX - foldingPadding,
+                    y: yPos - height - foldingPadding,
+                    w: width - Font.CharWidth() * collapse.StartCol + foldingPadding * 2.0f,
+                    h: height + foldingPadding * 2.0f,
+                    boxPaint);
 
                 row = collapse.MaxRow;
                 continue;
@@ -3680,7 +3681,7 @@ public sealed class Editor : SkiaDrawable {
 
             // Underline current line link
             if (Keyboard.Modifiers.HasCommonModifier() && LocationToLineLink(PointFromScreen(Mouse.Position)) is { } linkAnchor && linkAnchor.Row == row) {
-                highlighter.DrawLine(e.Graphics, textOffsetX, yPos, line, new SyntaxHighlighter.DrawLineOptions {
+                highlighter.DrawLine(canvas, textOffsetX, yPos, line, new SyntaxHighlighter.DrawLineOptions {
                     UnderlineStart = linkAnchor.MinCol,
                     UnderlineEnd = linkAnchor.MaxCol,
                 });
@@ -3694,11 +3695,11 @@ public sealed class Editor : SkiaDrawable {
                     var subLine = wrap.Lines[i].Line;
                     float xIdent = i == 0 ? 0 : wrap.StartOffset * Font.CharWidth();
 
-                    e.Graphics.DrawText(Font, commentBrush, textOffsetX + xIdent, yPos, subLine);
+                    canvas.DrawText(subLine, textOffsetX + xIdent, yPos, Font, commentPaint);
                     yPos += Font.LineHeight();
                 }
             } else {
-                highlighter.DrawLine(e.Graphics, textOffsetX, yPos, line);
+                highlighter.DrawLine(canvas, textOffsetX, yPos, line);
                 yPos += Font.LineHeight();
             }
         }
@@ -3715,8 +3716,13 @@ public sealed class Editor : SkiaDrawable {
                             Document.Caret.Col >= anchor.MinCol &&
                             Document.Caret.Col <= anchor.MaxCol;
 
-            using var pen = new Pen(selected ? Colors.White : Colors.Gray, selected ? 2.0f : 1.0f);
-            e.Graphics.DrawRectangle(pen, x + textOffsetX - padding, y - padding, w + padding * 2.0f, Font.LineHeight() + padding * 2.0f);
+            using var boxPaint = new SKPaint();
+            boxPaint.Color = selected ? SKColors.White : SKColors.Gray;
+            boxPaint.StrokeWidth = selected ? 2.0f : 1.0f;
+            boxPaint.Style = SKPaintStyle.Stroke;
+            canvas.DrawRect(
+                x + textOffsetX - padding, y - padding, w + padding * 2.0f, Font.LineHeight() + padding * 2.0f,
+                boxPaint);
         }
 
         // Draw suffix text
@@ -3729,10 +3735,13 @@ public sealed class Editor : SkiaDrawable {
             const float padding = 10.0f;
             float suffixWidth = font.MeasureWidth(CommunicationWrapper.CurrentLineSuffix);
 
-            e.Graphics.DrawText(font, Settings.Instance.Theme.PlayingFrame,
+            using var suffixPaint = new SKPaint();
+            suffixPaint.Color = Settings.Instance.Theme.PlayingFrame.ToSkia();
+            suffixPaint.IsAntialias = true;
+            canvas.DrawText(CommunicationWrapper.CurrentLineSuffix,
                 x: scrollablePosition.X + scrollableSize.Width - suffixWidth - padding,
-                y: actualToVisualRows[CommunicationWrapper.CurrentLine] * font.LineHeight(),
-                CommunicationWrapper.CurrentLineSuffix);
+                y: actualToVisualRows[CommunicationWrapper.CurrentLine] * font.LineHeight() - Font.Metrics.Ascent,
+                suffixPaint);
         }
 
         var caretPos = GetVisualPosition(Document.Caret);
@@ -3740,15 +3749,33 @@ public sealed class Editor : SkiaDrawable {
         float carY = Font.LineHeight() * caretPos.Row;
 
         // Highlight caret line
-        e.Graphics.FillRectangle(Settings.Instance.Theme.CurrentLine, scrollablePosition.X, carY, scrollable.Width, Font.LineHeight());
+        using var highlightPaint = new SKPaint();
+        highlightPaint.Color = Settings.Instance.Theme.CurrentLine.ToSkia();
+        highlightPaint.Style = SKPaintStyle.Fill;
+        highlightPaint.IsAntialias = true;
+        canvas.DrawRect(
+            x: scrollablePosition.X,
+            y: carY,
+            w: scrollable.Width,
+            h: Font.LineHeight(),
+            highlightPaint);
 
         // Draw caret
         if (HasFocus) {
-            e.Graphics.DrawLine(Settings.Instance.Theme.Caret, carX, carY, carX, carY + Font.LineHeight() - 1);
+            using var caretPaint = new SKPaint();
+            caretPaint.Color = Settings.Instance.Theme.Caret.ToSkia();
+            caretPaint.Style = SKPaintStyle.Stroke;
+            caretPaint.IsAntialias = true;
+            canvas.DrawLine(carX, carY, carX, carY + Font.LineHeight() - 1, caretPaint);
         }
 
         // Draw selection
         if (!Document.Selection.Empty) {
+            using var selectionPaint = new SKPaint();
+            selectionPaint.Color = Settings.Instance.Theme.Selection.ToSkia();
+            selectionPaint.Style = SKPaintStyle.Fill;
+            selectionPaint.IsAntialias = true;
+
             var min = GetVisualPosition(Document.Selection.Min);
             var max = GetVisualPosition(Document.Selection.Max);
 
@@ -3757,7 +3784,7 @@ public sealed class Editor : SkiaDrawable {
                 float w = Font.CharWidth() * (max.Col - min.Col);
                 float y = Font.LineHeight() * min.Row;
                 float h = Font.LineHeight();
-                e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, h);
+                canvas.DrawRect(x, y, w, h, selectionPaint);
             } else {
                 var visualLine = GetVisualLine(min.Row);
 
@@ -3766,24 +3793,33 @@ public sealed class Editor : SkiaDrawable {
                 float x = Font.CharWidth() * min.Col + textOffsetX - extendLeft;
                 float w = visualLine.Length == 0 ? 0.0f : Font.MeasureWidth(visualLine[min.Col..]);
                 float y = Font.LineHeight() * min.Row;
-                e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w + extendLeft, Font.LineHeight());
+                canvas.DrawRect(x, y, w + extendLeft, Font.LineHeight(), selectionPaint);
 
                 // Cull off-screen lines
                 for (int i = Math.Max(min.Row + 1, topVisualRow); i < Math.Min(max.Row, bottomVisualRow); i++) {
                     // Draw at least half a character for each line
                     w = Font.CharWidth() * Math.Max(0.5f, GetVisualLine(i).Length);
                     y = Font.LineHeight() * i;
-                    e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX - LineNumberPadding, y, w + LineNumberPadding, Font.LineHeight());
+                    canvas.DrawRect(textOffsetX - LineNumberPadding, y, w + LineNumberPadding, Font.LineHeight(), selectionPaint);
                 }
 
                 w = Font.MeasureWidth(GetVisualLine(max.Row)[..max.Col]);
                 y = Font.LineHeight() * max.Row;
-                e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX - LineNumberPadding, y, w + LineNumberPadding, Font.LineHeight());
+                canvas.DrawRect(textOffsetX - LineNumberPadding, y, w + LineNumberPadding, Font.LineHeight(), selectionPaint);
             }
         }
 
         // Draw calculate operation
         if (calculationState is not null) {
+            using var calcFgPaint = new SKPaint();
+            calcFgPaint.Color = Settings.Instance.Theme.CalculateFg.ToSkia();
+            calcFgPaint.Style = SKPaintStyle.Fill;
+            calcFgPaint.IsAntialias = true;
+            using var calcBgPaint = new SKPaint();
+            calcBgPaint.Color = Settings.Instance.Theme.CalculateBg.ToSkia();
+            calcBgPaint.Style = SKPaintStyle.Fill;
+            calcBgPaint.IsAntialias = true;
+
             string calculateLine = $"{calculationState.Operator.Char()}{calculationState.Operand}";
 
             float padding = Font.CharWidth() * 0.5f;
@@ -3791,46 +3827,70 @@ public sealed class Editor : SkiaDrawable {
             float y = carY;
             float w = Font.CharWidth() * calculateLine.Length + 2 * padding;
             float h = Font.LineHeight();
-            var path = GraphicsPath.GetRoundRect(new RectangleF(x, y, w, h), 4);
-            e.Graphics.FillPath(Settings.Instance.Theme.CalculateBg, path);
-            e.Graphics.DrawText(FontManager.EditorFontRegular, Settings.Instance.Theme.CalculateFg, x + padding, y, calculateLine);
+
+            canvas.DrawRoundRect(x, y, w, h, 4.0f, 4.0f, calcBgPaint);
+            canvas.DrawText(calculateLine, x + padding, y - Font.Metrics.Ascent, Font, calcFgPaint);
         }
 
         // Draw line numbers
         {
-            e.Graphics.FillRectangle(BackgroundColor,
+            using var lineBgPaint = new SKPaint();
+            lineBgPaint.Color = Settings.Instance.Theme.Background.ToSkia();
+            lineBgPaint.Style = SKPaintStyle.Fill;
+            lineBgPaint.IsAntialias = true;
+
+            canvas.DrawRect(
                 x: scrollablePosition.X,
                 y: scrollablePosition.Y,
-                width: textOffsetX - LineNumberPadding,
-                height: scrollableSize.Height);
+                w: textOffsetX - LineNumberPadding,
+                h: scrollableSize.Height,
+                lineBgPaint);
 
             // Highlight playing / savestate line
             if (CommunicationWrapper.Connected) {
                 if (CommunicationWrapper.CurrentLine != -1 && CommunicationWrapper.CurrentLine < actualToVisualRows.Length) {
-                    e.Graphics.FillRectangle(Settings.Instance.Theme.PlayingLineBg,
+                    using var playingPaint = new SKPaint();
+                    playingPaint.Color = Settings.Instance.Theme.Background.ToSkia();
+                    playingPaint.Style = SKPaintStyle.Fill;
+                    playingPaint.IsAntialias = true;
+
+                    canvas.DrawRect(
                         x: scrollablePosition.X,
                         y: actualToVisualRows[CommunicationWrapper.CurrentLine] * Font.LineHeight(),
-                        width: textOffsetX - LineNumberPadding,
-                        height: Font.LineHeight());
+                        w: textOffsetX - LineNumberPadding,
+                        h: Font.LineHeight(),
+                        playingPaint);
                 }
                 if (CommunicationWrapper.SaveStateLine != -1 && CommunicationWrapper.SaveStateLine < actualToVisualRows.Length) {
+                    using var savestatePaint = new SKPaint();
+                    savestatePaint.Color = Settings.Instance.Theme.Background.ToSkia();
+                    savestatePaint.Style = SKPaintStyle.Fill;
+                    savestatePaint.IsAntialias = true;
+
                     if (CommunicationWrapper.SaveStateLine == CommunicationWrapper.CurrentLine) {
-                        e.Graphics.FillRectangle(Settings.Instance.Theme.SavestateBg,
+                        canvas.DrawRect(
                             x: scrollablePosition.X,
                             y: actualToVisualRows[CommunicationWrapper.SaveStateLine] * Font.LineHeight(),
-                            width: 5.0f,
-                            height: Font.LineHeight());
+                            w: 5.0f,
+                            h: Font.LineHeight(),
+                            savestatePaint);
                     } else {
-                        e.Graphics.FillRectangle(Settings.Instance.Theme.SavestateBg,
+                        canvas.DrawRect(
                             x: scrollablePosition.X,
                             y: actualToVisualRows[CommunicationWrapper.SaveStateLine] * Font.LineHeight(),
-                            width: textOffsetX - LineNumberPadding,
-                            height: Font.LineHeight());
+                            w: textOffsetX - LineNumberPadding,
+                            h: Font.LineHeight(),
+                            savestatePaint);
                     }
                 }
             }
 
             yPos = actualToVisualRows[topRow] * Font.LineHeight();
+
+            using var textPaint = new SKPaint();
+            textPaint.Style = SKPaintStyle.Fill;
+            textPaint.IsAntialias = true;
+
             for (int row = topRow; row <= bottomRow; row++) {
                 int oldRow = row;
                 var numberString = (row + 1).ToString();
@@ -3840,17 +3900,17 @@ public sealed class Editor : SkiaDrawable {
                 bool isSaveStateLine = CommunicationWrapper.SaveStateLine >= 0 && CommunicationWrapper.SaveStateLine < actualToVisualRows.Length &&
                                        actualToVisualRows[CommunicationWrapper.SaveStateLine] == actualToVisualRows[row];
 
-                var textColor = isPlayingLine
-                    ? Settings.Instance.Theme.PlayingLineFg
+                textPaint.Color = isPlayingLine
+                    ? Settings.Instance.Theme.PlayingLineFg.ToSkia()
                     : isSaveStateLine
-                        ? Settings.Instance.Theme.SavestateFg
-                        : Settings.Instance.Theme.LineNumber;
+                        ? Settings.Instance.Theme.SavestateFg.ToSkia()
+                        : Settings.Instance.Theme.LineNumber.ToSkia();
 
                 if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Left) {
-                    e.Graphics.DrawText(Font, textColor, scrollablePosition.X + LineNumberPadding, yPos, numberString);
+                    canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding, yPos - Font.Metrics.Ascent, Font, textPaint);
                 } else if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Right) {
                     float ident = Font.CharWidth() * (Document.Lines.Count.Digits() - (row + 1).Digits());
-                    e.Graphics.DrawText(Font, textColor, scrollablePosition.X + LineNumberPadding + ident, yPos, numberString);
+                    canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding + ident, yPos - Font.Metrics.Ascent, Font, textPaint);
                 }
 
                 bool collapsed = false;
@@ -3859,13 +3919,15 @@ public sealed class Editor : SkiaDrawable {
                     collapsed = true;
                 }
                 if (Settings.Instance.ShowFoldIndicators && foldings.FirstOrDefault(fold => fold.MinRow == oldRow) is var folding && folding.MinRow != folding.MaxRow) {
-                    e.Graphics.SaveTransform();
-                    e.Graphics.TranslateTransform(
-                        scrollablePosition.X + textOffsetX - LineNumberPadding * 2.0f - Font.CharWidth(),
-                        yPos + (Font.LineHeight() - Font.CharWidth()) / 2.0f);
-                    e.Graphics.ScaleTransform(Font.CharWidth());
-                    e.Graphics.FillPath(textColor, collapsed ? Assets.CollapseClosedPath : Assets.CollapseOpenPath);
-                    e.Graphics.RestoreTransform();
+                    canvas.Save();
+                    canvas.Translate(
+                        dx: scrollablePosition.X + textOffsetX - LineNumberPadding * 2.0f - Font.CharWidth(),
+                        dy: yPos + (Font.LineHeight() - Font.CharWidth()) / 2.0f);
+                    canvas.Scale(Font.CharWidth());
+
+                    canvas.DrawPath(collapsed ? Assets.CollapseClosedPath : Assets.CollapseOpenPath, textPaint);
+
+                    canvas.Restore();
                 }
 
                 if (commentLineWraps.TryGetValue(oldRow, out wrap)) {
@@ -3875,9 +3937,14 @@ public sealed class Editor : SkiaDrawable {
                 }
             }
 
-            e.Graphics.DrawLine(Settings.Instance.Theme.ServiceLine,
-                scrollablePosition.X + textOffsetX - LineNumberPadding, 0.0f,
-                scrollablePosition.X + textOffsetX - LineNumberPadding, yPos + scrollableSize.Height);
+            using var separatorPaint = new SKPaint();
+            separatorPaint.Color = Settings.Instance.Theme.ServiceLine.ToSkia();
+            separatorPaint.Style = SKPaintStyle.Stroke;
+            separatorPaint.IsAntialias = true;
+            canvas.DrawLine(
+                x0: scrollablePosition.X + textOffsetX - LineNumberPadding, y0: 0.0f,
+                x1: scrollablePosition.X + textOffsetX - LineNumberPadding, y1: yPos + scrollableSize.Height,
+                separatorPaint);
         }
 
         // Draw toast message box
@@ -3889,19 +3956,28 @@ public sealed class Editor : SkiaDrawable {
             float x = scrollablePosition.X + (scrollableSize.Width - width) / 2.0f;
             float y = scrollablePosition.Y + (scrollableSize.Height - height) / 2.0f;
 
-            float padding = Settings.Instance.Theme.PopupMenuBorderPadding;
-            e.Graphics.FillPath(
-                Settings.Instance.Theme.PopupMenuBg,
-                GraphicsPath.GetRoundRect(new RectangleF(x - padding, y - padding, width + padding * 2.0f, height + padding * 2.0f), Settings.Instance.Theme.PopupMenuBorderRounding));
+            using var popupBgPaint = new SKPaint();
+            popupBgPaint.Color = Settings.Instance.Theme.PopupMenuBg.ToSkia();
+            popupBgPaint.Style = SKPaintStyle.Fill;
+            popupBgPaint.IsAntialias = true;
 
+            float padding = Settings.Instance.Theme.PopupMenuBorderPadding;
+            canvas.DrawRoundRect(
+                x: x - padding, y: y - padding,
+                w: width + padding * 2.0f, h: height + padding * 2.0f,
+                rx: Settings.Instance.Theme.PopupMenuBorderRounding, ry: Settings.Instance.Theme.PopupMenuBorderRounding,
+                popupBgPaint);
+
+            using var popupFgPaint = new SKPaint();
+            popupFgPaint.Color = Settings.Instance.Theme.PopupMenuFg.ToSkia();
+            popupFgPaint.Style = SKPaintStyle.Fill;
+            popupFgPaint.IsAntialias = true;
             foreach (var line in lines) {
-                e.Graphics.DrawText(FontManager.PopupFont, Settings.Instance.Theme.PopupMenuFg, x, y, line);
+                // TODO: Use PopupFont
+                canvas.DrawText(line, x, y - Font.Metrics.Ascent, Font, popupFgPaint);
                 y += Font.LineHeight();
             }
         }
-
-        base.OnPaint(e);
-        */
     }
 
     #endregion

@@ -48,7 +48,7 @@ public class FontDialog : Dialog<bool> {
             float maxWidth = 0.0f;
             foreach (var line in previewText) {
                 // Actually measure the fonts to avoid caching issues
-                highlighter.DrawLine(e.Graphics, 0.0f, yPos, line, new SyntaxHighlighter.DrawLineOptions { MeasureReal = true });
+                //highlighter.DrawLine(e.Graphics, 0.0f, yPos, line, new SyntaxHighlighter.DrawLineOptions { MeasureReal = true });
                 maxWidth = Math.Max(maxWidth, font.MeasureWidth(line, measureReal: true));
                 yPos += font.LineHeight();
             }

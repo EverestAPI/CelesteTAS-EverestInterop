@@ -4,6 +4,7 @@ using System.Collections.Generic;
 namespace CelesteStudio.Editing;
 
 public struct Style(Color foregroundColor, Color? backgroundColor = null, FontStyle fontStyle = FontStyle.None) {
+    // TODO: Convert to preferably SKPaint, otherwise SKColor
     public Color ForegroundColor = foregroundColor;
     public Color? BackgroundColor = backgroundColor;
 
@@ -55,8 +56,8 @@ public struct Theme {
     public Style SavestateBreakpoint;
     public Style Delimiter;
     public Style Command;
-    public Style Comment;
     public Style Frame;
+    public Style Comment;
 
     public bool DarkMode;
 
