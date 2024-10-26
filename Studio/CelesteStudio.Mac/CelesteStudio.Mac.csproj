@@ -22,7 +22,7 @@
         <!-- Use an CI-build, since it contains a fix for using context menu hotkeys inside the editor -->
         <PackageReference Include="Eto.Platform.Mac64" Version="2.8.4-ci-20240710.9879198421" />
 
-        <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="2.80.3" />
+        <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="2.88.8" />
     </ItemGroup>
 
     <ItemGroup>

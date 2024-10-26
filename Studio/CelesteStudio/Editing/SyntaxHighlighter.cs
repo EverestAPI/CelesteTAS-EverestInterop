@@ -118,7 +118,8 @@ public class SyntaxHighlighter {
                 textPaint.Color = style.ForegroundColor.ToSkia();
                 // textPaint.Style = SKPaintStyle.Fill;
                 textPaint.IsAntialias = true;
-                canvas.DrawText(str, x + xOff, y - font.Metrics.Ascent, font, textPaint);
+                textPaint.TextAlign = SKTextAlign.Left;
+                canvas.DrawText(str, x + xOff, y + font.Offset(), font, textPaint);
             // }
 
             xOff += width;

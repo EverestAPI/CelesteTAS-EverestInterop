@@ -26,7 +26,7 @@ public static class FontManager {
     public static Font StatusFont           => statusFont           ??= CreateStatus();
     public static Font PopupFont            => popupFont            ??= CreatePopup();
 
-    public static SKFont SKEditorFontRegular => skEditorFontRegular ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom);
+    public static SKFont SKEditorFontRegular => skEditorFontRegular ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom * (4.0f/3.0f));
 
     private static FontFamily? builtinFontFamily;
     public static Font CreateFont(string fontFamily, float size, FontStyle style = FontStyle.None) {
@@ -55,9 +55,13 @@ public static class FontManager {
 
         if (fontFamily == FontFamilyBuiltin) {
             var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("JetBrainsMono/JetBrainsMono-Regular");
-            return new SKFont(SKTypeface.FromStream(stream), size);
+            var typeface = SKTypeface.FromStream(stream);
+
+            return new SKFont(typeface, size) { LinearMetrics = true };
         } else {
-            return new SKFont(SKTypeface.FromFamilyName(fontFamily), size);
+            var typeface = SKTypeface.FromFamilyName(fontFamily, SKFontStyleWeight.Light, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright);
+
+            return new SKFont(typeface, size) { LinearMetrics = true };
         }
     }
 
@@ -93,14 +97,18 @@ public static class FontManager {
             return width;
         }
 
-        widthCache[font] = font.Metrics.AverageCharacterWidth;
-        return font.Metrics.AverageCharacterWidth;
+        widthCache[font] = width = font.Metrics.AverageCharacterWidth * font.ScaleX;
+        return width;
     }
     public static float MeasureWidth(this SKFont font, string text) {
         return font.CharWidth() * text.Length;
     }
+    // Apply +/- 1.0f for better visuals
     public static float LineHeight(this SKFont font) {
-        return font.Spacing;
+        return font.Spacing + 0.6f;
+    }
+    public static float Offset(this SKFont font) {
+        return -font.Metrics.Ascent + 0.7f;
     }
 
     public static void OnFontChanged() {

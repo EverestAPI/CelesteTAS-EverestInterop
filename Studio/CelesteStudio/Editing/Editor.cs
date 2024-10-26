@@ -7,13 +7,13 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using CelesteStudio.Communication;
+using CelesteStudio.Controls;
 using CelesteStudio.Data;
 using CelesteStudio.Dialog;
 using CelesteStudio.Editing.ContextActions;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
-using Eto.SkiaDraw;
 using SkiaSharp;
 using StudioCommunication;
 using StudioCommunication.Util;
@@ -3620,9 +3620,12 @@ public sealed class Editor : SkiaDrawable {
 
     #region Drawing
 
-    protected override void OnPaint(SKPaintEventArgs e) {
-        var canvas = e.Surface.Canvas;
+    protected override void Draw(PaintEventArgs e, SKSurface surface, SKImageInfo imageInfo) {
+        var canvas = surface.Canvas;
         canvas.Clear();
+
+        // Adjust unit to points instead of pixels
+        //canvas.Scale(e.Graphics.PixelsPerPoint);
 
         // To be reused below. Kinda annoying how C# handles out parameter conflicts
         WrapEntry wrap;
@@ -3740,7 +3743,7 @@ public sealed class Editor : SkiaDrawable {
             suffixPaint.IsAntialias = true;
             canvas.DrawText(CommunicationWrapper.CurrentLineSuffix,
                 x: scrollablePosition.X + scrollableSize.Width - suffixWidth - padding,
-                y: actualToVisualRows[CommunicationWrapper.CurrentLine] * font.LineHeight() - Font.Metrics.Ascent,
+                y: actualToVisualRows[CommunicationWrapper.CurrentLine] * font.LineHeight()+ Font.Offset(),
                 suffixPaint);
         }
 
@@ -3829,7 +3832,7 @@ public sealed class Editor : SkiaDrawable {
             float h = Font.LineHeight();
 
             canvas.DrawRoundRect(x, y, w, h, 4.0f, 4.0f, calcBgPaint);
-            canvas.DrawText(calculateLine, x + padding, y - Font.Metrics.Ascent, Font, calcFgPaint);
+            canvas.DrawText(calculateLine, x + padding, y+ Font.Offset(), Font, calcFgPaint);
         }
 
         // Draw line numbers
@@ -3907,10 +3910,10 @@ public sealed class Editor : SkiaDrawable {
                         : Settings.Instance.Theme.LineNumber.ToSkia();
 
                 if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Left) {
-                    canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding, yPos - Font.Metrics.Ascent, Font, textPaint);
+                    canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding, yPos+ Font.Offset(), Font, textPaint);
                 } else if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Right) {
                     float ident = Font.CharWidth() * (Document.Lines.Count.Digits() - (row + 1).Digits());
-                    canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding + ident, yPos - Font.Metrics.Ascent, Font, textPaint);
+                    canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding + ident, yPos+ Font.Offset(), Font, textPaint);
                 }
 
                 bool collapsed = false;
@@ -3974,7 +3977,7 @@ public sealed class Editor : SkiaDrawable {
             popupFgPaint.IsAntialias = true;
             foreach (var line in lines) {
                 // TODO: Use PopupFont
-                canvas.DrawText(line, x, y - Font.Metrics.Ascent, Font, popupFgPaint);
+                canvas.DrawText(line, x, y+ Font.Offset(), Font, popupFgPaint);
                 y += Font.LineHeight();
             }
         }

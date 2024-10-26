@@ -21,7 +21,7 @@
         <PackageReference Include="Eto.Platform.Wpf" Version="2.8.3"/>
         <PackageReference Include="DarkNet" Version="2.3.0" />
 
-        <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="2.80.3" />
+        <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="2.88.8" />
     </ItemGroup>
 
 </Project>
