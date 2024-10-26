@@ -62,11 +62,11 @@
         <Copy SourceFiles="$(OutputPath)ICSharpCode.SharpZipLib.dll" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)MemoryPack.Core.dll" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)JetBrains.Profiler.Api.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
-        
+
         <!-- Assets -->
         <Message Text="@(CelesteAssets)" />
         <Copy SourceFiles="Source\EverestInterop\Lua\env.lua" DestinationFiles="..\bin\env.lua" />
-        <Copy SourceFiles="@(CelesteAssets)" DestinationFiles="..\%(Identity)" />
+        <Copy SourceFiles="@(CelesteAssets)" DestinationFiles="..\%(Identity)" UseSymboliclinksIfPossible="'$(Configuration)' == 'Debug'" />
     </Target>
 
     <Target Name="PackageMod" AfterTargets="CopyFiles" Condition="'$(Configuration)' == 'Release'">
