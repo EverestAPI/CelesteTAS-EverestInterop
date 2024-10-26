@@ -21,6 +21,8 @@
 
         <!-- Use an CI-build, since it contains a fix for using context menu hotkeys inside the editor -->
         <PackageReference Include="Eto.Platform.Mac64" Version="2.8.4-ci-20240710.9879198421" />
+
+        <PackageReference Include="Tracy.NET" Version="0.11.1.7" Enabled="true" ProfileAllMethods="true"/>
     </ItemGroup>
 
     <ItemGroup>
