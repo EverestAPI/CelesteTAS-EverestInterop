@@ -23,7 +23,7 @@ public readonly record struct StylePaint(SKPaint ForegroundColor, SKPaint? Backg
     }
 }
 
-public struct Theme {
+public struct Theme() {
     // Editor
     public Color Background;
     public Color Caret;
