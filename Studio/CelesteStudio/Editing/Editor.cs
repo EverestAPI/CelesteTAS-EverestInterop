@@ -2625,10 +2625,8 @@ public sealed class Editor : SkiaDrawable {
                 line = Document.Lines[Document.Caret.Row];
             }
 
-            string prefix = "";
-            if (line.StartsWith('#')) {
-                prefix = new(line.TakeWhile(c => c == '#' || char.IsWhiteSpace(c)).ToArray());
-            }
+            // Auto-insert # for multiline comments (not labels, not folds!)
+            string prefix = line.StartsWith("# ") ? "# " : "";
             Document.Caret.Col = Math.Max(Document.Caret.Col, prefix.Length);
 
             string beforeCaret = line[prefix.Length..Document.Caret.Col];
