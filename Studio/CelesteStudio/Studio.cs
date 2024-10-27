@@ -749,13 +749,8 @@ public sealed class Studio : Form {
         var quitItem = MenuEntry.File_Quit.ToAction(Application.Instance.Quit);
         var homeItem = MenuUtils.CreateAction("Open README...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop"));
         var wikiItem = MenuUtils.CreateAction("Open wiki...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki"));
-        var whatsNewItem = MenuUtils.CreateAction("What's new?", Keys.None, () => {
-            var asm = Assembly.GetExecutingAssembly();
-            // TODO: Don't hardcode the current changelog
-            if (asm.GetManifestResourceStream("Changelogs/v3.2.0.md") is { } stream) {
-                WhatsNewDialog.Show("What's new in Studio v3.2.0?", new StreamReader(stream).ReadToEnd());
-            }
-        });
+        var whatsNewItem = MenuUtils.CreateAction("What's new?", Keys.None, ChangelogDialog.Show);
+        whatsNewItem.Enabled = Assembly.GetExecutingAssembly().GetManifestResourceInfo("Changelog.md") != null;
         var aboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
             ShowAboutDialog(new AboutDialog {
                 ProgramName = "Celeste Studio",

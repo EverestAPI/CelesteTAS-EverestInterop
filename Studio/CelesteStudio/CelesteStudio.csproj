@@ -50,15 +50,10 @@
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-BoldItalic.otf" LogicalName="JetBrainsMono/JetBrainsMono-BoldItalic"/>
     </ItemGroup>
 
-    <!-- Changelogs -->
+    <!-- Changelog (generated during Release action) -->
     <ItemGroup>
         <EmbeddedResource Condition="Exists('Assets\VersionInfo.txt')" Include="Assets\VersionInfo.txt" LogicalName="VersionInfo.txt"/>
         <EmbeddedResource Condition="Exists('Assets\Changelog.md')" Include="Assets\Changelog.md" LogicalName="Changelog.md"/>
-        
-        <EmbeddedResource Include="Assets\Changelogs\v3.0.0.md" LogicalName="Changelogs/v3.0.0.md"/>
-        <EmbeddedResource Include="Assets\Changelogs\v3.0.0\*.png" LogicalName="Changelogs/v3.0.0/%(Filename).png"/>
-
-        <EmbeddedResource Include="Assets\Changelogs\v3.2.0.md" LogicalName="Changelogs/v3.2.0.md"/>
     </ItemGroup>
 
 </Project>

@@ -132,8 +132,9 @@ public class ChangelogDialog : Eto.Forms.Dialog {
     }
 
     public static void Show() {
-        using var versionInfoData = Assembly.GetExecutingAssembly().GetManifestResourceStream("VersionInfo.txt");
-        using var changelogData = Assembly.GetExecutingAssembly().GetManifestResourceStream("Changelog.md");
+        var asm = Assembly.GetExecutingAssembly();
+        using var versionInfoData = asm.GetManifestResourceStream("VersionInfo.txt");
+        using var changelogData = asm.GetManifestResourceStream("Changelog.md");
         if (versionInfoData == null || changelogData == null) {
             return;
         }
@@ -142,8 +143,13 @@ public class ChangelogDialog : Eto.Forms.Dialog {
         using var changelogReader = new StreamReader(changelogData);
 
         string[] versions = versionInfoReader.ReadToEnd().SplitLines().ToArray();
+        string[] changelogLines = changelogReader.ReadToEnd().SplitLines().ToArray();
         string title = $"CelesteTAS {versions[0]} / Studio {versions[1]}";
 
-        new ChangelogDialog(title, changelogReader.ReadToEnd().SplitLines()).ShowModal();
+        if (changelogLines.Length == 0) {
+            return;
+        }
+
+        new ChangelogDialog(title, changelogLines).ShowModal();
     }
 }
