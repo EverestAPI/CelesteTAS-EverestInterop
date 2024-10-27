@@ -3660,7 +3660,7 @@ public sealed class Editor : SkiaDrawable {
                         var subLine = wrap.Lines[i].Line;
                         float xIdent = i == 0 ? 0 : wrap.StartOffset * Font.CharWidth();
 
-                        canvas.DrawText(subLine, textOffsetX + xIdent, yPos, Font, Settings.Instance.Theme.CommentPaint.ForegroundColor);
+                        canvas.DrawText(subLine, textOffsetX + xIdent, yPos + Font.Offset(), Font, Settings.Instance.Theme.CommentPaint.ForegroundColor);
                         yPos += Font.LineHeight();
                         width = Math.Max(width, Font.MeasureWidth(subLine) + xIdent);
                         height += Font.LineHeight();
@@ -3688,7 +3688,7 @@ public sealed class Editor : SkiaDrawable {
                     var subLine = wrap.Lines[i].Line;
                     float xIdent = i == 0 ? 0 : wrap.StartOffset * Font.CharWidth();
 
-                    canvas.DrawText(subLine, textOffsetX + xIdent, yPos, Font, Settings.Instance.Theme.CommentPaint.ForegroundColor);
+                    canvas.DrawText(subLine, textOffsetX + xIdent, yPos + Font.Offset(), Font, Settings.Instance.Theme.CommentPaint.ForegroundColor);
                     yPos += Font.LineHeight();
                 }
             } else {
@@ -3818,7 +3818,7 @@ public sealed class Editor : SkiaDrawable {
             fillPaint.ColorF = Settings.Instance.Theme.CalculateBg.ToSkia();
             canvas.DrawRoundRect(x, y, w, h, 4.0f, 4.0f, fillPaint);
             fillPaint.ColorF = Settings.Instance.Theme.CalculateFg.ToSkia();
-            canvas.DrawText(calculateLine, x + padding, y+ Font.Offset(), Font, fillPaint);
+            canvas.DrawText(calculateLine, x + padding, y + Font.Offset(), Font, fillPaint);
         }
 
         // Draw line numbers
@@ -3882,10 +3882,10 @@ public sealed class Editor : SkiaDrawable {
                 }
 
                 if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Left) {
-                    canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding, yPos+ Font.Offset(), Font, fillPaint);
+                    canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding, yPos + Font.Offset(), Font, fillPaint);
                 } else if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Right) {
                     float ident = Font.CharWidth() * (Document.Lines.Count.Digits() - (row + 1).Digits());
-                    canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding + ident, yPos+ Font.Offset(), Font, fillPaint);
+                    canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding + ident, yPos + Font.Offset(), Font, fillPaint);
                 }
 
                 bool collapsed = false;
