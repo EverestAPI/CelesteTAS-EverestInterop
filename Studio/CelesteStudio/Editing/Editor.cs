@@ -2273,7 +2273,7 @@ public sealed class Editor : SkiaDrawable {
     #region Editing Actions
 
     protected override void OnTextInput(TextInputEventArgs e) {
-        if (e.Text.Length == 0) {
+        if (e.Text.Length == 0 || char.IsControl(e.Text[0])) {
             return;
         }
 
