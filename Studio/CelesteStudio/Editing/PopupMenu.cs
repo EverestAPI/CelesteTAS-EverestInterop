@@ -298,6 +298,11 @@ public sealed class PopupMenu : Scrollable {
         if (!Visible) {
             return false;
         }
+        
+        if (e.Key == Keys.Escape) {
+            Visible = false;
+            return true;
+        }
 
         // Don't consume inputs if nothing is interactable
         if (shownEntries.All(entry => entry.Disabled)) {
@@ -316,10 +321,6 @@ public sealed class PopupMenu : Scrollable {
             if (!shownEntries[SelectedEntry].Disabled) {
                 shownEntries[SelectedEntry].OnUse();
             }
-            return true;
-        }
-        if (e.Key == Keys.Escape) {
-            Visible = false;
             return true;
         }
 
