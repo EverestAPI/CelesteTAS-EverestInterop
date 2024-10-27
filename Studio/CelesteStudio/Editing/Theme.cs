@@ -3,6 +3,7 @@ using Eto.Drawing;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
+using Tomlet.Attributes;
 
 namespace CelesteStudio.Editing;
 
@@ -70,26 +71,46 @@ public struct Theme {
     public Style Frame;
     public Style Comment;
 
-    // Cache SKPaints
+    #region SKPaint cache
+    // Cache SKPaint instances to avoid creating, disposing and configuring them for every draw
+
+    [TomlNonSerialized]
     private StylePaint? _actionPaint, _anglePaint, _breakpointPaint, _savestateBreakpointPaint, _delimiter, _command, _frame, _comment;
+    [TomlNonSerialized]
     private SKPaint? _commentBox, _statusFgPaint, _subpixelIndicatorDotPaint, _popupMenuFgPaint, _popupMenuFgDisabledPaint, _popupMenuFgExtraPaint, _popupMenuBgPaint, _popupMenuSelectedPaint;
 
+    [TomlNonSerialized]
     public StylePaint ActionPaint => _actionPaint ??= Action.CreatePaint();
+    [TomlNonSerialized]
     public StylePaint AnglePaint => _anglePaint ??= Angle.CreatePaint();
+    [TomlNonSerialized]
     public StylePaint BreakpointPaint => _breakpointPaint ??= Breakpoint.CreatePaint();
+    [TomlNonSerialized]
     public StylePaint SavestateBreakpointPaint => _savestateBreakpointPaint ??= SavestateBreakpoint.CreatePaint();
+    [TomlNonSerialized]
     public StylePaint DelimiterPaint => _delimiter ??= Delimiter.CreatePaint();
+    [TomlNonSerialized]
     public StylePaint CommandPaint => _command ??= Command.CreatePaint();
+    [TomlNonSerialized]
     public StylePaint FramePaint => _frame ??= Frame.CreatePaint();
+    [TomlNonSerialized]
     public StylePaint CommentPaint => _comment ??= Comment.CreatePaint();
+    [TomlNonSerialized]
     public SKPaint CommentBoxPaint => _commentBox ??= Comment.CreateForegroundPaint(SKPaintStyle.Stroke);
 
+    [TomlNonSerialized]
     public SKPaint StatusFgPaint => _statusFgPaint ??= new SKPaint { ColorF = StatusFg.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
+    [TomlNonSerialized]
     public SKPaint SubpixelIndicatorDotPaint => _subpixelIndicatorDotPaint ??= new SKPaint { ColorF = SubpixelIndicatorDot.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
+    [TomlNonSerialized]
     public SKPaint PopupMenuFgPaint => _popupMenuFgPaint ??= new SKPaint { ColorF = PopupMenuFg.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
+    [TomlNonSerialized]
     public SKPaint PopupMenuFgDisabledPaint => _popupMenuFgDisabledPaint ??= new SKPaint { ColorF = PopupMenuFgDisabled.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
+    [TomlNonSerialized]
     public SKPaint PopupMenuFgExtraPaint => _popupMenuFgExtraPaint ??= new SKPaint { ColorF = PopupMenuFgExtra.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
+    [TomlNonSerialized]
     public SKPaint PopupMenuBgPaint => _popupMenuBgPaint ??= new SKPaint { ColorF = PopupMenuBg.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
+    [TomlNonSerialized]
     public SKPaint PopupMenuSelectedPaint => _popupMenuSelectedPaint ??= new SKPaint { ColorF = PopupMenuSelected.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
 
     public void InvalidateCache() {
@@ -114,6 +135,8 @@ public struct Theme {
         _actionPaint = _anglePaint = _breakpointPaint = _savestateBreakpointPaint = _delimiter = _command = _frame = _comment = null;
         _commentBox = _statusFgPaint = _subpixelIndicatorDotPaint = _popupMenuFgPaint = _popupMenuFgDisabledPaint = _popupMenuFgExtraPaint = _popupMenuBgPaint = _popupMenuSelectedPaint = null;
     }
+
+    #endregion
 
     public bool DarkMode;
 
