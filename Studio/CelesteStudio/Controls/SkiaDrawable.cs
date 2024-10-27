@@ -12,20 +12,27 @@ public abstract class SkiaDrawable : Drawable {
     private Bitmap? image = null;
     private SKImageInfo imageInfo = SKImageInfo.Empty;
 
+    protected virtual int DrawX => 0;
+    protected virtual int DrawY => 0;
+    protected virtual int DrawWidth => Width;
+    protected virtual int DrawHeight => Height;
+
     protected abstract void Draw(PaintEventArgs e, SKSurface surface, SKImageInfo info);
 
     protected override void OnPaint(PaintEventArgs e)
     {
         try {
-            if (Width <= 0 || Height <= 0) {
+            int drawWidth = DrawWidth, drawHeight = DrawHeight;
+
+            if (drawWidth <= 0 || drawHeight <= 0) {
                 return;
             }
 
-            if (Size != image?.Size)
+            if (drawWidth != image?.Size.Width || drawHeight != image?.Size.Height)
             {
                 image?.Dispose();
-                image = new Bitmap(Size, PixelFormat.Format32bppRgba);
-                imageInfo = new SKImageInfo(Width, Height, colorType, SKAlphaType.Unpremul);
+                image = new Bitmap(new Size(drawWidth, drawHeight), PixelFormat.Format32bppRgba);
+                imageInfo = new SKImageInfo(drawWidth, drawHeight, colorType, SKAlphaType.Unpremul);
             }
 
             using var bmp = image.Lock();
@@ -33,7 +40,7 @@ public abstract class SkiaDrawable : Drawable {
 
             Draw(e, surface, imageInfo);
 
-            e.Graphics.DrawImage(image, PointF.Empty);
+            e.Graphics.DrawImage(image, DrawX, DrawY);
         }
         catch (Exception ex)
         {
