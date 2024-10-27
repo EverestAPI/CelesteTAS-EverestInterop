@@ -115,11 +115,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: changelog-*
-      - name: Clean-up changelog artifacts
-        uses: geekyeggo/delete-artifact@v5
-        with:
-          name: changelog-*
-          failOnError: false
 
       - name: Setup Python environment
         run: |
@@ -160,3 +155,9 @@ jobs:
             CelesteStudio-linux-x64.zip
             CelesteStudio-macos-x64.zip
             CelesteStudio-macos-arm64.zip
+
+      - name: Clean-up changelog artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: changelog-*
+          failOnError: false
