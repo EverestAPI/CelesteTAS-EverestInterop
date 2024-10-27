@@ -35,6 +35,7 @@ def main():
     version_info_file = sys.argv[2]
     gb_changelog_file = sys.argv[3]
     gh_changelog_file = sys.argv[4]
+    studio_changelog_file = sys.argv[5]
 
     # Find CelesteTAS / Studio version
     celestetas_version = re.search(r"CelesteTAS\s+(v[\d.]+)", commit_message).group(1)
@@ -135,6 +136,10 @@ def main():
         else:
             break # No more pages left
         break
+
+    # Only include release notes (and not commit details) in Studio changelog
+    with open(studio_changelog_file, "w") as f:
+        f.write("\n".join(gh_markdown))
 
     # Generate commit details
     gh_markdown.append("<details>")
