@@ -146,8 +146,8 @@ jobs:
           GAMEBANANA_USERNAME: AutomaticRelease
           GAMEBANANA_PASSWORD: ${{ secrets.GAMEBANANA_PASSWORD }}
           GAMEBANANA_2FA_URI: ${{ secrets.GAMEBANANA_2FA_URI }}
-          GAMEBANANA_MODID: 546692
-          GAMEBANANA_ISTOOL: 0
+          GAMEBANANA_MODID: 6715
+          GAMEBANANA_ISTOOL: 1
 
       - name: Upload GitHub release
         uses: softprops/action-gh-release@v1
