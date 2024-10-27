@@ -13,7 +13,6 @@ using Eto.Drawing;
 using Eto.Forms;
 using StudioCommunication.Util;
 using System.Diagnostics;
-using System.Net;
 using Tomlet;
 using Tomlet.Attributes;
 using Tomlet.Exceptions;
@@ -65,10 +64,10 @@ public sealed class Settings {
     [TomlNonSerialized]
     public Theme Theme {
         get {
-            if (Theme.BuiltinThemes.TryGetValue(ThemeName, out Theme builtinTheme)) {
+            if (Theme.BuiltinThemes.TryGetValue(ThemeName, out var builtinTheme)) {
                 return builtinTheme;
             }
-            if (CustomThemes.TryGetValue(ThemeName, out Theme customTheme)) {
+            if (CustomThemes.TryGetValue(ThemeName, out var customTheme)) {
                 return customTheme;
             }
             // Fall back to light theme
@@ -223,19 +222,14 @@ public sealed class Settings {
                             ? Theme.BuiltinThemes[Theme.BuiltinDark]
                             : Theme.BuiltinThemes[Theme.BuiltinLight];
 
-                        // Need to box the theme, since it's a struct
-                        var currentThemeBox = (object)currentTheme;
-
                         foreach (var field in typeof(Theme).GetFields(BindingFlags.Public | BindingFlags.Instance)) {
                             if (!themeTable.ContainsKey(field.Name)) {
                                 var fallbackValue = field.GetValue(fallbackTheme);
-                                field.SetValue(currentThemeBox, fallbackValue);
+                                field.SetValue(currentTheme, fallbackValue);
 
                                 Console.WriteLine($"Warning: Custom theme '{themeName}' is missing field '{field.Name}'! Defaulting to {fallbackValue}");
                             }
                         }
-
-                        Instance.CustomThemes[themeName] = (Theme)currentThemeBox;
                     }
                 }
 
