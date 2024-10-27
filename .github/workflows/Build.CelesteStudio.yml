@@ -29,13 +29,15 @@ jobs:
         run: sed -i "s/-dev/-$(git rev-parse --short HEAD)/" Studio/CelesteStudio/Studio.cs
         if: ${{ inputs.build-cfg == 'Debug' }}
 
-      - name: Download changelog
+      - name: Download changelogs
         uses: actions/download-artifact@v4
         with:
-          pattern: changelog-studio
+          pattern: changelog-*
         if: ${{ inputs.build-cfg == 'Release' }}
-      - name: Move changelog into Assets
-        run: mv changelog-studio/studio_changelog.md Studio/CelesteStudio/Assets/Changelog.md
+      - name: Move changelogs into Assets
+        run: |
+          mv changelog-version/version_info.txt Studio/CelesteStudio/Assets/VersionInfo.txt
+          mv changelog-studio/studio_changelog.md Studio/CelesteStudio/Assets/Changelog.md
         if: ${{ inputs.build-cfg == 'Release' }}
 
       - name: Publish x64
@@ -75,6 +77,17 @@ jobs:
       - name: Set version suffix (nightly)
         run: sed -i "s/-dev/-$(git rev-parse --short HEAD)/" Studio/CelesteStudio/Studio.cs
         if: ${{ inputs.build-cfg == 'Debug' }}
+
+      - name: Download changelogs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: changelog-*
+        if: ${{ inputs.build-cfg == 'Release' }}
+      - name: Move changelogs into Assets
+        run: |
+          mv changelog-version/version_info.txt Studio/CelesteStudio/Assets/VersionInfo.txt
+          mv changelog-studio/studio_changelog.md Studio/CelesteStudio/Assets/Changelog.md
+        if: ${{ inputs.build-cfg == 'Release' }}
 
       - name: Publish x64
         run: dotnet publish Studio/CelesteStudio.GTK -c ${{ inputs.build-cfg }} -r linux-x64 --output build-x64
@@ -117,6 +130,17 @@ jobs:
       - name: Set version suffix (nightly)
         run: zsh -c "sed -i '' -e "s/-dev/-$(git rev-parse --short HEAD)/" Studio/CelesteStudio/Studio.cs"
         if: ${{ inputs.build-cfg == 'Debug' }}
+
+      - name: Download changelogs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: changelog-*
+        if: ${{ inputs.build-cfg == 'Release' }}
+      - name: Move changelogs into Assets
+        run: |
+          mv changelog-version/version_info.txt Studio/CelesteStudio/Assets/VersionInfo.txt
+          mv changelog-studio/studio_changelog.md Studio/CelesteStudio/Assets/Changelog.md
+        if: ${{ inputs.build-cfg == 'Release' }}
 
       - name: Publish x64
         run: dotnet publish Studio/CelesteStudio.Mac -c ${{ inputs.build-cfg }} -r osx-x64 --output build-x64
