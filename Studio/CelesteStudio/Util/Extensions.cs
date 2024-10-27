@@ -5,6 +5,7 @@ using System.Numerics;
 using CelesteStudio.Editing;
 using Eto.Drawing;
 using Eto.Forms;
+using SkiaSharp;
 using System.Reflection;
 using Range = System.Range;
 
@@ -92,6 +93,9 @@ public static class Extensions
 
         return -1;
     }
+
+    public static SKColorF ToSkia(this Color color) => new(color.R, color.G, color.B, color.A);
+    public static Color ToEto(this SKColorF color) => new(color.Red, color.Green, color.Blue, color.Alpha);
 
     private static readonly MethodInfo? m_FixScrollable = Assembly.GetEntryAssembly()?.GetType("CelesteStudio.WPF.Program")?.GetMethod("FixScrollable", BindingFlags.Public | BindingFlags.Static);
     public static Scrollable FixBorder(this Scrollable scrollable) {

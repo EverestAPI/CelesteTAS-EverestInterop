@@ -22,12 +22,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Eto.Forms" Version="2.8.3" />
-        <PackageReference Include="Samboy063.Tomlet" Version="5.3.1" />
-        <PackageReference Include="Markdig" Version="0.37.0" />
+        <PackageReference Include="Eto.Forms" Version="2.8.3"/>
 
-        <ProjectReference Include="..\..\StudioCommunication\StudioCommunication.csproj" />
-        <ProjectReference Include="..\..\external\Featherline\Featherline.csproj" />
+        <PackageReference Include="SkiaSharp" Version="2.88.8" />
+        <PackageReference Include="Samboy063.Tomlet" Version="5.3.1"/>
+        <PackageReference Include="Markdig" Version="0.37.0"/>
+
+        <ProjectReference Include="..\..\StudioCommunication\StudioCommunication.csproj"/>
+        <ProjectReference Include="..\..\external\Featherline\Featherline.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -36,13 +38,13 @@
 
     <!-- Windows requires .otf, macOS requires .ttf and GTK doesn't seem to care -->
     <ItemGroup Condition="$(IsMacOS) == 'true'">
-        <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Regular.ttf" LogicalName="JetBrainsMono/JetBrainsMono-Regular"/>
+        <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Light.ttf" LogicalName="JetBrainsMono/JetBrainsMono-Regular"/>
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Bold.ttf" LogicalName="JetBrainsMono/JetBrainsMono-Bold"/>
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Italic.ttf" LogicalName="JetBrainsMono/JetBrainsMono-Italic"/>
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-BoldItalic.ttf" LogicalName="JetBrainsMono/JetBrainsMono-BoldItalic"/>
     </ItemGroup>
     <ItemGroup Condition="$(IsMacOS) != 'true'">
-        <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Regular.otf" LogicalName="JetBrainsMono/JetBrainsMono-Regular"/>
+        <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Light.otf" LogicalName="JetBrainsMono/JetBrainsMono-Regular"/>
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Bold.otf" LogicalName="JetBrainsMono/JetBrainsMono-Bold"/>
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Italic.otf" LogicalName="JetBrainsMono/JetBrainsMono-Italic"/>
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-BoldItalic.otf" LogicalName="JetBrainsMono/JetBrainsMono-BoldItalic"/>
