@@ -3917,26 +3917,24 @@ public sealed class Editor : SkiaDrawable {
 
         // Draw toast message box
         if (!string.IsNullOrWhiteSpace(toastMessage)) {
-            var lines = toastMessage.SplitDocumentLines();
+            string[] lines = toastMessage.SplitDocumentLines();
 
-            float width = FontManager.PopupFont.CharWidth() * lines.Select(line => line.Length).Aggregate(Math.Max);
-            float height = FontManager.PopupFont.LineHeight() * lines.Length;
+            var font = FontManager.SKPopupFont;
+
+            float width = font.CharWidth() * lines.Select(line => line.Length).Aggregate(Math.Max);
+            float height = font.LineHeight() * lines.Length;
             float x = scrollablePosition.X + (scrollableSize.Width - width) / 2.0f;
             float y = scrollablePosition.Y + (scrollableSize.Height - height) / 2.0f;
-
             float padding = Settings.Instance.Theme.PopupMenuBorderPadding;
 
-            fillPaint.ColorF = Settings.Instance.Theme.PopupMenuBg.ToSkia();
             canvas.DrawRoundRect(
                 x: x - padding, y: y - padding,
                 w: width + padding * 2.0f, h: height + padding * 2.0f,
                 rx: Settings.Instance.Theme.PopupMenuBorderRounding, ry: Settings.Instance.Theme.PopupMenuBorderRounding,
-                fillPaint);
+                Settings.Instance.Theme.PopupMenuBgPaint);
 
-            fillPaint.ColorF = Settings.Instance.Theme.PopupMenuFg.ToSkia();
-            foreach (var line in lines) {
-                // TODO: Use PopupFont
-                canvas.DrawText(line, x, y+ Font.Offset(), Font, fillPaint);
+            foreach (string line in lines) {
+                canvas.DrawText(line, x, y + Font.Offset(), font, Settings.Instance.Theme.PopupMenuFgPaint);
                 y += Font.LineHeight();
             }
         }

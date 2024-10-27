@@ -6,12 +6,7 @@ using System.Collections.Generic;
 
 namespace CelesteStudio.Editing;
 
-public struct Style(Color foregroundColor, Color? backgroundColor = null, FontStyle fontStyle = FontStyle.None) {
-    public Color ForegroundColor = foregroundColor;
-    public Color? BackgroundColor = backgroundColor;
-
-    public FontStyle FontStyle = fontStyle;
-
+public record struct Style(Color ForegroundColor, Color? BackgroundColor = null, FontStyle FontStyle = FontStyle.None) {
     public StylePaint CreatePaint() => new(CreateForegroundPaint(), CreateBackgroundPaint(), FontStyle);
 
     public SKPaint CreateForegroundPaint(SKPaintStyle style = SKPaintStyle.Fill) =>
@@ -27,7 +22,7 @@ public readonly record struct StylePaint(SKPaint ForegroundColor, SKPaint? Backg
     }
 }
 
-public struct Theme() {
+public struct Theme {
     // Editor
     public Color Background;
     public Color Caret;
@@ -77,7 +72,7 @@ public struct Theme() {
 
     // Cache SKPaints
     private StylePaint? _actionPaint, _anglePaint, _breakpointPaint, _savestateBreakpointPaint, _delimiter, _command, _frame, _comment;
-    private SKPaint? _commentBox;
+    private SKPaint? _commentBox, _popupMenuFgPaint, _popupMenuFgDisabledPaint, _popupMenuFgExtraPaint, _popupMenuBgPaint, _popupMenuSelectedPaint;
 
     public StylePaint ActionPaint => _actionPaint ??= Action.CreatePaint();
     public StylePaint AnglePaint => _anglePaint ??= Angle.CreatePaint();
@@ -88,6 +83,11 @@ public struct Theme() {
     public StylePaint FramePaint => _frame ??= Frame.CreatePaint();
     public StylePaint CommentPaint => _comment ??= Comment.CreatePaint();
     public SKPaint CommentBoxPaint => _commentBox ??= Comment.CreateForegroundPaint(SKPaintStyle.Stroke);
+    public SKPaint PopupMenuFgPaint => _popupMenuFgPaint ??= new SKPaint { ColorF = PopupMenuFg.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
+    public SKPaint PopupMenuFgDisabledPaint => _popupMenuFgDisabledPaint ??= new SKPaint { ColorF = PopupMenuFgDisabled.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
+    public SKPaint PopupMenuFgExtraPaint => _popupMenuFgExtraPaint ??= new SKPaint { ColorF = PopupMenuFgExtra.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
+    public SKPaint PopupMenuBgPaint => _popupMenuBgPaint ??= new SKPaint { ColorF = PopupMenuBg.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
+    public SKPaint PopupMenuSelectedPaint => _popupMenuSelectedPaint ??= new SKPaint { ColorF = PopupMenuSelected.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
 
     public void InvalidateCache() {
         _actionPaint?.Dispose();
@@ -99,9 +99,14 @@ public struct Theme() {
         _frame?.Dispose();
         _comment?.Dispose();
         _commentBox?.Dispose();
+        _popupMenuFgPaint?.Dispose();
+        _popupMenuFgDisabledPaint?.Dispose();
+        _popupMenuFgExtraPaint?.Dispose();
+        _popupMenuBgPaint?.Dispose();
+        _popupMenuSelectedPaint?.Dispose();
 
         _actionPaint = _anglePaint = _breakpointPaint = _savestateBreakpointPaint = _delimiter = _command = _frame = _comment = null;
-        _commentBox = null;
+        _commentBox = _popupMenuFgPaint = _popupMenuFgDisabledPaint = _popupMenuFgExtraPaint = _popupMenuBgPaint = _popupMenuSelectedPaint = null;
     }
 
     public bool DarkMode;

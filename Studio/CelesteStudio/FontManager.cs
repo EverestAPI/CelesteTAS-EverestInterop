@@ -17,20 +17,20 @@ public static class FontManager {
     public const string FontFamilyBuiltinDisplayName = "JetBrains Mono (builtin)";
 #endif
 
-    private static Font? editorFontRegular, editorFontBold, editorFontItalic, editorFontBoldItalic, statusFont, popupFont;
-    private static SKFont? skEditorFontRegular, skEditorFontBold, skEditorFontItalic, skEditorFontBoldItalic;
+    private static Font? editorFontRegular, editorFontBold, editorFontItalic, editorFontBoldItalic, statusFont;
+    private static SKFont? skEditorFontRegular, skEditorFontBold, skEditorFontItalic, skEditorFontBoldItalic, skPopupFont;
 
     public static Font EditorFontRegular    => editorFontRegular    ??= CreateEditor(FontStyle.None);
     public static Font EditorFontBold       => editorFontBold       ??= CreateEditor(FontStyle.Bold);
     public static Font EditorFontItalic     => editorFontItalic     ??= CreateEditor(FontStyle.Italic);
     public static Font EditorFontBoldItalic => editorFontBoldItalic ??= CreateEditor(FontStyle.Bold | FontStyle.Italic);
     public static Font StatusFont           => statusFont           ??= CreateStatus();
-    public static Font PopupFont            => popupFont            ??= CreatePopup();
 
-    public static SKFont SKEditorFontRegular    => skEditorFontRegular    ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, FontStyle.None);
+    public static SKFont SKEditorFontRegular    => skEditorFontRegular    ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom);
     public static SKFont SKEditorFontBold       => skEditorFontBold       ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, FontStyle.Bold);
     public static SKFont SKEditorFontItalic     => skEditorFontItalic     ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, FontStyle.Italic);
     public static SKFont SKEditorFontBoldItalic => skEditorFontBoldItalic ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, FontStyle.Bold | FontStyle.Italic);
+    public static SKFont SKPopupFont            => skPopupFont            ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.PopupFontSize);
 
     private static FontFamily? builtinFontFamily;
     public static Font CreateFont(string fontFamily, float size, FontStyle style = FontStyle.None) {
@@ -51,7 +51,7 @@ public static class FontManager {
         }
     }
 
-    public static SKFont CreateSKFont(string fontFamily, float size, FontStyle style) {
+    public static SKFont CreateSKFont(string fontFamily, float size, FontStyle style = FontStyle.None) {
         // TODO: Don't hardcode this
         const float dpi = 96.0f / 72.0f;
 
@@ -139,14 +139,17 @@ public static class FontManager {
         editorFontItalic?.Dispose();
         editorFontBoldItalic?.Dispose();
         statusFont?.Dispose();
-        popupFont?.Dispose();
         charWidthCache.Clear();
 
-        editorFontRegular = editorFontBold = editorFontItalic = editorFontBoldItalic = statusFont = popupFont = null;
+        editorFontRegular = editorFontBold = editorFontItalic = editorFontBoldItalic = statusFont = null;
 
         skEditorFontRegular?.Dispose();
+        skEditorFontBold?.Dispose();
+        skEditorFontItalic?.Dispose();
+        skEditorFontBoldItalic?.Dispose();
+        skPopupFont?.Dispose();
 
-        skEditorFontRegular = null;
+        skEditorFontRegular = skEditorFontBold = skEditorFontItalic = skEditorFontBoldItalic = skPopupFont = null;
     }
 
     private static Font CreateEditor(FontStyle style) => CreateFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, style);
