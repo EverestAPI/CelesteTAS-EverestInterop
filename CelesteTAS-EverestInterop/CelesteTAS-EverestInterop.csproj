@@ -82,9 +82,9 @@
         <Copy SourceFiles="@(CelesteAssets)" DestinationFiles="..\%(Identity)"/>
     </Target>
 
-    <Target Name="PackageMod" AfterTargets="CopyFiles" Condition="'$(Configuration)' == 'Release'">
+    <Target Name="PackageMod" AfterTargets="Build" DependsOnTargets="CopyAssemblies;CopyAssets" Condition="'$(Configuration)' == 'Release'">
         <ItemGroup>
-            <FilesToPackage Include="..\everest.yaml;..\bin\**\*.*;..\Audio\**\*.*;..\Dialog\**\*.*;..\Graphics\**\*.*;..\Ahorn\**\*.*;..\Loenn\**\*.*" />
+            <FilesToPackage Include="..\everest.yaml;..\bin\**\*.*;..\Dialog\**\*.*;..\Graphics\**\*.*" />
         </ItemGroup>
         <PackageMod Files="@(FilesToPackage)" OutputPath="..\CelesteTAS.zip" />
     </Target>
