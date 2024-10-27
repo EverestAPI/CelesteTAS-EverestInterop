@@ -60,7 +60,7 @@ public sealed class JadderlineForm : Form {
         };
         moveOnly = new CheckBox { Width = rowWidth };
         additionalInputs = new TextBox { Width = rowWidth };
-        output = new TextArea { ReadOnly = true, Font = FontManager.EditorFontRegular, Width = 250 };
+        output = new TextArea { ReadOnly = true, Font = FontManager.EditorFont, Width = 250 };
 
         var layout = new DynamicLayout { DefaultSpacing = new Size(10, 10) };
         layout.BeginHorizontal();

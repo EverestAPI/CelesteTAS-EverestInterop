@@ -41,10 +41,10 @@ public sealed class FeatherlineForm : Form {
         gensPerTiming = new NumericStepper { MinValue = 1, MaxValue = 999999, Value = 150, DecimalPlaces = 0, Width = stepperWidth };
         timingShuffles = new NumericStepper { MinValue = 0, MaxValue = 100, Value = 6, DecimalPlaces = 0, Width = stepperWidth };
         testOnInitial = new CheckBox { Text = "Test Timing On\nInitial Inputs Directly", Checked = false };
-        checkpoints = new TextArea { Wrap = true, Font = FontManager.EditorFontRegular, Width = textWidth };
-        initialInputs = new TextArea { Wrap = true, Font = FontManager.EditorFontRegular, Width = textWidth };
-        customHitboxes = new TextArea { Wrap = true, Font = FontManager.EditorFontRegular, Width = textWidth };
-        output = new TextArea { ReadOnly = true, Font = FontManager.EditorFontRegular, Width = textWidth };
+        checkpoints = new TextArea { Wrap = true, Font = FontManager.EditorFont, Width = textWidth };
+        initialInputs = new TextArea { Wrap = true, Font = FontManager.EditorFont, Width = textWidth };
+        customHitboxes = new TextArea { Wrap = true, Font = FontManager.EditorFont, Width = textWidth };
+        output = new TextArea { ReadOnly = true, Font = FontManager.EditorFont, Width = textWidth };
         var layout = new DynamicLayout { DefaultSpacing = new Size(10, 10) };
         layout.BeginHorizontal();
         layout.BeginVertical();
@@ -245,7 +245,7 @@ public sealed class FeatherlineHelpForm : Form {
         layout.BeginVertical();
         layout.AddCentered(new Label { Wrap = WrapMode.Word, Text = "Getting started with Featherline", Font = h1 });
         layout.Add(new Label { Wrap = WrapMode.Word, Text = "1. Run your TAS up until the frame you featherboost, such as" });
-        layout.Add(new Label { Wrap = WrapMode.Word, Text = "  26\r\n > 1,R,U", Font = FontManager.EditorFontRegular });
+        layout.Add(new Label { Wrap = WrapMode.Word, Text = "  26\r\n > 1,R,U", Font = FontManager.EditorFont });
         layout.Add(new Label { Wrap = WrapMode.Word, Text = "The TAS should be paused here." });
         layout.Add(new Label { Wrap = WrapMode.Word, Text = "2. Click the Get Game Info button." });
         layout.Add(new Label { Wrap = WrapMode.Word, Text = "3. Define a checkpoint at every turn or branching point of the path you want to TAS. Checkpoints are further explained later." });
