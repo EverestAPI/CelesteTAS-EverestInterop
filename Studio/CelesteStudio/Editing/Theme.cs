@@ -72,7 +72,7 @@ public struct Theme {
 
     // Cache SKPaints
     private StylePaint? _actionPaint, _anglePaint, _breakpointPaint, _savestateBreakpointPaint, _delimiter, _command, _frame, _comment;
-    private SKPaint? _commentBox, _popupMenuFgPaint, _popupMenuFgDisabledPaint, _popupMenuFgExtraPaint, _popupMenuBgPaint, _popupMenuSelectedPaint;
+    private SKPaint? _commentBox, _statusFgPaint, _subpixelIndicatorDotPaint, _popupMenuFgPaint, _popupMenuFgDisabledPaint, _popupMenuFgExtraPaint, _popupMenuBgPaint, _popupMenuSelectedPaint;
 
     public StylePaint ActionPaint => _actionPaint ??= Action.CreatePaint();
     public StylePaint AnglePaint => _anglePaint ??= Angle.CreatePaint();
@@ -83,6 +83,9 @@ public struct Theme {
     public StylePaint FramePaint => _frame ??= Frame.CreatePaint();
     public StylePaint CommentPaint => _comment ??= Comment.CreatePaint();
     public SKPaint CommentBoxPaint => _commentBox ??= Comment.CreateForegroundPaint(SKPaintStyle.Stroke);
+
+    public SKPaint StatusFgPaint => _statusFgPaint ??= new SKPaint { ColorF = StatusFg.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
+    public SKPaint SubpixelIndicatorDotPaint => _subpixelIndicatorDotPaint ??= new SKPaint { ColorF = SubpixelIndicatorDot.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
     public SKPaint PopupMenuFgPaint => _popupMenuFgPaint ??= new SKPaint { ColorF = PopupMenuFg.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
     public SKPaint PopupMenuFgDisabledPaint => _popupMenuFgDisabledPaint ??= new SKPaint { ColorF = PopupMenuFgDisabled.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
     public SKPaint PopupMenuFgExtraPaint => _popupMenuFgExtraPaint ??= new SKPaint { ColorF = PopupMenuFgExtra.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
@@ -99,6 +102,9 @@ public struct Theme {
         _frame?.Dispose();
         _comment?.Dispose();
         _commentBox?.Dispose();
+
+        _statusFgPaint?.Dispose();
+        _subpixelIndicatorDotPaint?.Dispose();
         _popupMenuFgPaint?.Dispose();
         _popupMenuFgDisabledPaint?.Dispose();
         _popupMenuFgExtraPaint?.Dispose();
@@ -106,7 +112,7 @@ public struct Theme {
         _popupMenuSelectedPaint?.Dispose();
 
         _actionPaint = _anglePaint = _breakpointPaint = _savestateBreakpointPaint = _delimiter = _command = _frame = _comment = null;
-        _commentBox = _popupMenuFgPaint = _popupMenuFgDisabledPaint = _popupMenuFgExtraPaint = _popupMenuBgPaint = _popupMenuSelectedPaint = null;
+        _commentBox = _statusFgPaint = _subpixelIndicatorDotPaint = _popupMenuFgPaint = _popupMenuFgDisabledPaint = _popupMenuFgExtraPaint = _popupMenuBgPaint = _popupMenuSelectedPaint = null;
     }
 
     public bool DarkMode;

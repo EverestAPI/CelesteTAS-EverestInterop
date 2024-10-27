@@ -18,7 +18,7 @@ public static class FontManager {
 #endif
 
     private static Font? editorFontRegular, editorFontBold, editorFontItalic, editorFontBoldItalic, statusFont;
-    private static SKFont? skEditorFontRegular, skEditorFontBold, skEditorFontItalic, skEditorFontBoldItalic, skPopupFont;
+    private static SKFont? skEditorFontRegular, skEditorFontBold, skEditorFontItalic, skEditorFontBoldItalic, skStatusFont, skPopupFont;
 
     public static Font EditorFontRegular    => editorFontRegular    ??= CreateEditor(FontStyle.None);
     public static Font EditorFontBold       => editorFontBold       ??= CreateEditor(FontStyle.Bold);
@@ -30,6 +30,7 @@ public static class FontManager {
     public static SKFont SKEditorFontBold       => skEditorFontBold       ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, FontStyle.Bold);
     public static SKFont SKEditorFontItalic     => skEditorFontItalic     ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, FontStyle.Italic);
     public static SKFont SKEditorFontBoldItalic => skEditorFontBoldItalic ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, FontStyle.Bold | FontStyle.Italic);
+    public static SKFont SKStatusFont           => skStatusFont           ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.StatusFontSize);
     public static SKFont SKPopupFont            => skPopupFont            ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.PopupFontSize);
 
     private static FontFamily? builtinFontFamily;
@@ -70,7 +71,7 @@ public static class FontManager {
             });
             var typeface = SKTypeface.FromStream(stream);
 
-            return new SKFont(typeface, size * dpi) { LinearMetrics = true };
+            return new SKFont(typeface, size * dpi) { LinearMetrics = true, Subpixel = true, Edging = SKFontEdging.SubpixelAntialias };
         } else {
             var typeface = style switch {
                 FontStyle.None => SKTypeface.FromFamilyName(fontFamily, SKFontStyleWeight.Light, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright),
@@ -80,7 +81,7 @@ public static class FontManager {
                 _ => throw new UnreachableException(),
             };
 
-            return new SKFont(typeface, size * dpi) { LinearMetrics = true };
+            return new SKFont(typeface, size * dpi) { LinearMetrics = true, Subpixel = true, Edging = SKFontEdging.SubpixelAntialias };
         }
     }
 
@@ -147,9 +148,10 @@ public static class FontManager {
         skEditorFontBold?.Dispose();
         skEditorFontItalic?.Dispose();
         skEditorFontBoldItalic?.Dispose();
+        skStatusFont?.Dispose();
         skPopupFont?.Dispose();
 
-        skEditorFontRegular = skEditorFontBold = skEditorFontItalic = skEditorFontBoldItalic = skPopupFont = null;
+        skEditorFontRegular = skEditorFontBold = skEditorFontItalic = skEditorFontBoldItalic = skStatusFont = skPopupFont = null;
     }
 
     private static Font CreateEditor(FontStyle style) => CreateFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, style);
