@@ -1,6 +1,8 @@
-using Celeste;
+using Microsoft.Xna.Framework;
 using Monocle;
+using StudioCommunication;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,6 +18,17 @@ namespace TAS.InfoHUD;
 public static class CustomInfo {
 
     private static readonly Regex TargetQueryRegex = new(@"\{(.*?)\}", RegexOptions.Compiled);
+
+    /// Should return true if the value was successfully formatted, otherwise false
+    private delegate bool ValueFormatter(object? value, int decimals, out string formattedValue);
+
+    // Applies custom formatting to the result of a target-query
+    private static readonly Dictionary<string, ValueFormatter> CustomFormatters = new() {
+        { ".toFrame()", Formatter_toFrame },
+        { ".toPixelPerFrame()", Formatter_toPixelPerFrame },
+    };
+
+    #region Parsing
 
     /// Parses lines of a custom Info HUD template into actual values for the current frame
     public static IEnumerable<string> ParseTemplate(IEnumerable<string> template, int decimals) {
@@ -60,6 +73,7 @@ public static class CustomInfo {
                 continue;
             }
 
+            // Find prefix
             string prefix;
             if (query[^1] == ':') {
                 prefix = $"{query} "; // query: value
@@ -69,6 +83,15 @@ public static class CustomInfo {
                 query = query[..^1];
             } else {
                 prefix = "";
+            }
+
+            // Find custom formatter
+            ValueFormatter? formatter = null;
+            foreach ((string name, var customFormatter) in CustomFormatters) {
+                if (query.EndsWith(name)) {
+                    query = query[..^name.Length];
+                    formatter = customFormatter;
+                }
             }
 
             (var results, bool success, string errorMessage) = TargetQuery.GetMemberValues(query);
@@ -83,13 +106,17 @@ public static class CustomInfo {
             foreach ((object? value, object? baseInstance) in results) {
                 var currResultType = baseInstance?.GetType();
 
+                if (formatter == null || !formatter(value, decimals, out string valueStr)) {
+                    valueStr = DefaultFormatter(value, decimals);
+                }
+
                 if (baseInstance is Entity entity && entity.GetEntityData()?.ToEntityId() is { } entityId) {
                     if (firstMatch && !appendedMainResult) {
                         mainResult.Append(betweenText);
                         appendedMainResult = true;
                     }
 
-                    string result = $"{prefix}{value?.ToString() ?? "null"}";
+                    string result = $"{prefix}{valueStr}";
                     entityResults.AddToKey($"{currResultType?.Name ?? ""}[{entityId}]", (firstMatch ? "" : betweenText) + result);
                 } else {
                     if (appendedMainResult) {
@@ -101,7 +128,7 @@ public static class CustomInfo {
                     }
 
                     mainResult.Append(prefix);
-                    mainResult.Append(value?.ToString() ?? "null");
+                    mainResult.Append(valueStr);
                 }
 
                 lastResultType = currResultType;
@@ -146,4 +173,113 @@ public static class CustomInfo {
             yield return entityLine.ToString();
         }
     }
+
+    #endregion
+    #region Formatting
+
+    /// Formats a value in seconds into frames
+    private static bool Formatter_toFrame(object? value, int _, out string formattedValue) {
+        if (value is float floatValue) {
+            formattedValue = GameInfo.ConvertToFrames(floatValue).ToString();
+            return true;
+        }
+
+        formattedValue = "";
+        return false;
+    }
+    /// Formats a value in px/s into px/f
+    private static bool Formatter_toPixelPerFrame(object? value, int decimals, out string formattedValue) {
+        if (value is float floatValue) {
+            formattedValue = GameInfo.ConvertSpeedUnit(floatValue, SpeedUnit.PixelPerFrame).ToFormattedString(decimals);
+            return true;
+        }
+        if (value is Vector2 vectorValue) {
+            formattedValue = GameInfo.ConvertSpeedUnit(vectorValue, SpeedUnit.PixelPerFrame).ToSimpleString(decimals);
+            return true;
+        }
+
+        formattedValue = "";
+        return false;
+    }
+
+    /// Fallback for when no specific formatter is applicable
+    private static string DefaultFormatter(object? obj, int decimals) {
+        switch (obj) {
+            case Vector2 vectorValue:
+                return vectorValue.ToSimpleString(decimals);
+            case Vector2Double vectorValue:
+                return vectorValue.ToSimpleString(decimals);
+            case float floatValue:
+                return floatValue.ToFormattedString(decimals);
+            case Scene sceneValue:
+                return sceneValue.ToString() ?? "null";
+            case Entity entity:
+                string id = entity.GetEntityData()?.ToEntityId().ToString() is { } value ? $"[{value}]" : "";
+                return $"{entity}{id}";
+            case Collider collider:
+                return ColliderToString(collider);
+            case IEnumerable enumerable:
+                bool compressed = enumerable is IEnumerable<Component> or IEnumerable<Entity>;
+                return IEnumerableToString(enumerable, ", ", compressed);
+
+            default:
+                return obj?.ToString() ?? "null";
+        }
+    }
+
+    /// Formats items of the IEnumerable, optionally compressing same values
+    private static string IEnumerableToString(IEnumerable enumerable, string separator, bool compressed) {
+        var builder = new StringBuilder();
+
+        if (!compressed) {
+            foreach (object value in enumerable) {
+                if (builder.Length > 0) {
+                    builder.Append(separator);
+                }
+
+                builder.Append(value);
+            }
+
+            return builder.ToString();
+        }
+
+        var valueOccurrences = new Dictionary<string, int>();
+        foreach (object value in enumerable) {
+            string str = value.ToString() ?? "null";
+            if (!valueOccurrences.TryAdd(str, 1)) {
+                valueOccurrences[str]++;
+            }
+        }
+
+        foreach ((string key, int occurrences) in valueOccurrences) {
+            if (builder.Length > 0) {
+                builder.Append(separator);
+            }
+
+            if (occurrences == 1) {
+                builder.Append(key);
+            } else {
+                builder.Append($"{key} * {occurrences}");
+            }
+        }
+
+        return builder.ToString();
+    }
+
+    /// Formats a collider with its important values
+    private static string ColliderToString(Collider collider, int iterationHeight = 1) {
+        return collider switch {
+            Hitbox hitbox => $"Hitbox=[{hitbox.Left},{hitbox.Right}]×[{hitbox.Top},{hitbox.Bottom}]",
+            Circle circle => circle.Position == Vector2.Zero
+                ? $"Circle=[Radius={circle.Radius}]"
+                : $"Circle=[Radius={circle.Radius},Offset={circle.Position}]",
+            ColliderList list => iterationHeight > 0
+                ? "ColliderList: { " + string.Join("; ", list.colliders.Select(s => ColliderToString(s, iterationHeight - 1))) + " }"
+                : "ColliderList: { ... }",
+
+            _ => collider.ToString() ?? "null"
+        };
+    }
+
+    #endregion
 }
