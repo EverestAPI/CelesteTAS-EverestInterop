@@ -7,11 +7,12 @@ using Monocle;
 using StudioCommunication;
 using System.Collections.Generic;
 using TAS.Input;
-using TAS.Input.Commands;
 using TAS.Utils;
 using GameInput = Celeste.Input;
 
 namespace TAS;
+
+public readonly record struct Vector2Short(short X, short Y);
 
 public enum AnalogMode {
     /// Simply maps the angle onto a circle and applies the magnitude
@@ -20,14 +21,8 @@ public enum AnalogMode {
     Circle,
     /// Maps the angle onto a square, but applies a deadzone of 0.24
     Square,
-    /// I'll be honest.. I have no idea lmao
-    /// I don't think there is really a good reason today to still use this
+    /// Adjusts magnitude to find an exact angle, axis are individually limited to an upper bound
     Precise,
-}
-
-public readonly record struct Vector2Short(short X = 0, short Y = 0) {
-    public readonly short X = X;
-    public readonly short Y = Y;
 }
 
 /// Game controllers only support a precision of a short for the X / Y axis
