@@ -136,6 +136,12 @@ public static class CustomInfo {
                 lastResultType = currResultType;
             }
         }
+        
+        if (lastMatch == null) {
+            mainResult.Append(templateLine);    
+        } else {
+            mainResult.Append(templateLine[(lastMatch!.Index + lastMatch.Length)..]);
+        }
 
         // Evaluate Lua code for main line
         yield return LuaRegex.Replace(mainResult.ToString(), match => {

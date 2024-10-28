@@ -23,10 +23,10 @@ public static class TargetQuery {
     public static bool EnforceLegal => EnforceLegalCommand.EnabledWhenRunning && !AssertCommand.Running;
 
     private static readonly Dictionary<string, List<Type>> allTypes = new();
-    private static readonly Dictionary<string, (List<Type> Types, EntityID? EntityID)> baseTypeCache = [];
+    private static readonly Dictionary<string, (List<Type> Types, List<Type> ComponentTypes, EntityID? EntityID)> baseTypeCache = [];
 
-    /// Searches for the target type, optional EntityID, and optional target assembly
-    private static readonly Regex BaseTypeRegex = new(@"^([\w.]+)(?:\[(.+):(\d+)\])?(@(?:[^.]*))?$", RegexOptions.Compiled);
+    /// Searches for the target type, optional target assembly, optional component type, optional component assembly, and optional EntityID
+    private static readonly Regex BaseTypeRegex = new(@"^([\w.]+)(@(?:[^.:\[\]\n]*))?(?::(\w+))?(@(?:[^.:\[\]\n]*))?(?:\[(.+):(\d+)\])?$", RegexOptions.Compiled);
 
     [Initialize]
     private static void CollectAllTypes() {
@@ -91,7 +91,7 @@ public static class TargetQuery {
     public static (List<(object? Value, object? BaseInstance)> Results, bool Success, string ErrorMessage) GetMemberValues(string query) {
         string[] queryArgs = query.Split('.');
 
-        var baseTypes = ResolveBaseTypes(queryArgs, out string[] memberArgs, out var entityId);
+        var baseTypes = ResolveBaseTypes(queryArgs, out string[] memberArgs, out var componentTypes, out var entityId);
         if (baseTypes.IsEmpty()) {
             return ([(null, null)], Success: false, ErrorMessage: $"Failed to find base type for target-query '{query}'");
         }
@@ -100,18 +100,34 @@ public static class TargetQuery {
         }
 
         List< (object? Value, object? BaseInstance)> allResults = [];
-        foreach (var type in baseTypes) {
-            var instances = ResolveTypeInstances(type, entityId);
-            (var values, bool success, string errorMessage) = ResolveMemberValues(type, instances, memberArgs);
+        foreach (var baseType in baseTypes) {
+            var instances = ResolveTypeInstances(baseType, componentTypes, entityId);
 
-            if (!success) {
-                return ([(null, null)], Success: false, errorMessage);
+            if (componentTypes.IsEmpty()) {
+                if (!ProcessType(baseType, out string errorMessage)) {
+                    return (Results: [], Success: false, ErrorMessage: errorMessage);
+                }
+            } else {
+                foreach (var componentType in componentTypes) {
+                    if (!ProcessType(componentType, out string errorMessage)) {
+                        return (Results: [], Success: false, ErrorMessage: errorMessage);
+                    }
+                }
             }
 
-            if (instances.IsEmpty()) {
-                allResults.Add((values[0], null));
-            } else {
-                allResults.AddRange(values.Select((value, i) => (value, (object?)instances[i])));
+            bool ProcessType(Type type, out string errorMessage) {
+                (var values, bool success, errorMessage) = ResolveMemberValues(type, instances, memberArgs);
+                if (!success) {
+                    return false;
+                }
+
+                if (instances.IsEmpty()) {
+                    allResults.Add((values[0], null));
+                } else {
+                    allResults.AddRange(values.Select((value, i) => (value, (object?)instances[i])));
+                }
+
+                return true;
             }
         }
 
@@ -119,7 +135,8 @@ public static class TargetQuery {
     }
 
     /// Parses the first part of a query into types and an optional EntityID
-    public static List<Type> ResolveBaseTypes(string[] queryArgs, out string[] memberArgs, out EntityID? entityId) {
+    public static List<Type> ResolveBaseTypes(string[] queryArgs, out string[] memberArgs, out List<Type> componentTypes, out EntityID? entityId) {
+        componentTypes = [];
         entityId = null;
 
         // Vanilla settings don't need a prefix
@@ -147,6 +164,7 @@ public static class TargetQuery {
             string typeName = string.Join('.', queryArgs[..i]);
 
             if (baseTypeCache.TryGetValue(typeName, out var pair)) {
+                componentTypes = pair.ComponentTypes;
                 entityId = pair.EntityID;
                 memberArgs = queryArgs[i..];
                 return pair.Types;
@@ -158,14 +176,19 @@ public static class TargetQuery {
             }
 
             // Remove the entity ID from the type check
-            string checkTypeName = $"{match.Groups[1].Value}{match.Groups[4].Value}";
+            string checkTypeName = $"{match.Groups[1].Value}{match.Groups[2].Value}";
+            string componentTypeName = $"{match.Groups[3].Value}{match.Groups[4].Value}";
 
-            if (int.TryParse(match.Groups[3].Value, out int id)) {
-                entityId = new EntityID(match.Groups[2].Value, id);
+            if (int.TryParse(match.Groups[6].Value, out int id)) {
+                entityId = new EntityID(match.Groups[5].Value, id);
             }
 
             if (allTypes.TryGetValue(checkTypeName, out var types)) {
-                baseTypeCache[typeName] = (Types: types, EntityID: entityId);
+                if (!allTypes.TryGetValue(componentTypeName, out componentTypes!)) {
+                    componentTypes = [];
+                }
+
+                baseTypeCache[typeName] = (Types: types, ComponentTypes: componentTypes, EntityID: entityId);
                 memberArgs = queryArgs[i..];
                 return types;
             }
@@ -176,7 +199,7 @@ public static class TargetQuery {
     }
 
     /// Resolves a type into all applicable instances of it
-    public static List<object> ResolveTypeInstances(Type type, EntityID? entityId) {
+    public static List<object> ResolveTypeInstances(Type type, List<Type> componentTypes, EntityID? entityId) {
         if (type == typeof(Settings)) {
             return [Settings.Instance];
         }
@@ -192,17 +215,40 @@ public static class TargetQuery {
         }
 
         if (type.IsSameOrSubclassOf(typeof(Entity))) {
+            IEnumerable<Entity> entityInstances;
             if (Engine.Scene.Tracker.Entities.TryGetValue(type, out var entities)) {
-                return entities
-                    .Where(e => entityId == null || e.GetEntityData()?.ToEntityId().Key == entityId.Value.Key)
-                    .Select(e => (object)e)
+                entityInstances = entities
+                    .Where(e => entityId == null || e.GetEntityData()?.ToEntityId().Key == entityId.Value.Key);
+            } else {
+                entityInstances = Engine.Scene.Entities
+                    .Where(e => e.GetType().IsSameOrSubclassOf(type) && (entityId == null || e.GetEntityData()?.ToEntityId().Key == entityId.Value.Key));
+            }
+
+            if (componentTypes.IsEmpty()) {
+                return entityInstances
+                    .Select(e => (object) e)
                     .ToList();
             } else {
-                return Engine.Scene.Entities
-                    .Where(e => e.GetType().IsSameOrSubclassOf(type) && (entityId == null || e.GetEntityData()?.ToEntityId().Key == entityId.Value.Key))
-                    .Select(e => (object)e)
+                return entityInstances
+                    .SelectMany(e => e.Components.Where(c => componentTypes.Any(componentType => c.GetType().IsSameOrSubclassOf(componentType))))
+                    .Select(c => (object) c)
                     .ToList();
             }
+        }
+
+        if (type.IsSameOrSubclassOf(typeof(Component))) {
+            IEnumerable<Component> componentInstances;
+            if (Engine.Scene.Tracker.Components.TryGetValue(type, out var components)) {
+                componentInstances = components;
+            } else {
+                componentInstances = Engine.Scene.Entities
+                    .SelectMany(e => e.Components)
+                    .Where(c => c.GetType().IsSameOrSubclassOf(type));
+            }
+
+            return componentInstances
+                .Select(c => (object) c)
+                .ToList();
         }
 
         if (Engine.Scene is Level level) {

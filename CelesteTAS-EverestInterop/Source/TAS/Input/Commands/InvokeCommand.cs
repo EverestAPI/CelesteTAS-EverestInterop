@@ -178,7 +178,7 @@ public static class InvokeCommand {
         string query = args[0];
         string[] queryArgs = query.Split('.');
 
-        var baseTypes = TargetQuery.ResolveBaseTypes(queryArgs, out string[] memberArgs, out var entityId);
+        var baseTypes = TargetQuery.ResolveBaseTypes(queryArgs, out string[] memberArgs, out var componentTypes, out var entityId);
         if (baseTypes.IsEmpty()) {
             ReportError($"Failed to find base type for query '{query}'");
             return;
@@ -201,7 +201,7 @@ public static class InvokeCommand {
                 return;
             }
 
-            var instances = TargetQuery.ResolveTypeInstances(type, entityId);
+            var instances = TargetQuery.ResolveTypeInstances(type, componentTypes, entityId);
             success = TargetQuery.InvokeMemberMethods(type, instances, values, memberArgs);
             if (!success) {
                 ReportError($"Failed to invoke method '{string.Join('.', memberArgs)}' on type '{type}' to with parameters '{string.Join(';', values)}'");

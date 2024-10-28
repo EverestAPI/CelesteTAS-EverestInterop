@@ -313,7 +313,7 @@ public static class SetCommand {
         string query = args[0];
         string[] queryArgs = query.Split('.');
 
-        var baseTypes = TargetQuery.ResolveBaseTypes(queryArgs, out string[]? memberArgs, out var entityId);
+        var baseTypes = TargetQuery.ResolveBaseTypes(queryArgs, out string[]? memberArgs, out var componentTypes, out var entityId);
         if (baseTypes.IsEmpty()) {
             ReportError($"Failed to find base type for query '{query}'");
             return;
@@ -350,7 +350,7 @@ public static class SetCommand {
                 return;
             }
 
-            var instances = TargetQuery.ResolveTypeInstances(type, entityId);
+            var instances = TargetQuery.ResolveTypeInstances(type, componentTypes, entityId);
             success = TargetQuery.SetMemberValues(type, instances, values[0], memberArgs);
             if (!success) {
                 ReportError($"Failed to set members '{string.Join('.', memberArgs)}' on type '{type}' to '{values[0]}'");
