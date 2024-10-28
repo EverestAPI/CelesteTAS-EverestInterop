@@ -343,6 +343,7 @@ public sealed class Editor : SkiaDrawable {
             // Ignore vertical and small horizontal size changes
             scrollableSize.Height = scrollable.ClientSize.Height;
             if (Math.Abs(scrollableSize.Width - scrollable.ClientSize.Width) <= 0.1f) {
+                Invalidate(); // Update SkiaDrawable
                 return;
             }
 
@@ -351,6 +352,8 @@ public sealed class Editor : SkiaDrawable {
             // Update wrapped lines
             if (Settings.Instance.WordWrapComments) {
                 Recalc();
+            } else {
+                Invalidate(); // Update SkiaDrawable
             }
         };
 
