@@ -1,9 +1,7 @@
-using CelesteStudio.Data;
 using CelesteStudio.Editing;
-using System;
+using StudioCommunication;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace CelesteStudio.Tool;

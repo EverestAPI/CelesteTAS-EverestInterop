@@ -41,7 +41,7 @@ public record InputFrame {
 
     private InputFrame(ActionLine actionLine, int studioLine, int repeatIndex, int repeatCount, int frameOffset) {
         Actions = actionLine.Actions;
-        Frames = actionLine.Frames;
+        Frames = actionLine.FrameCount;
         PressedKeys = actionLine.CustomBindings.Select(c => (Keys)c).ToHashSet();
 
         Line = studioLine;
