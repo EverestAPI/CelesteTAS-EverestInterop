@@ -79,8 +79,8 @@ public static class InvokeCommand {
 
                     yield return new CommandAutoCompleteEntry { Name = $"{uniqueTypeName}.", Extra = type.Namespace ?? string.Empty, IsDone = false };
                 }
-            } else if (targetArgs.Length >= 1 && InfoCustom.TryParseTypes(targetArgs[0], out var types, out _, out _)) {
-                // Let's just assume the first type
+            } else if (targetArgs.Length >= 1 && TargetQuery.ResolveBaseTypes(targetArgs, out string[] memberArgs, out _, out _) is { } types && types.IsNotEmpty()) {
+                // Assume the first type
                 foreach (var entry in GetInvokeTypeAutoCompleteEntries(types[0], targetArgs.Length == 1)) {
                     yield return entry with { Name = entry.Name + (entry.IsDone ? "" : "."), Prefix = string.Join('.', targetArgs) + ".", HasNext = true };
                 }
@@ -105,9 +105,9 @@ public static class InvokeCommand {
 
         [MustDisposeResource]
         private static IEnumerator<CommandAutoCompleteEntry> GetParameterAutoCompleteEntries(string[] targetArgs, int parameterIndex) {
-            if (targetArgs.Length == 2 && InfoCustom.TryParseTypes(targetArgs[0], out var types, out _, out _)) {
-                // Let's just assume the first type
-                var parameters = types[0].GetMethodInfo(targetArgs[1]).GetParameters();
+            if (targetArgs.Length >= 1 && TargetQuery.ResolveBaseTypes(targetArgs, out string[] memberArgs, out _, out _) is { } types && types.IsNotEmpty() && memberArgs.Length == 1) {
+                // Assume the first type
+                var parameters = types[0].GetMethodInfo(memberArgs[0]).GetParameters();
                 if (parameterIndex >= 0 && parameterIndex < parameters.Length) {
                     // End arguments if further parameters aren't settable anymore
                     bool final = parameterIndex == parameters.Length - 1 ||

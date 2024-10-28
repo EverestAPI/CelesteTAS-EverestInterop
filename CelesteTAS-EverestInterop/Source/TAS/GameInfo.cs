@@ -14,6 +14,7 @@ using StudioCommunication;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
+using TAS.InfoHUD;
 using TAS.Module;
 using TAS.Utils;
 

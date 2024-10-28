@@ -156,9 +156,9 @@ public static class SetCommand {
                 foreach (var entry in GetSetTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, args), isRootType: targetArgs.Length == 1)) {
                     yield return entry with { Name = entry.Name + (entry.IsDone ? "" : "."), Prefix = string.Join('.', targetArgs) + ".", HasNext = true };
                 }
-            } else if (targetArgs.Length >= 1 && InfoCustom.TryParseTypes(targetArgs[0], out var types, out _, out _)) {
-                // Let's just assume the first type
-                foreach (var entry in GetSetTypeAutoCompleteEntries(RecurseSetType(types[0], targetArgs), isRootType: targetArgs.Length == 1)) {
+            } else if (targetArgs.Length >= 1 && TargetQuery.ResolveBaseTypes(targetArgs, out string[] memberArgs, out _, out _) is { } types && types.IsNotEmpty()) {
+                // Assume the first type
+                foreach (var entry in GetSetTypeAutoCompleteEntries(RecurseSetType(types[0], memberArgs), isRootType: targetArgs.Length == 1)) {
                     yield return entry with { Name = entry.Name + (entry.IsDone ? "" : "."), Prefix = string.Join('.', targetArgs) + ".", HasNext = true };
                 }
             }
@@ -215,9 +215,9 @@ public static class SetCommand {
             if (targetArgs.Length >= 1 && Everest.Modules.FirstOrDefault(m => m.Metadata.Name == targetArgs[0] && m.SettingsType != null) is { } mod) {
                 return GetParameterTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, targetArgs));
             }
-            if (targetArgs.Length >= 1 && InfoCustom.TryParseTypes(targetArgs[0], out var types, out _, out _)) {
-                // Let's just assume the first type
-                return GetParameterTypeAutoCompleteEntries(RecurseSetType(types[0], targetArgs));
+            if (targetArgs.Length >= 1 && TargetQuery.ResolveBaseTypes(targetArgs, out string[] memberArgs, out _, out _) is { } types && types.IsNotEmpty()) {
+                // Assume the first type
+                return GetParameterTypeAutoCompleteEntries(RecurseSetType(types[0], memberArgs));
             }
 
             return Enumerable.Empty<CommandAutoCompleteEntry>().GetEnumerator();
@@ -245,14 +245,14 @@ public static class SetCommand {
             }
         }
 
-        private static Type RecurseSetType(Type baseType, string[] targetArgs) {
+        private static Type RecurseSetType(Type baseType, string[] memberArgs) {
             var type = baseType;
-            for (int i = 1; i < targetArgs.Length; i++) {
-                if (type.GetFieldInfo(targetArgs[i]) is { } field) {
+            foreach (string member in memberArgs) {
+                if (type.GetFieldInfo(member) is { } field) {
                     type = field.FieldType;
                     continue;
                 }
-                if (type.GetPropertyInfo(targetArgs[i]) is { } property && property.GetSetMethod() != null) {
+                if (type.GetPropertyInfo(member) is { } property && property.GetSetMethod() != null) {
                     type = property.PropertyType;
                     continue;
                 }

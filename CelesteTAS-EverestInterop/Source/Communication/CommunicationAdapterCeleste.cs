@@ -82,7 +82,6 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 object? arg = gameDataType switch {
                     GameDataType.ConsoleCommand => reader.ReadBoolean(),
                     GameDataType.SettingValue => reader.ReadString(),
-                    GameDataType.RawInfo => reader.ReadObject<(string, bool)>(),
                     GameDataType.CommandHash => reader.ReadObject<(string, string[], string, int)>(),
                     _ => null,
                 };
@@ -113,9 +112,6 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                 break;
                             case GameDataType.CustomInfoTemplate:
                                 gameData = !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty;
-                                break;
-                            case GameDataType.RawInfo:
-                                gameData = InfoCustom.GetRawInfo(((string, bool))arg!);
                                 break;
                             case GameDataType.GameState:
                                 gameData = GameData.GetGameState();
@@ -156,10 +152,6 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                 case GameDataType.ModUrl:
                                 case GameDataType.CustomInfoTemplate:
                                     writer.Write((string?)gameData ?? string.Empty);
-                                    break;
-
-                                case GameDataType.RawInfo:
-                                    writer.WriteObject(gameData);
                                     break;
 
                                 case GameDataType.GameState:

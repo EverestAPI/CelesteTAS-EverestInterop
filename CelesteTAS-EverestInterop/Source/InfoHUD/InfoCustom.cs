@@ -10,13 +10,14 @@ using System.Text.RegularExpressions;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Lua;
 using TAS.Utils;
+using StringExtensions = StudioCommunication.Util.StringExtensions;
 
 namespace TAS.InfoHUD;
 
 #nullable enable
 
 /// Handles parsing of custom Info HUD templates
-public static class CustomInfo {
+public static class InfoCustom {
 
     private static readonly Regex TargetQueryRegex = new(@"\{(.*?)\}", RegexOptions.Compiled);
     private static readonly Regex LuaRegex = new(@"\[\[(.+?)\]\]", RegexOptions.Compiled);
@@ -29,6 +30,11 @@ public static class CustomInfo {
         { ".toFrame()", Formatter_toFrame },
         { ".toPixelPerFrame()", Formatter_toPixelPerFrame },
     };
+
+    /// Returns the parsed info for the current template
+    public static string GetInfo(int? decimals = null) {
+        return string.Join('\n', ParseTemplate(StringExtensions.SplitLines(TasSettings.InfoCustomTemplate), decimals ?? TasSettings.CustomInfoDecimals));
+    }
 
     #region Parsing
 
@@ -136,9 +142,9 @@ public static class CustomInfo {
                 lastResultType = currResultType;
             }
         }
-        
+
         if (lastMatch == null) {
-            mainResult.Append(templateLine);    
+            mainResult.Append(templateLine);
         } else {
             mainResult.Append(templateLine[(lastMatch!.Index + lastMatch.Length)..]);
         }

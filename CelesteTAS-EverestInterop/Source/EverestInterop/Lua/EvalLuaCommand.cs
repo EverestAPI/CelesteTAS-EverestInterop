@@ -22,7 +22,8 @@ public static class EvalLuaCommand {
         public bool HasArguments => true;
     }
 
-    private static bool consoleCommandRunning;
+    internal static bool ConsoleCommandRunning;
+
     private const string CommandName = "EvalLua";
     private static readonly Regex commandAndSeparatorRegex = new(@$"^{CommandName}[ |,]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly FieldInfo DebugRClogFieldInfo = typeof(Commands).GetFieldInfo("debugRClog");
@@ -76,7 +77,7 @@ public static class EvalLuaCommand {
     }
 
     public static void Log(object message) {
-        if (consoleCommandRunning) {
+        if (ConsoleCommandRunning) {
             Engine.Commands.Log(message);
         }
 
@@ -91,9 +92,9 @@ public static class EvalLuaCommand {
             code = commandAndSeparatorRegex.Replace(firstHistory, "");
         }
 
-        consoleCommandRunning = true;
+        ConsoleCommandRunning = true;
         object[] result = EvalLuaImpl(code);
-        consoleCommandRunning = false;
+        ConsoleCommandRunning = false;
         LogResult(result);
     }
 
