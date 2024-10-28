@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using TAS.EverestInterop;
+using TAS.EverestInterop.Lua;
 using TAS.Utils;
 
 namespace TAS.InfoHUD;
@@ -18,6 +19,7 @@ namespace TAS.InfoHUD;
 public static class CustomInfo {
 
     private static readonly Regex TargetQueryRegex = new(@"\{(.*?)\}", RegexOptions.Compiled);
+    private static readonly Regex LuaRegex = new(@"\[\[(.+?)\]\]", RegexOptions.Compiled);
 
     /// Should return true if the value was successfully formatted, otherwise false
     private delegate bool ValueFormatter(object? value, int decimals, out string formattedValue);
@@ -135,7 +137,16 @@ public static class CustomInfo {
             }
         }
 
-        yield return mainResult.ToString();
+        // Evaluate Lua code for main line
+        yield return LuaRegex.Replace(mainResult.ToString(), match => {
+            if (TargetQuery.EnforceLegal) {
+                return "<Cannot safely evaluate Lua code during EnforceLegal>";
+            }
+
+            string code = match.Groups[1].Value;
+            object?[] objects = EvalLuaCommand.EvalLuaImpl(code);
+            return objects == null ? "null" : string.Join(", ", objects.Select(o => o?.ToString() ?? "null"));
+        });
 
         // Format entity lines
         var entityLines = entityResults.ToDictionary(

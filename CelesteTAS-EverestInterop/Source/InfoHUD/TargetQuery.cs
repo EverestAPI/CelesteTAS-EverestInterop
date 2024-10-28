@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
 
@@ -16,8 +17,11 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop;
 
-/// Contains all the logic for getting data from an target-query
+/// Contains all the logic for getting data from a target-query
 public static class TargetQuery {
+    /// Prevents invocations of methods / execution of Lua code in the Custom Info
+    public static bool EnforceLegal => EnforceLegalCommand.EnabledWhenRunning && !AssertCommand.Running;
+
     private static readonly Dictionary<string, List<Type>> allTypes = new();
     private static readonly Dictionary<string, (List<Type> Types, EntityID? EntityID)> baseTypeCache = [];
 
@@ -98,10 +102,10 @@ public static class TargetQuery {
         List< (object? Value, object? BaseInstance)> allResults = [];
         foreach (var type in baseTypes) {
             var instances = ResolveTypeInstances(type, entityId);
-            var (values, success) = ResolveMemberValues(type, instances, memberArgs);
+            (var values, bool success, string errorMessage) = ResolveMemberValues(type, instances, memberArgs);
 
             if (!success) {
-                return ([(null, null)], Success: false, ErrorMessage: $"Failed resolving members '{string.Join('.', memberArgs)}' for type '{type}'");
+                return ([(null, null)], Success: false, errorMessage);
             }
 
             if (instances.IsEmpty()) {
@@ -288,7 +292,7 @@ public static class TargetQuery {
     }
 
     /// Recursively resolves the value of the specified members
-    public static (object? Value, bool Success) ResolveMemberValue(Type baseType, object? baseObject, string[] memberArgs) {
+    public static (object? Value, bool Success, string ErrorMessage) ResolveMemberValue(Type baseType, object? baseObject, string[] memberArgs) {
         var currentType = baseType;
         var currentObject = baseObject;
         foreach (string member in memberArgs) {
@@ -300,7 +304,7 @@ public static class TargetQuery {
                     } else {
                         if (currentObject == null) {
                             // Propagate null
-                            return (Value: null, Success: true);
+                            return (Value: null, Success: true, ErrorMessage: "");
                         }
 
                         currentObject = field.GetValue(currentObject);
@@ -308,39 +312,53 @@ public static class TargetQuery {
                     continue;
                 }
                 if (currentType.GetPropertyInfo(member) is { } property && property.GetGetMethod() != null) {
+                    if (EnforceLegal) {
+                        return (Value: null, Success: false, ErrorMessage: $"Cannot safely get property '{member}' during EnforceLegal");
+                    }
+
                     currentType = property.PropertyType;
                     if (property.IsStatic()) {
                         currentObject = property.GetValue(null);
                     } else {
                         if (currentObject == null) {
                             // Propagate null
-                            return (Value: null, Success: true);
+                            return (Value: null, Success: true, ErrorMessage: "");
                         }
 
                         currentObject = property.GetValue(currentObject);
                     }
                     continue;
                 }
-            } catch (Exception) {
+            } catch (Exception ex) {
                 // Something went wrong
-                return (currentObject, Success: false);
+                return (currentObject, Success: false, ErrorMessage: ex.Message);
             }
 
             // Unable to recurse further
-            return (currentObject, Success: false);
+            return (currentObject, Success: false, ErrorMessage: $"Cannot find field / property '{member}' on type {currentType}");
         }
 
-        return (currentObject, Success: true);
+        return (currentObject, Success: true, ErrorMessage: "");
     }
 
     /// Recursively resolves the value of the specified members for multiple instances at once
-    public static (List<object?> Values, bool Success) ResolveMemberValues(Type baseType, List<object> baseObjects, string[] memberArgs) {
+    public static (List<object?> Values, bool Success, string ErrorMessage) ResolveMemberValues(Type baseType, List<object> baseObjects, string[] memberArgs) {
         if (baseObjects.IsEmpty()) {
-            (object? result, bool success) = ResolveMemberValue(baseType, null, memberArgs);
-            return ([result], success);
+            (object? result, bool success, string errorMessage) = ResolveMemberValue(baseType, null, memberArgs);
+            return ([result], success, errorMessage);
         } else {
-            var pairs = baseObjects.Select(obj => ResolveMemberValue(baseType, obj, memberArgs)).ToArray();
-            return (pairs.Select(pair => pair.Value).ToList(), pairs.All(pair => pair.Success));
+            List<object?> values = new(capacity: baseObjects.Count);
+
+            foreach (object obj in baseObjects) {
+                (object? result, bool success, string errorMessage) = ResolveMemberValue(baseType, obj, memberArgs);
+
+                if (!success) {
+                    return (Values: [], Success: false, errorMessage);
+                }
+                values.Add(result);
+            }
+
+            return (values, Success: true, ErrorMessage: "");
         }
     }
 
@@ -370,6 +388,10 @@ public static class TargetQuery {
                 }
 
                 if (currentType.GetPropertyInfo(member) is { } property && property.GetSetMethod() != null) {
+                    if (EnforceLegal) {
+                        return false; // Cannot safely invoke methods during EnforceLegal
+                    }
+
                     currentType = property.PropertyType;
                     if (property.IsStatic()) {
                         currentObject = property.GetValue(null);
@@ -452,7 +474,7 @@ public static class TargetQuery {
                 }
             } else if (currentType.GetPropertyInfo(memberArgs[^1]) is { } property && property.GetSetMethod() != null) {
                 // Special case to support binding custom keys
-                if (property.PropertyType == typeof(ButtonBinding) && property.GetValue(currentObject) is ButtonBinding binding) {
+                if (property.PropertyType == typeof(ButtonBinding) && !EnforceLegal && property.GetValue(currentObject) is ButtonBinding binding) {
                     var nodes = binding.Button.Nodes;
                     var mouseButtons = binding.Button.Binding.Mouse;
                     var data = (ButtonBindingData)value!;
@@ -507,6 +529,10 @@ public static class TargetQuery {
                     return true;
                 }
 
+                if (EnforceLegal) {
+                    return false; // Cannot safely invoke methods during EnforceLegal
+                }
+
                 if (property.IsStatic()) {
                     property.SetValue(null, value);
                 } else {
@@ -537,6 +563,10 @@ public static class TargetQuery {
                         field.SetValue(currentObject, value);
                     }
                 } else if (currentType.GetPropertyInfo(member) is { } property && property.GetSetMethod() != null) {
+                    if (EnforceLegal) {
+                        return false; // Cannot safely invoke methods during EnforceLegal
+                    }
+
                     if (property.IsStatic()) {
                         property.SetValue(null, value);
                     } else {
@@ -565,6 +595,10 @@ public static class TargetQuery {
 
     /// Recursively resolves the value of the specified members
     public static bool InvokeMemberMethod(Type baseType, object? baseObject, object?[] parameters, string[] memberArgs) {
+        if (EnforceLegal) {
+            return false; // Cannot safely invoke methods during EnforceLegal
+        }
+
         var currentType = baseType;
         object? currentObject = baseObject;
         for (int i = 0; i < memberArgs.Length - 1; i++) {
@@ -583,6 +617,10 @@ public static class TargetQuery {
                 }
 
                 if (currentType.GetPropertyInfo(member) is { } property && property.GetSetMethod() != null) {
+                    if (EnforceLegal) {
+                        return false; // Cannot safely invoke methods during EnforceLegal
+                    }
+
                     currentType = property.PropertyType;
                     if (property.IsStatic()) {
                         currentObject = property.GetValue(null);
