@@ -80,7 +80,6 @@ public static class TargetQuery {
                     value.ConsoleLog();
                 }
             }
-
         }
     }
 
@@ -105,7 +104,11 @@ public static class TargetQuery {
                 return ([(null, null)], Success: false, ErrorMessage: $"Failed resolving members '{string.Join('.', memberArgs)}' for type '{type}'");
             }
 
-            allResults.AddRange(values.Select((value, i) => (value, (object?)instances[i])));
+            if (instances.IsEmpty()) {
+                allResults.Add((values[0], null));
+            } else {
+                allResults.AddRange(values.Select((value, i) => (value, (object?)instances[i])));
+            }
         }
 
         return (allResults, Success: true, ErrorMessage: string.Empty);

@@ -10,9 +10,11 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication;
 using TAS.EverestInterop.Lua;
+using TAS.InfoHUD;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
+using StringExtensions = StudioCommunication.Util.StringExtensions;
 
 namespace TAS.EverestInterop.InfoHUD;
 
@@ -61,7 +63,8 @@ public static class InfoCustom {
         decimals ??= TasSettings.CustomInfoDecimals;
         Dictionary<string, List<Entity>> cachedEntities = new();
 
-        return ParseTemplate(TasSettings.InfoCustomTemplate, decimals.Value, cachedEntities, false);
+        //return ParseTemplate(TasSettings.InfoCustomTemplate, decimals.Value, cachedEntities, false);
+        return string.Join('\n', CustomInfo.ParseTemplate(StringExtensions.SplitLines(TasSettings.InfoCustomTemplate), decimals.Value));
     }
 
     [Monocle.Command("get", "get type.fieldOrProperty value. eg get Player,Position; get Level.Wind (CelesteTAS)")]

@@ -68,7 +68,7 @@
     <Target Name="LinkAssets" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug' and '$(OS)' == 'Unix' and $(UseSymlinks) != false">
         <Copy SourceFiles="" DestinationFiles="..\bin\env.lua" UseSymboliclinksIfPossible="true" />
 
-        <Exec Command="rm -rf ../bin/env.lua &amp;&amp; ln -s CelesteTAS-EverestInterop/Source/EverestInterop/Lua/env.lua ../bin/env.lua"/>
+        <Exec Command="rm -rf ../bin/env.lua &amp;&amp; ln -s ../CelesteTAS-EverestInterop/Source/EverestInterop/Lua/env.lua ../bin/env.lua"/>
 
         <Exec Command="rm -rf ../everest.yaml &amp;&amp; ln -s CelesteTAS-EverestInterop/everest.yaml ../everest.yaml"/>
         <Exec Command="rm -rf ../Dialog &amp;&amp; ln -s CelesteTAS-EverestInterop/Dialog ../Dialog"/>
