@@ -19,36 +19,35 @@ namespace TAS.Input.Commands;
 
 #nullable enable
 
-public static class SetCommand {
-    internal class SetMeta : ITasCommandMeta {
-        // Sorts types by namespace into Celeste -> Monocle -> other (alphabetically)
-        // Inside the namespace it's sorted alphabetically
-        internal class NamespaceComparer : IComparer<(string Name, Type Type)> {
-            public int Compare((string Name, Type Type) x, (string Name, Type Type) y) {
-                if (x.Type == null || y.Type == null || x.Type.Namespace == null || y.Type.Namespace == null) {
-                    // Should never happen to use anyway
-                    return 0;
-                }
-
-                int namespaceCompare = CompareNamespace(x.Type.Namespace, y.Type.Namespace);
-                if (namespaceCompare != 0) {
-                    return namespaceCompare;
-                }
-
-                return StringComparer.Ordinal.Compare(x.Name, y.Name);
-            }
-
-            private int CompareNamespace(string x, string y) {
-                if (x.StartsWith("Celeste") && y.StartsWith("Celeste")) return 0;
-                if (x.StartsWith("Celeste")) return -1;
-                if (y.StartsWith("Celeste")) return  1;
-                if (x.StartsWith("Monocle") && y.StartsWith("Monocle")) return 0;
-                if (x.StartsWith("Monocle")) return -1;
-                if (y.StartsWith("Monocle")) return  1;
-                return StringComparer.Ordinal.Compare(x, y);
-            }
+// Sorts types by namespace into Celeste -> Monocle -> other (alphabetically)
+// Inside the namespace it's sorted alphabetically
+internal class NamespaceComparer : IComparer<(string Name, Type Type)> {
+    public int Compare((string Name, Type Type) x, (string Name, Type Type) y) {
+        if (x.Type.Namespace == null || y.Type.Namespace == null) {
+            return 0;
         }
 
+        int namespaceCompare = CompareNamespace(x.Type.Namespace, y.Type.Namespace);
+        if (namespaceCompare != 0) {
+            return namespaceCompare;
+        }
+
+        return StringComparer.Ordinal.Compare(x.Name, y.Name);
+    }
+
+    private int CompareNamespace(string x, string y) {
+        if (x.StartsWith("Celeste") && y.StartsWith("Celeste")) return 0;
+        if (x.StartsWith("Celeste")) return -1;
+        if (y.StartsWith("Celeste")) return  1;
+        if (x.StartsWith("Monocle") && y.StartsWith("Monocle")) return 0;
+        if (x.StartsWith("Monocle")) return -1;
+        if (y.StartsWith("Monocle")) return  1;
+        return StringComparer.Ordinal.Compare(x, y);
+    }
+}
+
+public static class SetCommand {
+    internal class SetMeta : ITasCommandMeta {
         internal static readonly string[] ignoredNamespaces = ["System", "StudioCommunication", "TAS", "SimplexNoise", "FMOD", "MonoMod", "Snowberry"];
 
         public string Insert => $"Set{CommandInfo.Separator}[0;(Mod).Setting]{CommandInfo.Separator}[1;Value]";
@@ -79,13 +78,13 @@ public static class SetCommand {
                 var vanillaSaveData = ((string[])["CheatMode", "AssistMode", "VariantMode", "UnlockedAreas", "RevealedChapter9", "DebugMode"]).Select(e => typeof(SaveData).GetField(e)!);
 
                 foreach (var f in vanillaSettings) {
-                    yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Settings)", IsDone = true };;
+                    yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Settings)", IsDone = true };
                 }
                 foreach (var f in vanillaSaveData) {
-                    yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Save Data)", IsDone = true };;
+                    yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Save Data)", IsDone = true };
                 }
                 foreach (var f in typeof(Assists).GetFields()) {
-                    yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Assists)", IsDone = true };;
+                    yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Assists)", IsDone = true };
                 }
 
                 // Mod settings
@@ -176,7 +175,7 @@ public static class SetCommand {
                 if (property.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !property.Name.Contains('<') && !property.Name.Contains('>') &&
                     IsSettableType(property.PropertyType) && property.GetSetMethod() != null)
                 {
-                    yield return new CommandAutoCompleteEntry { Name = property.Name, Extra = property.PropertyType.CSharpName(), IsDone = IsFinalTarget(property.PropertyType), };;
+                    yield return new CommandAutoCompleteEntry { Name = property.Name, Extra = property.PropertyType.CSharpName(), IsDone = IsFinalTarget(property.PropertyType), };
                 }
             }
             foreach (var property in type.GetFields(bindingFlags).OrderBy(p => p.Name)) {
@@ -185,11 +184,12 @@ public static class SetCommand {
                     IsSettableType(property.FieldType))
                 {
                     bool done = IsFinalTarget(property.FieldType);
-                    yield return new CommandAutoCompleteEntry { Name = done ? property.Name : $"{property.Name}.", Extra = property.FieldType.CSharpName(), IsDone = done };;
+                    yield return new CommandAutoCompleteEntry { Name = done ? property.Name : $"{property.Name}.", Extra = property.FieldType.CSharpName(), IsDone = done };
                 }
             }
         }
 
+        [MustDisposeResource]
         private static IEnumerator<CommandAutoCompleteEntry> GetParameterAutoCompleteEntries(string[] targetArgs) {
             if (targetArgs.Length == 1) {
                 // Vanilla setting / session / assist
@@ -306,16 +306,16 @@ public static class SetCommand {
 
     private static void Set(string[] args) {
         if (args.Length < 2) {
-            ReportError("Target-template and value required");
+            ReportError("Target-query and value required");
             return;
         }
 
-        string template = args[0];
-        string[] templateArgs = template.Split('.');
+        string query = args[0];
+        string[] queryArgs = query.Split('.');
 
-        var baseTypes = InfoTemplate.ResolveBaseTypes(templateArgs, out var memberArgs, out var entityId);
+        var baseTypes = TargetQuery.ResolveBaseTypes(queryArgs, out string[]? memberArgs, out var entityId);
         if (baseTypes.IsEmpty()) {
-            ReportError($"Failed to find base type for template '{template}'");
+            ReportError($"Failed to find base type for query '{query}'");
             return;
         }
         if (memberArgs.IsEmpty()) {
@@ -338,20 +338,20 @@ public static class SetCommand {
         }
 
         foreach (var type in baseTypes) {
-            (var targetType, bool success) = InfoTemplate.ResolveMemberType(type, memberArgs);
+            (var targetType, bool success) = TargetQuery.ResolveMemberType(type, memberArgs);
             if (!success) {
                 ReportError($"Failed to find members '{string.Join('.', memberArgs)}' on type '{type}'");
                 return;
             }
 
-            (object?[] values, success, string errorMessage) = InfoTemplate.ResolveValues(args[1..], [targetType]);
+            (object?[] values, success, string errorMessage) = TargetQuery.ResolveValues(args[1..], [targetType]);
             if (!success) {
                 ReportError(errorMessage);
                 return;
             }
 
-            var instances = InfoTemplate.ResolveTypeInstances(type, entityId);
-            success = InfoTemplate.SetMemberValues(type, instances, values[0], memberArgs);
+            var instances = TargetQuery.ResolveTypeInstances(type, entityId);
+            success = TargetQuery.SetMemberValues(type, instances, values[0], memberArgs);
             if (!success) {
                 ReportError($"Failed to set members '{string.Join('.', memberArgs)}' on type '{type}' to '{values[0]}'");
                 return;
@@ -375,7 +375,7 @@ public static class SetCommand {
             return;
         }
 
-        (object?[] values, bool success, string errorMessage) = InfoTemplate.ResolveValues(valueArgs, [field.FieldType]);
+        (object?[] values, bool success, string errorMessage) = TargetQuery.ResolveValues(valueArgs, [field.FieldType]);
         if (!success) {
             ReportError(errorMessage);
             return;
@@ -403,7 +403,7 @@ public static class SetCommand {
             return;
         }
 
-        (object?[] values, bool success, string errorMessage) = InfoTemplate.ResolveValues(valueArgs, [variantType]);
+        (object?[] values, bool success, string errorMessage) = TargetQuery.ResolveValues(valueArgs, [variantType]);
         if (!success) {
             ReportError(errorMessage);
             return;

@@ -5,7 +5,6 @@ using System.Reflection;
 using Celeste;
 using Celeste.Mod;
 using JetBrains.Annotations;
-using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication;
 using StudioCommunication.Util;
@@ -46,7 +45,7 @@ public static class InvokeCommand {
                 var allTypes = ModUtils.GetTypes();
                 foreach ((string typeName, var type) in allTypes
                              .Select(type => (type.CSharpName(), type))
-                             .Order(new SetCommand.SetMeta.NamespaceComparer()))
+                             .Order(new NamespaceComparer()))
                 {
                     if (
                         // Filter-out types which probably aren't useful
@@ -104,6 +103,7 @@ public static class InvokeCommand {
             }
         }
 
+        [MustDisposeResource]
         private static IEnumerator<CommandAutoCompleteEntry> GetParameterAutoCompleteEntries(string[] targetArgs, int parameterIndex) {
             if (targetArgs.Length == 2 && InfoCustom.TryParseTypes(targetArgs[0], out var types, out _, out _)) {
                 // Let's just assume the first type
@@ -171,16 +171,16 @@ public static class InvokeCommand {
 
     private static void Invoke(string[] args) {
         if (args.Length < 1) {
-            ReportError("Target-template required");
+            ReportError("Target-query required");
             return;
         }
 
-        string template = args[0];
-        string[] templateArgs = template.Split('.');
+        string query = args[0];
+        string[] queryArgs = query.Split('.');
 
-        var baseTypes = InfoTemplate.ResolveBaseTypes(templateArgs, out var memberArgs, out var entityId);
+        var baseTypes = TargetQuery.ResolveBaseTypes(queryArgs, out string[] memberArgs, out var entityId);
         if (baseTypes.IsEmpty()) {
-            ReportError($"Failed to find base type for template '{template}'");
+            ReportError($"Failed to find base type for query '{query}'");
             return;
         }
         if (memberArgs.IsEmpty()) {
@@ -189,20 +189,20 @@ public static class InvokeCommand {
         }
 
         foreach (var type in baseTypes) {
-            (var method, bool success) = InfoTemplate.ResolveMemberMethod(type, memberArgs);
+            (var method, bool success) = TargetQuery.ResolveMemberMethod(type, memberArgs);
             if (!success) {
                 ReportError($"Failed to find method '{string.Join('.', memberArgs)}' on type '{type}'");
                 return;
             }
 
-            (object?[] values, success, string errorMessage) = InfoTemplate.ResolveValues(args[1..], method!.GetParameters().Select(param => param.ParameterType).ToArray());
+            (object?[] values, success, string errorMessage) = TargetQuery.ResolveValues(args[1..], method!.GetParameters().Select(param => param.ParameterType).ToArray());
             if (!success) {
                 ReportError(errorMessage);
                 return;
             }
 
-            var instances = InfoTemplate.ResolveTypeInstances(type, entityId);
-            success = InfoTemplate.InvokeMemberMethods(type, instances, values, memberArgs);
+            var instances = TargetQuery.ResolveTypeInstances(type, entityId);
+            success = TargetQuery.InvokeMemberMethods(type, instances, values, memberArgs);
             if (!success) {
                 ReportError($"Failed to invoke method '{string.Join('.', memberArgs)}' on type '{type}' to with parameters '{string.Join(';', values)}'");
                 return;

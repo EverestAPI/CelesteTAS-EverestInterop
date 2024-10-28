@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
 
@@ -17,11 +16,12 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop;
 
-/// Contains all the logic for getting data from an info template
-public static class InfoTemplate {
+/// Contains all the logic for getting data from an target-query
+public static class TargetQuery {
     private static readonly Dictionary<string, List<Type>> allTypes = new();
-    private static readonly Dictionary<string, (List<Type> types, EntityID? entityId)> baseTypeCache = [];
+    private static readonly Dictionary<string, (List<Type> Types, EntityID? EntityID)> baseTypeCache = [];
 
+    /// Searches for the target type, optional EntityID, and optional target assembly
     private static readonly Regex BaseTypeRegex = new(@"^([\w.]+)(?:\[(.+):(\d+)\])?(@(?:[^.]*))?$", RegexOptions.Compiled);
 
     [Initialize]
@@ -55,9 +55,14 @@ public static class InfoTemplate {
         }
     }
 
-    [Monocle.Command("get2", "'get Type.fieldOrProperty' -> value | Example: 'get Player.Position', 'get Level.Wind' (CelesteTAS)"), UsedImplicitly]
-    private static void GetCommand(string template) {
-        var (results, success, errorMessage) = GetMemberValues(template);
+    [MonocleCommand("get2", "'get Type.fieldOrProperty' -> value | Example: 'get Player.Position', 'get Level.Wind' (CelesteTAS)"), UsedImplicitly]
+    private static void GetCommand(string? query) {
+        if (query == null) {
+            "No target-query specified".ConsoleLog(LogLevel.Error);
+            return;
+        }
+
+        (var results, bool success, string errorMessage) = GetMemberValues(query);
         if (!success) {
             errorMessage.ConsoleLog(LogLevel.Error);
             return;
@@ -79,13 +84,13 @@ public static class InfoTemplate {
         }
     }
 
-    /// Parses a target-template and returns the results for that
-    public static (List<(object? Value, object? BaseInstance)> Results, bool Success, string ErrorMessage) GetMemberValues(string template) {
-        var templateArgs = template.Split('.');
+    /// Parses a target-query and returns the results for that
+    public static (List<(object? Value, object? BaseInstance)> Results, bool Success, string ErrorMessage) GetMemberValues(string query) {
+        string[] queryArgs = query.Split('.');
 
-        var baseTypes = ResolveBaseTypes(templateArgs, out var memberArgs, out var entityId);
+        var baseTypes = ResolveBaseTypes(queryArgs, out string[] memberArgs, out var entityId);
         if (baseTypes.IsEmpty()) {
-            return ([(null, null)], Success: false, ErrorMessage: $"Failed to find base type for template '{template}'");
+            return ([(null, null)], Success: false, ErrorMessage: $"Failed to find base type for target-query '{query}'");
         }
         if (memberArgs.IsEmpty()) {
             return ([(null, null)], Success: false, ErrorMessage: "No members specified");
@@ -106,38 +111,38 @@ public static class InfoTemplate {
         return (allResults, Success: true, ErrorMessage: string.Empty);
     }
 
-    /// Parses the first part of a template into types and an optional EntityID
-    public static List<Type> ResolveBaseTypes(string[] templateArgs, out string[] memberArgs, out EntityID? entityId) {
+    /// Parses the first part of a query into types and an optional EntityID
+    public static List<Type> ResolveBaseTypes(string[] queryArgs, out string[] memberArgs, out EntityID? entityId) {
         entityId = null;
 
         // Vanilla settings don't need a prefix
-        if (typeof(Settings).GetFields().FirstOrDefault(f => f.Name == templateArgs[0]) != null) {
-            memberArgs = templateArgs;
+        if (typeof(Settings).GetFields().FirstOrDefault(f => f.Name == queryArgs[0]) != null) {
+            memberArgs = queryArgs;
             return [typeof(Settings)];
         }
-        if (typeof(SaveData).GetFields().FirstOrDefault(f => f.Name == templateArgs[0]) != null) {
-            memberArgs = templateArgs;
+        if (typeof(SaveData).GetFields().FirstOrDefault(f => f.Name == queryArgs[0]) != null) {
+            memberArgs = queryArgs;
             return [typeof(SaveData)];
         }
-        if (typeof(Assists).GetFields().FirstOrDefault(f => f.Name == templateArgs[0]) != null) {
-            memberArgs = templateArgs;
+        if (typeof(Assists).GetFields().FirstOrDefault(f => f.Name == queryArgs[0]) != null) {
+            memberArgs = queryArgs;
             return [typeof(Assists)];
         }
 
         // Check for mod settings
-        if (Everest.Modules.FirstOrDefault(mod => mod.SettingsType != null && mod.Metadata.Name == templateArgs[0]) is { } module) {
-            memberArgs = templateArgs[1..];
+        if (Everest.Modules.FirstOrDefault(mod => mod.SettingsType != null && mod.Metadata.Name == queryArgs[0]) is { } module) {
+            memberArgs = queryArgs[1..];
             return [module.SettingsType];
         }
 
         // Simply increase used arguments until something is found
-        for (int i = 1; i <= templateArgs.Length; i++) {
-            string typeName = string.Join('.', templateArgs[..i]);
+        for (int i = 1; i <= queryArgs.Length; i++) {
+            string typeName = string.Join('.', queryArgs[..i]);
 
             if (baseTypeCache.TryGetValue(typeName, out var pair)) {
-                entityId = pair.entityId;
-                memberArgs = templateArgs[i..];
-                return pair.types;
+                entityId = pair.EntityID;
+                memberArgs = queryArgs[i..];
+                return pair.Types;
             }
 
             var match = BaseTypeRegex.Match(typeName);
@@ -153,13 +158,13 @@ public static class InfoTemplate {
             }
 
             if (allTypes.TryGetValue(checkTypeName, out var types)) {
-                baseTypeCache[typeName] = (types, entityId);
-                memberArgs = templateArgs[i..];
+                baseTypeCache[typeName] = (Types: types, EntityID: entityId);
+                memberArgs = queryArgs[i..];
                 return types;
             }
         }
 
-        memberArgs = templateArgs;
+        memberArgs = queryArgs;
         return [];
     }
 
@@ -290,6 +295,11 @@ public static class InfoTemplate {
                     if (field.IsStatic) {
                         currentObject = field.GetValue(null);
                     } else {
+                        if (currentObject == null) {
+                            // Propagate null
+                            return (Value: null, Success: true);
+                        }
+
                         currentObject = field.GetValue(currentObject);
                     }
                     continue;
@@ -299,6 +309,11 @@ public static class InfoTemplate {
                     if (property.IsStatic()) {
                         currentObject = property.GetValue(null);
                     } else {
+                        if (currentObject == null) {
+                            // Propagate null
+                            return (Value: null, Success: true);
+                        }
+
                         currentObject = property.GetValue(currentObject);
                     }
                     continue;
@@ -631,16 +646,16 @@ public static class InfoTemplate {
 
             try {
                 if (arg.Contains('.') && !float.TryParse(arg, out _)) {
-                    // The value is a template-target, which needs to be resolved
+                    // The value is a target-query, which needs to be resolved
                     (var results, bool success, string errorMessage) = GetMemberValues(arg);
                     if (!success) {
                         return ([], Success: false, ErrorMessage: errorMessage);
                     }
                     if (results.Count != 1) {
-                        return ([], Success: false, ErrorMessage: $"Target-template '{arg}' for type '{targetType}' needs to resolve to exactly 1 value! Got {results.Count}");
+                        return ([], Success: false, ErrorMessage: $"Target-query '{arg}' for type '{targetType}' needs to resolve to exactly 1 value! Got {results.Count}");
                     }
                     if (results[0].Value != null && !results[0].Value!.GetType().IsSameOrSubclassOf(targetType)) {
-                        return ([], Success: false, ErrorMessage: $"Expected type '{targetType}' for target-template '{arg}'! Got {results[0].GetType()}");
+                        return ([], Success: false, ErrorMessage: $"Expected type '{targetType}' for target-query '{arg}'! Got {results[0].GetType()}");
                     }
 
                     values[index++] = results[0].Value;

@@ -1,4 +1,5 @@
 global using static TAS.GlobalVariables;
+global using MonocleCommand = Monocle.Command;
 using TAS.Entities;
 using TAS.Input;
 using TAS.Module;
