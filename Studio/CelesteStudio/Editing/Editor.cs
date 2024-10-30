@@ -369,18 +369,16 @@ public sealed class Editor : SkiaDrawable {
                 return;
             }
 
-            Application.Instance.InvokeAsync(() => {
-                if (Settings.Instance.SyncCaretWithPlayback && state.CurrentLine != -1) {
-                    Document.Caret.Row = state.CurrentLine;
-                    Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
-                    Document.Caret = ClampCaret(Document.Caret);
-                    Document.Selection.Clear();
+            if (Settings.Instance.SyncCaretWithPlayback && state.CurrentLine != -1) {
+                Document.Caret.Row = state.CurrentLine;
+                Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
+                Document.Caret = ClampCaret(Document.Caret);
+                Document.Selection.Clear();
 
-                    ScrollCaretIntoView(center: true);
-                }
+                ScrollCaretIntoView(center: true);
+            }
 
-                Invalidate();
-            });
+            Invalidate();
         };
 
         // Commands
