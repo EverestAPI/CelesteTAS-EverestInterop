@@ -6,6 +6,7 @@ using Monocle;
 using StudioCommunication;
 using TAS.Input;
 using TAS.Input.Commands;
+using TAS.Utils;
 
 namespace TAS;
 
@@ -14,7 +15,7 @@ public static class InputHelper {
         GamePadDPad pad = default;
         GamePadThumbSticks sticks = default;
         GamePadState gamePadState = default;
-        if (input.HasActions(Actions.Feather)) {
+        if (input.Actions.Has(Actions.Feather)) {
             SetFeather(input, ref pad, ref sticks);
         } else {
             SetDPad(input, ref pad, ref sticks);
@@ -36,23 +37,23 @@ public static class InputHelper {
         MInput.Keyboard.PreviousState = MInput.Keyboard.CurrentState;
 
         HashSet<Keys> keys = PressCommand.GetKeys();
-        if (input.HasActions(Actions.Confirm)) {
+        if (input.Actions.Has(Actions.Confirm)) {
             keys.Add(BindingHelper.Confirm2);
         }
 
-        if (input.HasActions(Actions.LeftMoveOnly)) {
+        if (input.Actions.Has(Actions.LeftMoveOnly)) {
             keys.Add(BindingHelper.LeftMoveOnly);
         }
 
-        if (input.HasActions(Actions.RightMoveOnly)) {
+        if (input.Actions.Has(Actions.RightMoveOnly)) {
             keys.Add(BindingHelper.RightMoveOnly);
         }
 
-        if (input.HasActions(Actions.UpMoveOnly)) {
+        if (input.Actions.Has(Actions.UpMoveOnly)) {
             keys.Add(BindingHelper.UpMoveOnly);
         }
 
-        if (input.HasActions(Actions.DownMoveOnly)) {
+        if (input.Actions.Has(Actions.DownMoveOnly)) {
             keys.Add(BindingHelper.DownMoveOnly);
         }
 
@@ -63,39 +64,39 @@ public static class InputHelper {
 
     private static void SetFeather(InputFrame input, ref GamePadDPad pad, ref GamePadThumbSticks sticks) {
         pad = new GamePadDPad(ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released);
-        sticks = new GamePadThumbSticks(input.AngleVector2, input.DashOnlyVector2);
+        sticks = new GamePadThumbSticks(input.StickPosition, input.DashOnlyStickPosition);
     }
 
     private static void SetDPad(InputFrame input, ref GamePadDPad pad, ref GamePadThumbSticks sticks) {
         pad = new GamePadDPad(
-            input.HasActions(Actions.Up) ? ButtonState.Pressed : ButtonState.Released,
-            input.HasActions(Actions.Down) ? ButtonState.Pressed : ButtonState.Released,
-            input.HasActions(Actions.Left) ? ButtonState.Pressed : ButtonState.Released,
-            input.HasActions(Actions.Right) ? ButtonState.Pressed : ButtonState.Released
+            input.Actions.Has(Actions.Up) ? ButtonState.Pressed : ButtonState.Released,
+            input.Actions.Has(Actions.Down) ? ButtonState.Pressed : ButtonState.Released,
+            input.Actions.Has(Actions.Left) ? ButtonState.Pressed : ButtonState.Released,
+            input.Actions.Has(Actions.Right) ? ButtonState.Pressed : ButtonState.Released
         );
-        sticks = new GamePadThumbSticks(new Vector2(0, 0), input.DashOnlyVector2);
+        sticks = new GamePadThumbSticks(new Vector2(0, 0), input.DashOnlyStickPosition);
     }
 
     private static void SetGamePadState(InputFrame input, ref GamePadState state, ref GamePadDPad pad, ref GamePadThumbSticks sticks) {
         state = new GamePadState(
             sticks,
-            new GamePadTriggers(input.HasActions(Actions.Journal) ? 1f : 0f, 0),
+            new GamePadTriggers(input.Actions.Has(Actions.Journal) ? 1f : 0f, 0),
             new GamePadButtons(
-                (input.HasActions(Actions.Jump) ? BindingHelper.JumpAndConfirm : 0)
-                | (input.HasActions(Actions.Jump2) ? BindingHelper.Jump2 : 0)
-                | (input.HasActions(Actions.DemoDash) ? BindingHelper.DemoDash : 0)
-                | (input.HasActions(Actions.DemoDash2) ? BindingHelper.DemoDash2 : 0)
-                | (input.HasActions(Actions.Dash) ? BindingHelper.DashAndTalkAndCancel : 0)
-                | (input.HasActions(Actions.Dash2) ? BindingHelper.Dash2AndCancel : 0)
-                | (input.HasActions(Actions.Grab) ? BindingHelper.Grab : 0)
-                | (input.HasActions(Actions.Grab2) ? BindingHelper.Grab2 : 0)
-                | (input.HasActions(Actions.Start) ? BindingHelper.Pause : 0)
-                | (input.HasActions(Actions.Restart) ? BindingHelper.QuickRestart : 0)
-                | (input.HasActions(Actions.Up) ? BindingHelper.Up : 0)
-                | (input.HasActions(Actions.Down) ? BindingHelper.Down : 0)
-                | (input.HasActions(Actions.Left) ? BindingHelper.Left : 0)
-                | (input.HasActions(Actions.Right) ? BindingHelper.Right : 0)
-                | (input.HasActions(Actions.Journal) ? BindingHelper.JournalAndTalk : 0)
+                (input.Actions.Has(Actions.Jump) ? BindingHelper.JumpAndConfirm : 0)
+                | (input.Actions.Has(Actions.Jump2) ? BindingHelper.Jump2 : 0)
+                | (input.Actions.Has(Actions.DemoDash) ? BindingHelper.DemoDash : 0)
+                | (input.Actions.Has(Actions.DemoDash2) ? BindingHelper.DemoDash2 : 0)
+                | (input.Actions.Has(Actions.Dash) ? BindingHelper.DashAndTalkAndCancel : 0)
+                | (input.Actions.Has(Actions.Dash2) ? BindingHelper.Dash2AndCancel : 0)
+                | (input.Actions.Has(Actions.Grab) ? BindingHelper.Grab : 0)
+                | (input.Actions.Has(Actions.Grab2) ? BindingHelper.Grab2 : 0)
+                | (input.Actions.Has(Actions.Start) ? BindingHelper.Pause : 0)
+                | (input.Actions.Has(Actions.Restart) ? BindingHelper.QuickRestart : 0)
+                | (input.Actions.Has(Actions.Up) ? BindingHelper.Up : 0)
+                | (input.Actions.Has(Actions.Down) ? BindingHelper.Down : 0)
+                | (input.Actions.Has(Actions.Left) ? BindingHelper.Left : 0)
+                | (input.Actions.Has(Actions.Right) ? BindingHelper.Right : 0)
+                | (input.Actions.Has(Actions.Journal) ? BindingHelper.JournalAndTalk : 0)
             ),
             pad
         );

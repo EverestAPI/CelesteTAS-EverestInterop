@@ -55,7 +55,7 @@ public abstract class CommunicationAdapterBase : IDisposable {
     private readonly List<(MessageID, Action<BinaryWriter>)> queuedWrites = [];
 
     /// Indicates ABI compatibility between two adapters
-    protected const ushort ProtocolVersion = 2;
+    protected const ushort ProtocolVersion = 3;
     private const int PingMessageSize = sizeof(ushort);
 
     private const int MessageCountOffset = 4;

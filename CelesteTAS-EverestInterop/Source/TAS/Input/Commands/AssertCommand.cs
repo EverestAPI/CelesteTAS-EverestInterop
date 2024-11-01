@@ -2,7 +2,7 @@
 using StudioCommunication;
 using System.Collections.Generic;
 using System.IO;
-using TAS.EverestInterop.InfoHUD;
+using TAS.InfoHUD;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -63,7 +63,7 @@ public static class AssertCommand {
             string? failureMessage = args.Length >= 4 ? args[3] : null;
 
             Running = true;
-            string actual = InfoCustom.ParseTemplate(actualTemplate, 0, [], false);
+            string actual = string.Join("\n", InfoCustom.ParseTemplateLine(actualTemplate, 0));
             Running = false;
 
             switch (condition) {
