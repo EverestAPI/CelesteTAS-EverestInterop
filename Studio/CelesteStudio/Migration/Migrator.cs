@@ -114,19 +114,11 @@ public static class Migrator {
                             throw new ArgumentOutOfRangeException();
                     }
                 }
-
-                string versionName = version.ToString(3);
-                if (asm.GetManifestResourceStream($"Changelogs/v{versionName}.md") is { } stream) {
-                    changelogs.Add((versionName, stream));
-                }
             }
         }
 
         Studio.Instance.Shown += (_, _) => {
-            foreach ((string? versionName, var stream) in changelogs) {
-                WhatsNewDialog.Show($"Whats new in Studio v{versionName}?", new StreamReader(stream).ReadToEnd());
-                stream.Dispose();
-            }
+            ChangelogDialog.Show();
         };
     }
 

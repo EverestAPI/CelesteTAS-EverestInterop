@@ -3,23 +3,25 @@
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
         <TargetFramework>net7.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
         <RuntimeIdentifiers>linux-x64;linux-arm;linux-arm64</RuntimeIdentifiers>
+        <Nullable>enable</Nullable>
 
         <RestoreSources>$(RestoreSources);https://www.myget.org/F/eto/api/v3/index.json;https://api.nuget.org/v3/index.json</RestoreSources>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
-        <PublishSingleFile>true</PublishSingleFile>
-        <SelfContained>true</SelfContained>
-        <DebugType>embedded</DebugType>
     </PropertyGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\CelesteStudio\CelesteStudio.csproj" />
-        <!-- <PackageReference Include="Eto.Platform.Gtk" Version="2.8.3"/>-->
-
         <!-- Use a CI-build, since that contains a fix for some issues -->
         <PackageReference Include="Eto.Platform.Gtk" Version="2.8.4-ci-20240710.9879198421" />
+        <!-- <PackageReference Include="Eto.Platform.Gtk" Version="2.8.3"/>-->
+
+        <PackageReference Include="SkiaSharp.Views.Desktop.Common" Version="2.88.8" />
+        <PackageReference Include="SkiaSharp.Views.Gtk3" Version="2.88.8" />
+        <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.8" />
     </ItemGroup>
 
 </Project>

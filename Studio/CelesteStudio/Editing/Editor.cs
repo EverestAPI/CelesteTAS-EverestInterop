@@ -7,12 +7,14 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using CelesteStudio.Communication;
+using CelesteStudio.Controls;
 using CelesteStudio.Data;
 using CelesteStudio.Dialog;
 using CelesteStudio.Editing.ContextActions;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
+using SkiaSharp;
 using StudioCommunication;
 using StudioCommunication.Util;
 using WrapLine = (string Line, int Index);
@@ -20,7 +22,7 @@ using WrapEntry = (int StartOffset, (string Line, int Index)[] Lines);
 
 namespace CelesteStudio.Editing;
 
-public sealed class Editor : Drawable {
+public sealed class Editor : SkiaDrawable {
     /// Reports insertions and deletions of the underlying document
     public event Action<Document, Dictionary<int, string>, Dictionary<int, string>> TextChanged = (_, _, _) => {};
 
@@ -260,7 +262,7 @@ public sealed class Editor : Drawable {
         new UseLineLink(MenuEntry.ContextActions_GoToPlayLine),
     ];
 
-    private Font Font => FontManager.EditorFontRegular;
+    private SKFont Font => FontManager.SKEditorFontRegular;
     private SyntaxHighlighter highlighter;
     private const float LineNumberPadding = 5.0f;
 
@@ -297,6 +299,10 @@ public sealed class Editor : Drawable {
     // Simple math operations like +, -, *, / can be performed on action line's frame counts
     private CalculationState? calculationState = null;
 
+    // Retain previous settings from Find-dialog
+    private string lastFindQuery = string.Empty;
+    private bool lastFindMatchCase = false;
+
     private static readonly Regex UncommentedBreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
     private static readonly Regex AllBreakpointRegex = new(@"^\s*#*\*\*\*", RegexOptions.Compiled);
@@ -319,9 +325,9 @@ public sealed class Editor : Drawable {
 
         Focus();
 
-        highlighter = new(FontManager.EditorFontRegular, FontManager.EditorFontBold, FontManager.EditorFontItalic, FontManager.EditorFontBoldItalic);
+        highlighter = new(FontManager.SKEditorFontRegular, FontManager.SKEditorFontBold, FontManager.SKEditorFontItalic, FontManager.SKEditorFontBoldItalic);
         Settings.FontChanged += () => {
-            highlighter = new(FontManager.EditorFontRegular, FontManager.EditorFontBold, FontManager.EditorFontItalic, FontManager.EditorFontBoldItalic);
+            highlighter = new(FontManager.SKEditorFontRegular, FontManager.SKEditorFontBold, FontManager.SKEditorFontItalic, FontManager.SKEditorFontBoldItalic);
             Recalc();
         };
 
@@ -337,6 +343,7 @@ public sealed class Editor : Drawable {
             // Ignore vertical and small horizontal size changes
             scrollableSize.Height = scrollable.ClientSize.Height;
             if (Math.Abs(scrollableSize.Width - scrollable.ClientSize.Width) <= 0.1f) {
+                Invalidate(); // Update SkiaDrawable
                 return;
             }
 
@@ -345,6 +352,8 @@ public sealed class Editor : Drawable {
             // Update wrapped lines
             if (Settings.Instance.WordWrapComments) {
                 Recalc();
+            } else {
+                Invalidate(); // Update SkiaDrawable
             }
         };
 
@@ -360,18 +369,16 @@ public sealed class Editor : Drawable {
                 return;
             }
 
-            Application.Instance.InvokeAsync(() => {
-                if (Settings.Instance.SyncCaretWithPlayback && state.CurrentLine != -1) {
-                    Document.Caret.Row = state.CurrentLine;
-                    Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
-                    Document.Caret = ClampCaret(Document.Caret);
-                    Document.Selection.Clear();
+            if (Settings.Instance.SyncCaretWithPlayback && state.CurrentLine != -1) {
+                Document.Caret.Row = state.CurrentLine;
+                Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
+                Document.Caret = ClampCaret(Document.Caret);
+                Document.Selection.Clear();
 
-                    ScrollCaretIntoView(center: true);
-                }
+                ScrollCaretIntoView(center: true);
+            }
 
-                Invalidate();
-            });
+            Invalidate();
         };
 
         // Commands
@@ -2267,7 +2274,7 @@ public sealed class Editor : Drawable {
     #region Editing Actions
 
     protected override void OnTextInput(TextInputEventArgs e) {
-        if (e.Text.Length == 0) {
+        if (e.Text.Length == 0 || char.IsControl(e.Text[0])) {
             return;
         }
 
@@ -2596,7 +2603,10 @@ public sealed class Editor : Drawable {
     private void OnEnter(bool splitLines, bool up) {
         using var __ = Document.Update();
 
-        var line = Document.Lines[Document.Caret.Row];
+        string line = Document.Lines[Document.Caret.Row];
+
+        // Auto-split on first and last column since nothing is broken there
+        splitLines = splitLines || Document.Caret.Col == 0 || Document.Caret.Col == line.Length;
 
         int offset = up ? 0 : 1;
         if (!splitLines || ActionLine.TryParse(line, out _)) {
@@ -2616,10 +2626,8 @@ public sealed class Editor : Drawable {
                 line = Document.Lines[Document.Caret.Row];
             }
 
-            string prefix = "";
-            if (line.StartsWith('#')) {
-                prefix = new(line.TakeWhile(c => c == '#' || char.IsWhiteSpace(c)).ToArray());
-            }
+            // Auto-insert # for multiline comments (not labels, not folds!)
+            string prefix = line.StartsWith("# ") ? "# " : "";
             Document.Caret.Col = Math.Max(Document.Caret.Col, prefix.Length);
 
             string beforeCaret = line[prefix.Length..Document.Caret.Col];
@@ -2754,11 +2762,11 @@ public sealed class Editor : Drawable {
     }
 
     private void OnFind() {
-        if (Document.Selection.Empty) {
-            FindDialog.Show(this, string.Empty);
-        } else {
-            FindDialog.Show(this, Document.GetSelectedText());
+        if (!Document.Selection.Empty) {
+            lastFindQuery = Document.GetSelectedText();
         }
+
+        FindDialog.Show(this, ref lastFindQuery, ref lastFindMatchCase);
     }
 
     private void OnGoTo() {
@@ -3611,11 +3619,22 @@ public sealed class Editor : Drawable {
 
     #region Drawing
 
-    protected override void OnPaint(PaintEventArgs e) {
-        // Doing this in Recalc() seems to cause issues for some reason, but it needs to happen regularly
-        //Studio.Instance.GameInfoPanel.UpdateGameInfo();
+    public override int DrawX => scrollablePosition.X;
+    public override int DrawY => scrollablePosition.Y;
+    public override int DrawWidth => scrollable.Width;
+    public override int DrawHeight => scrollable.Height;
 
-        e.Graphics.AntiAlias = true;
+    public override void Draw(SKSurface surface) {
+        var canvas = surface.Canvas;
+        canvas.Clear();
+        canvas.Translate(-scrollablePosition.X, -scrollablePosition.Y);
+
+        using var strokePaint = new SKPaint();
+        strokePaint.Style = SKPaintStyle.Stroke;
+
+        using var fillPaint = new SKPaint();
+        fillPaint.Style = SKPaintStyle.Fill;
+        fillPaint.IsAntialias = true;
 
         // To be reused below. Kinda annoying how C# handles out parameter conflicts
         WrapEntry wrap;
@@ -3628,8 +3647,6 @@ public sealed class Editor : Drawable {
         int bottomRow = Math.Min(Document.Lines.Count - 1, GetActualRow(bottomVisualRow));
 
         // Draw text
-        using var commentBrush = new SolidBrush(Settings.Instance.Theme.Comment.ForegroundColor);
-
         float yPos = actualToVisualRows[topRow] * Font.LineHeight();
         for (int row = topRow; row <= bottomRow; row++) {
             string line = Document.Lines[row];
@@ -3644,36 +3661,26 @@ public sealed class Editor : Drawable {
                         var subLine = wrap.Lines[i].Line;
                         float xIdent = i == 0 ? 0 : wrap.StartOffset * Font.CharWidth();
 
-                        e.Graphics.DrawText(Font, commentBrush, textOffsetX + xIdent, yPos, subLine);
+                        canvas.DrawText(subLine, textOffsetX + xIdent, yPos + Font.Offset(), Font, Settings.Instance.Theme.CommentPaint.ForegroundColor);
                         yPos += Font.LineHeight();
                         width = Math.Max(width, Font.MeasureWidth(subLine) + xIdent);
                         height += Font.LineHeight();
                     }
                 } else {
-                    highlighter.DrawLine(e.Graphics, textOffsetX, yPos, line);
+                    highlighter.DrawLine(canvas, textOffsetX, yPos, line);
                     yPos += Font.LineHeight();
                     width = Font.MeasureWidth(line);
                     height = Font.LineHeight();
                 }
 
-                e.Graphics.DrawRectangle(Settings.Instance.Theme.Comment.ForegroundColor,
-                    Font.CharWidth() * collapse.StartCol + textOffsetX - foldingPadding,
-                    yPos - height - foldingPadding,
-                    width - Font.CharWidth() * collapse.StartCol + foldingPadding * 2.0f,
-                    height + foldingPadding * 2.0f);
+                canvas.DrawRect(
+                    x: Font.CharWidth() * collapse.StartCol + textOffsetX - foldingPadding,
+                    y: yPos - height - foldingPadding,
+                    w: width - Font.CharWidth() * collapse.StartCol + foldingPadding * 2.0f,
+                    h: height + foldingPadding * 2.0f,
+                    Settings.Instance.Theme.CommentBoxPaint);
 
                 row = collapse.MaxRow;
-                continue;
-            }
-
-            // Underline current line link
-            if (Keyboard.Modifiers.HasCommonModifier() && LocationToLineLink(PointFromScreen(Mouse.Position)) is { } linkAnchor && linkAnchor.Row == row) {
-                highlighter.DrawLine(e.Graphics, textOffsetX, yPos, line, new SyntaxHighlighter.DrawLineOptions {
-                    UnderlineStart = linkAnchor.MinCol,
-                    UnderlineEnd = linkAnchor.MaxCol,
-                });
-
-                yPos += Font.LineHeight();
                 continue;
             }
 
@@ -3682,13 +3689,27 @@ public sealed class Editor : Drawable {
                     var subLine = wrap.Lines[i].Line;
                     float xIdent = i == 0 ? 0 : wrap.StartOffset * Font.CharWidth();
 
-                    e.Graphics.DrawText(Font, commentBrush, textOffsetX + xIdent, yPos, subLine);
+                    canvas.DrawText(subLine, textOffsetX + xIdent, yPos + Font.Offset(), Font, Settings.Instance.Theme.CommentPaint.ForegroundColor);
                     yPos += Font.LineHeight();
                 }
             } else {
-                highlighter.DrawLine(e.Graphics, textOffsetX, yPos, line);
+                highlighter.DrawLine(canvas, textOffsetX, yPos, line);
                 yPos += Font.LineHeight();
             }
+        }
+
+        // Underline current line-link
+        if (Keyboard.Modifiers.HasCommonModifier() && LocationToLineLink(PointFromScreen(Mouse.Position)) is { } linkAnchor) {
+            strokePaint.Color = Settings.Instance.Theme.CommandPaint.ForegroundColor.Color; // Only commands can have line-links anyway
+            strokePaint.StrokeWidth = 1.0f;
+            strokePaint.StrokeCap = SKStrokeCap.Round;
+
+            float y = actualToVisualRows[linkAnchor.Row] * Font.LineHeight();
+
+            canvas.DrawLine(
+                x0: textOffsetX + linkAnchor.MinCol * Font.CharWidth(), y0: y + Font.Offset() + Font.Metrics.UnderlinePosition ?? 0.0f + 1.0f,
+                x1: textOffsetX + (linkAnchor.MaxCol + 1) * Font.CharWidth(), y1: y + Font.Offset() + Font.Metrics.UnderlinePosition ?? 0.0f + 1.0f,
+                strokePaint);
         }
 
         // Draw quick-edits
@@ -3703,8 +3724,12 @@ public sealed class Editor : Drawable {
                             Document.Caret.Col >= anchor.MinCol &&
                             Document.Caret.Col <= anchor.MaxCol;
 
-            using var pen = new Pen(selected ? Colors.White : Colors.Gray, selected ? 2.0f : 1.0f);
-            e.Graphics.DrawRectangle(pen, x + textOffsetX - padding, y - padding, w + padding * 2.0f, Font.LineHeight() + padding * 2.0f);
+            strokePaint.Color = selected ? SKColors.White : SKColors.Gray;
+            strokePaint.StrokeWidth = selected ? 2.0f : 1.0f;
+
+            canvas.DrawRect(
+                x + textOffsetX - padding, y - padding, w + padding * 2.0f, Font.LineHeight() + padding * 2.0f,
+                strokePaint);
         }
 
         // Draw suffix text
@@ -3712,15 +3737,16 @@ public sealed class Editor : Drawable {
             CommunicationWrapper.CurrentLine != -1 &&
             CommunicationWrapper.CurrentLine < actualToVisualRows.Length)
         {
-            var font = FontManager.EditorFontBold;
+            var font = FontManager.SKEditorFontBold;
 
             const float padding = 10.0f;
             float suffixWidth = font.MeasureWidth(CommunicationWrapper.CurrentLineSuffix);
 
-            e.Graphics.DrawText(font, Settings.Instance.Theme.PlayingFrame,
+            fillPaint.ColorF = Settings.Instance.Theme.PlayingFrame.ToSkia();
+            canvas.DrawText(CommunicationWrapper.CurrentLineSuffix,
                 x: scrollablePosition.X + scrollableSize.Width - suffixWidth - padding,
-                y: actualToVisualRows[CommunicationWrapper.CurrentLine] * font.LineHeight(),
-                CommunicationWrapper.CurrentLineSuffix);
+                y: actualToVisualRows[CommunicationWrapper.CurrentLine] * font.LineHeight() + font.Offset(),
+                font, fillPaint);
         }
 
         var caretPos = GetVisualPosition(Document.Caret);
@@ -3728,11 +3754,19 @@ public sealed class Editor : Drawable {
         float carY = Font.LineHeight() * caretPos.Row;
 
         // Highlight caret line
-        e.Graphics.FillRectangle(Settings.Instance.Theme.CurrentLine, scrollablePosition.X, carY, scrollable.Width, Font.LineHeight());
+        fillPaint.ColorF = Settings.Instance.Theme.CurrentLine.ToSkia();
+        canvas.DrawRect(
+            x: scrollablePosition.X,
+            y: carY,
+            w: scrollable.Width,
+            h: Font.LineHeight(),
+            fillPaint);
 
         // Draw caret
         if (HasFocus) {
-            e.Graphics.DrawLine(Settings.Instance.Theme.Caret, carX, carY, carX, carY + Font.LineHeight() - 1);
+            strokePaint.ColorF = Settings.Instance.Theme.Caret.ToSkia();
+            strokePaint.StrokeWidth = 1.0f;
+            canvas.DrawLine(carX, carY, carX, carY + Font.LineHeight() - 1, strokePaint);
         }
 
         // Draw selection
@@ -3740,12 +3774,14 @@ public sealed class Editor : Drawable {
             var min = GetVisualPosition(Document.Selection.Min);
             var max = GetVisualPosition(Document.Selection.Max);
 
+            fillPaint.ColorF = Settings.Instance.Theme.Selection.ToSkia();
+
             if (min.Row == max.Row) {
                 float x = Font.CharWidth() * min.Col + textOffsetX;
                 float w = Font.CharWidth() * (max.Col - min.Col);
                 float y = Font.LineHeight() * min.Row;
                 float h = Font.LineHeight();
-                e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w, h);
+                canvas.DrawRect(x, y, w, h, fillPaint);
             } else {
                 var visualLine = GetVisualLine(min.Row);
 
@@ -3754,19 +3790,19 @@ public sealed class Editor : Drawable {
                 float x = Font.CharWidth() * min.Col + textOffsetX - extendLeft;
                 float w = visualLine.Length == 0 ? 0.0f : Font.MeasureWidth(visualLine[min.Col..]);
                 float y = Font.LineHeight() * min.Row;
-                e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, x, y, w + extendLeft, Font.LineHeight());
+                canvas.DrawRect(x, y, w + extendLeft, Font.LineHeight(), fillPaint);
 
                 // Cull off-screen lines
                 for (int i = Math.Max(min.Row + 1, topVisualRow); i < Math.Min(max.Row, bottomVisualRow); i++) {
                     // Draw at least half a character for each line
                     w = Font.CharWidth() * Math.Max(0.5f, GetVisualLine(i).Length);
                     y = Font.LineHeight() * i;
-                    e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX - LineNumberPadding, y, w + LineNumberPadding, Font.LineHeight());
+                    canvas.DrawRect(textOffsetX - LineNumberPadding, y, w + LineNumberPadding, Font.LineHeight(), fillPaint);
                 }
 
                 w = Font.MeasureWidth(GetVisualLine(max.Row)[..max.Col]);
                 y = Font.LineHeight() * max.Row;
-                e.Graphics.FillRectangle(Settings.Instance.Theme.Selection, textOffsetX - LineNumberPadding, y, w + LineNumberPadding, Font.LineHeight());
+                canvas.DrawRect(textOffsetX - LineNumberPadding, y, w + LineNumberPadding, Font.LineHeight(), fillPaint);
             }
         }
 
@@ -3779,46 +3815,56 @@ public sealed class Editor : Drawable {
             float y = carY;
             float w = Font.CharWidth() * calculateLine.Length + 2 * padding;
             float h = Font.LineHeight();
-            var path = GraphicsPath.GetRoundRect(new RectangleF(x, y, w, h), 4);
-            e.Graphics.FillPath(Settings.Instance.Theme.CalculateBg, path);
-            e.Graphics.DrawText(FontManager.EditorFontRegular, Settings.Instance.Theme.CalculateFg, x + padding, y, calculateLine);
+
+            fillPaint.ColorF = Settings.Instance.Theme.CalculateBg.ToSkia();
+            canvas.DrawRoundRect(x, y, w, h, 4.0f, 4.0f, fillPaint);
+            fillPaint.ColorF = Settings.Instance.Theme.CalculateFg.ToSkia();
+            canvas.DrawText(calculateLine, x + padding, y + Font.Offset(), Font, fillPaint);
         }
 
         // Draw line numbers
         {
-            e.Graphics.FillRectangle(BackgroundColor,
+            fillPaint.ColorF = Settings.Instance.Theme.Background.ToSkia();
+            canvas.DrawRect(
                 x: scrollablePosition.X,
                 y: scrollablePosition.Y,
-                width: textOffsetX - LineNumberPadding,
-                height: scrollableSize.Height);
+                w: textOffsetX - LineNumberPadding,
+                h: scrollableSize.Height,
+                fillPaint);
 
             // Highlight playing / savestate line
             if (CommunicationWrapper.Connected) {
                 if (CommunicationWrapper.CurrentLine != -1 && CommunicationWrapper.CurrentLine < actualToVisualRows.Length) {
-                    e.Graphics.FillRectangle(Settings.Instance.Theme.PlayingLineBg,
+                    fillPaint.ColorF = Settings.Instance.Theme.PlayingLineBg.ToSkia();
+                    canvas.DrawRect(
                         x: scrollablePosition.X,
                         y: actualToVisualRows[CommunicationWrapper.CurrentLine] * Font.LineHeight(),
-                        width: textOffsetX - LineNumberPadding,
-                        height: Font.LineHeight());
+                        w: textOffsetX - LineNumberPadding,
+                        h: Font.LineHeight(),
+                        fillPaint);
                 }
                 if (CommunicationWrapper.SaveStateLine != -1 && CommunicationWrapper.SaveStateLine < actualToVisualRows.Length) {
+                    fillPaint.ColorF = Settings.Instance.Theme.SavestateBg.ToSkia();
                     if (CommunicationWrapper.SaveStateLine == CommunicationWrapper.CurrentLine) {
-                        e.Graphics.FillRectangle(Settings.Instance.Theme.SavestateBg,
+                        canvas.DrawRect(
                             x: scrollablePosition.X,
                             y: actualToVisualRows[CommunicationWrapper.SaveStateLine] * Font.LineHeight(),
-                            width: 5.0f,
-                            height: Font.LineHeight());
+                            w: 5.0f,
+                            h: Font.LineHeight(),
+                            fillPaint);
                     } else {
-                        e.Graphics.FillRectangle(Settings.Instance.Theme.SavestateBg,
+                        canvas.DrawRect(
                             x: scrollablePosition.X,
                             y: actualToVisualRows[CommunicationWrapper.SaveStateLine] * Font.LineHeight(),
-                            width: textOffsetX - LineNumberPadding,
-                            height: Font.LineHeight());
+                            w: textOffsetX - LineNumberPadding,
+                            h: Font.LineHeight(),
+                            fillPaint);
                     }
                 }
             }
 
             yPos = actualToVisualRows[topRow] * Font.LineHeight();
+
             for (int row = topRow; row <= bottomRow; row++) {
                 int oldRow = row;
                 var numberString = (row + 1).ToString();
@@ -3828,17 +3874,19 @@ public sealed class Editor : Drawable {
                 bool isSaveStateLine = CommunicationWrapper.SaveStateLine >= 0 && CommunicationWrapper.SaveStateLine < actualToVisualRows.Length &&
                                        actualToVisualRows[CommunicationWrapper.SaveStateLine] == actualToVisualRows[row];
 
-                var textColor = isPlayingLine
-                    ? Settings.Instance.Theme.PlayingLineFg
-                    : isSaveStateLine
-                        ? Settings.Instance.Theme.SavestateFg
-                        : Settings.Instance.Theme.LineNumber;
+                if (isPlayingLine) {
+                    fillPaint.ColorF = Settings.Instance.Theme.PlayingLineFg.ToSkia();
+                } else if (isSaveStateLine) {
+                    fillPaint.ColorF = Settings.Instance.Theme.SavestateFg.ToSkia();
+                } else {
+                    fillPaint.ColorF = Settings.Instance.Theme.LineNumber.ToSkia();
+                }
 
                 if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Left) {
-                    e.Graphics.DrawText(Font, textColor, scrollablePosition.X + LineNumberPadding, yPos, numberString);
+                    canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding, yPos + Font.Offset(), Font, fillPaint);
                 } else if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Right) {
                     float ident = Font.CharWidth() * (Document.Lines.Count.Digits() - (row + 1).Digits());
-                    e.Graphics.DrawText(Font, textColor, scrollablePosition.X + LineNumberPadding + ident, yPos, numberString);
+                    canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding + ident, yPos + Font.Offset(), Font, fillPaint);
                 }
 
                 bool collapsed = false;
@@ -3847,13 +3895,15 @@ public sealed class Editor : Drawable {
                     collapsed = true;
                 }
                 if (Settings.Instance.ShowFoldIndicators && foldings.FirstOrDefault(fold => fold.MinRow == oldRow) is var folding && folding.MinRow != folding.MaxRow) {
-                    e.Graphics.SaveTransform();
-                    e.Graphics.TranslateTransform(
-                        scrollablePosition.X + textOffsetX - LineNumberPadding * 2.0f - Font.CharWidth(),
-                        yPos + (Font.LineHeight() - Font.CharWidth()) / 2.0f);
-                    e.Graphics.ScaleTransform(Font.CharWidth());
-                    e.Graphics.FillPath(textColor, collapsed ? Assets.CollapseClosedPath : Assets.CollapseOpenPath);
-                    e.Graphics.RestoreTransform();
+                    canvas.Save();
+                    canvas.Translate(
+                        dx: scrollablePosition.X + textOffsetX - LineNumberPadding * 2.0f - Font.CharWidth(),
+                        dy: yPos + (Font.LineHeight() - Font.CharWidth()) / 2.0f);
+                    canvas.Scale(Font.CharWidth());
+
+                    canvas.DrawPath(collapsed ? Assets.CollapseClosedPath : Assets.CollapseOpenPath, fillPaint);
+
+                    canvas.Restore();
                 }
 
                 if (commentLineWraps.TryGetValue(oldRow, out wrap)) {
@@ -3863,32 +3913,36 @@ public sealed class Editor : Drawable {
                 }
             }
 
-            e.Graphics.DrawLine(Settings.Instance.Theme.ServiceLine,
-                scrollablePosition.X + textOffsetX - LineNumberPadding, 0.0f,
-                scrollablePosition.X + textOffsetX - LineNumberPadding, yPos + scrollableSize.Height);
+            strokePaint.ColorF = Settings.Instance.Theme.ServiceLine.ToSkia();
+            canvas.DrawLine(
+                x0: scrollablePosition.X + textOffsetX - LineNumberPadding, y0: 0.0f,
+                x1: scrollablePosition.X + textOffsetX - LineNumberPadding, y1: yPos + scrollableSize.Height,
+                strokePaint);
         }
 
         // Draw toast message box
         if (!string.IsNullOrWhiteSpace(toastMessage)) {
-            var lines = toastMessage.SplitDocumentLines();
+            string[] lines = toastMessage.SplitDocumentLines();
 
-            float width = FontManager.PopupFont.CharWidth() * lines.Select(line => line.Length).Aggregate(Math.Max);
-            float height = FontManager.PopupFont.LineHeight() * lines.Length;
+            var font = FontManager.SKPopupFont;
+
+            float width = font.CharWidth() * lines.Select(line => line.Length).Aggregate(Math.Max);
+            float height = font.LineHeight() * lines.Length;
             float x = scrollablePosition.X + (scrollableSize.Width - width) / 2.0f;
             float y = scrollablePosition.Y + (scrollableSize.Height - height) / 2.0f;
-
             float padding = Settings.Instance.Theme.PopupMenuBorderPadding;
-            e.Graphics.FillPath(
-                Settings.Instance.Theme.PopupMenuBg,
-                GraphicsPath.GetRoundRect(new RectangleF(x - padding, y - padding, width + padding * 2.0f, height + padding * 2.0f), Settings.Instance.Theme.PopupMenuBorderRounding));
 
-            foreach (var line in lines) {
-                e.Graphics.DrawText(FontManager.PopupFont, Settings.Instance.Theme.PopupMenuFg, x, y, line);
+            canvas.DrawRoundRect(
+                x: x - padding, y: y - padding,
+                w: width + padding * 2.0f, h: height + padding * 2.0f,
+                rx: Settings.Instance.Theme.PopupMenuBorderRounding, ry: Settings.Instance.Theme.PopupMenuBorderRounding,
+                Settings.Instance.Theme.PopupMenuBgPaint);
+
+            foreach (string line in lines) {
+                canvas.DrawText(line, x, y + Font.Offset(), font, Settings.Instance.Theme.PopupMenuFgPaint);
                 y += Font.LineHeight();
             }
         }
-
-        base.OnPaint(e);
     }
 
     #endregion

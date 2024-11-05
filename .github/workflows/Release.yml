@@ -6,24 +6,81 @@ on:
       - "v*.*.*"
 
 jobs:
+  generate-changelog:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5.2.0
+        with:
+          python-version: 3.12.6
+      - name: Setup Python environment
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install requests
+
+      - name: Generate release-changelog
+        run: |
+          source .venv/bin/activate
+          python Scripts/generate_release.py "$(git log -1 --pretty=%B)" version_info.txt gamebanana_changelog.json github_changelog.md studio_changelog.md
+        env:
+          GITHUB_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Upload version information
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog-version
+          path: version_info.txt
+      - name: Upload GameBanana changelog
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog-gamebanana
+          path: gamebanana_changelog.json
+      - name: Upload GitHub changelog
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog-github
+          path: github_changelog.md
+      - name: Upload Studio changelog
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog-studio
+          path: studio_changelog.md
+
+
   build-studio:
     uses: ./.github/workflows/Build.CelesteStudio.yml
     with:
       build-cfg: Release
+    needs: generate-changelog
 
   release:
     runs-on: ubuntu-latest
-    needs: build-studio
+    needs:
+      - build-studio
+      - generate-changelog
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: 'recursive'
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0'
+      - name: Setup Python
+        uses: actions/setup-python@v5.2.0
+        with:
+          python-version: 3.12.6
+      - name: Setup Firefox WebDriver
+        uses: browser-actions/setup-firefox@v1.5.2
 
       - name: Download Studio builds
         uses: actions/download-artifact@v4
@@ -52,16 +109,55 @@ jobs:
 
       - name: Build
         run: |
-          dotnet build CelesteTAS-EverestInterop -c Release -p:DefineConstants=INSTALL_STUDIO
+          dotnet build CelesteTAS-EverestInterop -c Release -p:DefineConstants=INSTALL_STUDIO -p:UseSymlinks=false
 
-      - name: Create release
-        uses: marvinpinto/action-automatic-releases@latest
+      - name: Download changelogs
+        uses: actions/download-artifact@v4
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          prerelease: false
+          pattern: changelog-*
+
+      - name: Setup Python environment
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install requests selenium
+
+      - name: Prepare releases
+        run: |
+          # Version GameBanana .zip without v prefix
+          RELEASE_FILE="CelesteTAS_$(head -n 1 changelog-version/version_info.txt | cut -c 2-).zip"
+          cp CelesteTAS.zip $RELEASE_FILE
+          echo "RELEASE_FILE=$RELEASE_FILE" >> $GITHUB_ENV
+
+          # Setup GitHub release title
+          RELEASE_TITLE="$(sed -n "1p" changelog-version/version_info.txt) (Studio $(sed -n "2p" changelog-version/version_info.txt))"
+          echo "RELEASE_TITLE=$RELEASE_TITLE" >> $GITHUB_ENV  
+
+      - name: Upload GameBanana release
+        run: |
+          source .venv/bin/activate
+          python Scripts/gamebanana_upload.py ${{ env.RELEASE_FILE }} changelog-gamebanana/gamebanana_changelog.json changelog-version/version_info.txt
+        env:
+          GAMEBANANA_USERNAME: AutomaticRelease
+          GAMEBANANA_PASSWORD: ${{ secrets.GAMEBANANA_PASSWORD }}
+          GAMEBANANA_2FA_URI: ${{ secrets.GAMEBANANA_2FA_URI }}
+          GAMEBANANA_MODID: 6715
+          GAMEBANANA_ISTOOL: 1
+
+      - name: Upload GitHub release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ env.RELEASE_TITLE }}
+          body_path: changelog-github/github_changelog.md
           files: |
             CelesteTAS.zip
             CelesteStudio-windows-x64.zip
             CelesteStudio-linux-x64.zip
             CelesteStudio-macos-x64.zip
             CelesteStudio-macos-arm64.zip
+
+      - name: Clean-up changelog artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: changelog-*
+          failOnError: false

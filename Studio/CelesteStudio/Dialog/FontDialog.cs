@@ -1,3 +1,4 @@
+using CelesteStudio.Controls;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -5,20 +6,22 @@ using CelesteStudio.Editing;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
+using SkiaSharp;
 
 namespace CelesteStudio.Dialog;
 
 public class FontDialog : Dialog<bool> {
-    private class FontPreview : Drawable {
-        private Font font = null!;
+    private class FontPreview : SkiaDrawable {
+        private SKFont font = null!;
         private SyntaxHighlighter? highlighter;
 
         public void SetFont(string fontFamily, float size) {
-            font = FontManager.CreateFont(fontFamily, size);
-            highlighter = new SyntaxHighlighter(font,
-                FontManager.CreateFont(fontFamily, size, FontStyle.Bold),
-                FontManager.CreateFont(fontFamily, size, FontStyle.Italic),
-                FontManager.CreateFont(fontFamily, size, FontStyle.Bold | FontStyle.Italic));
+            font = FontManager.CreateSKFont(fontFamily, size, FontStyle.None);
+            highlighter = new SyntaxHighlighter(
+                font,
+                FontManager.CreateSKFont(fontFamily, size, FontStyle.Bold),
+                FontManager.CreateSKFont(fontFamily, size, FontStyle.Italic),
+                FontManager.CreateSKFont(fontFamily, size, FontStyle.Bold | FontStyle.Italic));
 
             Invalidate();
         }
@@ -28,7 +31,9 @@ public class FontDialog : Dialog<bool> {
             Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.Background;
         }
 
-        protected override void OnPaint(PaintEventArgs e) {
+        public override void Draw(SKSurface surface) {
+            surface.Canvas.Clear();
+
             if (highlighter == null)
                 return;
 
@@ -42,20 +47,15 @@ public class FontDialog : Dialog<bool> {
                 " 145,R,D",
             ];
 
-            e.Graphics.AntiAlias = true;
-
             float yPos = 0.0f;
             float maxWidth = 0.0f;
             foreach (var line in previewText) {
-                // Actually measure the fonts to avoid caching issues
-                highlighter.DrawLine(e.Graphics, 0.0f, yPos, line, new SyntaxHighlighter.DrawLineOptions { MeasureReal = true });
-                maxWidth = Math.Max(maxWidth, font.MeasureWidth(line, measureReal: true));
+                highlighter.DrawLine(surface.Canvas, 0.0f, yPos, line);
+                maxWidth = Math.Max(maxWidth, font.MeasureWidth(line));
                 yPos += font.LineHeight();
             }
 
             Size = new((int)maxWidth, (int)yPos);
-
-            base.OnPaint(e);
         }
     }
 

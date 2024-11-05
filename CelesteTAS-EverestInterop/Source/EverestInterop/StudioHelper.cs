@@ -61,7 +61,7 @@ public static class StudioHelper {
                 return DownloadURL_MacOS_ARM64;
             }
 
-            throw new NotImplementedException($"Unsupported platform: {RuntimeInformation.OSDescription} with {RuntimeInformation.OSArchitecture}");
+            throw new PlatformNotSupportedException($"Unsupported platform: {RuntimeInformation.OSDescription} with {RuntimeInformation.OSArchitecture}");
         }
     }
     private static string Checksum {
@@ -79,7 +79,7 @@ public static class StudioHelper {
                 return Checksum_MacOS_ARM64;
             }
 
-            throw new NotImplementedException($"Unsupported platform: {RuntimeInformation.OSDescription} with {RuntimeInformation.OSArchitecture}");
+            throw new PlatformNotSupportedException($"Unsupported platform: {RuntimeInformation.OSDescription} with {RuntimeInformation.OSArchitecture}");
         }
     }
 
@@ -93,36 +93,48 @@ public static class StudioHelper {
             $"Celeste Studio version mismatch: Expected '{CurrentStudioVersion}', found '{installedVersion}'. Installing current version...".Log();
 
             Task.Run(async () => {
-                // Close all Studio instances to avoid issues with file usage
-                foreach (var process in Process.GetProcesses().Where(process => process.ProcessName is "CelesteStudio" or "CelesteStudio.WPF" or "CelesteStudio.GTK" or "CelesteStudio.Mac" or "Celeste Studio")) {
-                    $"Closing process {process} ({process.Id})...".Log(LogLevel.Verbose);
-                    process.Terminate();
-                    await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10.0f)).ConfigureAwait(false);
+                try {
+                    // Close all Studio instances to avoid issues with file usage
+                    foreach (var process in Process.GetProcesses().Where(process => process.ProcessName is "CelesteStudio" or "CelesteStudio.WPF" or "CelesteStudio.GTK" or "CelesteStudio.Mac" or "Celeste Studio")) {
+                        $"Closing process {process} ({process.Id})...".Log(LogLevel.Verbose);
+                        process.Terminate();
+                        await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10.0f)).ConfigureAwait(false);
 
-                    // Make sure it's _really_ closed
-                    process.Kill();
-                    await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5.0f)).ConfigureAwait(false);
-                    "Process terminated".Log(LogLevel.Verbose);
+                        // Make sure it's _really_ closed
+                        try {
+                            process.Kill();
+                            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5.0f)).ConfigureAwait(false);
+                        } catch {
+                            // ignore
+                        }
+                        "Process terminated".Log(LogLevel.Verbose);
+                    }
+                } catch (Exception ex) {
+                    ex.LogException("Failed to close other studio instances");
                 }
 
-                // If Studio fails to find the game directory for some reason, that's where "TAS Files" will be placed
-                // Merge the content into the proper location to prevent data loss
-                if (Directory.Exists(Path.Combine(StudioDirectory, "TAS Files"))) {
-                    foreach (string path in Directory.GetFiles(Path.Combine(StudioDirectory, "TAS Files"), "*", new EnumerationOptions { RecurseSubdirectories = true })) {
-                        // Don't copy directories themselves
-                        if (Directory.Exists(path)) {
-                            continue;
+                try {
+                    // If Studio fails to find the game directory for some reason, that's where "TAS Files" will be placed
+                    // Merge the content into the proper location to prevent data loss
+                    if (Directory.Exists(Path.Combine(StudioDirectory, "TAS Files"))) {
+                        foreach (string path in Directory.GetFiles(Path.Combine(StudioDirectory, "TAS Files"), "*", new EnumerationOptions { RecurseSubdirectories = true })) {
+                            // Don't copy directories themselves
+                            if (Directory.Exists(path)) {
+                                continue;
+                            }
+
+                            string relativePath = Path.GetRelativePath(Path.Combine(StudioDirectory, "TAS Files"), path);
+                            string? relativeDirectory = Path.GetDirectoryName(relativePath);
+
+                            if (relativeDirectory != null && !Directory.Exists(Path.Combine(Everest.PathGame, "TAS Files", relativeDirectory))) {
+                                Directory.CreateDirectory(Path.Combine(Everest.PathGame, "TAS Files", relativeDirectory));
+                            }
+
+                            File.Move(path, Path.Combine(Everest.PathGame, "TAS Files", relativePath));
                         }
-
-                        string relativePath = Path.GetRelativePath(Path.Combine(StudioDirectory, "TAS Files"), path);
-                        string? relativeDirectory = Path.GetDirectoryName(relativePath);
-
-                        if (relativeDirectory != null && !Directory.Exists(Path.Combine(Everest.PathGame, "TAS Files", relativeDirectory))) {
-                            Directory.CreateDirectory(Path.Combine(Everest.PathGame, "TAS Files", relativeDirectory));
-                        }
-
-                        File.Move(path, Path.Combine(Everest.PathGame, "TAS Files", relativePath));
                     }
+                } catch (Exception ex) {
+                    ex.LogException("Failed to migrate 'TAS Files' directory");
                 }
 
                 try {
