@@ -44,12 +44,12 @@ public sealed class PopupMenu : Scrollable {
             menu.Scroll += (_, _) => Invalidate();
         }
 
-        protected override int DrawX => menu.ScrollPosition.X;
-        protected override int DrawY => menu.ScrollPosition.Y;
-        protected override int DrawWidth => menu.Width;
-        protected override int DrawHeight => menu.Height;
+        public override int DrawX => menu.ScrollPosition.X;
+        public override int DrawY => menu.ScrollPosition.Y;
+        public override int DrawWidth => menu.Width;
+        public override int DrawHeight => menu.Height;
 
-        protected override void Draw(PaintEventArgs e, SKSurface surface, SKImageInfo imageInfo) {
+        public override void Draw(SKSurface surface) {
             surface.Canvas.Clear();
             surface.Canvas.Translate(-menu.ScrollPosition.X, -menu.ScrollPosition.Y);
 
@@ -298,7 +298,7 @@ public sealed class PopupMenu : Scrollable {
         if (!Visible) {
             return false;
         }
-        
+
         if (e.Key == Keys.Escape) {
             Visible = false;
             return true;

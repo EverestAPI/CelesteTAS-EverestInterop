@@ -14,7 +14,7 @@ namespace CelesteStudio.Editing;
 
 public sealed class GameInfo : Panel {
     private sealed class SubpixelIndicator : SkiaDrawable {
-        protected override void Draw(PaintEventArgs e, SKSurface surface, SKImageInfo imageInfo) {
+        public override void Draw(SKSurface surface) {
             surface.Canvas.Clear();
 
             var remainder = CommunicationWrapper.PlayerPositionRemainder;

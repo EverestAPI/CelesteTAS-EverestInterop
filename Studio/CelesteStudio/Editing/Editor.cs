@@ -3619,12 +3619,12 @@ public sealed class Editor : SkiaDrawable {
 
     #region Drawing
 
-    protected override int DrawX => scrollablePosition.X;
-    protected override int DrawY => scrollablePosition.Y;
-    protected override int DrawWidth => scrollable.Width;
-    protected override int DrawHeight => scrollable.Height;
+    public override int DrawX => scrollablePosition.X;
+    public override int DrawY => scrollablePosition.Y;
+    public override int DrawWidth => scrollable.Width;
+    public override int DrawHeight => scrollable.Height;
 
-    protected override void Draw(PaintEventArgs e, SKSurface surface, SKImageInfo imageInfo) {
+    public override void Draw(SKSurface surface) {
         var canvas = surface.Canvas;
         canvas.Clear();
         canvas.Translate(-scrollablePosition.X, -scrollablePosition.Y);

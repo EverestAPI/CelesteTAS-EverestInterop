@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using CelesteStudio.Communication;
+using CelesteStudio.Controls;
 using CelesteStudio.Data;
 using CelesteStudio.Dialog;
 using CelesteStudio.Editing;

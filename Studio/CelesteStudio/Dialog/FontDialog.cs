@@ -31,7 +31,7 @@ public class FontDialog : Dialog<bool> {
             Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.Background;
         }
 
-        protected override void Draw(PaintEventArgs e, SKSurface surface, SKImageInfo imageInfo) {
+        public override void Draw(SKSurface surface) {
             surface.Canvas.Clear();
 
             if (highlighter == null)
@@ -46,8 +46,6 @@ public class FontDialog : Dialog<bool> {
                 "Set, Player.Speed.X, 200",
                 " 145,R,D",
             ];
-
-            e.Graphics.AntiAlias = true;
 
             float yPos = 0.0f;
             float maxWidth = 0.0f;

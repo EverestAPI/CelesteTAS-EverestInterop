@@ -19,7 +19,7 @@ public class ChangelogDialog : Eto.Forms.Dialog {
             ? new SKColorF(1.0f - SystemColors.ControlText.R, 1.0f - SystemColors.ControlText.G, 1.0f - SystemColors.ControlText.B)
             : SystemColors.ControlText.ToSkia();
 
-        protected override void Draw(PaintEventArgs e, SKSurface surface, SKImageInfo info) {
+        public override void Draw(SKSurface surface) {
             surface.Canvas.Clear();
 
             var textColor = TextColor;
