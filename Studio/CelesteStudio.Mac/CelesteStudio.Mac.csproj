@@ -3,6 +3,8 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFramework>net7.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <Nullable>enable</Nullable>
         <RuntimeIdentifiers>osx-x64;osx-arm64</RuntimeIdentifiers>
 
         <SupportedOSPlatformVersion>10.15</SupportedOSPlatformVersion>

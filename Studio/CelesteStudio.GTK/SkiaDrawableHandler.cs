@@ -57,6 +57,17 @@ public class SkiaDrawableHandler : GtkPanel<Gtk.EventBox, SkiaDrawable, SkiaDraw
 
             return false;
         }
+
+        protected override void Dispose(bool disposing) {
+            bitmap?.Dispose();
+            bitmap = null;
+
+            surface?.Dispose();
+            surface = null;
+
+            imageSurface?.Dispose();
+            imageSurface = null;
+        }
     }
 
     public bool CanFocus {
