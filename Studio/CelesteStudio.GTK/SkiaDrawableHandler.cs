@@ -31,12 +31,12 @@ public class SkiaDrawableHandler : GtkPanel<Gtk.EventBox, SkiaDrawable, SkiaDraw
                 return true;
             }
 
-            int drawWidth = drawable.DrawWidth, drawHeight = drawable.DrawHeight;
-            if (drawWidth != bitmap?.Width || drawHeight != bitmap?.Height) {
+            int width = drawable.DrawWidth, height = drawable.DrawHeight;
+            if (width != bitmap?.Width || height != bitmap?.Height) {
                 var colorType = SKImageInfo.PlatformColorType;
 
                 bitmap?.Dispose();
-                bitmap = new SKBitmap(drawWidth, drawHeight, colorType, SKAlphaType.Premul);
+                bitmap = new SKBitmap(width, height, colorType, SKAlphaType.Premul);
                 IntPtr pixels = bitmap.GetPixels();
 
                 surface?.Dispose();

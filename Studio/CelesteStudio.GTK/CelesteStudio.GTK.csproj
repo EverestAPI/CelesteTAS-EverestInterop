@@ -4,8 +4,8 @@
         <OutputType>WinExe</OutputType>
         <TargetFramework>net7.0</TargetFramework>
         <LangVersion>latest</LangVersion>
-        <RuntimeIdentifiers>linux-x64;linux-arm;linux-arm64</RuntimeIdentifiers>
         <Nullable>enable</Nullable>
+        <RuntimeIdentifiers>linux-x64;linux-arm;linux-arm64</RuntimeIdentifiers>
 
         <RestoreSources>$(RestoreSources);https://www.myget.org/F/eto/api/v3/index.json;https://api.nuget.org/v3/index.json</RestoreSources>
     </PropertyGroup>
