@@ -11,7 +11,7 @@ public record struct Style(Color ForegroundColor, Color? BackgroundColor = null,
     public StylePaint CreatePaint() => new(CreateForegroundPaint(), CreateBackgroundPaint(), FontStyle);
 
     public SKPaint CreateForegroundPaint(SKPaintStyle style = SKPaintStyle.Fill) =>
-        new() { ColorF = ForegroundColor.ToSkia(), Style = style, IsAntialias = true };
+        new() { ColorF = ForegroundColor.ToSkia(), Style = style, IsAntialias = true, SubpixelText = true };
     public SKPaint? CreateBackgroundPaint(SKPaintStyle style = SKPaintStyle.Fill) =>
         BackgroundColor == null ? null : new() { ColorF = BackgroundColor.Value.ToSkia(), Style = style, IsAntialias = true };
 }
@@ -99,19 +99,19 @@ public class Theme {
     public SKPaint CommentBoxPaint => _commentBox ??= Comment.CreateForegroundPaint(SKPaintStyle.Stroke);
 
     [TomlNonSerialized]
-    public SKPaint StatusFgPaint => _statusFgPaint ??= new SKPaint { ColorF = StatusFg.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
+    public SKPaint StatusFgPaint => _statusFgPaint ??= new SKPaint { ColorF = StatusFg.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true, SubpixelText = true };
     [TomlNonSerialized]
-    public SKPaint SubpixelIndicatorDotPaint => _subpixelIndicatorDotPaint ??= new SKPaint { ColorF = SubpixelIndicatorDot.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
+    public SKPaint SubpixelIndicatorDotPaint => _subpixelIndicatorDotPaint ??= new SKPaint { ColorF = SubpixelIndicatorDot.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true, SubpixelText = true };
     [TomlNonSerialized]
-    public SKPaint PopupMenuFgPaint => _popupMenuFgPaint ??= new SKPaint { ColorF = PopupMenuFg.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
+    public SKPaint PopupMenuFgPaint => _popupMenuFgPaint ??= new SKPaint { ColorF = PopupMenuFg.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true, SubpixelText = true };
     [TomlNonSerialized]
-    public SKPaint PopupMenuFgDisabledPaint => _popupMenuFgDisabledPaint ??= new SKPaint { ColorF = PopupMenuFgDisabled.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
+    public SKPaint PopupMenuFgDisabledPaint => _popupMenuFgDisabledPaint ??= new SKPaint { ColorF = PopupMenuFgDisabled.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true, SubpixelText = true };
     [TomlNonSerialized]
-    public SKPaint PopupMenuFgExtraPaint => _popupMenuFgExtraPaint ??= new SKPaint { ColorF = PopupMenuFgExtra.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
+    public SKPaint PopupMenuFgExtraPaint => _popupMenuFgExtraPaint ??= new SKPaint { ColorF = PopupMenuFgExtra.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true, SubpixelText = true };
     [TomlNonSerialized]
-    public SKPaint PopupMenuBgPaint => _popupMenuBgPaint ??= new SKPaint { ColorF = PopupMenuBg.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
+    public SKPaint PopupMenuBgPaint => _popupMenuBgPaint ??= new SKPaint { ColorF = PopupMenuBg.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true, SubpixelText = true };
     [TomlNonSerialized]
-    public SKPaint PopupMenuSelectedPaint => _popupMenuSelectedPaint ??= new SKPaint { ColorF = PopupMenuSelected.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
+    public SKPaint PopupMenuSelectedPaint => _popupMenuSelectedPaint ??= new SKPaint { ColorF = PopupMenuSelected.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true, SubpixelText = true };
 
     public void InvalidateCache() {
         _actionPaint?.Dispose();

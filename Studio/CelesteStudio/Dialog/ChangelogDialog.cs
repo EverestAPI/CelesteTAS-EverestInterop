@@ -29,16 +29,19 @@ public class ChangelogDialog : Eto.Forms.Dialog {
             titlePaint.ColorF = textColor;
             titlePaint.IsAntialias = true;
             titlePaint.TextAlign = SKTextAlign.Center;
+            titlePaint.SubpixelText = true;
 
             using var headingFont = new SKFont(SKTypeface.Default, 24.0f);
             using var headingPaint = new SKPaint(headingFont);
             headingPaint.ColorF = textColor;
             headingPaint.IsAntialias = true;
+            headingPaint.SubpixelText = true;
 
             using var entryFont = new SKFont(SKTypeface.Default, 13.0f);
             using var entryPaint = new SKPaint(entryFont);
             entryPaint.ColorF = textColor;
             entryPaint.IsAntialias = true;
+            entryPaint.SubpixelText = true;
 
             float yOffset = 0.0f;
             // Title

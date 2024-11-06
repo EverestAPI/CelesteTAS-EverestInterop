@@ -11,11 +11,11 @@ using Eto.Wpf;
 namespace CelesteStudio.WPF;
 
 public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, SkiaDrawable.ICallback>, SkiaDrawable.IHandler {
-    public void Create() { 
+    public void Create() {
         Control = new SkiaBorder(Widget);
     }
 
-    private class SkiaBorder(SkiaDrawable drawable) : Border {
+    private class SkiaBorder(SkiaDrawable drawable) : Border, IDisposable {
         private SKSurface? surface;
         private WriteableBitmap? bitmap;
 
@@ -32,23 +32,36 @@ public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, SkiaDrawable.I
                 return;
             }
 
-            if (width != bitmap?.PixelWidth || height != bitmap?.PixelHeight) {
-                bitmap = new WriteableBitmap(width, height, dpiX, dpiY, PixelFormats.Pbgra32, null);
+            if (bitmap == null || surface == null || width != bitmap.PixelWidth || height != bitmap.PixelHeight) {
+                const double bitmapDpi = 96.0;
+                bitmap = new WriteableBitmap(width, height, bitmapDpi * dpiX, bitmapDpi * dpiY, PixelFormats.Pbgra32, null);
 
                 surface?.Dispose();
-                surface = SKSurface.Create(new SKImageInfo(width, height, SKImageInfo.PlatformColorType, SKAlphaType.Premul), bitmap.BackBuffer, bitmap.BackBufferStride);
+                surface = SKSurface.Create(new SKImageInfo(width, height, SKImageInfo.PlatformColorType, SKAlphaType.Premul), bitmap.BackBuffer, bitmap.BackBufferStride, new SKSurfaceProperties(SKPixelGeometry.Unknown));
+                surface.Canvas.Scale((float)dpiX, (float)dpiY);
+                surface.Canvas.Save();
             }
 
             bitmap.Lock();
 
-            using (new SKAutoCanvasRestore(surface!.Canvas, true)) {
+            using (new SKAutoCanvasRestore(surface.Canvas, true)) {
                 drawable.Draw(surface);
             }
             surface.Canvas.Flush();
 
             bitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
-            drawingContext.DrawImage(bitmap, new Rect(drawable.DrawX, drawable.DrawY, width, height));
+            drawingContext.DrawImage(bitmap, new Rect(drawable.DrawX, drawable.DrawY, width / dpiX, height / dpiY));
             bitmap.Unlock();
+        }
+
+        ~SkiaBorder() {
+            Dispose();
+        }
+        public void Dispose() {
+            surface?.Dispose();
+            surface = null;
+
+            GC.SuppressFinalize(this);
         }
     }
 
