@@ -29,7 +29,8 @@ public class SkiaDrawableHandler : MacPanel<SkiaDrawableHandler.SkiaDrawableView
         public override void DrawRect(CGRect dirtyRect) {
             base.DrawRect(dirtyRect);
 
-            var bounds = new CGRect(drawable.DrawX, drawable.DrawY, drawable.DrawWidth * Window.BackingScaleFactor, drawable.DrawHeight * Window.BackingScaleFactor);
+            double scale = Window.BackingScaleFactor;
+            var bounds = new CGRect(drawable.DrawX * scale, drawable.DrawY * scale, drawable.DrawWidth * scale, drawable.DrawHeight * scale);
             var info = new SKImageInfo((int)bounds.Width, (int)bounds.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
 
             // Allocate a memory for the drawing process
@@ -57,7 +58,8 @@ public class SkiaDrawableHandler : MacPanel<SkiaDrawableHandler.SkiaDrawableView
                 dataProvider, null, false, CGColorRenderingIntent.Default);
 
             var ctx = NSGraphicsContext.CurrentContext.GraphicsPort;
-            ctx.DrawImage(bounds, image);
+            // NOTE: macOS uses a different coordinate-system
+            ctx.DrawImage(new CGRect(bounds.X, Bounds.Height - bounds.Height - bounds.Y, bounds.Width, bounds.Height), image);
         }
 
         protected override void Dispose(bool disposing) {
