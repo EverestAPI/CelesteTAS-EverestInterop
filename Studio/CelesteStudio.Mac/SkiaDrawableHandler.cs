@@ -1,4 +1,5 @@
 using CelesteStudio.Controls;
+using CelesteStudio.Util;
 using Eto.Mac.Forms;
 using MonoMac.AppKit;
 using MonoMac.CoreGraphics;
@@ -35,7 +36,7 @@ public class SkiaDrawableHandler : MacPanel<SkiaDrawableHandler.SkiaDrawableView
 
             // Allocate a memory for the drawing process
             nuint infoLength = (nuint)info.BytesSize;
-            if (bitmapData?.Length != infoLength) {
+            if (surface == null || bitmapData?.Length != infoLength) {
                 dataProvider?.Dispose();
                 bitmapData?.Dispose();
 
@@ -46,10 +47,13 @@ public class SkiaDrawableHandler : MacPanel<SkiaDrawableHandler.SkiaDrawableView
                 surface = SKSurface.Create(info, bitmapData.MutableBytes, info.RowBytes);
             }
 
-            using (new SKAutoCanvasRestore(surface!.Canvas, true)) {
+            var canvas = surface.Canvas;
+            using (new SKAutoCanvasRestore(canvas, true)) {
+                canvas.Clear(drawable.BackgroundColor.ToSkia());
+                canvas.Translate(-drawable.DrawX, -drawable.DrawY);
                 drawable.Draw(surface);
             }
-            surface.Canvas.Flush();
+            canvas.Flush();
 
             using var image = new CGImage(
                 info.Width, info.Height,

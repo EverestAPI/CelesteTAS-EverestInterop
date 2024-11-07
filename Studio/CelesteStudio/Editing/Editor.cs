@@ -3626,8 +3626,6 @@ public sealed class Editor : SkiaDrawable {
 
     public override void Draw(SKSurface surface) {
         var canvas = surface.Canvas;
-        canvas.Clear();
-        canvas.Translate(-scrollablePosition.X, -scrollablePosition.Y);
 
         using var strokePaint = new SKPaint();
         strokePaint.Style = SKPaintStyle.Stroke;

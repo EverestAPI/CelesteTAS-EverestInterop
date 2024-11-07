@@ -1,4 +1,5 @@
 using CelesteStudio.Controls;
+using CelesteStudio.Util;
 using System;
 using System.Windows;
 using System.Windows.Media;
@@ -44,10 +45,13 @@ public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, SkiaDrawable.I
 
             bitmap.Lock();
 
+            var canvas = surface.Canvas;
             using (new SKAutoCanvasRestore(surface.Canvas, true)) {
+                canvas.Clear(drawable.BackgroundColor.ToSkia());
+                canvas.Translate(-drawable.DrawX, -drawable.DrawY);
                 drawable.Draw(surface);
             }
-            surface.Canvas.Flush();
+            canvas.Flush();
 
             bitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
             drawingContext.DrawImage(bitmap, new Rect(drawable.DrawX, drawable.DrawY, width / dpiX, height / dpiY));
