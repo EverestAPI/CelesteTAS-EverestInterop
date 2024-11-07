@@ -101,6 +101,10 @@ jobs:
           sed -i "s\\##URL_LINUX_x64##\\https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/CelesteStudio-linux-x64.zip\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
           sed -i "s\\##URL_MACOS_x64##\\https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/CelesteStudio-macos-x64.zip\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
           sed -i "s\\##URL_MACOS_ARM64##\\https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/CelesteStudio-macos-arm64.zip\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
+          sed -i "s\\##FILENAME_WINDOWS_x64##\\CelesteStudio-windows-x64.zip\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
+          sed -i "s\\##FILENAME_LINUX_x64##\\CelesteStudio-linux-x64.zip\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
+          sed -i "s\\##FILENAME_MACOS_x64##\\CelesteStudio-macos-x64.zip\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
+          sed -i "s\\##FILENAME_MACOS_ARM64##\\CelesteStudio-macos-arm64.zip\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
           sed -i "s\\##CHECKSUM_WINDOWS_x64##\\$(md5sum CelesteStudio-windows-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
           sed -i "s\\##CHECKSUM_LINUX_x64##\\$(md5sum CelesteStudio-linux-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
           sed -i "s\\##CHECKSUM_MACOS_x64##\\$(md5sum CelesteStudio-macos-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
