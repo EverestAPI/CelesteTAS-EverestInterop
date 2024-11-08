@@ -65,7 +65,7 @@ public class SkiaDrawableHandler : MacPanel<SkiaDrawableHandler.SkiaDrawableView
 
             var ctx = NSGraphicsContext.CurrentContext.GraphicsPort;
             // NOTE: macOS uses a different coordinate-system
-            ctx.DrawImage(new CGRect(bounds.X, Bounds.Height - bounds.Height - bounds.Y, bounds.Width / scale, bounds.Height / scale), image);
+            ctx.DrawImage(new CGRect(bounds.X, Bounds.Height - bounds.Height / scale - bounds.Y, bounds.Width / scale, bounds.Height / scale), image);
         }
 
         protected override void Dispose(bool disposing) {
