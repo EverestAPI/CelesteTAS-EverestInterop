@@ -45,6 +45,8 @@ public class SkiaDrawableHandler : MacPanel<SkiaDrawableHandler.SkiaDrawableView
 
                 surface?.Dispose();
                 surface = SKSurface.Create(info, bitmapData.MutableBytes, info.RowBytes);
+                surface.Canvas.Scale((float)scale);
+                surface.Canvas.Save();
             }
 
             var canvas = surface.Canvas;
@@ -63,7 +65,7 @@ public class SkiaDrawableHandler : MacPanel<SkiaDrawableHandler.SkiaDrawableView
 
             var ctx = NSGraphicsContext.CurrentContext.GraphicsPort;
             // NOTE: macOS uses a different coordinate-system
-            ctx.DrawImage(new CGRect(bounds.X, Bounds.Height - bounds.Height - bounds.Y, bounds.Width, bounds.Height), image);
+            ctx.DrawImage(new CGRect(bounds.X, Bounds.Height - bounds.Height - bounds.Y, bounds.Width / scale, bounds.Height / scale), image);
         }
 
         protected override void Dispose(bool disposing) {
