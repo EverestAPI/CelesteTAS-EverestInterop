@@ -373,7 +373,7 @@ public static class StudioHelper {
                 continue;
             }
 
-            File.Delete(file);
+            Directory.Delete(file, recursive: true);
         }
 
         // Setup new install
