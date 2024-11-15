@@ -16,7 +16,7 @@ public partial record struct CommandInfo(
     public const string Separator = "##SEPARATOR##"; // Placeholder to-be replaced by the actual value
 
     /// Groups command into a meaningful order with null as a separator
-    public static string?[] CommandOrder = [
+    public static readonly string?[] CommandOrder = [
         "console", "Set", "Invoke", "EvalLua",
         null,
         "Repeat", "EndRepeat", "StunPause", "EndStunPause", "SkipInput", "StunPauseMode", "AnalogMode",
@@ -37,7 +37,7 @@ public partial record struct CommandInfo(
     ];
 
     /// Commands which don't make sense to display to the user
-    public static string[] HiddenCommands = [
+    public static readonly string[] HiddenCommands = [
         "Author:", "FrameCount:", "TotalRecordCount:",
         "ExportLibTAS", "EndExportLibTAS", "Add", "Skip", "Marker",
         "ExitGame"

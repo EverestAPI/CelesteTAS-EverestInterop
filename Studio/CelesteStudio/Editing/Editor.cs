@@ -403,9 +403,9 @@ public sealed class Editor : SkiaDrawable {
             commandsMenu.Items.Clear();
 
             foreach (string? commandName in CommandInfo.CommandOrder) {
-                if (commandName == null) {
+                if (commandName == null && commandsMenu.Items.Count != 0) {
                     commandsMenu.Items.Add(new SeparatorMenuItem());
-                } else if (CommunicationWrapper.Commands.FirstOrDefault(cmd => cmd.Name == commandName) is var command) {
+                } else if (CommunicationWrapper.Commands.FirstOrDefault(cmd => cmd.Name == commandName) is var command && !string.IsNullOrEmpty(command.Name)) {
                     commandsMenu.Items.Add(CreateCommandInsert(command));
                 }
             }
@@ -416,11 +416,15 @@ public sealed class Editor : SkiaDrawable {
                 .ToArray();
 
             if (thirdPartyCommands.Any()) {
-                commandsMenu.Items.Add(new SeparatorMenuItem());
+                if (commandsMenu.Items.Count != 0) {
+                    commandsMenu.Items.Add(new SeparatorMenuItem());
+                }
                 foreach (var command in thirdPartyCommands) {
                     commandsMenu.Items.Add(CreateCommandInsert(command));
                 }
             }
+
+            commandsMenu.Enabled = commandsMenu.Items.Count != 0;
         }
 
         ContextMenu = CreateMenu();
