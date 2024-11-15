@@ -2608,6 +2608,7 @@ public sealed class Editor : SkiaDrawable {
         using var __ = Document.Update();
 
         string line = Document.Lines[Document.Caret.Row];
+        string trimmedLine = line.Trim();
 
         // Auto-split on first and last column since nothing is broken there
         splitLines = splitLines || Document.Caret.Col == 0 || Document.Caret.Col == line.Length;
@@ -2628,10 +2629,15 @@ public sealed class Editor : SkiaDrawable {
                 RemoveRange(Document.Selection.Min, Document.Selection.Max);
                 Document.Caret.Col = Document.Selection.Min.Col;
                 line = Document.Lines[Document.Caret.Row];
+            } else if (trimmedLine == "#") {
+                // Replace empty comment
+                Document.ReplaceLine(Document.Caret.Row, string.Empty);
+                Document.Caret.Col = desiredVisualCol = 0;
+                return;
             }
 
             // Auto-insert # for multiline comments (not labels, not folds!)
-            string prefix = line.StartsWith("# ") ? "# " : "";
+            string prefix = Settings.Instance.AutoMultilineComments && line.StartsWith("# ") ? "# " : "";
             Document.Caret.Col = Math.Max(Document.Caret.Col, prefix.Length);
 
             string beforeCaret = line[prefix.Length..Document.Caret.Col];
