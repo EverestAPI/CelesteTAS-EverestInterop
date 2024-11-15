@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using CelesteStudio.Communication;
+using CelesteStudio.Data;
 using CelesteStudio.Util;
 using Eto.Forms;
 using StudioCommunication.Util;
@@ -137,7 +138,15 @@ public class Document : IDisposable {
 
     /// Formats lines of a file into a single string, using consistent formatting rules
     public static string FormatLinesToText(IEnumerable<string> lines) {
-        string text = string.Join(NewLine, lines);
+        // TODO: Maybe don't allocate this much on every save?
+        string text = string.Join(NewLine, lines.Select(line => {
+            // Trim whitespace, remove invalid characters, format lines
+            if (ActionLine.TryParse(line, out var actionLine)) {
+                return actionLine.ToString();
+            } else {
+                return new string(line.Trim().Where(c => !char.IsControl(c) && c != char.MaxValue).ToArray());
+            }
+        }));
 
         // Require exactly 1 empty line at end of file
         text = text.TrimEnd(NewLine) + $"{NewLine}";
@@ -876,7 +885,7 @@ public class Document : IDisposable {
         // Swap anchors
         var aAnchors = CurrentAnchors.TryGetValue(rowA, out var anchors) ? anchors : [];
         var bAnchors = CurrentAnchors.TryGetValue(rowA, out anchors) ? anchors : [];
-        
+
         CurrentAnchors[rowA] = bAnchors;
         CurrentAnchors[rowB] = aAnchors;
     }
