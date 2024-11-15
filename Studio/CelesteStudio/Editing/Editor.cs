@@ -1680,8 +1680,8 @@ public sealed class Editor : SkiaDrawable {
                     });
                 }
                 SelectQuickEditIndex(0);
-            } else if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.PreviousPosition) {
-                Document.Caret = ClampCaret(oldCaret);
+            } else {
+                desiredVisualCol = Document.Caret.Col = Document.Lines[Document.Caret.Row].Length;
             }
 
             if (hasArguments) {
