@@ -2898,9 +2898,7 @@ public sealed class Editor : SkiaDrawable {
             }
 
             if (lineTrimmed.StartsWith('#')) {
-                if((Comment.IsLabel(lineTrimmed) && !ActionLine.TryParse(lineTrimmed[1..], out _)) ||
-                   lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed))
-                {
+                if (!Comment.IsLabel(lineTrimmed) || ActionLine.TryParse(lineTrimmed[1..], out _) || lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) {
                     // Ignore comments and special labels
                     continue;
                 }
