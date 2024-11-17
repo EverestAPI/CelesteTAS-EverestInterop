@@ -120,23 +120,23 @@ public class FindDialog : Eto.Forms.Dialog {
         var compare = (matchCase.Checked ?? false) ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase;
 
         matches.Clear();
-        var search = searchQuery.Text;
+        string search = searchQuery.Text;
         if (search.Length == 0) {
             return;
         }
 
         for (int row = 0; row < editor.Document.Lines.Count; row++) {
-            var line = editor.Document.Lines[row];
+            string line = editor.Document.Lines[row];
             int col = 0;
 
             while (true) {
-                int idx = line.IndexOf(searchQuery.Text, col, compare);
-                if (idx < 0) {
+                col = line.IndexOf(searchQuery.Text, col, compare);
+                if (col < 0) {
                     break;
                 }
 
-                matches.Add(new CaretPosition(row, col + idx));
-                col = idx + searchQuery.Text.Length;
+                matches.Add(new CaretPosition(row, col));
+                col += searchQuery.Text.Length;
             }
         }
 
