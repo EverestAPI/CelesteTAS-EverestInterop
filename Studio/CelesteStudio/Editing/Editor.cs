@@ -112,6 +112,12 @@ public sealed class Editor : SkiaDrawable {
             void HandleTextChanged(Document _, Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
                 lastModification = DateTime.UtcNow;
 
+                Console.WriteLine($"Patch +{insertions.Count} -{deletions.Count}");
+                foreach ((int row, string line) in deletions)
+                    Console.WriteLine($"-{row} '{line}'");
+                foreach ((int row, string line) in insertions)
+                    Console.WriteLine($"+{row} '{line}'");
+
                 ConvertToActionLines(insertions.Keys);
 
                 // Adjust total frame count
@@ -2612,15 +2618,14 @@ public sealed class Editor : SkiaDrawable {
         using var __ = Document.Update();
 
         string line = Document.Lines[Document.Caret.Row];
-        int leadingSpaces = line.Length - line.TrimStart().Length;
+        string lineTrimmedStart = line.TrimStart();
+        int leadingSpaces = line.Length - lineTrimmedStart.Length;
 
-        // Don't split frame count and action
-        splitLines = splitLines && !ActionLine.TryParse(line, out _);
         // Auto-split on first and last column since nothing is broken there
-        splitLines = splitLines || Document.Caret.Col == leadingSpaces || Document.Caret.Col == line.Length;
+        bool autoSplit = Document.Caret.Col <= leadingSpaces || Document.Caret.Col == line.Length;
 
         int offset = up ? 0 : 1;
-        if (splitLines) {
+        if (autoSplit || splitLines && !ActionLine.TryParse(line, out _)) {
             if (!Document.Selection.Empty) {
                 RemoveRange(Document.Selection.Min, Document.Selection.Max);
                 Document.Caret.Col = Document.Selection.Min.Col;
@@ -2633,15 +2638,16 @@ public sealed class Editor : SkiaDrawable {
             }
 
             // Auto-insert # for multiline comments (not labels, not folds!)
-            string prefix = Settings.Instance.AutoMultilineComments && line.StartsWith("# ") ? "# " : "";
+            // Additionally don't auto-multiline when caret is before #
+            string prefix = Settings.Instance.AutoMultilineComments && Document.Caret.Col > leadingSpaces && lineTrimmedStart.StartsWith("# ") ? "# " : "";
             Document.Caret.Col = Math.Max(Document.Caret.Col, prefix.Length);
 
-            string beforeCaret = line[prefix.Length..Document.Caret.Col];
+            string beforeCaret = line[(prefix.Length + leadingSpaces)..Document.Caret.Col];
             string afterCaret = line[Document.Caret.Col..];
 
             int newRow = Document.Caret.Row + offset;
 
-            Document.Lines[Document.Caret.Row] = prefix + (up ? afterCaret : beforeCaret);
+            Document.ReplaceLine(Document.Caret.Row, prefix + (up ? afterCaret : beforeCaret));
             Document.InsertLine(newRow, prefix + (up ? beforeCaret : afterCaret));
             Document.Caret.Row = newRow;
             Document.Caret.Col = desiredVisualCol = prefix.Length + (up ? beforeCaret.Length : 0);
@@ -2651,9 +2657,12 @@ public sealed class Editor : SkiaDrawable {
                 newRow = (up ? collapse.MinRow : collapse.MaxRow) + offset;
             }
 
-            Document.InsertLine(newRow, string.Empty);
+            // Auto-insert # for multiline comments (not labels, not folds!)
+            string prefix = Settings.Instance.AutoMultilineComments && line.StartsWith("# ") ? "# " : "";
+
+            Document.InsertLine(newRow, prefix);
             Document.Caret.Row = newRow;
-            Document.Caret.Col = desiredVisualCol = 0;
+            Document.Caret.Col = desiredVisualCol = Math.Max(Document.Caret.Col, prefix.Length);
         }
 
         Document.Selection.Clear();

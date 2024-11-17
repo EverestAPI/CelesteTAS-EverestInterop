@@ -110,8 +110,8 @@ public class Document : IDisposable {
 
     private readonly UndoStack undoStack = new();
 
-    private List<string> CurrentLines;
-    public List<string> Lines => CurrentLines;
+    private readonly List<string> CurrentLines;
+    public IReadOnlyList<string> Lines => CurrentLines;
 
     /// An anchor is a part of the document, which will move with the text its placed on.
     /// They can hold arbitrary user data.
