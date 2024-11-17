@@ -2608,28 +2608,20 @@ public sealed class Editor : SkiaDrawable {
         using var __ = Document.Update();
 
         string line = Document.Lines[Document.Caret.Row];
-        string trimmedLine = line.Trim();
+        int leadingSpaces = line.Length - line.TrimStart().Length;
 
+        // Don't split frame count and action
+        splitLines = splitLines && !ActionLine.TryParse(line, out _);
         // Auto-split on first and last column since nothing is broken there
-        splitLines = splitLines || Document.Caret.Col == 0 || Document.Caret.Col == line.Length;
+        splitLines = splitLines || Document.Caret.Col == leadingSpaces || Document.Caret.Col == line.Length;
 
         int offset = up ? 0 : 1;
-        if (!splitLines || ActionLine.TryParse(line, out _)) {
-            // Don't split frame count and action
-            int newRow = Document.Caret.Row + offset;
-            if (GetCollapse(Document.Caret.Row) is { } collapse) {
-                newRow = (up ? collapse.MinRow : collapse.MaxRow) + offset;
-            }
-
-            Document.InsertLine(newRow, string.Empty);
-            Document.Caret.Row = newRow;
-            Document.Caret.Col = desiredVisualCol = 0;
-        } else {
+        if (splitLines) {
             if (!Document.Selection.Empty) {
                 RemoveRange(Document.Selection.Min, Document.Selection.Max);
                 Document.Caret.Col = Document.Selection.Min.Col;
                 line = Document.Lines[Document.Caret.Row];
-            } else if (trimmedLine == "#") {
+            } else if (line.Trim() == "#") {
                 // Replace empty comment
                 Document.ReplaceLine(Document.Caret.Row, string.Empty);
                 Document.Caret.Col = desiredVisualCol = 0;
@@ -2649,6 +2641,15 @@ public sealed class Editor : SkiaDrawable {
             Document.InsertLine(newRow, prefix + (up ? beforeCaret : afterCaret));
             Document.Caret.Row = newRow;
             Document.Caret.Col = desiredVisualCol = prefix.Length + (up ? beforeCaret.Length : 0);
+        } else {
+            int newRow = Document.Caret.Row + offset;
+            if (GetCollapse(Document.Caret.Row) is { } collapse) {
+                newRow = (up ? collapse.MinRow : collapse.MaxRow) + offset;
+            }
+
+            Document.InsertLine(newRow, string.Empty);
+            Document.Caret.Row = newRow;
+            Document.Caret.Col = desiredVisualCol = 0;
         }
 
         Document.Selection.Clear();
