@@ -2489,13 +2489,17 @@ public sealed class Editor : SkiaDrawable {
                 string framesLeft = actionLine.Frames[..caretIndex];
                 string framesRight = actionLine.Frames[caretIndex..];
 
-                // Fully delete the line if it's frameless
                 if (actionLine.Frames.Length == 0) {
+                    // Fully delete the line if it's frameless
                     line = string.Empty;
-                } else if (framesLeft.Length == 0 && direction is CaretMovementType.WordLeft or CaretMovementType.CharLeft ||
-                           framesRight.Length == 0 && direction is CaretMovementType.WordRight or CaretMovementType.CharRight)
-                {
-                    line = string.Empty;
+                } else if (framesLeft.Length == 0 && direction is CaretMovementType.WordLeft or CaretMovementType.CharLeft) {
+                    // Delete empty line above
+                    if (Document.Caret.Row > 0 && string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row - 1])) {
+                        Document.RemoveLine(Document.Caret.Row - 1);
+                        Document.Caret.Row--;
+                        desiredVisualCol = Document.Caret.Col;
+                        return;
+                    }
                 } else {
                     if (direction == CaretMovementType.WordLeft) {
                         actionLine.Frames = framesRight;
