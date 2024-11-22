@@ -487,7 +487,9 @@ public static class StudioHelper {
              === Celeste TAS Studio v{CurrentStudioVersion} - Installation failed ===
              {DateTime.Now.ToString(CultureInfo.InvariantCulture)}
              
-             NOTE: If you're using CelesteTAS just for the in-game utilities and not for actual TASing with Celeste Studio, you can ignore this error.
+             NOTE: 
+                If you're using CelesteTAS just for the in-game utilities and not for actual TASing with Celeste Studio, you can ignore this error.
+                However if this issue is consistent and NOT solved by the steps below, please report it.
              
              The following error occured while trying to install Celeste TAS Studio:
              {error}
