@@ -6,13 +6,13 @@ namespace StudioCommunication.Util;
 
 public static class ProcessHelper
 {
-    public static void OpenInDefaultApp(string path) {
+    public static Process? OpenInDefaultApp(string path) {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            return Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-            Process.Start("xdg-open", [path]);
+            return Process.Start("xdg-open", [path]);
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-            Process.Start("open", [path]);
+            return Process.Start("open", [path]);
         } else {
             throw new NotImplementedException($"Unsupported platform: {RuntimeInformation.OSDescription} with {RuntimeInformation.OSArchitecture}");
         }
