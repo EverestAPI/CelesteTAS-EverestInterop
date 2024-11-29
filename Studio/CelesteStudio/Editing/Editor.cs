@@ -1195,6 +1195,30 @@ public sealed class Editor : SkiaDrawable {
         if (e.Key is Keys.LeftApplication or Keys.RightApplication) mods |= Keys.Application;
         UpdateMouseCursor(PointFromScreen(Mouse.Position), mods);
 
+        string lineTrimmed = Document.Lines[Document.Caret.Row].TrimStart();
+
+        // Send inputs to Celeste if applicable
+        bool isActionLine = lineTrimmed.StartsWith("***") ||
+                            ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _ );
+        bool isComment = lineTrimmed.StartsWith('#');
+        bool isTyping = (DateTime.UtcNow - lastModification).TotalSeconds < Settings.Instance.SendInputsTypingTimeout;
+        bool isRunning = CommunicationWrapper.Connected && CommunicationWrapper.TasStates.HasFlag(States.Enable) && !CommunicationWrapper.TasStates.HasFlag(States.FrameStep);
+        bool sendInputs =
+            (Settings.Instance.SendInputsOnActionLines && isActionLine) ||
+            (Settings.Instance.SendInputsOnComments && isComment) ||
+            (Settings.Instance.SendInputsOnCommands && !isActionLine && !isComment);
+
+        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && !isTyping && sendInputs && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
+            e.Handled = true;
+            return;
+        }
+
+        // Prevent editing file on accident
+        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && isRunning && Settings.Instance.SendInputsDisableWhileRunning) {
+            e.Handled = true;
+            return;
+        }
+
         // While there are quick-edits available, Tab will cycle through them
         // Using tab doesn't feel "right" for the context actions menu
         if (ActivePopupMenu?.HandleKeyDown(e, useTabComplete: ActivePopupMenu == autoCompleteMenu && !GetQuickEdits().Any()) ?? false) {
@@ -1243,23 +1267,6 @@ public sealed class Editor : SkiaDrawable {
                 Recalc();
                 return;
             }
-        }
-
-        string lineTrimmed = Document.Lines[Document.Caret.Row].TrimStart();
-
-        // Send inputs to Celeste if applicable
-        bool isActionLine = lineTrimmed.StartsWith("***") ||
-                            ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _ );
-        bool isComment = lineTrimmed.StartsWith('#');
-        bool isTyping = (DateTime.UtcNow - lastModification).TotalSeconds < Settings.Instance.SendInputsTypingTimeout;
-        bool sendInputs =
-            (Settings.Instance.SendInputsOnActionLines && isActionLine) ||
-            (Settings.Instance.SendInputsOnComments && isComment) ||
-            (Settings.Instance.SendInputsOnCommands && !isActionLine && !isComment);
-
-        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && !isTyping && sendInputs && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
-            e.Handled = true;
-            return;
         }
 
         if (calculationState != null) {

@@ -121,6 +121,7 @@ public sealed class Settings {
     public bool SendInputsOnActionLines { get; set; } = true;
     public bool SendInputsOnCommands { get; set; } = true;
     public bool SendInputsOnComments { get; set; } = false;
+    public bool SendInputsDisableWhileRunning { get; set; } = true;
     public bool SendInputsNonWritable { get; set; } = true;
     public float SendInputsTypingTimeout { get; set; } = 0.3f;
 
