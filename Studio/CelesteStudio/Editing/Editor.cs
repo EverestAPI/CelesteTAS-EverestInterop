@@ -112,13 +112,6 @@ public sealed class Editor : SkiaDrawable {
             void HandleTextChanged(Document _, Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
                 lastModification = DateTime.UtcNow;
 
-                Console.WriteLine($"Patch +{insertions.Count} -{deletions.Count}");
-                foreach ((int row, string line) in deletions)
-                    Console.WriteLine($"-{row} '{line}'");
-                foreach ((int row, string line) in insertions)
-                    Console.WriteLine($"+{row} '{line}'");
-
-
                 ConvertToActionLines(insertions.Keys);
 
                 // Adjust total frame count
@@ -3152,7 +3145,9 @@ public sealed class Editor : SkiaDrawable {
 
     #region Caret Movement
 
-    public CaretPosition ClampCaret(CaretPosition position, bool wrapLine = false) {
+    public enum SnappingDirection { Ignore, Left, Right }
+
+    public CaretPosition ClampCaret(CaretPosition position, bool wrapLine = false, SnappingDirection direction = SnappingDirection.Ignore) {
         // Wrap around to prev/next line
         if (wrapLine && position.Row > 0 && position.Col < 0) {
             position.Row = GetNextVisualLinePosition(-1, position).Row;
@@ -3169,9 +3164,9 @@ public sealed class Editor : SkiaDrawable {
         position.Col = Math.Clamp(position.Col, 0, Document.Lines[position.Row].Length);
 
         // Clamp to action line if possible
-        var line = Document.Lines[position.Row];
+        string line = Document.Lines[position.Row];
         if (ActionLine.TryParse(line, out var actionLine)) {
-            position.Col = Math.Min(line.Length, SnapColumnToActionLine(actionLine, position.Col));
+            position.Col = Math.Min(line.Length, SnapColumnToActionLine(actionLine, position.Col, direction));
         }
 
         return position;
@@ -3442,6 +3437,19 @@ public sealed class Editor : SkiaDrawable {
 
             var oldCaret = Document.Caret;
             (Document.Caret, var visual) = LocationToCaretPosition(e.Location);
+
+            if (e.Modifiers.HasFlag(Keys.Shift)) {
+                if (Document.Selection.Empty) {
+                    Document.Selection.Start = oldCaret;
+                }
+
+                Document.Caret = ClampCaret(Document.Caret, direction: oldCaret < Document.Caret ? SnappingDirection.Left : SnappingDirection.Right);
+                Document.Selection.End = Document.Caret;
+            } else {
+                Document.Caret = ClampCaret(Document.Caret);
+                Document.Selection.Start = Document.Selection.End = Document.Caret;
+            }
+
             desiredVisualCol = visual.Col;
             ScrollCaretIntoView();
 
@@ -3450,14 +3458,6 @@ public sealed class Editor : SkiaDrawable {
             }
 
             ActivePopupMenu = null;
-
-            if (e.Modifiers.HasFlag(Keys.Shift)) {
-                if (Document.Selection.Empty)
-                    Document.Selection.Start = oldCaret;
-                Document.Selection.End = Document.Caret;
-            } else {
-                Document.Selection.Start = Document.Selection.End = Document.Caret;
-            }
 
             e.Handled = true;
             Recalc();
@@ -3482,13 +3482,13 @@ public sealed class Editor : SkiaDrawable {
     }
     protected override void OnMouseMove(MouseEventArgs e) {
         if (primaryMouseButtonDown) {
-            (Document.Caret, var visual) = LocationToCaretPosition(e.Location);
+            (Document.Caret, var visual) = LocationToCaretPosition(e.Location, SnappingDirection.Left);
+            Document.Caret = Document.Selection.End = ClampCaret(Document.Caret, direction: Document.Selection.Start < Document.Caret ? SnappingDirection.Left : SnappingDirection.Right);
+
             desiredVisualCol = visual.Col;
             ScrollCaretIntoView();
 
             ActivePopupMenu = null;
-
-            Document.Selection.End = Document.Caret;
 
             Recalc();
         }
@@ -3528,6 +3528,7 @@ public sealed class Editor : SkiaDrawable {
         if (e.Modifiers.HasFlag(Keys.Shift)) {
             if (Document.Selection.Empty) {
                 var (position, _) = LocationToCaretPosition(e.Location);
+                position = ClampCaret(position);
                 AdjustFrameCounts(Document.Caret.Row, position.Row, Math.Sign(e.Delta.Height));
             } else {
                 AdjustFrameCounts(Document.Selection.Start.Row, Document.Selection.End.Row, Math.Sign(e.Delta.Height));
@@ -3600,16 +3601,15 @@ public sealed class Editor : SkiaDrawable {
         }
     }
 
-    private (CaretPosition Actual, CaretPosition Visual) LocationToCaretPosition(PointF location) {
+    private (CaretPosition Actual, CaretPosition Visual) LocationToCaretPosition(PointF location, SnappingDirection direction = SnappingDirection.Ignore) {
         location.X -= textOffsetX;
 
-        int visualRow = (int)Math.Round(location.Y / Font.LineHeight());
+        int visualRow = (int)Math.Floor(location.Y / Font.LineHeight());
         int visualCol = (int)Math.Round(location.X / Font.CharWidth());
 
         var visualPos = new CaretPosition(visualRow, visualCol);
-        var actualPos = ClampCaret(GetActualPosition(visualPos));
 
-        return (actualPos, visualPos);
+        return (GetActualPosition(visualPos), visualPos);
     }
 
     private Folding? LocationToFolding(PointF location) {
@@ -3642,6 +3642,7 @@ public sealed class Editor : SkiaDrawable {
         }
 
         var (position, _) = LocationToCaretPosition(location);
+        position = ClampCaret(position);
         return Document.FindFirstAnchor(anchor => anchor.IsPositionInside(position) && anchor.UserData is LineLinkAnchorData);
     }
 
@@ -4110,7 +4111,7 @@ public sealed class Editor : SkiaDrawable {
         }
     }
 
-    public static int SnapColumnToActionLine(ActionLine actionLine, int column) {
+    public static int SnapColumnToActionLine(ActionLine actionLine, int column, SnappingDirection direction = SnappingDirection.Ignore) {
         // Snap to the closest valid column
         int nextLeft = GetSoftSnapColumns(actionLine).Reverse().FirstOrDefault(c => c <= column, -1);
         int nextRight = GetSoftSnapColumns(actionLine).FirstOrDefault(c => c >= column, -1);
@@ -4121,9 +4122,17 @@ public sealed class Editor : SkiaDrawable {
         if (nextLeft == -1) return nextRight;
         if (nextRight == -1) return nextLeft;
 
-        return column - nextLeft < nextRight - column
-            ? nextLeft
-            : nextRight;
+        return direction switch {
+            // Choose the closest one
+            SnappingDirection.Ignore => column - nextLeft < nextRight - column
+                ? nextLeft
+                : nextRight,
+
+            SnappingDirection.Left => nextLeft,
+            SnappingDirection.Right => nextRight,
+
+            _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
+        };
     }
 
     #endregion
