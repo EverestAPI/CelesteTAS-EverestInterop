@@ -574,13 +574,24 @@ public class Document : IDisposable {
 
         /// Merges the patches A and B, where A is based on the initial state and B is based on after A is applied
         public static Patch Merge(Patch a, Patch b) {
+            List<int> rowsToShift = [];
+
             // Cancel out deletions / insertions
-            foreach (var row in a.Insertions.Keys.Intersect(b.Deletions.Keys)) {
+            int[] intersections = a.Insertions.Keys.Intersect(b.Deletions.Keys).ToArray();
+            foreach (int row in intersections.OrderBy(row => row)) {
                 a.Insertions.Remove(row);
                 b.Deletions.Remove(row);
-            }
 
-            List<int> rowsToShift = [];
+                // Shift up insertions in A
+                rowsToShift.Clear();
+                rowsToShift.AddRange(a.Insertions.Keys.Where(aRow => aRow > row));
+
+                foreach (int aRow in rowsToShift.OrderBy(aRow => aRow)) {
+                    string value = a.Insertions[aRow];
+                    a.Insertions[aRow - 1] = value;
+                    a.Insertions.Remove(aRow);
+                }
+            }
 
             // Shift down deletions in B
             foreach ((int aRow, _) in a.Deletions.OrderBy(entry => entry.Key)) {
