@@ -102,7 +102,7 @@ public sealed class Studio : Form {
 
         // Close other Studio instances to avoid conflicts
         foreach (var process in Process.GetProcesses().Where(process => process.ProcessName is "CelesteStudio" or "CelesteStudio.WPF" or "CelesteStudio.GTK" or "CelesteStudio.Mac" or "Celeste Studio")) {
-            if (process.Id == Process.GetCurrentProcess().Id) {
+            if (process.Id == Environment.ProcessId) {
                 continue;
             }
 

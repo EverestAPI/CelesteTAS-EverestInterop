@@ -27,15 +27,13 @@ public static class ProcessHelper
         }
 
         // Windows
-        FreeConsole();
-        AttachConsole((uint)process.Id);
-        GenerateConsoleCtrlEvent(0, 0);
+        if (process.MainWindowHandle != IntPtr.Zero) {
+            PostMessage(process.MainWindowHandle, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+        }
     }
 
-    [DllImport("kernel32.dll")]
-    private static extern bool GenerateConsoleCtrlEvent(uint dwCtrlEvent, uint dwProcessGroupId);
-    [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool AttachConsole(uint dwProcessId);
-    [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
-    private static extern bool FreeConsole();
+    [DllImport("user32.dll")]
+    private static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+    private const uint WM_CLOSE = 0x0010;
 }
