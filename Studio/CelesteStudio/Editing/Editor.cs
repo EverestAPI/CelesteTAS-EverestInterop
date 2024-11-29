@@ -112,6 +112,13 @@ public sealed class Editor : SkiaDrawable {
             void HandleTextChanged(Document _, Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
                 lastModification = DateTime.UtcNow;
 
+                Console.WriteLine($"Patch +{insertions.Count} -{deletions.Count}");
+                foreach ((int row, string line) in deletions)
+                    Console.WriteLine($"-{row} '{line}'");
+                foreach ((int row, string line) in insertions)
+                    Console.WriteLine($"+{row} '{line}'");
+
+
                 ConvertToActionLines(insertions.Keys);
 
                 // Adjust total frame count
@@ -3596,8 +3603,8 @@ public sealed class Editor : SkiaDrawable {
     private (CaretPosition Actual, CaretPosition Visual) LocationToCaretPosition(PointF location) {
         location.X -= textOffsetX;
 
-        int visualRow = (int)(location.Y / Font.LineHeight());
-        int visualCol = (int)(location.X / Font.CharWidth());
+        int visualRow = (int)Math.Round(location.Y / Font.LineHeight());
+        int visualCol = (int)Math.Round(location.X / Font.CharWidth());
 
         var visualPos = new CaretPosition(visualRow, visualCol);
         var actualPos = ClampCaret(GetActualPosition(visualPos));
