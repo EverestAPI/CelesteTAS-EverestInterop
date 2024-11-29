@@ -707,7 +707,7 @@ public sealed class Studio : Form {
                 MenuUtils.CreateGameSettingToggle("&Simplified Hitboxes", nameof(GameSettings.SimplifiedHitboxes)),
                 MenuUtils.CreateGameSettingEnum<ActualCollideHitboxType>("&Actual Collide Hitboxes", nameof(GameSettings.ActualCollideHitboxes), ["Off", "Override", "Append"]),
                 new SeparatorMenuItem(),
-                MenuUtils.CreateGameSettingToggle("&Simplified &Graphics", nameof(GameSettings.SimplifiedGraphics)),
+                MenuUtils.CreateGameSettingToggle("Simplified &Graphics", nameof(GameSettings.SimplifiedGraphics)),
                 MenuUtils.CreateGameSettingToggle("Game&play", nameof(GameSettings.Gameplay)),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateGameSettingToggle("&Center Camera", nameof(GameSettings.CenterCamera)),
