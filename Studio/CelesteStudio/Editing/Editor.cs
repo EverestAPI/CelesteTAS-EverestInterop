@@ -226,7 +226,7 @@ public sealed class Editor : SkiaDrawable {
     public PopupMenu? ActivePopupMenu {
         get => activePopupMenu;
         set {
-            if (activePopupMenu == value) {
+            if (activePopupMenu == value && (activePopupMenu?.Visible ?? false)) {
                 return;
             }
 
