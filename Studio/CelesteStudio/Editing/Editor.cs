@@ -112,12 +112,6 @@ public sealed class Editor : SkiaDrawable {
             void HandleTextChanged(Document _, Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
                 lastModification = DateTime.UtcNow;
 
-                Console.WriteLine($"Patch +{insertions.Count} -{deletions.Count}");
-                foreach ((int row, string line) in deletions)
-                    Console.WriteLine($"-{row} '{line}'");
-                foreach ((int row, string line) in insertions)
-                    Console.WriteLine($"+{row} '{line}'");
-
                 ConvertToActionLines(insertions.Keys);
 
                 // Adjust total frame count
@@ -2918,8 +2912,8 @@ public sealed class Editor : SkiaDrawable {
             }
 
             if (lineTrimmed.StartsWith('#')) {
-                if (!Comment.IsLabel(lineTrimmed) || ActionLine.TryParse(lineTrimmed[1..], out _) || lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) {
-                    // Ignore comments and special labels
+                if ((!Comment.IsLabel(lineTrimmed) && !ActionLine.TryParse(lineTrimmed[1..], out _)) || lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) {
+                    // Ignore non-input comments and special labels
                     continue;
                 }
 
