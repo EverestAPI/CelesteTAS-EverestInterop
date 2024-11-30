@@ -8,6 +8,7 @@ using Monocle;
 using StudioCommunication;
 using TAS.Communication;
 using TAS.Module;
+using TAS.SyncCheck;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -88,6 +89,7 @@ public static class MetadataCommands {
         if (!Manager.Running || Engine.Scene is not Level level || !level.Session.StartedFromBeginning) {
             return;
         }
+
         UpdateAllMetadata("MidwayChapterTime",
             _ => GameInfo.GetChapterTime(level),
             command => Manager.Controller.CurrentCommands.Contains(command));
@@ -124,6 +126,11 @@ public static class MetadataCommands {
 
             if (command.Args.Length > 0 && command.Args[0] == metadata) {
                 return false;
+            }
+
+            // Sync-check reporting
+            if (command.Is("FileTime") || command.Is("ChapterTime") || command.Is("MidwayFileTime") || command.Is("MidwayChapterTime")) {
+                SyncChecker.ReportWrongTime(command.FilePath, command.FileLine, command.Args.Length > 0 ? command.Args[0] : string.Empty, metadata);
             }
 
             return true;

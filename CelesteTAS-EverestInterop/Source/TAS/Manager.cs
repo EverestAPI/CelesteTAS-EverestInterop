@@ -13,6 +13,7 @@ using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Input;
 using TAS.Input.Commands;
+using TAS.SyncCheck;
 using TAS.Utils;
 
 namespace TAS;
@@ -213,6 +214,7 @@ public static class Manager {
         }
 
         AttributeUtils.Invoke<DisableRunAttribute>();
+        SyncChecker.ReportRunFinished();
         Controller.Stop();
     }
 

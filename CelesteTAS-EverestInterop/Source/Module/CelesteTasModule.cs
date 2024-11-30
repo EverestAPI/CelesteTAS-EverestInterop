@@ -49,16 +49,28 @@ public class CelesteTasModule : EverestModule {
     }
 
     public override bool ParseArg(string arg, Queue<string> args) {
-        if (arg == "--sync-check") {
-            if (args.TryDequeue(out string path)) {
-                SyncChecker.AddFile(path);
-            } else {
-                "Expected file path after --sync-check CLI argument".Log(LogLevel.Error);
+        switch (arg)
+        {
+            case "--sync-check-file": {
+                if (args.TryDequeue(out string path)) {
+                    SyncChecker.AddFile(path);
+                } else {
+                    "Expected file path after --sync-check-file CLI argument".Log(LogLevel.Error);
+                }
+                return true;
             }
-            return true;
-        }
+            case "--sync-check-result": {
+                if (args.TryDequeue(out string path)) {
+                    SyncChecker.SetResultFile(path);
+                } else {
+                    "Expected file path after --sync-check-result CLI argument".Log(LogLevel.Error);
+                }
+                return true;
+            }
 
-        return false;
+            default:
+                return false;
+        }
     }
 }
 

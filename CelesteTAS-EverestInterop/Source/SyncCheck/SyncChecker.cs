@@ -16,7 +16,13 @@ internal static class SyncChecker {
     public static bool Active { get; private set; } = false;
 
     private static bool waitingForLoad = true;
+
     private static readonly Queue<string> fileQueue = [];
+    private static string resultFile = string.Empty;
+
+    private static List<string> wrongTimes = [];
+
+    private static SyncCheckResult result = new();
 
     public static void AddFile(string file) {
         if (!File.Exists(file)) {
@@ -28,6 +34,57 @@ internal static class SyncChecker {
 
         Active = true;
         fileQueue.Enqueue(file);
+    }
+    public static void SetResultFile(string file) {
+        if (!string.IsNullOrEmpty(resultFile)) {
+            Logger.Warn("CelesteTAS/SyncCheck", $"Overwriting previously defined result file '{resultFile}' with '{file}");
+        } else {
+            Logger.Info("CelesteTAS/SyncCheck", $"Writing sync-check result to file: '{file}'");
+        }
+
+        resultFile = file;
+    }
+
+    /// Indicates the current TAS has finished executing
+    public static void ReportRunFinished() {
+        if (!Active) {
+            return;
+        }
+
+        Logger.Info("CelesteTAS/SyncCheck", $"Finished check for file: '{InputController.StudioTasFilePath}'");
+
+        // Check for desyncs
+        SyncCheckResult.Entry entry;
+        if (Engine.Scene is not (Level { Completed: true } or LevelExit or AreaComplete)) {
+            // TAS did not finish
+            GameInfo.Update(updateVel: false);
+            entry = new SyncCheckResult.Entry(InputController.StudioTasFilePath, SyncCheckResult.Status.NotFinished, GameInfo.ExactStatus);
+        } else if (wrongTimes.Count != 0) {
+            // TAS finished with wrong time(s)
+            entry = new SyncCheckResult.Entry(InputController.StudioTasFilePath, SyncCheckResult.Status.WrongTime, string.Join("\n", wrongTimes));
+        } else {
+            // No desync
+            entry = new SyncCheckResult.Entry(InputController.StudioTasFilePath, SyncCheckResult.Status.Success, string.Empty);
+        }
+
+        result.Entries.Add(entry);
+        result.WriteToFile(resultFile);
+
+        if (fileQueue.TryDequeue(out string file)) {
+            CheckFile(file);
+        } else {
+            // Done with all checks
+            result.Finished = true;
+            result.WriteToFile(resultFile);
+
+            Engine.Instance.Exit();
+        }
+    }
+
+    /// Indicates a time command was updated with another time
+    public static void ReportWrongTime(string filePath, int fileLine, string oldTime, string newTime) {
+        Logger.Error("CelesteTAS/SyncCheck", $"Detected wrong time in file '{filePath}' line {fileLine}: '{oldTime}' vs '{newTime}'");
+        wrongTimes.Add($"{filePath}\t{fileLine}\t{oldTime}\t{newTime}");
     }
 
     [Initialize]
@@ -46,31 +103,22 @@ internal static class SyncChecker {
         if (waitingForLoad && next is Overworld) {
             waitingForLoad = false;
 
+            if (string.IsNullOrEmpty(resultFile)) {
+                Logger.Error("CelesteTAS/SyncCheck", "No result file specified. Aborting sync-check!");
+                Engine.Instance.Exit();
+            }
+
             if (fileQueue.TryDequeue(out string file)) {
                 CheckFile(file);
             }
         }
     }
 
-    [DisableRun]
-    private static void OnDisableRun() {
-        if (!Active) {
-            return;
-        }
-
-        Logger.Info("CelesteTAS/SyncCheck", $"Finished check for file: '{InputController.StudioTasFilePath}'");
-
-        if (fileQueue.TryDequeue(out string file)) {
-            CheckFile(file);
-        } else {
-            // Done with all checks
-            // TODO: Write result
-            // Engine.Instance.Exit();
-            Console.WriteLine("EXIT EXIT EXIT");
-        }
-    }
-
+    /// Starts executing a TAS for sync-checking
     private static void CheckFile(string file) {
+        // Reset state
+        wrongTimes.Clear();
+
         Logger.Info("CelesteTAS/SyncCheck", $"Starting check for file: '{file}'");
 
         InputController.StudioTasFilePath = file;
