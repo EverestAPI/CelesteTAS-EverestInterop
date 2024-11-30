@@ -21,6 +21,8 @@ internal static class SyncChecker {
     private static string resultFile = string.Empty;
 
     private static List<string> wrongTimes = [];
+    private static bool wasUnsafe = false;
+    private static bool wasAssert = false;
 
     private static SyncCheckResult result = new();
 
@@ -45,7 +47,7 @@ internal static class SyncChecker {
         resultFile = file;
     }
 
-    /// Indicates the current TAS has finished executing
+    /// Indicates that the current TAS has finished executing
     public static void ReportRunFinished() {
         if (!Active) {
             return;
@@ -55,7 +57,13 @@ internal static class SyncChecker {
 
         // Check for desyncs
         SyncCheckResult.Entry entry;
-        if (Engine.Scene is not (Level { Completed: true } or LevelExit or AreaComplete)) {
+        if (wasUnsafe) {
+            // Performed unsafe action in safe-mode
+            entry = new SyncCheckResult.Entry(InputController.StudioTasFilePath, SyncCheckResult.Status.UnsafeAction, GameInfo.ExactStatus);
+        } else if (wasAssert) {
+            // Assertion failure
+            entry = new SyncCheckResult.Entry(InputController.StudioTasFilePath, SyncCheckResult.Status.AssertFailed, GameInfo.ExactStatus);
+        } else if (Engine.Scene is not (Level { Completed: true } or LevelExit or AreaComplete)) {
             // TAS did not finish
             GameInfo.Update(updateVel: false);
             entry = new SyncCheckResult.Entry(InputController.StudioTasFilePath, SyncCheckResult.Status.NotFinished, GameInfo.ExactStatus);
@@ -81,10 +89,22 @@ internal static class SyncChecker {
         }
     }
 
-    /// Indicates a time command was updated with another time
+    /// Indicates that a time command was updated with another time
     public static void ReportWrongTime(string filePath, int fileLine, string oldTime, string newTime) {
         Logger.Error("CelesteTAS/SyncCheck", $"Detected wrong time in file '{filePath}' line {fileLine}: '{oldTime}' vs '{newTime}'");
         wrongTimes.Add($"{filePath}\t{fileLine}\t{oldTime}\t{newTime}");
+    }
+
+    /// Indicates that an unsafe action was performed in safe-mode
+    public static void ReportUnsafeAction() {
+        Logger.Error("CelesteTAS/SyncCheck", $"Detected unsafe action");
+        wasUnsafe = true;
+    }
+
+    /// Indicates that an Assert-command failed
+    public static void ReportAssertFailed(string lineText, string filePath, int fileLine, string expected, string actual) {
+        Logger.Error("CelesteTAS/SyncCheck", $"Detected failed assertion '{lineText}' in file '{filePath}' line {fileLine}: Expected '{expected}', got '{actual}'");
+        wasAssert = true;
     }
 
     [Initialize]
@@ -118,6 +138,8 @@ internal static class SyncChecker {
     private static void CheckFile(string file) {
         // Reset state
         wrongTimes.Clear();
+        wasUnsafe = false;
+        wasAssert = false;
 
         Logger.Info("CelesteTAS/SyncCheck", $"Starting check for file: '{file}'");
 

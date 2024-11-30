@@ -89,7 +89,10 @@ public static class Manager {
                         if (item is TextMenu.Header {Title: { } title} &&
                             (title == Dialog.Clean("OPTIONS_TITLE") || title == Dialog.Clean("MENU_VARIANT_TITLE") ||
                              title == Dialog.Clean("MODOPTIONS_EXTENDEDVARIANTS_PAUSEMENU_BUTTON").ToUpperInvariant()) ||
-                            item is TextMenuExt.HeaderImage {Image: "menu/everest"}) {
+                            item is TextMenuExt.HeaderImage {Image: "menu/everest"})
+                        {
+                            // TODO: Retrieve file-path and file-line
+                            SyncChecker.ReportUnsafeAction();
                             DisableRun();
                         }
                     }
