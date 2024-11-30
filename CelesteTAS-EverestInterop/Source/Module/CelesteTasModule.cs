@@ -2,8 +2,10 @@
 using Celeste;
 using Celeste.Mod;
 using FMOD.Studio;
+using System.Collections.Generic;
 using TAS.Communication;
 using TAS.EverestInterop;
+using TAS.SyncCheck;
 using TAS.Utils;
 
 namespace TAS.Module;
@@ -44,6 +46,19 @@ public class CelesteTasModule : EverestModule {
     public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot) {
         CreateModMenuSectionHeader(menu, inGame, snapshot);
         CelesteTasMenu.CreateMenu(this, menu, inGame);
+    }
+
+    public override bool ParseArg(string arg, Queue<string> args) {
+        if (arg == "--sync-check") {
+            if (args.TryDequeue(out string path)) {
+                SyncChecker.AddFile(path);
+            } else {
+                "Expected file path after --sync-check CLI argument".Log(LogLevel.Error);
+            }
+            return true;
+        }
+
+        return false;
     }
 }
 

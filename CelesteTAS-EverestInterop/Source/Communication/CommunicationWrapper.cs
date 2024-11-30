@@ -5,6 +5,7 @@ using StudioCommunication;
 using TAS.EverestInterop;
 using TAS.Input;
 using TAS.Module;
+using TAS.SyncCheck;
 using TAS.Utils;
 
 namespace TAS.Communication;
@@ -25,6 +26,11 @@ public static class CommunicationWrapper {
     }
 
     public static void Start() {
+        if (SyncChecker.Active) {
+            // Prevent Studio connection while sync-checking
+            return;
+        }
+
         if (comm != null) {
             "Tried to start the communication adapter while already running!".Log(LogLevel.Warn);
             return;
@@ -33,6 +39,11 @@ public static class CommunicationWrapper {
         comm = new CommunicationAdapterCeleste();
     }
     public static void Stop() {
+        if (SyncChecker.Active) {
+            // Prevent Studio connection while sync-checking
+            return;
+        }
+
         if (comm == null) {
             "Tried to stop the communication adapter while not running!".Log(LogLevel.Warn);
             return;

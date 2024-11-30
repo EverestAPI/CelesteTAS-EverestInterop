@@ -11,6 +11,7 @@ using System.Text.Json.Serialization;
 using TAS.Communication;
 using TAS.Input;
 using TAS.Module;
+using TAS.SyncCheck;
 using TAS.Utils;
 
 namespace TAS.EverestInterop;
@@ -44,6 +45,12 @@ public static class DebugRcPage {
         Name = "CelesteTAS Send Hotkey",
         InfoHTML = $"Press/Release the specified hotkey.<br />Except for hotkeys FastForward and SlowForward, other hotkeys are automatically released after being pressed.<br />Available id: {string.Join(", ", Enum.GetNames(typeof(HotkeyID)))}",
         Handle = c => {
+            if (SyncChecker.Active) {
+                Everest.DebugRC.Write(c, "Sync-Check is currently active. Preventing user intervention.");
+                c.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+                return;
+            }
+
             void WriteIdErrorPage(string message) {
                 StringBuilder builder = new();
                 Everest.DebugRC.WriteHTMLStart(c, builder);
@@ -115,6 +122,12 @@ TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}
         Name = "CelesteTAS Play TAS",
         InfoHTML = "Play the specified TAS file",
         Handle = c => {
+            if (SyncChecker.Active) {
+                Everest.DebugRC.Write(c, "Sync-Check is currently active. Preventing user intervention.");
+                c.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+                return;
+            }
+
             StringBuilder builder = new();
             Everest.DebugRC.WriteHTMLStart(c, builder);
 
