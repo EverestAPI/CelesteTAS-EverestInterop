@@ -8,6 +8,8 @@ using TAS.Input;
 using TAS.Module;
 using TAS.Utils;
 
+#nullable enable
+
 namespace TAS.SyncCheck;
 
 /// Automatically runs the specified TAS files and reports if they were successful
@@ -20,9 +22,8 @@ internal static class SyncChecker {
     private static readonly Queue<string> fileQueue = [];
     private static string resultFile = string.Empty;
 
-    private static List<string> wrongTimes = [];
-    private static bool wasUnsafe = false;
-    private static bool wasAssert = false;
+    private static SyncCheckResult.Status currentStatus = SyncCheckResult.Status.Success;
+    private static object? currentAdditionalInformation = null;
 
     private static SyncCheckResult result = new();
 
@@ -56,29 +57,19 @@ internal static class SyncChecker {
         Logger.Info("CelesteTAS/SyncCheck", $"Finished check for file: '{InputController.StudioTasFilePath}'");
 
         // Check for desyncs
-        SyncCheckResult.Entry entry;
-        if (wasUnsafe) {
-            // Performed unsafe action in safe-mode
-            entry = new SyncCheckResult.Entry(InputController.StudioTasFilePath, SyncCheckResult.Status.UnsafeAction, GameInfo.ExactStatus);
-        } else if (wasAssert) {
-            // Assertion failure
-            entry = new SyncCheckResult.Entry(InputController.StudioTasFilePath, SyncCheckResult.Status.AssertFailed, GameInfo.ExactStatus);
-        } else if (Engine.Scene is not (Level { Completed: true } or LevelExit or AreaComplete)) {
+        if (currentStatus == SyncCheckResult.Status.Success && Engine.Scene is not (Level { Completed: true } or LevelExit or AreaComplete)) {
             // TAS did not finish
-            GameInfo.Update(updateVel: false);
-            entry = new SyncCheckResult.Entry(InputController.StudioTasFilePath, SyncCheckResult.Status.NotFinished, GameInfo.ExactStatus);
-        } else if (wrongTimes.Count != 0) {
-            // TAS finished with wrong time(s)
-            entry = new SyncCheckResult.Entry(InputController.StudioTasFilePath, SyncCheckResult.Status.WrongTime, string.Join("\n", wrongTimes));
-        } else {
-            // No desync
-            entry = new SyncCheckResult.Entry(InputController.StudioTasFilePath, SyncCheckResult.Status.Success, string.Empty);
+            currentStatus = SyncCheckResult.Status.NotFinished;
+            currentAdditionalInformation = null;
         }
+
+        GameInfo.Update(updateVel: false);
+        var entry = new SyncCheckResult.Entry(InputController.StudioTasFilePath, currentStatus, GameInfo.ExactStatus, currentAdditionalInformation);
 
         result.Entries.Add(entry);
         result.WriteToFile(resultFile);
 
-        if (fileQueue.TryDequeue(out string file)) {
+        if (fileQueue.TryDequeue(out string? file)) {
             CheckFile(file);
         } else {
             // Done with all checks
@@ -92,19 +83,36 @@ internal static class SyncChecker {
     /// Indicates that a time command was updated with another time
     public static void ReportWrongTime(string filePath, int fileLine, string oldTime, string newTime) {
         Logger.Error("CelesteTAS/SyncCheck", $"Detected wrong time in file '{filePath}' line {fileLine}: '{oldTime}' vs '{newTime}'");
-        wrongTimes.Add($"{filePath}\t{fileLine}\t{oldTime}\t{newTime}");
+
+        if (currentStatus != SyncCheckResult.Status.WrongTime) {
+            currentStatus = SyncCheckResult.Status.WrongTime;
+            currentAdditionalInformation = new List<SyncCheckResult.WrongTimeInfo>();
+        }
+        ((List<SyncCheckResult.WrongTimeInfo>)currentAdditionalInformation!).Add(new SyncCheckResult.WrongTimeInfo(filePath, fileLine, oldTime, newTime));
     }
 
     /// Indicates that an unsafe action was performed in safe-mode
     public static void ReportUnsafeAction() {
         Logger.Error("CelesteTAS/SyncCheck", $"Detected unsafe action");
-        wasUnsafe = true;
+
+        currentStatus = SyncCheckResult.Status.UnsafeAction;
+        currentAdditionalInformation = null;
     }
 
     /// Indicates that an Assert-command failed
     public static void ReportAssertFailed(string lineText, string filePath, int fileLine, string expected, string actual) {
         Logger.Error("CelesteTAS/SyncCheck", $"Detected failed assertion '{lineText}' in file '{filePath}' line {fileLine}: Expected '{expected}', got '{actual}'");
-        wasAssert = true;
+
+        currentStatus = SyncCheckResult.Status.UnsafeAction;
+        currentAdditionalInformation = new SyncCheckResult.AssertFailedInfo(filePath, fileLine, actual, expected);
+    }
+
+    /// Indicates that a crash happened while sync-checking
+    public static void ReportCrash(Exception ex) {
+        Logger.Error("CelesteTAS/SyncCheck", $"Detected a crash: {ex}");
+
+        currentStatus = SyncCheckResult.Status.Crash;
+        currentAdditionalInformation = ex.ToString();
     }
 
     [Initialize]
@@ -120,7 +128,7 @@ internal static class SyncChecker {
         orig(self, last, next);
 
         // Wait until game is done loading
-        if (waitingForLoad && next is Overworld) {
+        if (waitingForLoad && Active && next is Overworld) {
             waitingForLoad = false;
 
             if (string.IsNullOrEmpty(resultFile)) {
@@ -128,7 +136,7 @@ internal static class SyncChecker {
                 Engine.Instance.Exit();
             }
 
-            if (fileQueue.TryDequeue(out string file)) {
+            if (fileQueue.TryDequeue(out string? file)) {
                 CheckFile(file);
             }
         }
@@ -137,9 +145,8 @@ internal static class SyncChecker {
     /// Starts executing a TAS for sync-checking
     private static void CheckFile(string file) {
         // Reset state
-        wrongTimes.Clear();
-        wasUnsafe = false;
-        wasAssert = false;
+        currentStatus = SyncCheckResult.Status.Success;
+        currentAdditionalInformation = null;
 
         Logger.Info("CelesteTAS/SyncCheck", $"Starting check for file: '{file}'");
 

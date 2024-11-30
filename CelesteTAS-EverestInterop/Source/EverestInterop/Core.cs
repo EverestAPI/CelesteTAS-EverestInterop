@@ -8,6 +8,7 @@ using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using TAS.Input.Commands;
 using TAS.Module;
+using TAS.SyncCheck;
 using TAS.Utils;
 using GameInput = Celeste.Input;
 
@@ -62,8 +63,19 @@ public static class Core {
         for (int i = 0; i < loops; i++) {
             float oldFreezeTimer = Engine.FreezeTimer;
 
-            // Anything happening early on runs in the MInput.Update hook.
-            orig(self, gameTime);
+            try {
+                // Anything happening early on runs in the MInput.Update hook.
+                orig(self, gameTime);
+            } catch (Exception ex) {
+                if (!SyncChecker.Active) {
+                    throw; // Let Everest handle this
+                }
+
+                SyncChecker.ReportCrash(ex);
+                Manager.DisableRun();
+                loops = 1;
+            }
+
             Manager.AdvanceThroughHiddenFrame = false;
 
             if (TasSettings.HideFreezeFrames && oldFreezeTimer > 0f && oldFreezeTimer > Engine.FreezeTimer) {

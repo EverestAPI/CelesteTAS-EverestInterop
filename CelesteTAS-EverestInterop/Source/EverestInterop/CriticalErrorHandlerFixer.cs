@@ -1,3 +1,4 @@
+using Celeste.Mod;
 using System;
 using MonoMod.Utils;
 using TAS.Module;

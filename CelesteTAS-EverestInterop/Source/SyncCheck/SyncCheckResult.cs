@@ -3,6 +3,8 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+#nullable enable
+
 namespace TAS.SyncCheck;
 
 /// Result data from a sync-check
@@ -22,8 +24,12 @@ internal struct SyncCheckResult() {
         Crash
     }
 
+    // Additional information for the desync reason
+    public readonly record struct WrongTimeInfo(string FilePath, int FileLine, string OldTime, string NewTime);
+    public readonly record struct AssertFailedInfo(string FilePath, int FileLine, string Actual, string Expected);
+
     /// Sync-check result for a specific file
-    public readonly record struct Entry(string FilePath, Status Status, string AdditionalInfo);
+    public readonly record struct Entry(string FilePath, Status Status, string GameInfo, object? AdditionalInfo);
 
     public readonly List<Entry> Entries = [];
     public bool Finished = false;
