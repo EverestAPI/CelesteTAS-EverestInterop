@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using TAS.Input;
 using TAS.Module;
-using TAS.Utils;
 
 #nullable enable
 

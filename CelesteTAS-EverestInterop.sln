@@ -17,6 +17,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Featherline", "external\Fea
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StudioCommunication", "StudioCommunication\StudioCommunication.csproj", "{8B5FB457-8B97-465D-B367-B3B3B7FAC9B7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SyncChecker", "SyncChecker\SyncChecker.csproj", "{FE4C8CDA-0720-4FFA-927C-82A9B272AABD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{8B5FB457-8B97-465D-B367-B3B3B7FAC9B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8B5FB457-8B97-465D-B367-B3B3B7FAC9B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8B5FB457-8B97-465D-B367-B3B3B7FAC9B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE4C8CDA-0720-4FFA-927C-82A9B272AABD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE4C8CDA-0720-4FFA-927C-82A9B272AABD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE4C8CDA-0720-4FFA-927C-82A9B272AABD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE4C8CDA-0720-4FFA-927C-82A9B272AABD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
