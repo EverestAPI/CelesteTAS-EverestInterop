@@ -4,60 +4,68 @@ local TAS = require("#TAS")
 local Vector2 = require("#Microsoft.Xna.Framework.Vector2")
 local LuaHelpers = require("#TAS.EverestInterop.Lua.LuaHelpers")
 
---- use nullValue instead of nil when using setValue/invokeMethod
+--- Use nullValue instead of nil when using setValue / invokeMethod
 local nullValue = LuaHelpers.NullValue
 
---- log message
+--- Logs a message
 local function log(message, tag)
-    Celeste.Mod.Logger.Log(Celeste.Mod.LogLevel.Info, tag or "CelesteTAS", tostring(message))
+    Celeste.Mod.Logger.Log(Celeste.Mod.LogLevel.Info, tag or "CelesteTAS/Lua", tostring(message))
 end
 
---- getEntity("Player") or getEntity("Celeste.Player")
---- can specify entityId, like getEntity("DustStaticSpinner[s1:12]")
+--- Resolves the first entity which matches the specified target-query
+--- Example: getEntity("Player"), getEntity("Celeste.Player"), getEntity("DustStaticSpinner[s1:12]")
 local function getEntity(entityTypeName)
     return LuaHelpers.GetEntity(entityTypeName)
 end
 
---- getEntities("Player") or getEntities("Celeste.Player")
+--- Resolves all entities which match the specified target-query, e.g. "Player" or "Celeste.Player"
+--- Example: getEntities("Player"), getEntities("Celeste.Player"), getEntities("CustomSpinner@VivHelper")
 local function getEntities(entityTypeName)
     return LuaHelpers.GetEntities(entityTypeName)
 end
 
---- get field or property value
+--- Gets the value of a (private) field / property
 local function getValue(instanceOrTypeName, memberName)
     return LuaHelpers.GetValue(instanceOrTypeName, memberName)
 end
 
---- set field or property value
---- use nullValue instead of nil if you want to pass null to c#
+--- Sets the value of a (private) field / property
+--- Use nullValue instead of nil if you want to pass null to C#
 local function setValue(instanceOrTypeName, memberName, value)
     return LuaHelpers.SetValue(instanceOrTypeName, memberName, value)
 end
 
---- parameters = parameter1, parameter2, ...
---- use nullValue instead of nil if you want to pass null to c#
+--- Invokes a (private) method
+--- Use nullValue instead of nil if you want to pass null to C#
 local function invokeMethod(instanceOrTypeName, methodName, ...)
     return LuaHelpers.InvokeMethod(instanceOrTypeName, methodName, ...)
 end
 
---- cast double value to float in c# side when calling invokeMethod() or setValue()
---- e.g. invokeMethod("ExtendedVariants.UI.ModOptionsEntries", "SetVariantValue", getEnum("Variant", "Gravity"), toFloat(0.1))
-local function toFloat(doubleValue)
-    return LuaHelpers.ToFloat(doubleValue)
-end
-
---- get enum value
---- getEnum('Facings', 'Right') or getEnum('Facings', 1) 
+--- Resolves the enum value for an ordinal or name
+--- Example: getEnum('Facings', 'Right') or getEnum('Facings', 1)
 local function getEnum(enumTypeName, value)
     return LuaHelpers.GetEnum(enumTypeName, value)
 end
 
+--- Returns the current level
 local function getLevel()
     return LuaHelpers.GetLevel()
 end
 
+--- Returns the current session
 local function getSession()
     return LuaHelpers.GetSession()
+end
+
+--- Casts the value to an int, for usage with setValue / invokeMethod
+local function toInt(longValue)
+    return LuaHelpers.ToInt(longValue)
+end
+
+--- Casts the value to a float, for usage with setValue / invokeMethod
+--- Example: invokeMethod("ExtendedVariants.UI.ModOptionsEntries", "SetVariantValue", getEnum("Variant", "Gravity"), toFloat(0.1))
+local function toFloat(doubleValue)
+    return LuaHelpers.ToFloat(doubleValue)
 end
 
 local scene = Monocle.Engine.Scene

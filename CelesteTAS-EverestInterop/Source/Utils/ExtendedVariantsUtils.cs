@@ -9,12 +9,12 @@ internal static class ExtendedVariantsUtils {
     private static readonly Lazy<object> triggerManager = new(() => module.Value?.GetFieldValue<object>("TriggerManager"));
     private static readonly Lazy<object> variantHandlers = new(() => module.Value?.GetFieldValue<object>("VariantHandlers"));
 
-    private static readonly Lazy<FastReflectionDelegate> getCurrentVariantValue = new(() =>
-        triggerManager.Value?.GetType().GetMethodInfo("GetCurrentVariantValue")?.GetFastDelegate());
-    private static readonly Lazy<FastReflectionDelegate> setVariantValue = new(() =>
-        module.Value?.GetType().Assembly.GetType("ExtendedVariants.UI.ModOptionsEntries").GetMethodInfo("SetVariantValue")?.GetFastDelegate());
-    private static readonly Lazy<FastReflectionDelegate> dictionareGetItem = new(() =>
-        variantHandlers.Value?.GetType().GetMethodInfo("get_Item")?.GetFastDelegate());
+    private static readonly Lazy<FastReflectionHelper.FastInvoker> getCurrentVariantValue = new(() =>
+        triggerManager.Value?.GetType().GetMethodInfo("GetCurrentVariantValue")?.GetFastInvoker());
+    private static readonly Lazy<FastReflectionHelper.FastInvoker> setVariantValue = new(() =>
+        module.Value?.GetType().Assembly.GetType("ExtendedVariants.UI.ModOptionsEntries").GetMethodInfo("SetVariantValue")?.GetFastInvoker());
+    private static readonly Lazy<FastReflectionHelper.FastInvoker> dictionaryGetItem = new(() =>
+        variantHandlers.Value?.GetType().GetMethodInfo("get_Item")?.GetFastInvoker());
 
     private static readonly Lazy<Type> variantType =
         new(() => module.Value?.GetType().Assembly.GetType("ExtendedVariants.Module.ExtendedVariantsModule+Variant"));
@@ -22,7 +22,6 @@ internal static class ExtendedVariantsUtils {
     // enum value might be different between different ExtendedVariantMode version, so we have to parse from string
     private static readonly Lazy<object> upsideDownVariant = new(ParseVariant("UpsideDown"));
     private static readonly Lazy<object> superDashingVariant = new(ParseVariant("SuperDashing"));
-    private static readonly object[] parameterless = { };
 
     public static Func<object> ParseVariant(string value) {
         return () => {
@@ -39,11 +38,11 @@ internal static class ExtendedVariantsUtils {
     public static bool SuperDashing => GetCurrentVariantValue(superDashingVariant) is { } value && (bool) value;
 
     public static Type GetVariantsEnum() => variantType.Value;
-    
+
     public static Type GetVariantType(Lazy<object> variant) {
         if (variant.Value is null) return null;
-        object handler = dictionareGetItem.Value?.Invoke(variantHandlers.Value, variant.Value);
-        return (Type) handler?.GetType().GetMethodInfo("GetVariantType")?.Invoke(handler, parameterless);
+        object handler = dictionaryGetItem.Value?.Invoke(variantHandlers.Value, variant.Value);
+        return (Type) handler?.GetType().GetMethodInfo("GetVariantType")?.Invoke(handler, []);
     }
 
     public static object GetCurrentVariantValue(Lazy<object> variant) {

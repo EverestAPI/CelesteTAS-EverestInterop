@@ -1,11 +1,9 @@
-using CelesteStudio.Util;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using StudioCommunication;
 
-namespace CelesteStudio.Data;
+namespace StudioCommunication;
 
 public struct ActionLine() {
     public const char Delimiter = ',';

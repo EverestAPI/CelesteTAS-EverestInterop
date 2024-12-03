@@ -101,7 +101,7 @@ public static class ExportRoomInfo {
         }
 
         streamWriter = new StreamWriter(path);
-        streamWriter.WriteLine($"TAS File: {InputController.TasFilePath}");
+        streamWriter.WriteLine($"TAS File: {Manager.Controller.FilePath}");
         streamWriter.WriteLine(RoomInfo.GetTableHead());
     }
 

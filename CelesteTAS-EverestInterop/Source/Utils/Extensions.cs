@@ -487,6 +487,14 @@ internal static class DictionaryExtensions {
     public static TValue LastValueOrDefault<TKey, TValue>(this SortedDictionary<TKey, TValue> dict) {
         return dict.Count > 0 ? dict.Last().Value : default;
     }
+
+    public static void AddToKey<TKey, TValue>(this IDictionary<TKey, List<TValue>> dict, TKey key, TValue value) {
+        if (dict.TryGetValue(key, out var list)) {
+            list.Add(value);
+            return;
+        }
+        dict[key] = [value];
+    }
 }
 
 internal static class DynamicDataExtensions {

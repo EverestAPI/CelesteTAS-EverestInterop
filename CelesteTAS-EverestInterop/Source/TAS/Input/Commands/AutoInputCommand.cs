@@ -178,7 +178,7 @@ public static class AutoInputCommand {
             return false;
         }
 
-        bool mainFile = filePath == InputController.TasFilePath;
+        bool mainFile = filePath == Manager.Controller.FilePath;
 
         int frames = 0;
         int parsedFrames = 0;
@@ -201,8 +201,14 @@ public static class AutoInputCommand {
             arguments.CycleOffset--;
 
             if (arguments.CycleOffset == 0 || i == inputFrame.Frames - 1) {
-                Manager.Controller.AddFrames(frames + inputFrame.ToActionsString(), studioLine, repeatIndex, repeatCount,
-                    mainFile ? parsedFrames : 0);
+                Manager.Controller.AddFrames(inputFrame with {
+                    Frames = frames,
+                    Line = studioLine,
+                    RepeatCount = repeatCount,
+                    RepeatIndex = repeatIndex,
+                    FrameOffset = mainFile ? parsedFrames : 0,
+                });
+
                 parsedFrames += frames;
                 frames = 0;
             }
@@ -221,7 +227,7 @@ public static class AutoInputCommand {
             arguments.Inputs,
             filePath,
             arguments.StartLine,
-            filePath == InputController.TasFilePath ? arguments.StartLine - 1 : studioLine,
+            filePath == Manager.Controller.FilePath ? arguments.StartLine - 1 : studioLine,
             repeatIndex,
             repeatCount,
             arguments.LockStudioLine
