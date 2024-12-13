@@ -1,5 +1,4 @@
-﻿using Microsoft.VisualBasic;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text.Json;
@@ -78,35 +77,6 @@ public readonly record struct DependencyGraphEntry(
     List<ModUpdateInfo> Dependencies,
     List<ModUpdateInfo> OptionalDependencies
 );
-
-
-/// <summary>
-/// An HttpClient that supports compressed responses to save bandwidth, and uses IPv4 to work around issues for some users.
-/// Taken from https://github.com/EverestAPI/Everest/blob/dev/Celeste.Mod.mm/Mod/Helpers/CompressedHttpClient.cs
-/// </summary>
-public class CompressedHttpClient : HttpClient {
-    private static readonly SocketsHttpHandler handler = new() {
-        AutomaticDecompression = DecompressionMethods.All,
-        ConnectCallback = async delegate (SocketsHttpConnectionContext ctx, CancellationToken token) {
-            if (ctx.DnsEndPoint.AddressFamily != AddressFamily.Unspecified && ctx.DnsEndPoint.AddressFamily != AddressFamily.InterNetwork) {
-                throw new InvalidOperationException("no IPv4 address");
-            }
-
-            var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
-            try {
-                await socket.ConnectAsync(new DnsEndPoint(ctx.DnsEndPoint.Host, ctx.DnsEndPoint.Port, AddressFamily.InterNetwork), token).ConfigureAwait(false);
-                return new NetworkStream(socket, true);
-            } catch (Exception) {
-                socket.Dispose();
-                throw;
-            }
-        }
-    };
-
-    public CompressedHttpClient() : base(handler, disposeHandler: false) {
-        DefaultRequestHeaders.Add("User-Agent", "CelesteTAS/SyncCheck");
-    }
-}
 
 public static class Program {
     private const string EverestVersionsURL = "https://maddie480.ovh/celeste/everest-versions?supportsNativeBuilds=true";
@@ -319,7 +289,8 @@ public static class Program {
         var dependencyGraph = YamlHelper.Deserializer.Deserialize<Dictionary<string, DependencyGraphEntry>>(dependencyGraphData);
 
         // Gather all required mods
-        IEnumerable<string> forceRequiredMods = ["CelesteTAS"]; // Mods which are enabled, no matter what
+        // TODO: Remove "HelperTestMapHider" mod with a new SelectCampaign command
+        IEnumerable<string> forceRequiredMods = ["CelesteTAS", "HelperTestMapHider"]; // Mods which are enabled, no matter what
         HashSet<ModUpdateInfo> requiredMods = [];
         foreach (string mod in config.Mods.Concat(forceRequiredMods)) {
             if (!dependencyGraph.TryGetValue(mod, out var graph)) {
