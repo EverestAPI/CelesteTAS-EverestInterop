@@ -1,0 +1,32 @@
+name: Build Sync Checker
+
+on:
+  workflow_call:
+    inputs:
+      build-cfg:
+        required: true
+        type: string
+        default: Release
+
+jobs:
+  build-sync-checker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+
+      - name: Publish
+        run: dotnet publish SyncChecker -c ${{ inputs.build-cfg }} -p:UseAppHost=false --output build-sync-checker
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SyncChecker
+          path: build-sync-checker/**

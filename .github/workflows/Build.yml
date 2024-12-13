@@ -1,4 +1,4 @@
-name: Build CelesteTAS + Studio
+name: Build
 
 on:
   workflow_call:
@@ -24,6 +24,11 @@ on:
 jobs:
   build-studio:
     uses: ./.github/workflows/Build.CelesteStudio.yml
+    with:
+      build-cfg: Debug
+
+  build-sync-checker:
+    uses: ./.github/workflows/Build.SyncChecker.yml
     with:
       build-cfg: Debug
 
