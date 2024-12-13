@@ -22,7 +22,7 @@ internal static class SyncChecker {
     private static string resultFile = string.Empty;
 
     private static SyncCheckResult.Status currentStatus = SyncCheckResult.Status.Success;
-    private static object? currentAdditionalInformation = null;
+    private static SyncCheckResult.AdditionalInfo currentAdditionalInformation = new();
 
     private static SyncCheckResult result = new();
 
@@ -59,7 +59,7 @@ internal static class SyncChecker {
         if (currentStatus == SyncCheckResult.Status.Success && Engine.Scene is not (Level { Completed: true } or LevelExit or AreaComplete)) {
             // TAS did not finish
             currentStatus = SyncCheckResult.Status.NotFinished;
-            currentAdditionalInformation = null;
+            currentAdditionalInformation.Clear();
         }
 
         GameInfo.Update(updateVel: false);
@@ -85,9 +85,9 @@ internal static class SyncChecker {
 
         if (currentStatus != SyncCheckResult.Status.WrongTime) {
             currentStatus = SyncCheckResult.Status.WrongTime;
-            currentAdditionalInformation = new List<SyncCheckResult.WrongTimeInfo>();
+            currentAdditionalInformation.WrongTime = new List<SyncCheckResult.WrongTimeInfo>();
         }
-        ((List<SyncCheckResult.WrongTimeInfo>)currentAdditionalInformation!).Add(new SyncCheckResult.WrongTimeInfo(filePath, fileLine, oldTime, newTime));
+        currentAdditionalInformation.WrongTime!.Add(new SyncCheckResult.WrongTimeInfo(filePath, fileLine, oldTime, newTime));
     }
 
     /// Indicates that an unsafe action was performed in safe-mode
@@ -95,7 +95,7 @@ internal static class SyncChecker {
         Logger.Error("CelesteTAS/SyncCheck", $"Detected unsafe action");
 
         currentStatus = SyncCheckResult.Status.UnsafeAction;
-        currentAdditionalInformation = null;
+        currentAdditionalInformation.Clear();
     }
 
     /// Indicates that an Assert-command failed
@@ -103,7 +103,7 @@ internal static class SyncChecker {
         Logger.Error("CelesteTAS/SyncCheck", $"Detected failed assertion '{lineText}' in file '{filePath}' line {fileLine}: Expected '{expected}', got '{actual}'");
 
         currentStatus = SyncCheckResult.Status.UnsafeAction;
-        currentAdditionalInformation = new SyncCheckResult.AssertFailedInfo(filePath, fileLine, actual, expected);
+        currentAdditionalInformation.AssertFailed = new SyncCheckResult.AssertFailedInfo(filePath, fileLine, actual, expected);
     }
 
     /// Indicates that a crash happened while sync-checking
@@ -111,7 +111,7 @@ internal static class SyncChecker {
         Logger.Error("CelesteTAS/SyncCheck", $"Detected a crash: {ex}");
 
         currentStatus = SyncCheckResult.Status.Crash;
-        currentAdditionalInformation = ex.ToString();
+        currentAdditionalInformation.Crash = ex.ToString();
     }
 
     [Initialize]
@@ -145,7 +145,7 @@ internal static class SyncChecker {
     private static void CheckFile(string file) {
         // Reset state
         currentStatus = SyncCheckResult.Status.Success;
-        currentAdditionalInformation = null;
+        currentAdditionalInformation.Clear();
 
         Logger.Info("CelesteTAS/SyncCheck", $"Starting check for file: '{file}'");
 

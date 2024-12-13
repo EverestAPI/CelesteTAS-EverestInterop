@@ -10,6 +10,7 @@ using MonoMod.Utils;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
+using TAS.SyncCheck;
 
 namespace SyncChecker;
 
@@ -26,6 +27,14 @@ public readonly record struct Config (
     List<string> Mods,
     List<string> BlacklistedMods,
     List<string> Files
+);
+/// <summary>
+/// Result after running a sync-check
+/// </summary>
+public record struct Result (
+    DateTime StartTime,
+    DateTime EndTime,
+    List<SyncCheckResult.Entry> Entries
 );
 
 // Format taken from https://maddie480.ovh/celeste/everest-versions
@@ -111,11 +120,18 @@ public static class Program {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         Converters = {
             new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false),
-        }
+        },
     };
 
     public static async Task<int> Main(string[] args) {
-        string configPath = args.Length < 1 ? string.Empty : args[0];
+        if (args.Length != 2) {
+            await Console.Error.WriteLineAsync($"Usage: SyncChecker <input-config> <output-result>");
+            return 1;
+        }
+
+        string configPath = args[0];
+        string resultPath = args[1];
+
         if (!File.Exists(configPath)) {
             await Console.Error.WriteLineAsync($"Config file not found: '{configPath}'");
             return 1;
@@ -141,6 +157,9 @@ public static class Program {
         }
 
         result = await SetupMods(config);
+        if (result != 0) return result;
+
+        result = await RunSyncCheck(config, resultPath);
         if (result != 0) return result;
 
         return 0;
@@ -180,7 +199,7 @@ public static class Program {
 
             try {
                 await Console.Out.WriteLineAsync($" - Downloading '{targetEverestVersion.MainDownload}'...");
-                await using (var everestMainZip = File.OpenWrite(everestUpdateZip)) {
+                await using (var everestMainZip = File.Create(everestUpdateZip)) {
                     await using var contentStream = await hc.GetStreamAsync(targetEverestVersion.MainDownload);
                     await contentStream.CopyToAsync(everestMainZip);
                 }
@@ -242,6 +261,7 @@ public static class Program {
                 using var proc = new Process();
                 proc.StartInfo = new ProcessStartInfo {
                     FileName = Path.Combine(config.GameDirectory, miniInstallerName),
+                    ArgumentList = { "headless" }, // Use headless mode for sync-checking
                     UseShellExecute = false,
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
@@ -372,13 +392,153 @@ public static class Program {
 
             string modPath = Path.Combine(config.GameDirectory, "Mods", $"{info.Name}.zip");
 
-            await using var modZip = File.OpenWrite(modPath);
+            await using var modZip = File.Create(modPath);
             await using var contentStream = await hc.GetStreamAsync(ModDownloadURL + info.Name);
             await contentStream.CopyToAsync(modZip);
         }
 
         // Generate blacklist
+        foreach (string dir in Directory.EnumerateDirectories(Path.Combine(config.GameDirectory, "Mods"))) {
+            blackList.Add(Path.GetFileName(dir));
+        }
+
+#if DEBUG
+        // Use directory version of CelesteTAS for development
+        blackList.Remove("CelesteTAS-EverestInterop");
+        blackList.Add("CelesteTAS.zip");
+#endif
+
         await File.WriteAllLinesAsync(Path.Combine(config.GameDirectory, "Mods", "blacklist.txt"), blackList);
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Performs the sync-check and collects the results
+    /// </summary>
+    private static async Task<int> RunSyncCheck(Config config, string resultPath) {
+        List<string> filesRemaining = [..config.Files.Distinct()];
+
+        string gameName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Celeste.exe" : "Celeste";
+        string gameResultPath = Path.Combine(config.GameDirectory, "sync-check-result.json");
+
+        var fullResult = new Result {
+            StartTime = DateTime.UtcNow,
+            Entries = [],
+        };
+        await Console.Out.WriteLineAsync($"Started sync-check on {fullResult.StartTime}");
+
+        while (filesRemaining.Count > 0) {
+            await Console.Out.WriteLineAsync($"Running Celeste with {filesRemaining.Count} TAS(es) remaining...");
+
+            using var gameProc = new Process();
+            gameProc.StartInfo = new ProcessStartInfo {
+                FileName = Path.Combine(config.GameDirectory, gameName),
+                ArgumentList = { "--sync-check-result", gameResultPath },
+                UseShellExecute = false,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+            };
+
+            foreach (string file in filesRemaining) {
+                gameProc.StartInfo.ArgumentList.Add("--sync-check-file");
+                gameProc.StartInfo.ArgumentList.Add(file);
+            }
+
+            gameProc.OutputDataReceived += (_, e) => Console.Out.WriteLine(e.Data);
+            gameProc.ErrorDataReceived += (_, e) => Console.Error.WriteLine(e.Data);
+
+            gameProc.Start();
+            gameProc.BeginOutputReadLine();
+            gameProc.BeginErrorReadLine();
+
+            await gameProc.WaitForExitAsync();
+
+            await Console.Out.WriteLineAsync($"Celeste exited with code {gameProc.ExitCode}");
+
+            if (!File.Exists(gameResultPath)) {
+                await Console.Error.WriteLineAsync($"Sync-check failed: Game result file '{gameResultPath}' not found");
+                return 1;
+            }
+
+            await using var gameResultFile = File.OpenRead(gameResultPath);
+            var gameResult = await JsonSerializer.DeserializeAsync<SyncCheckResult>(gameResultFile, jsonOptions);
+
+            foreach (var entry in gameResult.Entries) {
+                filesRemaining.Remove(entry.File);
+                fullResult.Entries.Add(entry);
+
+                await Console.Out.WriteLineAsync($" - '{entry.File}': {entry.Status}");
+                if (entry.Status != SyncCheckResult.Status.Success) {
+                    await Console.Out.WriteLineAsync("====== Game Info ======");
+                    await Console.Out.WriteLineAsync(entry.GameInfo);
+
+                    switch (entry.Status) {
+                        case SyncCheckResult.Status.Crash:
+                            await Console.Out.WriteLineAsync("===== Stack Trace =====");
+                            await Console.Out.WriteLineAsync(entry.AdditionalInfo.Crash ?? "<not-available>");
+                            break;
+
+                        case SyncCheckResult.Status.AssertFailed:
+                            await Console.Out.WriteLineAsync("=== Failure  Reason ===");
+                            if (entry.AdditionalInfo.AssertFailed.HasValue) {
+                                var assertFailed = entry.AdditionalInfo.AssertFailed.Value;
+                                await Console.Out.WriteLineAsync($"File: {assertFailed.FilePath} line {assertFailed.FileLine}");
+                                await Console.Out.WriteLineAsync($"Expected: {assertFailed.Expected}");
+                                await Console.Out.WriteLineAsync($"Actual: {assertFailed.Actual}");
+                            } else {
+                                await Console.Out.WriteLineAsync("<not-available>");
+                            }
+                            break;
+
+                        case SyncCheckResult.Status.WrongTime:
+                            await Console.Out.WriteLineAsync("===== Wrong Times =====");
+                            if (entry.AdditionalInfo.WrongTime != null) {
+                                for (int i = 0; i < entry.AdditionalInfo.WrongTime.Count; i++) {
+                                    var wrongTime = entry.AdditionalInfo.WrongTime[i];
+
+                                    if (i != 0) {
+                                        await Console.Out.WriteLineAsync("");
+                                    }
+
+                                    await Console.Out.WriteLineAsync($"- File: {wrongTime.FilePath} line {wrongTime.FileLine}");
+                                    await Console.Out.WriteLineAsync($"  Expected: {wrongTime.OldTime}");
+                                    await Console.Out.WriteLineAsync($"  Actual: {wrongTime.NewTime}");
+                                }
+                            } else {
+                                await Console.Out.WriteLineAsync("<not-available>");
+                            }
+                            break;
+
+                        case SyncCheckResult.Status.NotFinished:
+                        case SyncCheckResult.Status.UnsafeAction:
+                        default:
+                            // No additional info available
+                            break;
+                    }
+
+                    await Console.Out.WriteLineAsync("=======================");
+                }
+            }
+
+            if (!gameResult.Finished) {
+                // The game crashed while trying to run the latest file
+                string filePath = filesRemaining[0];
+
+                filesRemaining.Remove(filePath);
+                fullResult.Entries.Add(new SyncCheckResult.Entry(filePath, SyncCheckResult.Status.Crash, string.Empty, new() {
+                    Crash = string.Empty,
+                }));
+            }
+        }
+
+        fullResult.EndTime = DateTime.UtcNow;
+        await Console.Out.WriteLineAsync($"Finished sync-check on {fullResult.EndTime}");
+
+        await using var resultFile = File.Create(resultPath);
+        await JsonSerializer.SerializeAsync(resultFile, fullResult, jsonOptions);
 
         return 0;
     }
