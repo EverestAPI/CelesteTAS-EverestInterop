@@ -510,6 +510,16 @@ public static class Program {
 
         string gameName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Celeste.exe" : "Celeste";
         string gameResultPath = Path.Combine(config.GameDirectory, "sync-check-result.json");
+        string gameSavePath = Path.Combine(config.GameDirectory, "sync-check-saves");
+
+        if (File.Exists(resultPath))
+            File.Delete(resultPath);
+        if (File.Exists(gameResultPath))
+            File.Delete(gameResultPath);
+
+        if (Directory.Exists(gameSavePath))
+            Directory.Delete(gameSavePath, recursive: true);
+        Directory.CreateDirectory(gameSavePath);
 
         var fullResult = new Result {
             StartTime = DateTime.UtcNow,
@@ -524,6 +534,7 @@ public static class Program {
             gameProc.StartInfo = new ProcessStartInfo {
                 FileName = Path.Combine(config.GameDirectory, gameName),
                 ArgumentList = { "--sync-check-result", gameResultPath },
+                Environment = { { "EVEREST_SAVEPATH", gameSavePath } },
                 UseShellExecute = false,
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
@@ -549,7 +560,16 @@ public static class Program {
 
             if (!File.Exists(gameResultPath)) {
                 await Console.Error.WriteLineAsync($"Sync-check failed: Game result file '{gameResultPath}' not found");
-                return 1;
+
+                // The game crashed while trying to run the latest file
+                string filePath = filesRemaining[0];
+
+                filesRemaining.Remove(filePath);
+                fullResult.Entries.Add(new SyncCheckResult.Entry(filePath, SyncCheckResult.Status.Crash, string.Empty, new() {
+                    Crash = string.Empty,
+                }));
+
+                continue;
             }
 
             await using var gameResultFile = File.OpenRead(gameResultPath);
@@ -628,6 +648,10 @@ public static class Program {
 
         await using var resultFile = File.Create(resultPath);
         await JsonSerializer.SerializeAsync(resultFile, fullResult, jsonOptions);
+
+        // Cleanup
+        if (File.Exists(gameResultPath))
+            File.Delete(gameResultPath);
 
         return 0;
     }
