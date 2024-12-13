@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using Microsoft.VisualBasic;
+using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text.Json;
@@ -44,6 +45,32 @@ public readonly record struct EverestVersion(
     string OlympusBuildDownload
 );
 
+// Minimal version taken from https://github.com/EverestAPI/Everest/blob/dev/Celeste.Mod.mm/Mod/Module/EverestModuleMetadata.cs
+public readonly record struct EverestModuleMetadata(
+    string Name,
+    string Version,
+    string DLL,
+    List<EverestModuleMetadata> Dependencies
+);
+
+// Taken from https://github.com/EverestAPI/Everest/blob/dev/Celeste.Mod.mm/Mod/Helpers/ModUpdateInfo.cs
+public readonly record struct ModUpdateInfo(
+    string Name,
+    string Version,
+    int LastUpdate,
+    string URL,
+    List<string> xxHash,
+    string GameBananaType,
+    int GameBananaId
+);
+
+// Taken from https://github.com/EverestAPI/Everest/blob/dev/Celeste.Mod.mm/Mod/Helpers/ModUpdaterHelper.cs
+public readonly record struct DependencyGraphEntry(
+    List<ModUpdateInfo> Dependencies,
+    List<ModUpdateInfo> OptionalDependencies
+);
+
+
 /// <summary>
 /// An HttpClient that supports compressed responses to save bandwidth, and uses IPv4 to work around issues for some users.
 /// Taken from https://github.com/EverestAPI/Everest/blob/dev/Celeste.Mod.mm/Mod/Helpers/CompressedHttpClient.cs
@@ -74,6 +101,18 @@ public class CompressedHttpClient : HttpClient {
 
 public static class Program {
     private const string EverestVersionsURL = "https://maddie480.ovh/celeste/everest-versions?supportsNativeBuilds=true";
+    private const string ModUpdateURL = "https://maddie480.ovh/celeste/everest_update.yaml";
+    private const string DependencyGraphURL = "https://maddie480.ovh/celeste/mod_dependency_graph.yaml";
+    private const string ModDownloadURL = "https://maddie480.ovh/celeste/dl?mirror=1&id=";
+
+    private static readonly JsonSerializerOptions jsonOptions = new() {
+        IncludeFields = true,
+        WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = {
+            new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false),
+        }
+    };
 
     public static async Task<int> Main(string[] args) {
         string configPath = args.Length < 1 ? string.Empty : args[0];
@@ -82,17 +121,8 @@ public static class Program {
             return 1;
         }
 
-        var jsonConfig = new JsonSerializerOptions {
-            IncludeFields = true,
-            WriteIndented = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            Converters = {
-                new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false),
-            }
-        };
-
         await using var configFile = File.OpenRead(configPath);
-        var config = JsonSerializer.Deserialize<Config>(configFile, jsonConfig);
+        var config = JsonSerializer.Deserialize<Config>(configFile, jsonOptions);
 
         // Validate game directory
         if (!File.Exists(Path.Combine(config.GameDirectory, "Celeste.dll")) &&
@@ -102,137 +132,253 @@ public static class Program {
             return 1;
         }
 
+        int result;
+
+        // Ensure Everest is up-to-date
         if (config.EverestBranch != EverestBranch.Manual) {
-            using var hc = new CompressedHttpClient();
+            result = await UpdateEverest(config);
+            if (result != 0) return result;
+        }
 
-            var availableEverestVersions = JsonSerializer.Deserialize<EverestVersion[]>(await hc.GetStreamAsync(EverestVersionsURL), jsonConfig);
-            if (availableEverestVersions == null || availableEverestVersions.Length == 0) {
-                await Console.Error.WriteLineAsync("Failed to install Everest: No available versions found");
-                return 1;
-            }
+        result = await SetupMods(config);
+        if (result != 0) return result;
 
-            var targetEverestVersion = availableEverestVersions.FirstOrDefault(version => version.Branch == config.EverestBranch, availableEverestVersions[0]);
-            var targetVersion = new Version(1, targetEverestVersion.Version, 0);
+        return 0;
+    }
 
-            if (!targetEverestVersion.IsNative) {
-                await Console.Error.WriteLineAsync($"Failed to install Everest: Legacy versions are not supported");
-                return 1;
-            }
+    /// <summary>
+    /// Ensures the installed Everest version is up-to-date
+    /// </summary>
+    private static async Task<int> UpdateEverest(Config config) {
+        using var hc = new CompressedHttpClient();
 
-            // Determine currently installed version
-            (string currentStatus, var celesteVersion, var everestVersion) = GetCurrentVersion(config.GameDirectory);
-            Console.WriteLine(currentStatus);
-            Console.WriteLine(celesteVersion);
-            Console.WriteLine(everestVersion);
+        var availableEverestVersions = JsonSerializer.Deserialize<EverestVersion[]>(await hc.GetStreamAsync(EverestVersionsURL), jsonOptions);
+        if (availableEverestVersions == null || availableEverestVersions.Length == 0) {
+            await Console.Error.WriteLineAsync("Failed to install Everest: No available versions found");
+            return 1;
+        }
 
-            if (everestVersion == null || everestVersion < targetVersion) {
-                if (everestVersion == null) {
-                    await Console.Out.WriteLineAsync($"Everest is not installed. Installing Everest v{targetVersion}...");
-                } else {
-                    await Console.Out.WriteLineAsync($"Everest v{everestVersion} is outdated. Installing Everest v{targetVersion}...");
-                }
+        var targetEverestVersion = availableEverestVersions.FirstOrDefault(version => version.Branch == config.EverestBranch, availableEverestVersions[0]);
+        var targetVersion = new Version(1, targetEverestVersion.Version, 0);
 
-                string everestUpdateZip = Path.Combine(config.GameDirectory, "everest-update.zip");
+        if (!targetEverestVersion.IsNative) {
+            await Console.Error.WriteLineAsync($"Failed to install Everest: Legacy versions are not supported");
+            return 1;
+        }
 
-                try {
-                    await Console.Out.WriteLineAsync($" - Downloading '{targetEverestVersion.MainDownload}'...");
-                    await using (var everestMainZip = File.OpenWrite(everestUpdateZip)) {
-                        await using var contentStream = await hc.GetStreamAsync(targetEverestVersion.MainDownload);
-                        await contentStream.CopyToAsync(everestMainZip);
-                    }
+        // Determine currently installed version
+        (string currentStatus, var celesteVersion, var everestVersion) = GetCurrentVersion(config.GameDirectory);
 
-                    const string prefix = "main/";
-                    await Console.Out.WriteLineAsync($" - Extracting '{everestUpdateZip}'...");
-                    using (var updateZip = ZipFile.OpenRead(everestUpdateZip)) {
-                        foreach (var entry in updateZip.Entries) {
-                            string name = entry.FullName;
-
-                            if (string.IsNullOrEmpty(name) || name.EndsWith('/'))
-                                continue;
-
-                            if (name.StartsWith(prefix))
-                                name = name[prefix.Length..];
-
-                            string fullPath = Path.Combine(config.GameDirectory, name);
-                            string fullDirectory = Path.GetDirectoryName(fullPath)!;
-
-                            if (!Directory.Exists(fullDirectory))
-                                Directory.CreateDirectory(fullDirectory);
-
-                            entry.ExtractToFile(fullPath, overwrite: true);
-                        }
-                    }
-
-                    await Console.Out.WriteLineAsync($" - Executing MiniInstaller...");
-
-                    string miniInstallerName;
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-                        if (RuntimeInformation.OSArchitecture == Architecture.X64) {
-                            miniInstallerName = "MiniInstaller-win64.exe";
-                        } else if (RuntimeInformation.OSArchitecture == Architecture.X64) {
-                            miniInstallerName = "MiniInstaller-win.exe";
-                        } else {
-                            await Console.Error.WriteLineAsync($"Failed to install Everest: Unsupported Windows architecture '{RuntimeInformation.OSArchitecture}'");
-                            return 1;
-                        }
-                    } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-                        miniInstallerName = "MiniInstaller-linux";
-                    } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                        miniInstallerName = "MiniInstaller-osx";
-                    } else {
-                        await Console.Error.WriteLineAsync(
-                            $"Failed to install Everest: Unsupported platform '{RuntimeInformation.OSDescription}' with architecture '{RuntimeInformation.OSArchitecture}'");
-                        return 1;
-                    }
-
-                    // Make MiniInstaller executable
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                        var chmodProc = Process.Start("chmod", ["+x", Path.Combine(config.GameDirectory, miniInstallerName)]);
-                        await chmodProc.WaitForExitAsync();
-                        if (chmodProc.ExitCode != 0) {
-                            await Console.Error.WriteLineAsync("Failed to install Everest: Failed to set MiniInstaller executable flag");
-                            return 1;
-                        }
-                    }
-
-                    using var proc = new Process();
-                    proc.StartInfo = new ProcessStartInfo {
-                        FileName = Path.Combine(config.GameDirectory, miniInstallerName),
-                        UseShellExecute = false,
-                        RedirectStandardInput = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        CreateNoWindow = true,
-                    };
-
-                    proc.OutputDataReceived += (o, e) => Console.Out.WriteLine(e.Data);
-                    proc.ErrorDataReceived += (o, e) => Console.Error.WriteLine(e.Data);
-
-                    proc.Start();
-                    proc.BeginOutputReadLine();
-                    proc.BeginErrorReadLine();
-
-                    await proc.WaitForExitAsync();
-
-                    if (proc.ExitCode != 0) {
-                        await Console.Error.WriteLineAsync($"Failed to install Everest: MiniInstaller process died: {proc.ExitCode}");
-                        return 1;
-                    }
-                } catch (Exception ex) {
-                    await Console.Error.WriteLineAsync($"Failed to install Everest: {ex}");
-                    return 1;
-                } finally {
-                    // Cleanup
-                    File.Delete(everestUpdateZip);
-                }
-
-                await Console.Out.WriteLineAsync($"Successfully installed Everest v{targetVersion}");
+        if (everestVersion == null || everestVersion < targetVersion) {
+            if (everestVersion == null) {
+                await Console.Out.WriteLineAsync($"Everest is not installed. Installing Everest v{targetVersion}...");
             } else {
-                await Console.Out.WriteLineAsync($"Everest v{targetVersion} is up-to-date. Skipping update");
+                await Console.Out.WriteLineAsync($"Everest v{everestVersion} is outdated. Installing Everest v{targetVersion}...");
+            }
+
+            string everestUpdateZip = Path.Combine(config.GameDirectory, "everest-update.zip");
+
+            try {
+                await Console.Out.WriteLineAsync($" - Downloading '{targetEverestVersion.MainDownload}'...");
+                await using (var everestMainZip = File.OpenWrite(everestUpdateZip)) {
+                    await using var contentStream = await hc.GetStreamAsync(targetEverestVersion.MainDownload);
+                    await contentStream.CopyToAsync(everestMainZip);
+                }
+
+                const string prefix = "main/";
+                await Console.Out.WriteLineAsync($" - Extracting '{everestUpdateZip}'...");
+                using (var updateZip = ZipFile.OpenRead(everestUpdateZip)) {
+                    foreach (var entry in updateZip.Entries) {
+                        string name = entry.FullName;
+
+                        if (string.IsNullOrEmpty(name) || name.EndsWith('/'))
+                            continue;
+
+                        if (name.StartsWith(prefix))
+                            name = name[prefix.Length..];
+
+                        string fullPath = Path.Combine(config.GameDirectory, name);
+                        string fullDirectory = Path.GetDirectoryName(fullPath)!;
+
+                        if (!Directory.Exists(fullDirectory))
+                            Directory.CreateDirectory(fullDirectory);
+
+                        entry.ExtractToFile(fullPath, overwrite: true);
+                    }
+                }
+
+                await Console.Out.WriteLineAsync($" - Executing MiniInstaller...");
+
+                string miniInstallerName;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                    if (RuntimeInformation.OSArchitecture == Architecture.X64) {
+                        miniInstallerName = "MiniInstaller-win64.exe";
+                    } else if (RuntimeInformation.OSArchitecture == Architecture.X64) {
+                        miniInstallerName = "MiniInstaller-win.exe";
+                    } else {
+                        await Console.Error.WriteLineAsync($"Failed to install Everest: Unsupported Windows architecture '{RuntimeInformation.OSArchitecture}'");
+                        return 1;
+                    }
+                } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+                    miniInstallerName = "MiniInstaller-linux";
+                } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    miniInstallerName = "MiniInstaller-osx";
+                } else {
+                    await Console.Error.WriteLineAsync(
+                        $"Failed to install Everest: Unsupported platform '{RuntimeInformation.OSDescription}' with architecture '{RuntimeInformation.OSArchitecture}'");
+                    return 1;
+                }
+
+                // Make MiniInstaller executable
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    var chmodProc = Process.Start("chmod", ["+x", Path.Combine(config.GameDirectory, miniInstallerName)]);
+                    await chmodProc.WaitForExitAsync();
+                    if (chmodProc.ExitCode != 0) {
+                        await Console.Error.WriteLineAsync("Failed to install Everest: Failed to set MiniInstaller executable flag");
+                        return 1;
+                    }
+                }
+
+                using var proc = new Process();
+                proc.StartInfo = new ProcessStartInfo {
+                    FileName = Path.Combine(config.GameDirectory, miniInstallerName),
+                    UseShellExecute = false,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true,
+                };
+
+                proc.OutputDataReceived += (_, e) => Console.Out.WriteLine(e.Data);
+                proc.ErrorDataReceived += (_, e) => Console.Error.WriteLine(e.Data);
+
+                proc.Start();
+                proc.BeginOutputReadLine();
+                proc.BeginErrorReadLine();
+
+                await proc.WaitForExitAsync();
+
+                if (proc.ExitCode != 0) {
+                    await Console.Error.WriteLineAsync($"Failed to install Everest: MiniInstaller process died: {proc.ExitCode}");
+                    return 1;
+                }
+            } catch (Exception ex) {
+                await Console.Error.WriteLineAsync($"Failed to install Everest: {ex}");
+                return 1;
+            } finally {
+                // Cleanup
+                File.Delete(everestUpdateZip);
+            }
+
+            await Console.Out.WriteLineAsync($"Successfully installed Everest v{targetVersion}");
+        } else {
+            await Console.Out.WriteLineAsync($"Everest v{targetVersion} is up-to-date. Skipping update");
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Sets up all required mods for the sync-check
+    /// </summary>
+    private static async Task<int> SetupMods(Config config) {
+        using var hc = new CompressedHttpClient();
+
+        // Get mod info
+        await Console.Out.WriteLineAsync($"Fetching '{ModUpdateURL}'...");
+        string modInfoData = await hc.GetStringAsync(ModUpdateURL);
+        var modInfo = YamlHelper.Deserializer.Deserialize<Dictionary<string, ModUpdateInfo>>(modInfoData);
+
+        // Get dependency graph
+        await Console.Out.WriteLineAsync($"Fetching '{DependencyGraphURL}'...");
+        string dependencyGraphData = await hc.GetStringAsync(DependencyGraphURL);
+        var dependencyGraph = YamlHelper.Deserializer.Deserialize<Dictionary<string, DependencyGraphEntry>>(dependencyGraphData);
+
+        // Gather all required mods
+        IEnumerable<string> forceRequiredMods = ["CelesteTAS"]; // Mods which are enabled, no matter what
+        HashSet<ModUpdateInfo> requiredMods = [];
+        foreach (string mod in config.Mods.Concat(forceRequiredMods)) {
+            if (!dependencyGraph.TryGetValue(mod, out var graph)) {
+                await Console.Error.WriteLineAsync($"Failed to setup mods: Unknown mod '{mod}'");
+                return 1;
+            }
+
+            if (!modInfo.TryGetValue(mod, out var info)) {
+                await Console.Error.WriteLineAsync($"Failed to setup mods: Unknown mod '{mod}'");
+                return 1;
+            }
+            requiredMods.Add(info with { Name = mod });
+
+            foreach (var dep in graph.Dependencies) {
+                if (dep.Name is "Everest" or "EverestCore") {
+                    continue; // We already update Everest
+                }
+
+                if (!modInfo.TryGetValue(dep.Name, out var depInfo)) {
+                    await Console.Error.WriteLineAsync($"Failed to setup mods: Unknown dependency '{dep.Name}'");
+                    return 1;
+                }
+
+                requiredMods.Add(depInfo with { Name = dep.Name });
             }
         }
 
-        Console.WriteLine(config);
+        // Gather current state of installed mods
+        Dictionary<string, (string Path, string Hash)> modHashes = [];
+        List<string> blackList = [$"# Blacklist generated by CelesteTAS' sync-checker on {DateTime.UtcNow} UTC", ""];
+        foreach (string mod in Directory.EnumerateFiles(Path.Combine(config.GameDirectory, "Mods"))) {
+            if (Path.GetExtension(mod) != ".zip") {
+                continue;
+            }
+
+            string hash;
+            using var hasher = XXHash64.Create();
+            await using (var file = File.OpenRead(mod)) {
+                hash = BitConverter.ToString(await hasher.ComputeHashAsync(file)).Replace("-", "").ToLowerInvariant();
+            }
+
+            using var zipFile = ZipFile.OpenRead(mod);
+            var yamlEntry = zipFile.GetEntry("everest.yaml") ?? zipFile.GetEntry("everest.yml")!;
+
+            await using var yamlStream = yamlEntry.Open();
+            using var yamlReader = new StreamReader(yamlStream);
+
+            var metas = YamlHelper.Deserializer.Deserialize<EverestModuleMetadata[]>(yamlReader);
+            foreach (var meta in metas) {
+                modHashes[meta.Name] = (mod, hash);
+            }
+
+            if (metas.Any(meta => requiredMods.Any(info => info.Name == meta.Name))) {
+                // Required
+                blackList.Add("# " + Path.GetFileName(mod));
+            } else {
+                // Not required
+                blackList.Add(Path.GetFileName(mod));
+            }
+        }
+
+        // Install all required mods
+        await Console.Out.WriteLineAsync($"Setting up {requiredMods.Count} mods...");
+        foreach (var info in requiredMods) {
+            if (modHashes.TryGetValue(info.Name, out var installed) && installed.Hash == info.xxHash[0]) {
+                await Console.Out.WriteLineAsync($" - {info.Name}: Up-to-date (v{info.Version})");
+                continue; // Already installed
+            }
+
+            await Console.Out.WriteLineAsync($" - {info.Name}: Installing... (v{info.Version})");
+
+            if (File.Exists(installed.Path))
+                File.Delete(installed.Path);
+
+            string modPath = Path.Combine(config.GameDirectory, "Mods", $"{info.Name}.zip");
+
+            await using var modZip = File.OpenWrite(modPath);
+            await using var contentStream = await hc.GetStreamAsync(ModDownloadURL + info.Name);
+            await contentStream.CopyToAsync(modZip);
+        }
+
+        // Generate blacklist
+        await File.WriteAllLinesAsync(Path.Combine(config.GameDirectory, "Mods", "blacklist.txt"), blackList);
 
         return 0;
     }
@@ -319,7 +465,7 @@ public static class Program {
                 string versionModStr = (string) t_Everest.FindMethod("System.Void .cctor()")!.Body.Instructions[0].Operand;
                 status = $"{status} + Everest {versionModStr}";
                 int versionSplitIndex = versionModStr.IndexOf('-');
-                if (versionSplitIndex != -1 && Version.TryParse(versionModStr.Substring(0, versionSplitIndex), out Version versionMod))
+                if (versionSplitIndex != -1 && Version.TryParse(versionModStr.Substring(0, versionSplitIndex), out var versionMod))
                     return (status, version, versionMod);
             }
 
