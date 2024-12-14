@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using CelesteStudio.Communication;
+using CelesteStudio.Controls;
 using CelesteStudio.Data;
 using CelesteStudio.Dialog;
 using CelesteStudio.Editing;
@@ -101,7 +102,7 @@ public sealed class Studio : Form {
 
         // Close other Studio instances to avoid conflicts
         foreach (var process in Process.GetProcesses().Where(process => process.ProcessName is "CelesteStudio" or "CelesteStudio.WPF" or "CelesteStudio.GTK" or "CelesteStudio.Mac" or "Celeste Studio")) {
-            if (process.Id == Process.GetCurrentProcess().Id) {
+            if (process.Id == Environment.ProcessId) {
                 continue;
             }
 
@@ -632,6 +633,7 @@ public sealed class Studio : Form {
                 MenuUtils.CreateSettingToggle("On Inputs", nameof(Settings.SendInputsOnActionLines)),
                 MenuUtils.CreateSettingToggle("On Comments", nameof(Settings.SendInputsOnComments)),
                 MenuUtils.CreateSettingToggle("On Commands", nameof(Settings.SendInputsOnCommands)),
+                MenuUtils.CreateSettingToggle("Disable while Running", nameof(Settings.SendInputsDisableWhileRunning)),
         }};
         if (!Platform.IsWpf) {
             inputSendingMenu.Items.Add(MenuUtils.CreateSettingToggle("Always send non-writable Inputs", nameof(Settings.SendInputsNonWritable)));
@@ -672,6 +674,7 @@ public sealed class Studio : Form {
                 MenuUtils.CreateSettingToggle("Auto Remove Mutually Exclusive Actions", nameof(Settings.AutoRemoveMutuallyExclusiveActions)),
                 MenuUtils.CreateSettingEnum<AutoRoomIndexing>("Auto-Index Room Labels", nameof(Settings.AutoIndexRoomLabels), ["Disabled", "Current File", "Include Read-commands"]),
                 MenuUtils.CreateSettingToggle("Auto-Select Full Input line", nameof(Settings.AutoSelectFullActionLine)),
+                MenuUtils.CreateSettingToggle("Auto-Multiline Comments", nameof(Settings.AutoMultilineComments)),
                 MenuUtils.CreateSettingToggle("Sync &Caret with Playback", nameof(Settings.SyncCaretWithPlayback)),
                 MenuEntry.Settings_SendInputs.ToSettingToggle(nameof(Settings.SendInputsToCeleste), enabled => {
                     Editor.ShowToastMessage($"{(enabled ? "Enabled" : "Disabled")} Sending Inputs to Celeste", Editor.DefaultToastTime);
@@ -704,7 +707,7 @@ public sealed class Studio : Form {
                 MenuUtils.CreateGameSettingToggle("&Simplified Hitboxes", nameof(GameSettings.SimplifiedHitboxes)),
                 MenuUtils.CreateGameSettingEnum<ActualCollideHitboxType>("&Actual Collide Hitboxes", nameof(GameSettings.ActualCollideHitboxes), ["Off", "Override", "Append"]),
                 new SeparatorMenuItem(),
-                MenuUtils.CreateGameSettingToggle("&Simplified &Graphics", nameof(GameSettings.SimplifiedGraphics)),
+                MenuUtils.CreateGameSettingToggle("Simplified &Graphics", nameof(GameSettings.SimplifiedGraphics)),
                 MenuUtils.CreateGameSettingToggle("Game&play", nameof(GameSettings.Gameplay)),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateGameSettingToggle("&Center Camera", nameof(GameSettings.CenterCamera)),

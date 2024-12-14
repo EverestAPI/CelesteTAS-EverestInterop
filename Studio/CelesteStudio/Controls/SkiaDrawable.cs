@@ -6,46 +6,79 @@ using System;
 
 namespace CelesteStudio.Controls;
 
-public abstract class SkiaDrawable : Drawable {
-    private readonly SKColorType colorType = Platform.Instance.IsWinForms || Platform.Instance.IsWpf ? SKColorType.Bgra8888 : SKColorType.Rgba8888;
+[Handler(typeof(IHandler))]
+public class SkiaDrawable : Panel {
+    private static readonly object callback = new Callback();
 
-    private Bitmap? image = null;
-    private SKImageInfo imageInfo = SKImageInfo.Empty;
+    protected override object GetCallback() => callback;
+    protected new IHandler Handler => (IHandler)base.Handler;
 
-    protected virtual int DrawX => 0;
-    protected virtual int DrawY => 0;
-    protected virtual int DrawWidth => Width;
-    protected virtual int DrawHeight => Height;
+    public SkiaDrawable() {
+        Handler.Create();
+        Initialize();
+    }
 
-    protected abstract void Draw(PaintEventArgs e, SKSurface surface, SKImageInfo info);
+    // private readonly SKColorType colorType = Platform.Instance.IsWinForms || Platform.Instance.IsWpf ? SKColorType.Bgra8888 : SKColorType.Rgba8888;
 
-    protected override void OnPaint(PaintEventArgs e)
-    {
-        try {
-            int drawWidth = DrawWidth, drawHeight = DrawHeight;
+    // private Bitmap? image = null;
+    // private SKImageInfo imageInfo = SKImageInfo.Empty;
 
-            if (drawWidth <= 0 || drawHeight <= 0) {
-                return;
-            }
+    public virtual int DrawX => 0;
+    public virtual int DrawY => 0;
+    public virtual int DrawWidth => Width;
+    public virtual int DrawHeight => Height;
 
-            if (drawWidth != image?.Size.Width || drawHeight != image?.Size.Height)
-            {
-                image?.Dispose();
-                image = new Bitmap(new Size(drawWidth, drawHeight), PixelFormat.Format32bppRgba);
-                imageInfo = new SKImageInfo(drawWidth, drawHeight, colorType, SKAlphaType.Unpremul);
-            }
+    public bool CanFocus {
+        get => Handler.CanFocus;
+        set => Handler.CanFocus = value;
+    }
 
-            using var bmp = image.Lock();
-            using var surface = SKSurface.Create(imageInfo, bmp.Data, bmp.ScanWidth);
 
-            Draw(e, surface, imageInfo);
+    public virtual void Draw(SKSurface surface) { }
 
-            e.Graphics.DrawImage(image, DrawX, DrawY);
+    // protected virtual void OnPaint(PaintEventArgs e)
+    // {
+    //     try {
+    //         int drawWidth = DrawWidth, drawHeight = DrawHeight;
+    //
+    //         if (drawWidth <= 0 || drawHeight <= 0) {
+    //             return;
+    //         }
+    //
+    //         if (drawWidth != image?.Size.Width || drawHeight != image?.Size.Height)
+    //         {
+    //             image?.Dispose();
+    //             image = new Bitmap(new Size(drawWidth, drawHeight), PixelFormat.Format32bppRgba);
+    //             imageInfo = new SKImageInfo(drawWidth, drawHeight, colorType, SKAlphaType.Unpremul);
+    //         }
+    //
+    //         using var bmp = image.Lock();
+    //         using var surface = SKSurface.Create(imageInfo, bmp.Data, bmp.ScanWidth);
+    //
+    //         Draw(e, surface, imageInfo);
+    //
+    //         e.Graphics.DrawImage(image, DrawX, DrawY);
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         Console.WriteLine(ex);
+    //         e.Graphics.DrawText(Fonts.Monospace(12.0f), Colors.Red, PointF.Empty, ex.ToString());
+    //     }
+    // }
+
+    protected new class Callback : Control.Callback, ICallback {
+        public void Draw(SkiaDrawable widget, SKSurface surface) {
+            using (widget.Platform.Context)
+                widget.Draw(surface);
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            e.Graphics.DrawText(Fonts.Monospace(12.0f), Colors.Red, PointF.Empty, ex.ToString());
-        }
+    }
+
+    [AutoInitialize(false)]
+    public new interface IHandler : Panel.IHandler {
+        void Create();
+        bool CanFocus { get; set; }
+    }
+    public new interface ICallback : Control.ICallback {
+        void Draw(SkiaDrawable widget, SKSurface surface);
     }
 }

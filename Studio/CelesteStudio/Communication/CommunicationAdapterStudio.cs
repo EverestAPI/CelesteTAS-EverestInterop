@@ -1,3 +1,4 @@
+using CelesteStudio.Dialog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -36,24 +37,7 @@ public sealed class CommunicationAdapterStudio(
     }
 
     protected override void OnProtocolVersionMismatch(ushort otherVersion) {
-        Application.Instance.AsyncInvoke(() => {
-            if (otherVersion > ProtocolVersion) {
-                MessageBox.Show("""
-                                Failed to connect to CelesteTAS!
-                                Your Celeste Studio version is outdated.
-                                Make sure to get the latest version of both CelesteTAS and Celeste Studio.
-                                """,
-                    "Celeste Studio outdated", MessageBoxType.Error);
-            } else {
-                MessageBox.Show("""
-                                Failed to connect to CelesteTAS!
-                                Your CelesteTAS version is outdated.
-                                Make sure to get the latest version of both CelesteTAS and Celeste Studio.
-                                """,
-                    "CelesteTAS outdated", MessageBoxType.Error);
-            }
-        });
-
+        Application.Instance.AsyncInvoke(() => CommunicationDesyncDialog.Show(ProtocolVersion, otherVersion));
         CommunicationWrapper.Stop();
     }
 

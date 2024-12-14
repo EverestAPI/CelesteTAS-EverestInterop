@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using CelesteStudio.Communication;
+using CelesteStudio.Data;
 using CelesteStudio.Util;
 using Eto.Forms;
 using StudioCommunication.Util;
@@ -109,8 +110,8 @@ public class Document : IDisposable {
 
     private readonly UndoStack undoStack = new();
 
-    private List<string> CurrentLines;
-    public List<string> Lines => CurrentLines;
+    private readonly List<string> CurrentLines;
+    public IReadOnlyList<string> Lines => CurrentLines;
 
     /// An anchor is a part of the document, which will move with the text its placed on.
     /// They can hold arbitrary user data.
@@ -137,7 +138,15 @@ public class Document : IDisposable {
 
     /// Formats lines of a file into a single string, using consistent formatting rules
     public static string FormatLinesToText(IEnumerable<string> lines) {
-        string text = string.Join(NewLine, lines);
+        // TODO: Maybe don't allocate this much on every save?
+        string text = string.Join(NewLine, lines.Select(line => {
+            // Trim whitespace, remove invalid characters, format lines
+            if (ActionLine.TryParse(line, out var actionLine)) {
+                return actionLine.ToString();
+            } else {
+                return new string(line.Trim().Where(c => !char.IsControl(c) && c != char.MaxValue).ToArray());
+            }
+        }));
 
         // Require exactly 1 empty line at end of file
         text = text.TrimEnd(NewLine) + $"{NewLine}";
@@ -565,13 +574,24 @@ public class Document : IDisposable {
 
         /// Merges the patches A and B, where A is based on the initial state and B is based on after A is applied
         public static Patch Merge(Patch a, Patch b) {
+            List<int> rowsToShift = [];
+
             // Cancel out deletions / insertions
-            foreach (var row in a.Insertions.Keys.Intersect(b.Deletions.Keys)) {
+            int[] intersections = a.Insertions.Keys.Intersect(b.Deletions.Keys).ToArray();
+            foreach (int row in intersections.OrderBy(row => row)) {
                 a.Insertions.Remove(row);
                 b.Deletions.Remove(row);
-            }
 
-            List<int> rowsToShift = [];
+                // Shift up insertions in A
+                rowsToShift.Clear();
+                rowsToShift.AddRange(a.Insertions.Keys.Where(aRow => aRow > row));
+
+                foreach (int aRow in rowsToShift.OrderBy(aRow => aRow)) {
+                    string value = a.Insertions[aRow];
+                    a.Insertions[aRow - 1] = value;
+                    a.Insertions.Remove(aRow);
+                }
+            }
 
             // Shift down deletions in B
             foreach ((int aRow, _) in a.Deletions.OrderBy(entry => entry.Key)) {
@@ -876,7 +896,7 @@ public class Document : IDisposable {
         // Swap anchors
         var aAnchors = CurrentAnchors.TryGetValue(rowA, out var anchors) ? anchors : [];
         var bAnchors = CurrentAnchors.TryGetValue(rowA, out anchors) ? anchors : [];
-        
+
         CurrentAnchors[rowA] = bAnchors;
         CurrentAnchors[rowB] = aAnchors;
     }

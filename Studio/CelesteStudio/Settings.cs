@@ -115,11 +115,13 @@ public sealed class Settings {
     public AutoRoomIndexing AutoIndexRoomLabels { get; set; } = AutoRoomIndexing.CurrentFile;
     public bool AutoSelectFullActionLine { get; set; } = true;
     public bool SyncCaretWithPlayback { get; set; } = true;
+    public bool AutoMultilineComments { get; set; } = true;
 
     public bool SendInputsToCeleste { get; set; } = true;
     public bool SendInputsOnActionLines { get; set; } = true;
     public bool SendInputsOnCommands { get; set; } = true;
     public bool SendInputsOnComments { get; set; } = false;
+    public bool SendInputsDisableWhileRunning { get; set; } = true;
     public bool SendInputsNonWritable { get; set; } = true;
     public float SendInputsTypingTimeout { get; set; } = 0.3f;
 

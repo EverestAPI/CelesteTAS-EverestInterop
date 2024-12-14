@@ -15,8 +15,8 @@ namespace CelesteStudio.Editing;
 
 public sealed class GameInfo : Panel {
     private sealed class SubpixelIndicator : SkiaDrawable {
-        protected override void Draw(PaintEventArgs e, SKSurface surface, SKImageInfo imageInfo) {
-            surface.Canvas.Clear();
+        public override void Draw(SKSurface surface) {
+            var canvas = surface.Canvas;
 
             var remainder = CommunicationWrapper.PlayerPositionRemainder;
 
@@ -50,11 +50,11 @@ public sealed class GameInfo : Panel {
             string top = subpixelTop.ToFormattedString(vDecimals);
             string bottom = subpixelBottom.ToFormattedString(vDecimals);
 
-            surface.Canvas.DrawText(left, x - rectPadding - font.MeasureWidth(left), y + (rectSize - textHeight) / 2.0f + font.Offset(), font, Settings.Instance.Theme.StatusFgPaint);
-            surface.Canvas.DrawText(right, x + rectPadding + rectSize, y + (rectSize - textHeight) / 2.0f + font.Offset(), font, Settings.Instance.Theme.StatusFgPaint);
+            canvas.DrawText(left, x - rectPadding - font.MeasureWidth(left), y + (rectSize - textHeight) / 2.0f + font.Offset(), font, Settings.Instance.Theme.StatusFgPaint);
+            canvas.DrawText(right, x + rectPadding + rectSize, y + (rectSize - textHeight) / 2.0f + font.Offset(), font, Settings.Instance.Theme.StatusFgPaint);
 
-            surface.Canvas.DrawText(top, MathF.Round(x + (rectSize - font.MeasureWidth(top)) / 2.0f), MathF.Round(y - rectPadding - textHeight + font.Offset()), font, Settings.Instance.Theme.StatusFgPaint);
-            surface.Canvas.DrawText(bottom, x + (rectSize - font.MeasureWidth(bottom)) / 2.0f, y + rectPadding + rectSize + font.Offset(), font, Settings.Instance.Theme.StatusFgPaint);
+            canvas.DrawText(top, MathF.Round(x + (rectSize - font.MeasureWidth(top)) / 2.0f), MathF.Round(y - rectPadding - textHeight + font.Offset()), font, Settings.Instance.Theme.StatusFgPaint);
+            canvas.DrawText(bottom, x + (rectSize - font.MeasureWidth(bottom)) / 2.0f, y + rectPadding + rectSize + font.Offset(), font, Settings.Instance.Theme.StatusFgPaint);
 
             int boxThickness = Math.Max(1, (int)Math.Round(rectSize / 20.0f));
             float dotThickness = boxThickness * 1.25f;
@@ -64,8 +64,8 @@ public sealed class GameInfo : Panel {
             boxPaint.Style = SKPaintStyle.Stroke;
             boxPaint.StrokeWidth = boxThickness;
 
-            surface.Canvas.DrawRect(x, y, rectSize, rectSize, boxPaint);
-            surface.Canvas.DrawRect(x + (rectSize - dotThickness) * subpixelLeft, y + (rectSize - dotThickness) * subpixelTop, dotThickness, dotThickness, Settings.Instance.Theme.SubpixelIndicatorDotPaint);
+            canvas.DrawRect(x, y, rectSize, rectSize, boxPaint);
+            canvas.DrawRect(x + (rectSize - dotThickness) * subpixelLeft, y + (rectSize - dotThickness) * subpixelTop, dotThickness, dotThickness, Settings.Instance.Theme.SubpixelIndicatorDotPaint);
 
             Width = (int)((textWidth + rectPadding + indicatorPadding) * 2.0f + rectSize);
             Height = (int)((textHeight + rectPadding + indicatorPadding) * 2.0f + rectSize);

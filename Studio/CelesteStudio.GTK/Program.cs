@@ -1,5 +1,6 @@
 ﻿using System;
 using CelesteStudio.Communication;
+using CelesteStudio.Controls;
 using Eto.Forms;
 
 namespace CelesteStudio.GTK;
@@ -8,7 +9,10 @@ public static class Program {
     [STAThread]
     public static void Main(string[] args) {
         try {
-            new Application(Eto.Platforms.Gtk).Run(new Studio(args, _ => {}));
+            var platform = new Eto.GtkSharp.Platform();
+            platform.Add<SkiaDrawable.IHandler>(() => new SkiaDrawableHandler());
+
+            new Application(platform).Run(new Studio(args, _ => {}));
         } catch (Exception ex) {
             Console.Error.WriteLine(ex);
             ErrorLog.Write(ex);

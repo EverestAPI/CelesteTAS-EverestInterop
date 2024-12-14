@@ -10,7 +10,7 @@
         <CelestePrefix Condition="'$(CelestePrefix)' == ''">lib-stripped</CelestePrefix>
 
         <Product>CelesteTAS-EverestInterop</Product>
-        <Copyright>Copyright © 2018</Copyright>
+        <Copyright>Copyright (c) 2018 - 2024 Everest Team</Copyright>
 
         <!-- See https://github.com/BepInEx/BepInEx.AssemblyPublicizer/issues/5 -->
         <NoWarn>$(NoWarn);CS0436</NoWarn>
@@ -41,7 +41,6 @@
         <PackageReference Include="MonoMod.RuntimeDetour" Version="25.0.2" />
         <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1" PrivateAssets="all" />
 
-        <PackageReference Include="DotNetZip" Version="1.16.0" />
         <PackageReference Include="SharpZipLib" Version="1.4.2" IncludeAssets="all" />
         <PackageReference Include="YamlDotNet" Version="13.1.1" />
 

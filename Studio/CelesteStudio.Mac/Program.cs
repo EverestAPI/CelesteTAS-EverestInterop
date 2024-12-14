@@ -1,5 +1,6 @@
 ﻿using System;
 using CelesteStudio.Communication;
+using CelesteStudio.Controls;
 using Eto.Forms;
 
 namespace CelesteStudio.Mac;
@@ -8,7 +9,10 @@ public static class Program {
     [STAThread]
     public static void Main(string[] args) {
         try {
-            new Application(Eto.Platforms.Mac64).Run(new Studio(args, _ => {}));
+            var platform = new Eto.Mac.Platform();
+            platform.Add<SkiaDrawable.IHandler>(() => new SkiaDrawableHandler());
+
+            new Application(platform).Run(new Studio(args, _ => {}));
         } catch (Exception ex) {
             Console.Error.WriteLine(ex);
             ErrorLog.Write(ex);
