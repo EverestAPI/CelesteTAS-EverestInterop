@@ -18,10 +18,10 @@ using TAS.Utils;
 namespace TAS;
 
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-internal class EnableRunAttribute : Attribute;
+public class EnableRunAttribute : Attribute;
 
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-internal class DisableRunAttribute : Attribute;
+public class DisableRunAttribute : Attribute;
 
 /// Main controller, which manages how the TAS is played back
 public static class Manager {
@@ -38,7 +38,8 @@ public static class Manager {
         SlowForward,
     }
 
-    static Manager() {
+    [Initialize]
+    private static void Initialize() {
         AttributeUtils.CollectMethods<EnableRunAttribute>();
         AttributeUtils.CollectMethods<DisableRunAttribute>();
     }
@@ -261,7 +262,7 @@ public static class Manager {
         var state = new StudioState {
             CurrentLine = previous?.Line ?? -1,
             CurrentLineSuffix = $"{Controller.CurrentFrameInInput + (previous?.FrameOffset ?? 0)}{previous?.RepeatString ?? ""}",
-            CurrentFrameInTas = Controller.CurrentFrameInTAS,
+            CurrentFrameInTas = Controller.CurrentFrameInTas,
             TotalFrames = Controller.Inputs.Count,
             SaveStateLine = Savestates.StudioHighlightLine,
             tasStates = 0,

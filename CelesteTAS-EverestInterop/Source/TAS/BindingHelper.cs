@@ -7,6 +7,7 @@ using Celeste.Mod.Core;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using MonoMod.Utils;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 using GameInput = Celeste.Input;
@@ -92,8 +93,8 @@ public static class BindingHelper {
         }
 
         CoreModule.Instance.OnInputDeregister();
-        if (SpeedrunToolUtils.Installed) {
-            SpeedrunToolUtils.InputDeregister();
+        if (SpeedrunToolInterop.Installed) {
+            SpeedrunToolInterop.InputDeregister();
         }
 
         Settings.Instance.CopyAllFields(settingsBackup);

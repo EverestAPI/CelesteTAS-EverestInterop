@@ -12,6 +12,7 @@ using Monocle;
 using MonoMod.Cil;
 using StudioCommunication;
 using TAS.Communication;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 using XNAKeys = Microsoft.Xna.Framework.Input.Keys;

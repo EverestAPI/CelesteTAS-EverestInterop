@@ -12,6 +12,7 @@ using Monocle;
 using MonoMod.Utils;
 using StudioCommunication;
 using System.Diagnostics;
+using TAS.ModInterop;
 using Platform = Celeste.Platform;
 
 namespace TAS.Utils;
@@ -616,7 +617,7 @@ internal static class LevelExtensions {
             position.X = 1920f - position.X;
         }
 
-        if (ExtendedVariantsUtils.UpsideDown) {
+        if (ExtendedVariantsInterop.UpsideDown) {
             position.Y = 1080f - position.Y;
         }
 
@@ -643,7 +644,7 @@ internal static class LevelExtensions {
             position.X = 1920f - position.X;
         }
 
-        if (ExtendedVariantsUtils.UpsideDown) {
+        if (ExtendedVariantsInterop.UpsideDown) {
             position.Y = 1080f - position.Y;
         }
 

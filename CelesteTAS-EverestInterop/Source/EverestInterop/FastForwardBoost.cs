@@ -7,6 +7,7 @@ using Celeste.Mod;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 

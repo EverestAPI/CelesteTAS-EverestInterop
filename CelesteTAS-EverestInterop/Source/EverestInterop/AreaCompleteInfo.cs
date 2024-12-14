@@ -10,6 +10,7 @@ using MonoMod.Cil;
 using StudioCommunication;
 using TAS.Input;
 using TAS.Input.Commands;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 using Comment = TAS.Input.Comment;

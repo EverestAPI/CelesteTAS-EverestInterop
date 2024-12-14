@@ -15,6 +15,7 @@ using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
 using TAS.InfoHUD;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -278,7 +279,7 @@ public static class GameInfo {
                     timers += $"DashCD({dashCooldown}) ";
                 }
 
-                if ((FramesPerGameSecond != 60 || SaveData.Instance.Assists.SuperDashing || ExtendedVariantsUtils.SuperDashing) &&
+                if ((FramesPerGameSecond != 60 || SaveData.Instance.Assists.SuperDashing || ExtendedVariantsInterop.SuperDashing) &&
                     DashTime.ToCeilingFrames() >= 1 && player.StateMachine.State == Player.StDash) {
                     DashTime = player.StateMachine.currentCoroutine.waitTimer;
                     timers += $"Dash({DashTime.ToCeilingFrames()}) ";
@@ -459,7 +460,7 @@ public static class GameInfo {
             || playerSeeker != null
             || SaveData.Instance.Assists.ThreeSixtyDashing
             || SaveData.Instance.Assists.SuperDashing
-            || ExtendedVariantsUtils.SuperDashing) {
+            || ExtendedVariantsInterop.SuperDashing) {
             builder.AppendLine(polarVel);
         }
 

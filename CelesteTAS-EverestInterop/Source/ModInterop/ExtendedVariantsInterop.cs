@@ -1,10 +1,11 @@
 ﻿using System;
 using Celeste.Mod;
 using MonoMod.Utils;
+using TAS.Utils;
 
-namespace TAS.Utils;
+namespace TAS.ModInterop;
 
-internal static class ExtendedVariantsUtils {
+internal static class ExtendedVariantsInterop {
     private static readonly Lazy<EverestModule> module = new(() => ModUtils.GetModule("ExtendedVariantMode"));
     private static readonly Lazy<object> triggerManager = new(() => module.Value?.GetFieldValue<object>("TriggerManager"));
     private static readonly Lazy<object> variantHandlers = new(() => module.Value?.GetFieldValue<object>("VariantHandlers"));

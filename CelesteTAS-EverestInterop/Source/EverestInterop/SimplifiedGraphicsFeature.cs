@@ -13,6 +13,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using MonoMod.Utils;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 

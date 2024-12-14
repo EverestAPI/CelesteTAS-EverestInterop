@@ -13,10 +13,11 @@ using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Input.Commands;
 using TAS.Module;
+using TAS.Utils;
 
-namespace TAS.Utils;
+namespace TAS.ModInterop;
 
-internal static class SpeedrunToolUtils {
+public static class SpeedrunToolInterop {
     public static bool Installed { get; private set; }
 
     private static object saveLoadAction;

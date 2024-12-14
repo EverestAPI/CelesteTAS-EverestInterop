@@ -12,6 +12,7 @@ using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Input;
 using TAS.Input.Commands;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -309,11 +310,11 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
     }
 
     private void ProcessRecordTAS(string fileName) {
-        if (!TASRecorderUtils.Installed) {
+        if (!TASRecorderInterop.Installed) {
             WriteRecordingFailed(RecordingFailedReason.TASRecorderNotInstalled);
             return;
         }
-        if (!TASRecorderUtils.FFmpegInstalled) {
+        if (!TASRecorderInterop.FFmpegInstalled) {
             WriteRecordingFailed(RecordingFailedReason.FFmpegNotInstalled);
             return;
         }
@@ -329,8 +330,8 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
             int totalFrames = Manager.Controller.Inputs.Count;
             if (totalFrames <= 0) return;
 
-            TASRecorderUtils.StartRecording(fileName);
-            TASRecorderUtils.SetDurationEstimate(totalFrames);
+            TASRecorderInterop.StartRecording(fileName);
+            TASRecorderInterop.SetDurationEstimate(totalFrames);
 
             if (!Manager.Controller.Commands.TryGetValue(0, out var commands)) {
                 return;

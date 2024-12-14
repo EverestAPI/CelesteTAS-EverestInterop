@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Celeste;
 using Monocle;
 using TAS.Input;
+using TAS.ModInterop;
 using TAS.Utils;
 
 namespace TAS.EverestInterop;

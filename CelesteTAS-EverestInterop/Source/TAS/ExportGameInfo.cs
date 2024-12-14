@@ -138,7 +138,7 @@ public static class ExportGameInfo {
             statuses += $"\t[{level.Session.Level}]";
 
             output = string.Join("\t",
-                inputFrame.Line + 1, $"{controller.CurrentFrameInInput}/{inputFrame}", controller.CurrentFrameInTAS, time, pos, speed,
+                inputFrame.Line + 1, $"{controller.CurrentFrameInInput}/{inputFrame}", controller.CurrentFrameInTas, time, pos, speed,
                 PlayerStates.GetCurrentStateName(player),
                 statuses);
 
@@ -171,7 +171,7 @@ public static class ExportGameInfo {
                 sceneName = Engine.Scene.GetType().Name;
             }
 
-            output = string.Join("\t", inputFrame.Line + 1, $"{controller.CurrentFrameInInput}/{inputFrame}", controller.CurrentFrameInTAS,
+            output = string.Join("\t", inputFrame.Line + 1, $"{controller.CurrentFrameInInput}/{inputFrame}", controller.CurrentFrameInTas,
                 sceneName);
         }
 

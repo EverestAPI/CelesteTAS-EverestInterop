@@ -5,23 +5,29 @@ using System.Linq;
 using Celeste.Mod;
 using JetBrains.Annotations;
 using TAS.Input.Commands;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.Input;
 
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-internal class ClearInputsAttribute : Attribute;
+public class ClearInputsAttribute : Attribute;
 
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-internal class ParseFileEndAttribute : Attribute;
+public class ParseFileEndAttribute : Attribute;
+
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+public class TasFileChangedAttribute : Attribute;
 
 #nullable enable
 
 /// Manages inputs, commands, etc. for the current TAS file
 public class InputController {
-    static InputController() {
+    [Initialize]
+    private static void Initialize() {
         AttributeUtils.CollectMethods<ClearInputsAttribute>();
         AttributeUtils.CollectMethods<ParseFileEndAttribute>();
+        AttributeUtils.CollectMethods<TasFileChangedAttribute>();
     }
 
     private readonly Dictionary<string, FileSystemWatcher> watchers = new();
@@ -31,28 +37,28 @@ public class InputController {
     public readonly SortedDictionary<int, FastForward> FastForwards = new();
     public readonly SortedDictionary<int, FastForward> FastForwardLabels = new();
 
-    public InputFrame? Previous => Inputs!.GetValueOrDefault(CurrentFrameInTAS - 1);
-    public InputFrame Current => Inputs!.GetValueOrDefault(CurrentFrameInTAS)!;
-    public InputFrame? Next => Inputs!.GetValueOrDefault(CurrentFrameInTAS + 1);
+    public InputFrame? Previous => Inputs!.GetValueOrDefault(CurrentFrameInTas - 1);
+    public InputFrame Current => Inputs!.GetValueOrDefault(CurrentFrameInTas)!;
+    public InputFrame? Next => Inputs!.GetValueOrDefault(CurrentFrameInTas + 1);
 
-    public int CurrentFrameInTAS { get; private set; } = 0;
-    public int CurrentFrameInInput { get; private set; } = 0;
+    public int CurrentFrameInTas { get; set; } = 0;
+    public int CurrentFrameInInput { get; set; } = 0;
     public int CurrentParsingFrame => Inputs.Count;
 
-    public List<Command> CurrentCommands => Commands.GetValueOrDefault(CurrentFrameInTAS) ?? [];
+    public List<Command> CurrentCommands => Commands.GetValueOrDefault(CurrentFrameInTas) ?? [];
 
     public FastForward? CurrentFastForward => NextLabelFastForward ??
-                                               FastForwards.FirstOrDefault(pair => pair.Key > CurrentFrameInTAS).Value ??
+                                               FastForwards.FirstOrDefault(pair => pair.Key > CurrentFrameInTas).Value ??
                                                FastForwards.LastOrDefault().Value;
-    public bool HasFastForward => CurrentFastForward is { } forward && forward.Frame > CurrentFrameInTAS;
+    public bool HasFastForward => CurrentFastForward is { } forward && forward.Frame > CurrentFrameInTas;
 
     public FastForward? NextLabelFastForward;
 
-    /// Indicates whether the current TAS file needs to be re-parsed before running
+    /// Indicates whether the current TAS file needs to be reparsed before running
     public bool NeedsReload = true;
 
     /// All files involved in the current TAS
-    private readonly HashSet<string> usedFiles = [];
+    public readonly HashSet<string> UsedFiles = [];
 
     private const int InvalidChecksum = -1;
     private int checksum = InvalidChecksum;
@@ -61,10 +67,10 @@ public class InputController {
     public int Checksum => checksum == InvalidChecksum ? checksum = CalcChecksum(Inputs.Count - 1) : checksum;
 
     /// Whether the controller can be advanced to a next frame
-    public bool CanPlayback => CurrentFrameInTAS < Inputs.Count;
+    public bool CanPlayback => CurrentFrameInTas < Inputs.Count;
 
     /// Whether the TAS should be paused on this frame
-    public bool Break => CurrentFastForward?.Frame == CurrentFrameInTAS;
+    public bool Break => CurrentFastForward?.Frame == CurrentFrameInTas;
 
     private static readonly string DefaultFilePath = Path.Combine(Everest.PathEverest, "Celeste.tas");
 
@@ -113,7 +119,7 @@ public class InputController {
         "Refreshing inputs...".Log(LogLevel.Debug);
 
         int lastChecksum = Checksum;
-        bool firstRun = usedFiles.IsEmpty();
+        bool firstRun = UsedFiles.IsEmpty();
 
         Clear();
         if (ReadFile(FilePath)) {
@@ -135,7 +141,7 @@ public class InputController {
             Clear();
         }
 
-        CurrentFrameInTAS = Math.Min(Inputs.Count, CurrentFrameInTAS);
+        CurrentFrameInTas = Math.Min(Inputs.Count, CurrentFrameInTas);
     }
 
     /// Moves the controller 1 frame forward, updating inputs and triggering commands
@@ -169,7 +175,7 @@ public class InputController {
             CurrentFrameInInput = 1;
         }
 
-        CurrentFrameInTAS++;
+        CurrentFrameInTas++;
     }
 
     /// Parses the file and adds the inputs / commands to the TAS
@@ -179,7 +185,7 @@ public class InputController {
                 return false;
             }
 
-            usedFiles.Add(path);
+            UsedFiles.Add(path);
             ReadLines(File.ReadLines(path).Take(endLine), path, startLine, studioLine, repeatIndex, repeatCount);
 
             return true;
@@ -275,7 +281,7 @@ public class InputController {
         NextLabelFastForward = null;
         RefreshInputs();
 
-        var next = FastForwardLabels.FirstOrDefault(pair => pair.Key > CurrentFrameInTAS).Value;
+        var next = FastForwardLabels.FirstOrDefault(pair => pair.Key > CurrentFrameInTas).Value;
         if (next != null && HasFastForward && CurrentFastForward is { } last && next.Frame > last.Frame) {
             // Forward to another breakpoint in-between instead
             NextLabelFastForward = last;
@@ -288,7 +294,7 @@ public class InputController {
 
     /// Stops execution of the current TAS and resets state
     public void Stop() {
-        CurrentFrameInTAS = 0;
+        CurrentFrameInTas = 0;
         CurrentFrameInInput = 0;
         NextLabelFastForward = null;
     }
@@ -304,7 +310,7 @@ public class InputController {
             watcher.Dispose();
         }
         watchers.Clear();
-        usedFiles.Clear();
+        UsedFiles.Clear();
 
         checksum = InvalidChecksum;
         NeedsReload = true;
@@ -313,8 +319,8 @@ public class InputController {
     }
 
     /// Create file-system-watchers for all TAS-files used, to detect changes
-    private void StartWatchers() {
-        foreach (var path in usedFiles) {
+    public void StartWatchers() {
+        foreach (var path in UsedFiles) {
             string fullPath = Path.GetFullPath(path);
 
             // Watch TAS file
@@ -352,6 +358,8 @@ public class InputController {
         void OnTasFileChanged(object sender, FileSystemEventArgs e) {
             $"TAS file changed: {e.FullPath} - {e.ChangeType}".Log(LogLevel.Verbose);
             NeedsReload = true;
+
+            AttributeUtils.Invoke<TasFileChangedAttribute>();
         }
     }
 
@@ -395,10 +403,10 @@ public class InputController {
         }
 
         clone.NeedsReload = NeedsReload;
-        foreach (var file in usedFiles) {
-            clone.usedFiles.Add(file);
+        foreach (var file in UsedFiles) {
+            clone.UsedFiles.Add(file);
         }
-        clone.CurrentFrameInTAS = CurrentFrameInTAS;
+        clone.CurrentFrameInTas = CurrentFrameInTas;
         clone.CurrentFrameInInput = CurrentFrameInInput;
         // clone.CurrentFrameInInputForHud = CurrentFrameInInputForHud;
         // clone.SavestateChecksum = clone.CalcChecksum(CurrentFrameInTas);
@@ -410,7 +418,7 @@ public class InputController {
     }
 
     public void CopyProgressFrom(InputController other) {
-        CurrentFrameInTAS = other.CurrentFrameInTAS;
+        CurrentFrameInTas = other.CurrentFrameInTas;
         CurrentFrameInInput = other.CurrentFrameInInput;
     }
 }

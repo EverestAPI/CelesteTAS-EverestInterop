@@ -7,7 +7,7 @@ using TAS.Module;
 
 namespace TAS.Utils;
 
-internal static class AttributeUtils {
+public static class AttributeUtils {
     private static readonly Dictionary<Type, MethodInfo[]> attributeMethods = new();
 
     /// Gathers all static, parameterless methods with attribute T

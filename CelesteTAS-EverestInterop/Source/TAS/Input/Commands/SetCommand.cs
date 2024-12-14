@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
+using TAS.ModInterop;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -137,11 +138,11 @@ public static class SetCommand {
                 }
             } else if (targetArgs.Length == 1 && targetArgs[0] == "ExtendedVariantMode") {
                 // Special case for setting extended variants
-                if (ExtendedVariantsUtils.GetVariantsEnum() is { } variantsEnum) {
+                if (ExtendedVariantsInterop.GetVariantsEnum() is { } variantsEnum) {
                     foreach (object variant in Enum.GetValues(variantsEnum)) {
                         string typeName = string.Empty;
                         try {
-                            var variantType = ExtendedVariantsUtils.GetVariantType(new Lazy<object>(variant));
+                            var variantType = ExtendedVariantsInterop.GetVariantType(new Lazy<object>(variant));
                             if (variantType != null) {
                                 typeName = variantType.CSharpName();
                             }
@@ -205,8 +206,8 @@ public static class SetCommand {
             }
             if (targetArgs.Length == 1 && targetArgs[0] == "ExtendedVariantMode") {
                 // Special case for setting extended variants
-                var variant = ExtendedVariantsUtils.ParseVariant(targetArgs[1]);
-                var variantType = ExtendedVariantsUtils.GetVariantType(new(variant));
+                var variant = ExtendedVariantsInterop.ParseVariant(targetArgs[1]);
+                var variantType = ExtendedVariantsInterop.GetVariantType(new(variant));
 
                 if (variantType != null) {
                     return GetParameterTypeAutoCompleteEntries(variantType);
@@ -396,8 +397,8 @@ public static class SetCommand {
         }
     }
     private static void SetExtendedVariant(string variantName, string[] valueArgs) {
-        var variant = new Lazy<object>(ExtendedVariantsUtils.ParseVariant(variantName));
-        var variantType = ExtendedVariantsUtils.GetVariantType(variant);
+        var variant = new Lazy<object>(ExtendedVariantsInterop.ParseVariant(variantName));
+        var variantType = ExtendedVariantsInterop.GetVariantType(variant);
         if (variantType is null) {
             ReportError($"Failed to resolve type for extended variant '{variantName}'");
             return;
@@ -409,7 +410,7 @@ public static class SetCommand {
             return;
         }
 
-        ExtendedVariantsUtils.SetVariantValue(variant, values[0]);
+        ExtendedVariantsInterop.SetVariantValue(variant, values[0]);
     }
 
     /// Applies the setting, while handing special cases

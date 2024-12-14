@@ -2,6 +2,7 @@ using System.Reflection;
 using Celeste;
 using Monocle;
 using StudioCommunication;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 

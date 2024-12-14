@@ -6,6 +6,7 @@ using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Monocle;
 using TAS.EverestInterop;
 using TAS.Input;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -31,13 +32,13 @@ public static class Savestates {
             : Manager.Controller.Inputs.GetValueOrDefault(SavedCurrentFrame)?.Line) ?? -1;
 
     public static int StudioHighlightLine => IsSaved_Safe ? SavedLine : -1;
-    private static int SavedCurrentFrame => IsSaved ? savedController.CurrentFrameInTAS : -1;
+    private static int SavedCurrentFrame => IsSaved ? savedController.CurrentFrameInTas : -1;
 
     private static bool BreakpointHasBeenDeleted => IsSaved &&
                                                     savedByBreakpoint &&
                                                     Manager.Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.SaveState != true;
 
-    public static bool IsSaved_Safe => SpeedrunToolUtils.Installed && IsSaved;
+    public static bool IsSaved_Safe => SpeedrunToolInterop.Installed && IsSaved;
     private static bool IsSaved => StateManager.Instance.IsSaved &&
                                    StateManager.Instance.SavedByTas &&
                                    savedController != null &&
@@ -45,8 +46,8 @@ public static class Savestates {
 
     [Load]
     private static void Load() {
-        if (SpeedrunToolUtils.Installed) {
-            SpeedrunToolUtils.AddSaveLoadAction();
+        if (SpeedrunToolInterop.Installed) {
+            SpeedrunToolInterop.AddSaveLoadAction();
         }
     }
 
@@ -56,19 +57,19 @@ public static class Savestates {
             ClearState();
         }
 
-        if (SpeedrunToolUtils.Installed) {
-            SpeedrunToolUtils.ClearSaveLoadAction();
+        if (SpeedrunToolInterop.Installed) {
+            SpeedrunToolInterop.ClearSaveLoadAction();
         }
     }
 
     /// Update for each TAS frame
     public static void Update() {
-        if (!SpeedrunToolUtils.Installed) {
+        if (!SpeedrunToolInterop.Installed) {
             return;
         }
 
         // Only save-state when the current breakpoint is the last save-state one
-        if (Manager.Controller.Inputs.Count > Manager.Controller.CurrentFrameInTAS &&
+        if (Manager.Controller.Inputs.Count > Manager.Controller.CurrentFrameInTas &&
             Manager.Controller.CurrentFastForward is { SaveState: true } currentFastForward &&
             Manager.Controller.FastForwards.Last(pair => pair.Value.SaveState).Value == currentFastForward &&
             SavedCurrentFrame != currentFastForward.Frame)
@@ -78,14 +79,14 @@ public static class Savestates {
         }
 
         // Autoload state after entering the level, if the TAS was started outside the level
-        if (IsSaved && Engine.Scene is Level && Manager.Controller.CurrentFrameInTAS < savedController.CurrentFrameInTAS) {
+        if (IsSaved && Engine.Scene is Level && Manager.Controller.CurrentFrameInTas < savedController.CurrentFrameInTas) {
             LoadState();
         }
     }
 
     /// Update for checking hotkeys
     internal static void UpdateMeta() {
-        if (!SpeedrunToolUtils.Installed) {
+        if (!SpeedrunToolInterop.Installed) {
             return;
         }
 
@@ -104,16 +105,17 @@ public static class Savestates {
         }
     }
 
+    // Called explicitly to ensure correct execution order
     internal static void EnableRun() {
-        if (SpeedrunToolUtils.Installed && IsSaved && Engine.Scene is Level) {
+        if (SpeedrunToolInterop.Installed && IsSaved && Engine.Scene is Level) {
             LoadState();
         }
     }
 
-    private static void SaveState(bool byBreakpoint) {
+    public static void SaveState(bool byBreakpoint) {
         if (IsSaved &&
-            Manager.Controller.CurrentFrameInTAS == savedController.CurrentFrameInTAS &&
-            savedChecksum == Manager.Controller.CalcChecksum(savedController.CurrentFrameInTAS))
+            Manager.Controller.CurrentFrameInTas == savedController.CurrentFrameInTas &&
+            savedChecksum == Manager.Controller.CalcChecksum(savedController.CurrentFrameInTas))
         {
             return; // Already saved
         }
@@ -123,21 +125,21 @@ public static class Savestates {
         }
 
         savedByBreakpoint = byBreakpoint;
-        savedChecksum = Manager.Controller.CalcChecksum(Manager.Controller.CurrentFrameInTAS);
+        savedChecksum = Manager.Controller.CalcChecksum(Manager.Controller.CurrentFrameInTas);
         savedController = Manager.Controller.Clone();
         SaveGameInfo();
         SetTasState();
     }
 
-    private static void LoadState() {
+    public static void LoadState() {
         // Don't load save-states while recording
-        if (TASRecorderUtils.Recording) {
+        if (TASRecorderInterop.Recording) {
             return;
         }
 
         if (IsSaved) {
-            if (!BreakpointHasBeenDeleted && savedChecksum == Manager.Controller.CalcChecksum(savedController.CurrentFrameInTAS)) {
-                if (Manager.Controller.CurrentFrameInTAS == savedController.CurrentFrameInTAS) {
+            if (!BreakpointHasBeenDeleted && savedChecksum == Manager.Controller.CalcChecksum(savedController.CurrentFrameInTas)) {
+                if (Manager.Controller.CurrentFrameInTas == savedController.CurrentFrameInTas) {
                     // Don't repeat loading the state, just play
                     Manager.NextState = Manager.State.Running;
                     return;
@@ -157,7 +159,7 @@ public static class Savestates {
         }
     }
 
-    private static void ClearState() {
+    public static void ClearState() {
         StateManager.Instance.ClearState();
         ClearGameInfo();
         savedByBreakpoint = false;

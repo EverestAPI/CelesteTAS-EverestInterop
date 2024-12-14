@@ -11,6 +11,7 @@ using StudioCommunication.Util;
 using System.Runtime.CompilerServices;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
+using TAS.ModInterop;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
