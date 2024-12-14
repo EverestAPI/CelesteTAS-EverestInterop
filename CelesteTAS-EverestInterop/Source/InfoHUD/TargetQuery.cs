@@ -59,7 +59,7 @@ public static class TargetQuery {
         }
     }
 
-    [MonocleCommand("get2", "'get Type.fieldOrProperty' -> value | Example: 'get Player.Position', 'get Level.Wind' (CelesteTAS)"), UsedImplicitly]
+    [MonocleCommand("get", "'get Type.fieldOrProperty' -> value | Example: 'get Player.Position', 'get Level.Wind' (CelesteTAS)"), UsedImplicitly]
     private static void GetCommand(string? query) {
         if (query == null) {
             "No target-query specified".ConsoleLog(LogLevel.Error);
@@ -285,23 +285,27 @@ public static class TargetQuery {
             return (currentType, Success: false);
         }
 
-        // Encode positions for Actors / Platforms as double, to avoid losing precision
+        // Special case for Actor / Platform positions, since they use subpixels
         if (memberArgs[^1] is nameof(Entity.X) or nameof(Entity.Y)) {
-            Type entityType = typeof(Entity);
-            if (typeStack.Count == 0) {
+            var entityType = typeof(Entity);
+            if (typeStack.Count >= 1) {
                 // "Entity.X"
-                entityType = currentType;
-            } else if (typeStack.Count >= 1 && memberArgs[^2] is nameof(Entity.Position)) {
+                entityType = typeStack.Pop();
+            } else if (typeStack.Count >= 2 && memberArgs[^2] is nameof(Entity.Position)) {
                 // "Entity.Position.X"
-                entityType = typeStack.Peek();
+                _ = typeStack.Pop();
+                entityType = typeStack.Pop();
             }
 
             if (entityType.IsSameOrSubclassOf(typeof(Actor)) || entityType.IsSameOrSubclassOf(typeof(Platform))) {
-                return (typeof(double), Success: true);
+                return (typeof(SubpixelComponent), Success: true);
             }
         } else if (memberArgs[^1] is nameof(Entity.Position)) {
-            if (currentType.IsSameOrSubclassOf(typeof(Actor)) || currentType.IsSameOrSubclassOf(typeof(Platform))) {
-                return (typeof((double, double)), Success: true);
+            // "Entity.Position"
+            var entityType = typeStack.Pop();
+
+            if (entityType.IsSameOrSubclassOf(typeof(Actor)) || entityType.IsSameOrSubclassOf(typeof(Platform))) {
+                return (typeof(SubpixelPosition), Success: true);
             }
         }
 
@@ -458,7 +462,7 @@ public static class TargetQuery {
 
         // Set the value
         try {
-            // Special case for Actor / Platform subpixels
+            // Special case for Actor / Platform positions, since they use subpixels
             if (memberArgs[^1] is nameof(Entity.X) or nameof(Entity.Y)) {
                 object? entityObject = null;
                 if (objectStack.Count == 0) {
@@ -470,44 +474,44 @@ public static class TargetQuery {
                 }
 
                 if (entityObject is Actor actor) {
-                    double doubleValue = (double) value!;
+                    var subpixelValue = (SubpixelComponent) value!;
 
                     var remainder = actor.movementCounter;
                     if (memberArgs[^1] == nameof(Entity.X)) {
-                        actor.Position.X = (int) Math.Round(doubleValue);
-                        remainder.X = (float) (doubleValue - actor.Position.X);
+                        actor.Position.X = subpixelValue.Position;
+                        remainder.X = subpixelValue.Remainder;
                     } else {
-                        actor.Position.Y = (int) Math.Round(doubleValue);
-                        remainder.Y = (float) (doubleValue - actor.Position.Y);
+                        actor.Position.Y = subpixelValue.Position;
+                        remainder.Y = subpixelValue.Remainder;
                     }
                     actor.movementCounter = remainder;
                     return true;
                 } else if (entityObject is Platform platform) {
-                    double doubleValue = (double) value!;
+                    var subpixelValue = (SubpixelComponent) value!;
 
                     var remainder = platform.movementCounter;
                     if (memberArgs[^1] == nameof(Entity.X)) {
-                        platform.Position.X = (int) Math.Round(doubleValue);
-                        remainder.X = (float) (doubleValue - platform.Position.X);
+                        platform.Position.X = subpixelValue.Position;
+                        remainder.X = subpixelValue.Remainder;
                     } else {
-                        platform.Position.Y = (int) Math.Round(doubleValue);
-                        remainder.Y = (float) (doubleValue - platform.Position.Y);
+                        platform.Position.Y = subpixelValue.Position;
+                        remainder.Y = subpixelValue.Remainder;
                     }
                     platform.movementCounter = remainder;
                     return true;
                 }
             } else if (memberArgs[^1] is nameof(Entity.Position)) {
                 if (currentObject is Actor actor) {
-                    var tupleValue = ((double X, double Y)) value!;
+                    var subpixelValue = (SubpixelPosition) value!;
 
-                    actor.Position = new((int) Math.Round(tupleValue.X), (int) Math.Round(tupleValue.Y));
-                    actor.movementCounter = new((float) (tupleValue.X - actor.Position.X), (float) (tupleValue.Y - actor.Position.Y));
+                    actor.Position = new(subpixelValue.X.Position, subpixelValue.Y.Position);
+                    actor.movementCounter = new(subpixelValue.X.Remainder, subpixelValue.Y.Remainder);
                     return true;
                 } else if (currentObject is Platform platform) {
-                    var tupleValue = ((double X, double Y)) value!;
+                    var subpixelValue = (SubpixelPosition) value!;
 
-                    platform.Position = new((int) Math.Round(tupleValue.X), (int) Math.Round(tupleValue.Y));
-                    platform.movementCounter = new((float) (tupleValue.X - platform.Position.X), (float) (tupleValue.Y - platform.Position.Y));
+                    platform.Position = new(subpixelValue.X.Position, subpixelValue.Y.Position);
+                    platform.movementCounter = new(subpixelValue.X.Remainder, subpixelValue.Y.Remainder);
                     return true;
                 }
             }
@@ -753,14 +757,32 @@ public static class TargetQuery {
                     values[index++] = new Vector2(
                         float.Parse(valueArgs[i + 0]),
                         float.Parse(valueArgs[i + 1]));
-                    i++;
+                    i++; // Account for second argument
                     continue;
                 }
-                if (targetType == typeof((double, double))) {
-                    values[index++] = (
-                        double.Parse(valueArgs[i + 0]),
-                        double.Parse(valueArgs[i + 1]));
-                    i++;
+
+                if (targetType == typeof(SubpixelComponent)) {
+                    double doubleValue = double.Parse(valueArgs[i]);
+
+                    int position = (int) Math.Round(doubleValue);
+                    float remainder = (float) (doubleValue - position);
+
+                    values[index++] = new SubpixelComponent(position, remainder);
+                    continue;
+                }
+                if (targetType == typeof(SubpixelPosition)) {
+                    double doubleValueX = double.Parse(valueArgs[i + 0]);
+                    double doubleValueY = double.Parse(valueArgs[i + 1]);
+
+                    int positionX = (int) Math.Round(doubleValueX);
+                    int positionY = (int) Math.Round(doubleValueY);
+                    float remainderX = (float) (doubleValueX - positionX);
+                    float remainderY = (float) (doubleValueY - positionY);
+
+                    values[index++] = new SubpixelPosition(
+                        new SubpixelComponent(positionX, remainderX),
+                        new SubpixelComponent(positionY, remainderY));
+                    i++; // Account for second argument
                     continue;
                 }
 
@@ -768,6 +790,7 @@ public static class TargetQuery {
                     values[index++] = new Random(int.Parse(arg));
                     continue;
                 }
+
                 if (targetType == typeof(ButtonBinding)) {
                     var data = new ButtonBindingData();
                     // Parse mouse first, so Mouse.Left is not parsed as Keys.Left

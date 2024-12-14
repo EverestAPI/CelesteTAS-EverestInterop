@@ -353,7 +353,7 @@ public static class SetCommand {
             var instances = TargetQuery.ResolveTypeInstances(type, componentTypes, entityId);
             success = TargetQuery.SetMemberValues(type, instances, values[0], memberArgs);
             if (!success) {
-                ReportError($"Failed to set members '{string.Join('.', memberArgs)}' on type '{type}' to '{values[0]}'");
+                ReportError($"Failed to set members '{string.Join('.', memberArgs)}' of type '{targetType}' on type '{type}' to '{values[0]}'");
                 return;
             }
         }
