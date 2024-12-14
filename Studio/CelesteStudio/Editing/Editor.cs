@@ -2104,11 +2104,30 @@ public sealed class Editor : SkiaDrawable {
                 UserData = new CollapseAnchorData()
             });
 
-            if (foldings.FirstOrDefault(f => f.MinRow == row) is { } fold &&
-                Document.Caret.Row >= fold.MinRow && Document.Caret.Row <= fold.MaxRow)
-            {
-                Document.Caret.Row = fold.MinRow;
-                Document.Caret = ClampCaret(Document.Caret);
+            if (foldings.FirstOrDefault(f => f.MinRow == row) is var fold) {
+                // Keep caret outside collapse
+                if (Document.Caret.Row >= fold.MinRow && Document.Caret.Row <= fold.MaxRow) {
+                    Document.Caret.Row = fold.MinRow;
+                    Document.Caret = ClampCaret(Document.Caret);
+                }
+
+                // Clear selection if it's inside the collapse
+                if (!Document.Selection.Empty) {
+                    bool minInside = Document.Selection.Min.Row >= fold.MinRow && Document.Selection.Min.Row <= fold.MaxRow;
+                    bool maxInside = Document.Selection.Max.Row >= fold.MinRow && Document.Selection.Max.Row <= fold.MaxRow;
+
+                    if (minInside && maxInside) {
+                        Document.Selection.Clear();
+                        Document.Caret.Row = fold.MinRow;
+                        Document.Caret = ClampCaret(Document.Caret);
+                    } else if (minInside) {
+                        Document.Caret = ClampCaret(Document.Selection.Max);
+                        Document.Selection.Clear();
+                    } else if (maxInside) {
+                        Document.Caret = ClampCaret(Document.Selection.Min);
+                        Document.Selection.Clear();
+                    }
+                }
             }
         } else {
             Document.RemoveAnchorsIf(anchor => anchor.Row == row && anchor.UserData is CollapseAnchorData);
@@ -2122,13 +2141,32 @@ public sealed class Editor : SkiaDrawable {
                 UserData = new CollapseAnchorData()
             });
 
-            if (foldings.FirstOrDefault(f => f.MinRow == row) is { } fold &&
-                Document.Caret.Row >= fold.MinRow && Document.Caret.Row <= fold.MaxRow)
-            {
-                Document.Caret.Row = fold.MinRow;
-                Document.Caret = ClampCaret(Document.Caret);
+            if (foldings.FirstOrDefault(f => f.MinRow == row) is var fold) {
+                // Keep caret outside collapse
+                if (Document.Caret.Row >= fold.MinRow && Document.Caret.Row <= fold.MaxRow) {
+                    Document.Caret.Row = fold.MinRow;
+                    Document.Caret = ClampCaret(Document.Caret);
+                }
+
+                // Clear selection if it's inside the collapse
+                if (!Document.Selection.Empty) {
+                    bool minInside = Document.Selection.Min.Row >= fold.MinRow && Document.Selection.Min.Row <= fold.MaxRow;
+                    bool maxInside = Document.Selection.Min.Row >= fold.MinRow && Document.Selection.Min.Row <= fold.MaxRow;
+
+                    if (minInside && maxInside) {
+                        Document.Selection.Clear();
+                        Document.Caret.Row = fold.MinRow;
+                        Document.Caret = ClampCaret(Document.Caret);
+                    } else if (minInside) {
+                        Document.Caret = ClampCaret(Document.Selection.Max);
+                        Document.Selection.Clear();
+                    } else if (maxInside) {
+                        Document.Caret = ClampCaret(Document.Selection.Min);
+                        Document.Selection.Clear();
+                    }
+                }
             }
-        } else {
+        } else if (!collapse) {
             Document.RemoveAnchorsIf(anchor => anchor.Row == row && anchor.UserData is CollapseAnchorData);
         }
     }
