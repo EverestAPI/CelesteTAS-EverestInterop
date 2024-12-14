@@ -864,8 +864,8 @@ public class Document : IDisposable {
                 break;
         }
 
+        int newLineCount = newLines.Length > 0 ? newLines.Length - 1 : 0;
         if (Caret.Row >= row) {
-            int newLineCount = newLines.Length > 0 ? newLines.Length-1 : 0;
             Caret.Row += newLineCount;
         }
 
@@ -876,12 +876,16 @@ public class Document : IDisposable {
                 anchor.OnRemoved?.Invoke();
             }
         }
+        
         // Move anchors below down
+        if (newLineCount == 0) {
+            return;
+        }
         for (int currRow = CurrentLines.Count - 1; currRow > row + 1 ; currRow--) {
             if (CurrentAnchors.Remove(currRow, out var belowAnchors)) {
-                CurrentAnchors[currRow + newLines.Length - 2] = belowAnchors;
+                CurrentAnchors[currRow + newLineCount] = belowAnchors;
                 foreach (var anchor in belowAnchors) {
-                    anchor.Row += newLines.Length - 2;
+                    anchor.Row += newLineCount;
                 }
             }
         }
