@@ -2896,7 +2896,7 @@ public sealed class Editor : SkiaDrawable {
         // Otherwise just comment uncommented breakpoints
         bool allCommented = true;
         for (int row = minRow; row <= maxRow; row++) {
-            var line = Document.Lines[row];
+            string line = Document.Lines[row];
 
             if (UncommentedBreakpointRegex.IsMatch(line)) {
                 allCommented = false;
@@ -2905,7 +2905,7 @@ public sealed class Editor : SkiaDrawable {
         }
 
         for (int row = minRow; row <= maxRow; row++) {
-            var line = Document.Lines[row];
+            string line = Document.Lines[row];
             if (allCommented && CommentedBreakpointRegex.IsMatch(line)) {
                 int hashIdx = line.IndexOf('#');
                 Document.ReplaceLine(row, line.Remove(hashIdx, 1));
@@ -2948,8 +2948,8 @@ public sealed class Editor : SkiaDrawable {
         }
 
         for (int row = minRow; row <= maxRow; row++) {
-            var line = Document.Lines[row];
-            var lineTrimmed = line.TrimStart();
+            string line = Document.Lines[row];
+            string lineTrimmed = line.TrimStart();
 
             // Ignore blank lines
             if (string.IsNullOrEmpty(lineTrimmed) || lineTrimmed == "# ") {
@@ -2957,7 +2957,7 @@ public sealed class Editor : SkiaDrawable {
             }
 
             if (lineTrimmed.StartsWith('#')) {
-                if ((!Comment.IsLabel(lineTrimmed) && !ActionLine.TryParse(lineTrimmed[1..], out _)) || lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) {
+                if ((!Comment.IsLabel(lineTrimmed) && !lineTrimmed.StartsWith("#***") && !ActionLine.TryParse(lineTrimmed[1..], out _)) || lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) {
                     // Ignore non-input comments and special labels
                     continue;
                 }
@@ -3005,7 +3005,7 @@ public sealed class Editor : SkiaDrawable {
         // Only remove # when all lines start with it. Otherwise, add another
         bool allCommented = true;
         for (int row = minRow; row <= maxRow; row++) {
-            var line = Document.Lines[row];
+            string line = Document.Lines[row];
 
             if (!line.TrimStart().StartsWith('#')) {
                 allCommented = false;
@@ -3014,7 +3014,7 @@ public sealed class Editor : SkiaDrawable {
         }
 
         for (int row = minRow; row <= maxRow; row++) {
-            var line = Document.Lines[row];
+            string line = Document.Lines[row];
 
             if (allCommented) {
                 int hashIdx = line.IndexOf('#');
