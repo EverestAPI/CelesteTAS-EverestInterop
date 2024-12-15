@@ -16,8 +16,6 @@ using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
-#nullable enable
-
 namespace TAS.Communication;
 
 public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Location.Celeste) {

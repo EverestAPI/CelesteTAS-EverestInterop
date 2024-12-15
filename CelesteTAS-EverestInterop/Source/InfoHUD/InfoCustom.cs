@@ -14,8 +14,6 @@ using StringExtensions = StudioCommunication.Util.StringExtensions;
 
 namespace TAS.InfoHUD;
 
-#nullable enable
-
 /// Handles parsing of custom Info HUD templates
 public static class InfoCustom {
 

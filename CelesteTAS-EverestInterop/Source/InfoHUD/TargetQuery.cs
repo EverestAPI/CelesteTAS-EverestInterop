@@ -14,8 +14,6 @@ using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
-#nullable enable
-
 namespace TAS.EverestInterop;
 
 /// Contains all the logic for getting data from a target-query

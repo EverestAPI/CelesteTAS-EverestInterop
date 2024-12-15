@@ -13,8 +13,6 @@ using TAS.Utils;
 
 namespace TAS.Input;
 
-#nullable enable
-
 [Flags]
 public enum ExecuteTiming : byte {
     /// Executes the command while parsing inputs, like Read commands

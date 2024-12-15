@@ -16,8 +16,6 @@ using TAS.Utils;
 
 namespace TAS.Input.Commands;
 
-#nullable enable
-
 public static class InvokeCommand {
     private class InvokeMeta : ITasCommandMeta {
         public string Insert => $"Invoke{CommandInfo.Separator}[0;Entity.Method]{CommandInfo.Separator}[1;Parameter]";

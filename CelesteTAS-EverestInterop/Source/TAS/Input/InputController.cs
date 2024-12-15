@@ -19,8 +19,6 @@ public class ParseFileEndAttribute : Attribute;
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
 public class TasFileChangedAttribute : Attribute;
 
-#nullable enable
-
 /// Manages inputs, commands, etc. for the current TAS file
 public class InputController {
     [Initialize]

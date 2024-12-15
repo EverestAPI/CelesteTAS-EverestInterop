@@ -18,8 +18,6 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop;
 
-#nullable enable
-
 public static class StudioHelper {
     #region Auto-filled values
 

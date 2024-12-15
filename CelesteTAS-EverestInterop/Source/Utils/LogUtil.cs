@@ -5,8 +5,6 @@ using Monocle;
 
 namespace TAS.Utils;
 
-#nullable enable
-
 internal static class LogUtil {
     private const string Tag = "CelesteTAS";
 

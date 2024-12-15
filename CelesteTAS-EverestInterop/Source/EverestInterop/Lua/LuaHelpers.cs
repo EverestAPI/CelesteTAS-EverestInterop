@@ -13,8 +13,6 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.Lua;
 
-#nullable enable
-
 /// Provides helper methods for usage in Lua scripts
 public static class LuaHelpers {
     public class ValueHolder<T>(T value) {

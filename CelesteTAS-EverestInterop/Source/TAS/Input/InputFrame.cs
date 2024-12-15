@@ -8,8 +8,6 @@ using TAS.Utils;
 
 namespace TAS.Input;
 
-#nullable enable
-
 /// Represents a fully parsed line in a TAS file
 public record InputFrame {
     // Controller state

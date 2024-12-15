@@ -18,8 +18,6 @@ using TAS.Utils;
 
 namespace TAS.Input.Commands;
 
-#nullable enable
-
 // Sorts types by namespace into Celeste -> Monocle -> other (alphabetically)
 // Inside the namespace it's sorted alphabetically
 internal class NamespaceComparer : IComparer<(string Name, Type Type)> {
