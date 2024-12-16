@@ -245,3 +245,4 @@ ModelManifest.xml
 
 # JetBrains IDE settings
 .idea
+/HIDDEN everest.yaml
