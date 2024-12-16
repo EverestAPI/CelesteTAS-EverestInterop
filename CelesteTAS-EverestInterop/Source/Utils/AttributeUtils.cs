@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Celeste.Mod;
+using Celeste.Mod.Helpers;
 using TAS.Module;
 
 namespace TAS.Utils;
@@ -12,7 +13,7 @@ public static class AttributeUtils {
 
     /// Gathers all static, parameterless methods with attribute T
     public static void CollectMethods<T>() where T : Attribute {
-        attributeMethods[typeof(T)] = typeof(CelesteTasModule).Assembly
+        attributeMethods[typeof(T)] = FakeAssembly.GetFakeEntryAssembly()
             .GetTypesSafe()
             .SelectMany(type => type
                 .GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
