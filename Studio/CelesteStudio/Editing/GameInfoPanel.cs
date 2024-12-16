@@ -7,6 +7,7 @@ using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
 using SkiaSharp;
+using StudioCommunication;
 using StudioCommunication.Util;
 using System.ComponentModel;
 

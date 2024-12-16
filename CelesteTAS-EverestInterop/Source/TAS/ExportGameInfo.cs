@@ -6,9 +6,10 @@ using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication;
+using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
+using TAS.InfoHUD;
 using TAS.Input;
-using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
 
@@ -93,13 +94,14 @@ public static class ExportGameInfo {
         streamWriter.WriteLine(string.Join("\t", "Line", "Inputs", "Frames", "Time", "Position", "Speed", "State", "Statuses", "Room", "Entities"));
         trackedEntities = new Dictionary<string, Func<List<Entity>>>();
         foreach (string typeName in tracked) {
-            if (!InfoCustom.TryParseTypes(typeName, out List<Type> types)) {
+            var types = TargetQuery.ResolveBaseTypes(typeName.Split('.'), out _, out _, out _);
+            if (types.IsEmpty()) {
                 continue;
             }
 
-            foreach (Type type in types) {
+            foreach (var type in types) {
                 if (type.IsSameOrSubclassOf(typeof(Entity)) && type.FullName != null) {
-                    trackedEntities[type.FullName] = () => InfoCustom.FindEntities(type, string.Empty);
+                    trackedEntities[type.FullName] = () => TargetQuery.ResolveTypeInstances(type, [], EntityID.None).Cast<Entity>().ToList();
                 }
             }
         }

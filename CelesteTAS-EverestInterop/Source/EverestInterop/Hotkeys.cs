@@ -12,6 +12,7 @@ using Monocle;
 using MonoMod.Cil;
 using StudioCommunication;
 using TAS.Communication;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 using XNAKeys = Microsoft.Xna.Framework.Input.Keys;
@@ -143,7 +144,7 @@ public static class Hotkeys {
     }
 
     public static void Update() {
-        if (Manager.UltraFastForwarding) {
+        if (Manager.FastForwarding) {
             kbState = default;
             padState = default;
         } else if (!Engine.Instance.IsActive) {
@@ -173,11 +174,11 @@ public static class Hotkeys {
             }
         }
 
-        if (Manager.UltraFastForwarding) {
+        if (Manager.FastForwarding) {
             updateButton = false;
         }
 
-        if (Manager.UltraFastForwarding) {
+        if (Manager.FastForwarding) {
             foreach (Hotkey hotkey in hotKeysInteractWithStudio) {
                 hotkey.Update(updateKey, false);
             }
@@ -217,7 +218,6 @@ public static class Hotkeys {
             }
         }
 
-        Manager.Controller.FastForwardToNextComment();
         Hud.Toggle();
         Camera.ResetCamera();
     }
@@ -229,27 +229,13 @@ public static class Hotkeys {
         }
     }
 
-#pragma warning disable CS0612
     [Load]
     private static void Load() {
         On.Celeste.Input.Initialize += InputOnInitialize;
-        Type configUiType = typeof(ModuleSettingsKeyboardConfigUI);
-        if (typeof(Everest).Assembly.GetTypesSafe()
-                .FirstOrDefault(t => t.FullName == "Celeste.Mod.ModuleSettingsKeyboardConfigUIV2") is { } typeV2
-           ) {
-            // Celeste v1.4: before Everest drop support v1.3.1.2
-            if (typeV2.GetMethodInfo("Reset") is { } resetMethodV2) {
-                resetMethodV2.IlHook(ModReload);
-            }
-        } else if (configUiType.GetMethodInfo("Reset") is { } resetMethod) {
-            // Celeste v1.4: after Everest drop support v1.3.1.2
-            resetMethod.IlHook(ModReload);
-        } else if (configUiType.GetMethodInfo("<Reload>b__6_0") is { } reloadMethod) {
-            // Celeste v1.3
-            reloadMethod.IlHook(ModReload);
-        }
+        typeof(ModuleSettingsKeyboardConfigUI)
+            .GetMethodInfo(nameof(ModuleSettingsKeyboardConfigUI.Reset))
+            .IlHook(ModReload);
     }
-#pragma warning restore CS0612
 
     [Unload]
     private static void Unload() {
@@ -394,7 +380,7 @@ public static class MouseButtons {
     }
 
     private static void CelesteOnRenderCore(On.Celeste.Celeste.orig_RenderCore orig, Celeste.Celeste self) {
-        if (Manager.UltraFastForwarding || !Engine.Instance.IsActive) {
+        if (Manager.FastForwarding || !Engine.Instance.IsActive) {
             UpdateNull();
         } else {
             Update();

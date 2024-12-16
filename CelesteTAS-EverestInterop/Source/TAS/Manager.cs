@@ -1,244 +1,274 @@
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
-using System.Threading;
 using Celeste;
 using Celeste.Mod;
 using Celeste.Pico8;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
+using JetBrains.Annotations;
 using Monocle;
+using MonoMod;
 using StudioCommunication;
+using System.Reflection;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Input;
-using TAS.Input.Commands;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS;
 
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+public class EnableRunAttribute : Attribute;
+
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+public class DisableRunAttribute : Attribute;
+
+/// Main controller, which manages how the TAS is played back
 public static class Manager {
-    private static readonly ConcurrentQueue<Action> mainThreadActions = new();
+    public enum State {
+        /// No TAS is currently active
+        Disabled,
+        /// Plays the current TAS back at the specified PlaybackSpeed
+        Running,
+        /// Pauses the current TAS
+        Paused,
+        /// Advances the current TAS by 1 frame and resets back to Paused
+        FrameAdvance,
+        /// Forwards the TAS while paused
+        SlowForward,
+    }
 
-    public static bool Running;
-    public static bool Recording => TASRecorderUtils.Recording;
-    public static readonly InputController Controller = new();
-    public static States LastStates, States, NextStates;
-    public static float FrameLoops { get; private set; } = 1f;
-    public static bool UltraFastForwarding => FrameLoops >= 100 && Running;
-    public static bool SlowForwarding => FrameLoops < 1f;
-    public static bool AdvanceThroughHiddenFrame;
-
-    private static bool SkipSlowForwardingFrame =>
-        FrameLoops < 1f && (int) ((Engine.FrameCounter + 1) * FrameLoops) == (int) (Engine.FrameCounter * FrameLoops);
-
-    public static bool SkipFrame => (States.Has(States.FrameStep) || SkipSlowForwardingFrame) && !AdvanceThroughHiddenFrame;
-
-    static Manager() {
+    [Initialize]
+    private static void Initialize() {
         AttributeUtils.CollectMethods<EnableRunAttribute>();
         AttributeUtils.CollectMethods<DisableRunAttribute>();
     }
 
-    private static bool ShouldForceState =>
-        NextStates.Has(States.FrameStep) && !Hotkeys.FastForward.OverrideCheck && !Hotkeys.SlowForward.OverrideCheck;
+    // Running was originally a field, but is now a property
+    // Some mods still reference it as a field and this is a fallback for those mods to use
+    // This needs to be access via reflection, since otherwise the non-renamed fields would be tried to access
+    [ForceName("Running")]
+    public static bool __ABI_Compat_Running;
+    private static readonly FieldInfo f_Running = typeof(Manager).GetField("Running", BindingFlags.Public | BindingFlags.Static)!;
 
-    public static void AddMainThreadAction(Action action) {
-        if (Thread.CurrentThread == MainThreadHelper.MainThread) {
-            action();
-        } else {
-            mainThreadActions.Enqueue(action);
-        }
+    public static bool Running => CurrState != State.Disabled;
+    public static bool FastForwarding => Running && PlaybackSpeed >= 5.0f;
+    public static float PlaybackSpeed { get; private set; } = 1.0f;
+
+    public static State CurrState, NextState;
+    public static readonly InputController Controller = new();
+
+    private static readonly ConcurrentQueue<Action> mainThreadActions = new();
+
+#if DEBUG
+    // Hot-reloading support
+    [Load]
+    private static void RestoreStudioTasFilePath() {
+        Controller.FilePath = Engine.Instance.GetDynamicDataInstance()
+            .Get<string>("CelesteTAS_FilePath");
+
+        Everest.Events.AssetReload.OnBeforeReload += OnAssetReload;
     }
 
-    private static void ExecuteMainThreadActions() {
+    [Unload]
+    private static void SaveStudioTasFilePath() {
+        Engine.Instance.GetDynamicDataInstance()
+            .Set("CelesteTAS_FilePath", Controller.FilePath);
+
+        Everest.Events.AssetReload.OnBeforeReload -= OnAssetReload;
+
+        Controller.Stop();
+        Controller.Clear();
+    }
+
+    private static void OnAssetReload(bool silent) => DisableRun();
+#endif
+
+    public static void EnableRun()
+    {
+        if (Running) {
+            return;
+        }
+
+        $"Starting TAS: {Controller.FilePath}".Log();
+        Environment.StackTrace.Log(LogLevel.Verbose);
+
+        CurrState = NextState = State.Running;
+        PlaybackSpeed = 1.0f;
+
+        Controller.Stop();
+        Controller.RefreshInputs();
+        AttributeUtils.Invoke<EnableRunAttribute>();
+
+        // This needs to happen after EnableRun, otherwise the input state will be reset in BindingHelper.SetTasBindings
+        Savestates.EnableRun();
+    }
+
+    public static void DisableRun()
+    {
+        if (!Running) {
+            return;
+        }
+
+        "Stopping TAS".Log();
+        Environment.StackTrace.Log(LogLevel.Verbose);
+
+        CurrState = NextState = State.Disabled;
+        Controller.Stop();
+        AttributeUtils.Invoke<DisableRunAttribute>();
+    }
+
+    /// Will start the TAS on the next update cycle
+    public static void EnableRunLater() => NextState = State.Running;
+    /// Will stop the TAS on the next update cycle
+    public static void DisableRunLater() => NextState = State.Disabled;
+
+    /// Updates the TAS itself
+    public static void Update() {
+        if (!Running && NextState == State.Running) {
+            EnableRun();
+        }
+        if (Running && NextState == State.Disabled) {
+            DisableRun();
+        }
+
+        CurrState = NextState;
+        f_Running.SetValue(null, Running);
+
         while (mainThreadActions.TryDequeue(out Action action)) {
             action.Invoke();
         }
-    }
 
-    public static void Update() {
-        LastStates = States;
-        ExecuteMainThreadActions();
-        Hotkeys.Update();
-        Savestates.HandleSaveStates();
-        HandleFrameRates();
-        CheckToEnable();
-        FrameStepping();
+        Savestates.Update();
 
-        if (States.Has(States.Enable)) {
-            Running = true;
-
-            if (!SkipFrame) {
-                Controller.AdvanceFrame(out bool canPlayback);
-
-                // stop TAS if breakpoint is not placed at the end
-                if (Controller.Break && Controller.CanPlayback && !Recording) {
-                    Controller.NextCommentFastForward = null;
-                    NextStates |= States.FrameStep;
-                    FrameLoops = 1;
-                }
-
-                if (!canPlayback) {
-                    DisableRun();
-                } else if (SafeCommand.DisallowUnsafeInput && Controller.CurrentFrameInTas > 1) {
-                    if (Engine.Scene is not (Level or LevelLoader or LevelExit or Emulator or LevelEnter)) {
-                        DisableRun();
-                    } else if (Engine.Scene is Level level && level.Tracker.GetEntity<TextMenu>() is { } menu) {
-                        TextMenu.Item item = menu.Items.FirstOrDefault();
-                        if (item is TextMenu.Header {Title: { } title} &&
-                            (title == Dialog.Clean("OPTIONS_TITLE") || title == Dialog.Clean("MENU_VARIANT_TITLE") ||
-                             title == Dialog.Clean("MODOPTIONS_EXTENDEDVARIANTS_PAUSEMENU_BUTTON").ToUpperInvariant()) ||
-                            item is TextMenuExt.HeaderImage {Image: "menu/everest"}) {
-                            DisableRun();
-                        }
-                    }
-                }
-            }
-        } else {
-            Running = false;
-        }
-
-        SendStateToStudio();
-    }
-
-    private static void HandleFrameRates() {
-        FrameLoops = 1;
-
-        // Keep frame rate consistant while recording
-        if (Recording) {
-            return;
-        }
-
-        if (States.Has(States.Enable) && !States.Has(States.FrameStep) && !NextStates.Has(States.FrameStep)) {
+        if (Running && CurrState != State.Paused && !IsLoading()) {
             if (Controller.HasFastForward) {
-                FrameLoops = Controller.FastForwardSpeed;
+                NextState = State.Running;
             }
 
-            if (Hotkeys.FastForward.Check) {
-                FrameLoops = TasSettings.FastForwardSpeed;
-            } else if (Hotkeys.SlowForward.Check) {
-                FrameLoops = TasSettings.SlowForwardSpeed;
-            } else if (Math.Round(Hotkeys.RightThumbSticksX * TasSettings.FastForwardSpeed) is var fastForwardSpeed and >= 2) {
-                FrameLoops = (int) fastForwardSpeed;
-            } else if (Hotkeys.RightThumbSticksX < 0f &&
-                       (1 + Hotkeys.RightThumbSticksX) * TasSettings.SlowForwardSpeed is var slowForwardSpeed and <= 0.9f) {
-                FrameLoops = Math.Max(slowForwardSpeed, FastForward.MinSpeed);
-            }
-        }
-    }
-
-    private static void FrameStepping() {
-        bool frameAdvance = Hotkeys.FrameAdvance.Check && !Hotkeys.StartStop.Check;
-        bool pause = Hotkeys.PauseResume.Check && !Hotkeys.StartStop.Check;
-
-        if (States.Has(States.Enable)) {
-            if (NextStates.Has(States.FrameStep)) {
-                States |= States.FrameStep;
-                NextStates &= ~States.FrameStep;
+            if (!Controller.CanPlayback) {
+                DisableRun();
+                return;
             }
 
-            if (frameAdvance && !Hotkeys.FrameAdvance.LastCheck && !Recording) {
-                if (!States.Has(States.FrameStep)) {
-                    States |= States.FrameStep;
-                    NextStates &= ~States.FrameStep;
-                } else {
-                    States &= ~States.FrameStep;
-                    NextStates |= States.FrameStep;
-                }
-            } else if (pause && !Hotkeys.PauseResume.LastCheck && !Recording) {
-                if (!States.Has(States.FrameStep)) {
-                    States |= States.FrameStep;
-                    NextStates &= ~States.FrameStep;
-                } else {
-                    States &= ~States.FrameStep;
-                    NextStates &= ~States.FrameStep;
-                }
-            } else if (LastStates.Has(States.FrameStep) && States.Has(States.FrameStep) &&
-                       (Hotkeys.FastForward.Check || Hotkeys.SlowForward.Check && Engine.FrameCounter % Math.Round(4 / TasSettings.SlowForwardSpeed) == 0) &&
-                       !Hotkeys.FastForwardComment.Check) {
-                States &= ~States.FrameStep;
-                NextStates |= States.FrameStep;
+            Controller.AdvanceFrame();
+
+            // Pause the TAS if breakpoint is not placed at the end
+            if (Controller.Break) {
+                Controller.NextLabelFastForward = null;
+                NextState = State.Paused;
             }
         }
     }
 
-    private static void CheckToEnable() {
-        // Do not use Hotkeys.Restart.Pressed unless the fast forwarding optimization in Hotkeys.Update() is removed
-        if (!Savestates.SpeedrunToolInstalled && Hotkeys.Restart.Released) {
-            DisableRun();
-            EnableRun();
-            return;
-        }
+    /// Updates everything around the TAS itself, like hotkeys, studio-communication, etc.
+    public static void UpdateMeta() {
+        Hotkeys.Update();
+        Savestates.UpdateMeta();
 
-        if (Hotkeys.StartStop.Check) {
-            if (States.Has(States.Enable)) {
-                NextStates |= States.Disable;
+        SendStudioState();
+
+        // Check if the TAS should be enabled / disabled
+        // NOTE: Do not use Hotkeys.Restart.Pressed unless the fast forwarding optimization in Hotkeys.Update() is removed
+        if (Hotkeys.StartStop.Released) {
+            if (Running) {
+                DisableRun();
             } else {
-                NextStates |= States.Enable;
+                EnableRun();
             }
-        } else if (NextStates.Has(States.Enable)) {
-            EnableRun();
-        } else if (NextStates.Has(States.Disable)) {
+            return;
+        }
+
+        if (Hotkeys.Restart.Released) {
             DisableRun();
-        }
-    }
-
-    public static void EnableRun() {
-        if (Engine.Scene is GameLoader || CriticalErrorHandlerFixer.Handling) {
-            Running = false;
-            LastStates = States.None;
-            States = States.None;
-            NextStates = States.None;
+            EnableRun();
             return;
         }
 
-        Running = true;
-        States |= States.Enable;
-        States &= ~States.FrameStep;
-        NextStates &= ~States.Enable;
-        AttributeUtils.Invoke<EnableRunAttribute>();
-        Controller.RefreshInputs(true);
-    }
-
-    public static void DisableRun() {
-        Running = false;
-
-        LastStates = States.None;
-        States = States.None;
-        NextStates = States.None;
-
-        // fix the input that was last held stays for a frame when it ends
-        if (MInput.GamePads != null && MInput.GamePads.FirstOrDefault(data => data.Attached) is { } gamePadData) {
-            gamePadData.CurrentState = new GamePadState();
-        }
-
-        AttributeUtils.Invoke<DisableRunAttribute>();
-        Controller.Stop();
-    }
-
-    public static void DisableRunLater() {
-        NextStates |= States.Disable;
-    }
-
-    public static void SendStateToStudio() {
-        if (UltraFastForwarding && Engine.FrameCounter % 23 > 0) {
+        if (Running && Hotkeys.FastForwardComment.Pressed) {
+            Controller.FastForwardToNextLabel();
             return;
         }
 
+        switch (CurrState) {
+            case State.Running:
+                if (Hotkeys.PauseResume.Pressed) {
+                    NextState = State.Paused;
+                }
+                break;
+
+            case State.FrameAdvance:
+                NextState = State.Paused;
+                break;
+
+            case State.Paused:
+                if (Hotkeys.PauseResume.Pressed) {
+                    NextState = State.Running;
+                } else if (Hotkeys.FrameAdvance.Pressed || Hotkeys.FastForward.Check) {
+                    NextState = State.FrameAdvance;
+                }
+                break;
+
+            case State.Disabled:
+            default:
+                break;
+        }
+
+        // Apply fast / slow forwarding
+        switch (NextState)
+        {
+            case State.Paused or State.SlowForward when Hotkeys.SlowForward.Check:
+                PlaybackSpeed = TasSettings.SlowForwardSpeed;
+                NextState = State.SlowForward;
+                break;
+            case State.Paused or State.SlowForward:
+                PlaybackSpeed = 1.0f;
+                NextState = State.Paused;
+                break;
+
+            case State.Running when Hotkeys.FastForward.Check:
+                PlaybackSpeed = TasSettings.FastForwardSpeed;
+                break;
+            case State.Running when Hotkeys.SlowForward.Check:
+                PlaybackSpeed = TasSettings.SlowForwardSpeed;
+                break;
+
+            default:
+                PlaybackSpeed = Controller.HasFastForward ? Controller.CurrentFastForward!.Speed : 1.0f;
+                break;
+        }
+    }
+
+    /// Queues an action to be performed on the main thread
+    public static void AddMainThreadAction(Action action) {
+        mainThreadActions.Enqueue(action);
+    }
+
+    /// TAS-execution is paused during loading screens
+    public static bool IsLoading() {
+        return Engine.Scene switch {
+            Level level => level.IsAutoSaving() && level.Session.Level == "end-cinematic",
+            SummitVignette summit => !summit.ready,
+            Overworld overworld => overworld.Current is OuiFileSelect { SlotIndex: >= 0 } slot && slot.Slots[slot.SlotIndex].StartingGame ||
+                                   overworld.Next is OuiChapterSelect && UserIO.Saving ||
+                                   overworld.Next is OuiMainMenu && (UserIO.Saving || Everest._SavingSettings),
+            Emulator emulator => emulator.game == null,
+            _ => Engine.Scene is LevelExit or LevelLoader or GameLoader || Engine.Scene.GetType().Name == "LevelExitToLobby",
+        };
+    }
+
+    internal static void SendStudioState() {
         var previous = Controller.Previous;
         var state = new StudioState {
             CurrentLine = previous?.Line ?? -1,
             CurrentLineSuffix = $"{Controller.CurrentFrameInInput + (previous?.FrameOffset ?? 0)}{previous?.RepeatString ?? ""}",
             CurrentFrameInTas = Controller.CurrentFrameInTas,
-            CurrentFrameInInput = Controller.CurrentFrameInInput,
             TotalFrames = Controller.Inputs.Count,
             SaveStateLine = Savestates.StudioHighlightLine,
-
-            tasStates = States,
+            tasStates = 0,
             GameInfo = GameInfo.StudioInfo,
             LevelName = GameInfo.LevelName,
             ChapterTime = GameInfo.ChapterTime,
-
             ShowSubpixelIndicator = TasSettings.InfoSubpixelIndicator && Engine.Scene is Level or Emulator,
         };
 
@@ -254,28 +284,4 @@ public static class Manager {
 
         CommunicationWrapper.SendState(state);
     }
-
-    public static bool IsLoading() {
-        switch (Engine.Scene) {
-            case Level level:
-                return level.IsAutoSaving() && level.Session.Level == "end-cinematic";
-            case SummitVignette summit:
-                return !summit.ready;
-            case Overworld overworld:
-                return overworld.Current is OuiFileSelect {SlotIndex: >= 0} slot && slot.Slots[slot.SlotIndex].StartingGame ||
-                       overworld.Next is OuiChapterSelect && UserIO.Saving ||
-                       overworld.Next is OuiMainMenu && (UserIO.Saving || Everest._SavingSettings);
-            case Emulator emulator:
-                return emulator.game == null;
-            default:
-                bool isLoading = Engine.Scene is LevelExit or LevelLoader or GameLoader || Engine.Scene.GetType().Name == "LevelExitToLobby";
-                return isLoading;
-        }
-    }
 }
-
-[AttributeUsage(AttributeTargets.Method)]
-internal class EnableRunAttribute : Attribute { }
-
-[AttributeUsage(AttributeTargets.Method)]
-internal class DisableRunAttribute : Attribute { }

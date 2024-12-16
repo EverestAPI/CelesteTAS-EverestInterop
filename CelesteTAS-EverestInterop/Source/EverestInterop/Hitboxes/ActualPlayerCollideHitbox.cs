@@ -35,7 +35,7 @@ public static partial class ActualEntityCollideHitbox {
     }
 
     private static void SavePlayerPosition(Player player) {
-        if (Manager.UltraFastForwarding || !TasSettings.ShowHitboxes || TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off ||
+        if (Manager.FastForwarding || !TasSettings.ShowHitboxes || TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off ||
             playerUpdated) {
             return;
         }
@@ -44,7 +44,7 @@ public static partial class ActualEntityCollideHitbox {
     }
 
     private static void PlayerOnDebugRender(On.Celeste.Player.orig_DebugRender orig, Player player, Camera camera) {
-        if (Manager.UltraFastForwarding
+        if (Manager.FastForwarding
             || !TasSettings.ShowHitboxes
             || TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off
             || player.Scene is Level {Transitioning: true}

@@ -1,5 +1,6 @@
 using Celeste.Mod;
 using Celeste.Mod.Helpers;
+using JetBrains.Annotations;
 using StudioCommunication;
 using System;
 using System.Collections.Generic;
@@ -12,8 +13,6 @@ using TAS.Utils;
 
 namespace TAS.Input;
 
-#nullable enable
-
 [Flags]
 public enum ExecuteTiming : byte {
     /// Executes the command while parsing inputs, like Read commands
@@ -24,7 +23,7 @@ public enum ExecuteTiming : byte {
 
 /// Creates a command which can be used inside TAS files
 /// The signature of the target method **must** match <see cref="Execute"/>
-[AttributeUsage(AttributeTargets.Method)]
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
 public class TasCommandAttribute(string name) : Attribute {
     /// Name of this command inside the TAS file
     public readonly string Name = name;
@@ -90,7 +89,7 @@ public readonly record struct Command(
     public string[] Args => CommandLine.Arguments;
     public string LineText => CommandLine.Arguments.Length == 0 ? Attribute.Name : $"{Attribute.Name}{DefaultSeparator}{string.Join(DefaultSeparator, CommandLine.Arguments)}";
 
-    public static bool TryParse(InputController inputController, string filePath, int fileLine, string lineText, int frame, int studioLine, out Command command) {
+    public static bool TryParse(string filePath, int fileLine, string lineText, int frame, int studioLine, out Command command) {
         command = default;
 
         if (string.IsNullOrWhiteSpace(lineText) || !char.IsLetter(lineText[0]) || !CommandLine.TryParse(lineText, out var commandLine)) {
@@ -114,11 +113,6 @@ public readonly record struct Command(
             }
 
             command = new Command(commandLine, info, filePath, fileLine, studioLine, frame);
-            if (!inputController.Commands.TryGetValue(frame, out var commands)) {
-                inputController.Commands[frame] = commands = new List<Command>();
-            }
-            commands.Add(command);
-
             return true;
         } catch (Exception e) {
             e.LogException(error);

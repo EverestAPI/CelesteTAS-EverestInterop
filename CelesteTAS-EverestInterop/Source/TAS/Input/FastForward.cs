@@ -2,9 +2,10 @@ using System;
 
 namespace TAS.Input;
 
+/// A breakpoint to which the TAS will fast-forward at a high speed
 public record FastForward {
-    private const float DefaultSpeed = 400f;
-    public const float MinSpeed = 1f / 60f;
+    private const float DefaultSpeed = 400.0f;
+
     public readonly int Frame;
     public readonly int Line;
     public readonly bool SaveState;
@@ -21,11 +22,6 @@ public record FastForward {
         }
 
         Speed = float.TryParse(modifiers, out float speed) ? speed : DefaultSpeed;
-        if (Speed < MinSpeed) {
-            Speed = MinSpeed;
-        } else if (Speed > 1f) {
-            Speed = (int) Math.Round(Speed);
-        }
     }
 
     public override string ToString() {

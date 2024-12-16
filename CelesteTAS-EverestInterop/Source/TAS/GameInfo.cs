@@ -14,6 +14,8 @@ using StudioCommunication;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
+using TAS.InfoHUD;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -151,7 +153,7 @@ public static class GameInfo {
     private static void SceneOnAfterUpdate(On.Monocle.Scene.orig_AfterUpdate orig, Scene self) {
         orig(self);
 
-        if (Manager.UltraFastForwarding) {
+        if (Manager.FastForwarding) {
             return;
         }
 
@@ -220,8 +222,8 @@ public static class GameInfo {
 
                 string analog = string.Empty;
                 string exactAnalog = string.Empty;
-                if (Manager.Running && Manager.Controller.Previous is { } inputFrame && inputFrame.HasActions(Actions.Feather)) {
-                    analog = GetAdjustedAnalog(inputFrame.AngleVector2, out exactAnalog);
+                if (Manager.Running && Manager.Controller.Previous is { } inputFrame && EnumExtensions.Has(inputFrame.Actions, Actions.Feather)) {
+                    analog = GetAdjustedAnalog(inputFrame.StickPosition, out exactAnalog);
                 }
 
                 string retainedSpeed = GetAdjustedRetainedSpeed(player, out string exactRetainedSpeed);
@@ -277,7 +279,7 @@ public static class GameInfo {
                     timers += $"DashCD({dashCooldown}) ";
                 }
 
-                if ((FramesPerGameSecond != 60 || SaveData.Instance.Assists.SuperDashing || ExtendedVariantsUtils.SuperDashing) &&
+                if ((FramesPerGameSecond != 60 || SaveData.Instance.Assists.SuperDashing || ExtendedVariantsInterop.SuperDashing) &&
                     DashTime.ToCeilingFrames() >= 1 && player.StateMachine.State == Player.StDash) {
                     DashTime = player.StateMachine.currentCoroutine.waitTimer;
                     timers += $"Dash({DashTime.ToCeilingFrames()}) ";
@@ -458,7 +460,7 @@ public static class GameInfo {
             || playerSeeker != null
             || SaveData.Instance.Assists.ThreeSixtyDashing
             || SaveData.Instance.Assists.SuperDashing
-            || ExtendedVariantsUtils.SuperDashing) {
+            || ExtendedVariantsInterop.SuperDashing) {
             builder.AppendLine(polarVel);
         }
 

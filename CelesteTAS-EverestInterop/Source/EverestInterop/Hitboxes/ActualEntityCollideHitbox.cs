@@ -7,6 +7,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using StudioCommunication;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -49,7 +50,7 @@ public static partial class ActualEntityCollideHitbox {
     }
 
     private static void PlayerOnUpdate(On.Celeste.Player.orig_Update orig, Player self) {
-        dontSaveLastPosition = Manager.UltraFastForwarding || !TasSettings.ShowHitboxes ||
+        dontSaveLastPosition = Manager.FastForwarding || !TasSettings.ShowHitboxes ||
                                TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off || playerUpdated;
         orig(self);
         playerUpdated = true;
@@ -106,7 +107,7 @@ public static partial class ActualEntityCollideHitbox {
     private static void DrawLastFrameHitbox(Collider self, Color color, Action<Color> invokeOrig) {
         Entity entity = self.Entity;
 
-        if (Manager.UltraFastForwarding
+        if (Manager.FastForwarding
             || !TasSettings.ShowHitboxes
             || TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off
             || colliderListRendering && self is not ColliderList

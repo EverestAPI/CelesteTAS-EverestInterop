@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Celeste;
+using Celeste.Mod;
 using Celeste.Mod.SpeedrunTool.Other;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Microsoft.Xna.Framework.Input;
@@ -11,10 +12,14 @@ using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Input.Commands;
+using TAS.Module;
+using TAS.Utils;
 
-namespace TAS.Utils;
+namespace TAS.ModInterop;
 
-internal static class SpeedrunToolUtils {
+public static class SpeedrunToolInterop {
+    public static bool Installed { get; private set; }
+
     private static object saveLoadAction;
     private static Dictionary<Entity, EntityData> savedEntityData;
     private static int groupCounter;
@@ -28,9 +33,15 @@ internal static class SpeedrunToolUtils {
     private static long? tasStartFileTime;
     private static MouseState mouseState;
     private static Dictionary<Follower, bool> followers;
-    private static Dictionary<int, int> insertedSlots = new();
     private static bool disallowUnsafeInput;
     private static Random auraRandom;
+
+    [Load]
+    private static void Load() {
+        Installed = ModUtils.IsInstalled("SpeedrunTool");
+        Everest.Events.AssetReload.OnBeforeReload += _ => Installed = false;
+        Everest.Events.AssetReload.OnAfterReload += _ => Installed = ModUtils.IsInstalled("SpeedrunTool");
+    }
 
     public static void AddSaveLoadAction() {
         Action<Dictionary<Type, Dictionary<string, object>>, Level> save = (_, _) => {
@@ -47,7 +58,6 @@ internal static class SpeedrunToolUtils {
             tasStartFileTime = MetadataCommands.TasStartFileTime;
             mouseState = MouseCommand.CurrentState;
             followers = HitboxSimplified.Followers.DeepCloneShared();
-            insertedSlots = SaveAndQuitReenterCommand.InsertedSlots.DeepCloneShared();
             disallowUnsafeInput = SafeCommand.DisallowUnsafeInput;
             auraRandom = DesyncFixer.AuraHelperSharedRandom.DeepCloneShared();
         };
@@ -69,7 +79,6 @@ internal static class SpeedrunToolUtils {
             MetadataCommands.TasStartFileTime = tasStartFileTime;
             MouseCommand.CurrentState = mouseState;
             HitboxSimplified.Followers = followers.DeepCloneShared();
-            SaveAndQuitReenterCommand.InsertedSlots = insertedSlots.DeepCloneShared();
             SafeCommand.DisallowUnsafeInput = disallowUnsafeInput;
             DesyncFixer.AuraHelperSharedRandom = auraRandom.DeepCloneShared();
         };

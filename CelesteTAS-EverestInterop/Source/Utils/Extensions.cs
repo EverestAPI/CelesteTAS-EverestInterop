@@ -12,6 +12,7 @@ using Monocle;
 using MonoMod.Utils;
 using StudioCommunication;
 using System.Diagnostics;
+using TAS.ModInterop;
 using Platform = Celeste.Platform;
 
 namespace TAS.Utils;
@@ -487,6 +488,14 @@ internal static class DictionaryExtensions {
     public static TValue LastValueOrDefault<TKey, TValue>(this SortedDictionary<TKey, TValue> dict) {
         return dict.Count > 0 ? dict.Last().Value : default;
     }
+
+    public static void AddToKey<TKey, TValue>(this IDictionary<TKey, List<TValue>> dict, TKey key, TValue value) {
+        if (dict.TryGetValue(key, out var list)) {
+            list.Add(value);
+            return;
+        }
+        dict[key] = [value];
+    }
 }
 
 internal static class DynamicDataExtensions {
@@ -608,7 +617,7 @@ internal static class LevelExtensions {
             position.X = 1920f - position.X;
         }
 
-        if (ExtendedVariantsUtils.UpsideDown) {
+        if (ExtendedVariantsInterop.UpsideDown) {
             position.Y = 1080f - position.Y;
         }
 
@@ -635,7 +644,7 @@ internal static class LevelExtensions {
             position.X = 1920f - position.X;
         }
 
-        if (ExtendedVariantsUtils.UpsideDown) {
+        if (ExtendedVariantsInterop.UpsideDown) {
             position.Y = 1080f - position.Y;
         }
 

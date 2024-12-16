@@ -20,7 +20,7 @@ public static class ReadCommand {
                 .Aggregate(17, (current, arg) => 31 * current + 17 * arg.GetStableHashCode());
 
             // Auto-complete entries are based on current file path
-            hash = 31 * hash + 17 * InputController.StudioTasFilePath.GetStableHashCode();
+            hash = 31 * hash + 17 * Manager.Controller.FilePath.GetStableHashCode();
 
             if (args.Length >= 1 && !string.IsNullOrWhiteSpace(args[0])) {
                 if (Path.GetDirectoryName(filePath) is not { } fileDir) {
