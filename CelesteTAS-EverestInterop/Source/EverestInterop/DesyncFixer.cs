@@ -49,7 +49,7 @@ public static class DesyncFixer {
         }
 
         if (ModUtils.GetModule("DeadzoneConfig")?.GetType() is { } deadzoneConfigModuleType) {
-            HookHelper.SkipMethod(typeof(DesyncFixer), nameof(SkipDeadzoneConfig), deadzoneConfigModuleType.GetMethod("OnInputInitialize"));
+            deadzoneConfigModuleType.GetMethod("OnInputInitialize").SkipMethod(SkipDeadzoneConfig);
         }
 
         if (ModUtils.GetType("StrawberryJam2021", "Celeste.Mod.StrawberryJam2021.Entities.CustomAscendManager") is { } ascendManagerType) {
