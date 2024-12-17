@@ -5,7 +5,7 @@ using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.Helpers;
 
-namespace TAS.Utils;
+namespace TAS.ModInterop;
 
 internal static class ModUtils {
     public static readonly Assembly VanillaAssembly = typeof(Player).Assembly;

@@ -1,6 +1,6 @@
-﻿using System.Diagnostics;
-using CelesteStudio.Data;
+﻿using CelesteStudio.Data;
 using CelesteStudio.Util;
+using StudioCommunication;
 
 namespace CelesteStudio.Editing.ContextActions;
 

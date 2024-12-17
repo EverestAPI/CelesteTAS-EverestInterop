@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Celeste;
 using Monocle;
 using TAS.Input;
+using TAS.ModInterop;
 using TAS.Utils;
 
 namespace TAS.EverestInterop;
@@ -79,7 +80,7 @@ public static class MonocleCommands {
             return;
         }
 
-        InputController.StudioTasFilePath = filePath;
+        Manager.Controller.FilePath = filePath;
         Manager.EnableRun();
     }
 }

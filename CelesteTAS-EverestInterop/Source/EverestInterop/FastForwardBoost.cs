@@ -1,18 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Celeste;
 using Celeste.Mod;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop;
 
 public static class FastForwardBoost {
-    private static bool UltraFastForwarding => Manager.UltraFastForwarding;
     private static Type creditsType;
 
     [Initialize]
@@ -140,7 +141,7 @@ public static class FastForwardBoost {
     }
 
     private static void BackdropRendererOnUpdate(On.Celeste.BackdropRenderer.orig_Update orig, BackdropRenderer self, Scene scene) {
-        if (UltraFastForwarding && Engine.FrameCounter % 1000 > 0) {
+        if (Manager.FastForwarding && Engine.FrameCounter % 1000 > 0) {
             return;
         }
 
@@ -148,7 +149,7 @@ public static class FastForwardBoost {
     }
 
     private static void SoundEmitterOnUpdate(On.Celeste.SoundEmitter.orig_Update orig, SoundEmitter self) {
-        if (UltraFastForwarding) {
+        if (Manager.FastForwarding) {
             self.RemoveSelf();
         } else {
             orig(self);
@@ -158,7 +159,7 @@ public static class FastForwardBoost {
     private static void SkipUpdateMethod(ILContext il) {
         ILCursor ilCursor = new(il);
         Instruction start = ilCursor.Next;
-        ilCursor.Emit(OpCodes.Call, typeof(Manager).GetProperty(nameof(Manager.UltraFastForwarding)).GetMethod);
+        ilCursor.Emit(OpCodes.Call, typeof(Manager).GetProperty(nameof(Manager.FastForwarding), BindingFlags.Public | BindingFlags.Static)!.GetMethod);
         ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
     }
 
@@ -170,16 +171,16 @@ public static class FastForwardBoost {
     }
 
     private static bool IsSkipLightningRendererUpdate() {
-        return Manager.UltraFastForwarding && Engine.FrameCounter % 30 > 0;
+        return Manager.FastForwarding && Engine.FrameCounter % 30 > 0;
     }
 
     private static void SeekerBarrierOnUpdate(ILContext il) {
         ILCursor cursor = new(il);
 
         if (!cursor.TryGotoNext(MoveType.AfterLabel,
-                instr => instr.MatchLdarg(0),
-                instr => instr.MatchLdfld<SeekerBarrier>("speeds"),
-                instr => instr.MatchLdlen())
+                ins => ins.MatchLdarg(0),
+                ins => ins.MatchLdfld<SeekerBarrier>("speeds"),
+                ins => ins.MatchLdlen())
            ) {
             return;
         }
@@ -188,8 +189,8 @@ public static class FastForwardBoost {
         cursor.EmitDelegate<Func<bool>>(IsSkipSeekerBarrierOverloadPart);
         cursor.Emit(OpCodes.Brtrue, target);
 
-        if (!cursor.TryGotoNext(instr => instr.MatchLdarg(0),
-                instr => instr.MatchCall<Solid>("Update"))
+        if (!cursor.TryGotoNext(ins => ins.MatchLdarg(0),
+                ins => ins.MatchCall<Solid>("Update"))
            ) {
             return;
         }
@@ -198,7 +199,7 @@ public static class FastForwardBoost {
     }
 
     private static bool IsSkipSeekerBarrierOverloadPart() {
-        return UltraFastForwarding;
+        return Manager.FastForwarding;
     }
 
     private static void IgnoreGcCollect(ILContext il) {
@@ -212,7 +213,7 @@ public static class FastForwardBoost {
     }
 
     private static bool IsIgnoreGcCollect() {
-        return TasSettings.IgnoreGcCollect && UltraFastForwarding;
+        return TasSettings.IgnoreGcCollect && Manager.FastForwarding;
     }
 
     private static void InputOnOnInitialize() {

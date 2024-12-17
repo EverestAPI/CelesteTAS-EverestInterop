@@ -7,6 +7,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using TAS.EverestInterop.InfoHUD;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -53,10 +54,10 @@ public static class HitboxSimplified {
                 UselessTypes.Add(type);
             }
         }
-        
-        HookHelper.SkipMethod(typeof(HitboxSimplified), nameof(IsSimplifiedHitboxes), "DebugRender",
-            ModUtils.GetType("FemtoHelper", "CustomMoonCreature")
-        );
+
+        ModUtils.GetType("FemtoHelper", "CustomMoonCreature")
+            ?.GetMethod("DebugRender")
+            ?.SkipMethod(IsSimplifiedHitboxes);
     }
 
     private static bool IsSimplifiedHitboxes() => TasSettings.ShowHitboxes && TasSettings.SimplifiedHitboxes;
