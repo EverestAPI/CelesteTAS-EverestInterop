@@ -24,7 +24,10 @@ namespace CelesteStudio.Editing;
 
 public sealed class Editor : SkiaDrawable {
     /// Reports insertions and deletions of the underlying document
-    public event Action<Document, Dictionary<int, string>, Dictionary<int, string>> TextChanged = (_, _, _) => {};
+    public event Action<Document, Dictionary<int, string>, Dictionary<int, string>> TextChanged = (_, _, _) => { };
+
+    /// The currently open file has changed. The previous document might not be available (for example during startup).
+    public event Action<Document?, Document> DocumentChanged = (_, _) => { };
 
     private Document? document;
     public Document Document {
@@ -39,6 +42,7 @@ public sealed class Editor : SkiaDrawable {
                 }
             }
 
+            DocumentChanged(document, value);
             document = value;
 
             // Jump to end when file only 10 lines, else the start
@@ -312,6 +316,10 @@ public sealed class Editor : SkiaDrawable {
     public Editor(Document document, Scrollable scrollable) {
         this.document = document;
         this.scrollable = scrollable;
+
+        StyleConfig.Initialize(this);
+
+        DocumentChanged(null, document);
 
         CanFocus = true;
         Cursor = Cursors.IBeam;
