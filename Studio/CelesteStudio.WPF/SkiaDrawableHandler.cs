@@ -4,7 +4,6 @@ using System;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Eto.Forms;
 using Eto.Wpf.Forms;
 using SkiaSharp;
 using System.Windows.Controls;
@@ -12,7 +11,7 @@ using Eto.Wpf;
 
 namespace CelesteStudio.WPF;
 
-public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, Control.ICallback>, SkiaDrawable.IHandler {
+public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, Eto.Forms.Control.ICallback>, SkiaDrawable.IHandler {
     public void Create() {
         Control = new SkiaBorder(Widget);
     }
