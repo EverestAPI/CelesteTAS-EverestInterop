@@ -255,6 +255,11 @@ public sealed class GameInfo : Panel {
     }
 
     private void RecalcFrameInfo() {
+        var document = Studio.Instance.Editor.Document;
+        if (document.UpdateInProgress) {
+            return;
+        }
+
         frameInfoBuilder.Clear();
 
         if (CommunicationWrapper.Connected && CommunicationWrapper.CurrentFrameInTas > 0) {
@@ -263,7 +268,6 @@ public sealed class GameInfo : Panel {
         }
         frameInfoBuilder.Append(Studio.Instance.Editor.TotalFrameCount);
 
-        var document = Studio.Instance.Editor.Document;
         if (!document.Selection.Empty) {
             int minRow = document.Selection.Min.Row;
             int maxRow = document.Selection.Max.Row;

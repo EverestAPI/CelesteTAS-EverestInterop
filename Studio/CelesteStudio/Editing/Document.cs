@@ -131,6 +131,9 @@ public class Document : IDisposable {
 
     private readonly Stack<QueuedUpdate> updateStack = [];
 
+    /// Whether the document is currently being updated and might not be in a valid state
+    public bool UpdateInProgress => updateStack.Count != 0;
+
     /// Reports insertions and deletions of the document
     public event Action<Document, Dictionary<int, string>, Dictionary<int, string>>? TextChanged;
     private void OnTextChanged(Dictionary<int, string> insertions, Dictionary<int, string> deletions)
@@ -876,7 +879,7 @@ public class Document : IDisposable {
                 anchor.OnRemoved?.Invoke();
             }
         }
-        
+
         // Move anchors below down
         if (newLineCount == 0) {
             return;

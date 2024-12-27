@@ -3692,6 +3692,7 @@ public sealed class Editor : SkiaDrawable {
     public override int DrawY => scrollablePosition.Y;
     public override int DrawWidth => scrollable.Width;
     public override int DrawHeight => scrollable.Height;
+    public override bool CanDraw => !Document.UpdateInProgress;
 
     public override void Draw(SKSurface surface) {
         var canvas = surface.Canvas;
