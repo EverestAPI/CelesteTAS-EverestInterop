@@ -845,7 +845,7 @@ public sealed class Editor : SkiaDrawable {
             } else if (CommandLine.TryParse(line, out var commandLine)) {
                 string commandName;
                 if (StyleConfig.Current.ForceCorrectCommandCasing &&
-                    CommunicationWrapper.Commands.FirstOrDefault(cmd => string.Equals(cmd.Name, commandLine.Command, StringComparison.OrdinalIgnoreCase)) is { } command && !string.IsNullOrEmpty(command.Name))
+                    CommunicationWrapper.Commands.FirstOrDefault(cmd => string.Equals(cmd.Name, commandLine.Command, StringComparison.OrdinalIgnoreCase)) is var command && !string.IsNullOrEmpty(command.Name))
                 {
                     commandName = command.Name;
                 } else {
