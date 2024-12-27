@@ -17,7 +17,7 @@ public struct StyleConfig() {
     public static StyleConfig Current { get; private set; } = new();
 
     public bool ForceCorrectCommandCasing { get; set; } = false;
-    public string? CommandSeparator { get; set; } = null;
+    public string? CommandArgumentSeparator { get; set; } = null;
 
     public int? RoomLabelStartingIndex { get; set; } = null;
     public AutoRoomIndexing? RoomLabelIndexing { get; set; } = null;

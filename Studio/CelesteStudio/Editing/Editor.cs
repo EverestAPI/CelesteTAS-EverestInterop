@@ -45,6 +45,9 @@ public sealed class Editor : SkiaDrawable {
             DocumentChanged(document, value);
             document = value;
 
+            // Ensure everything is properly formatted
+            FormatLines(Enumerable.Range(0, document.Lines.Count));
+
             // Jump to end when file only 10 lines, else the start
             document.Caret = document.Lines.Count is > 0 and <= 10
                 ? new CaretPosition(document.Lines.Count - 1, document.Lines[^1].Length)
@@ -121,7 +124,7 @@ public sealed class Editor : SkiaDrawable {
             void HandleTextChanged(Document _, Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
                 lastModification = DateTime.UtcNow;
 
-                ConvertToActionLines(insertions.Keys);
+                FormatLines(insertions.Keys);
 
                 // Adjust total frame count
                 foreach (string deletion in deletions.Values) {
@@ -819,28 +822,39 @@ public sealed class Editor : SkiaDrawable {
         return false;
     }
 
-    /// Applies the correct action-line formatting to all specified lines
-    private void ConvertToActionLines(IEnumerable<int> rows) {
+    /// Applies the correct formatting to all specified lines
+    private void FormatLines(IEnumerable<int> rows) {
         using var __ = Document.Update(raiseEvents: false);
 
         // Convert to action lines, if possible
         foreach (int row in rows) {
             string line = Document.Lines[row];
-            if (!ActionLine.TryParse(line, out var actionLine)) {
-                continue;
-            }
 
-            string newLine = actionLine.ToString();
+            if (ActionLine.TryParse(line, out var actionLine)) {
+                string newLine = actionLine.ToString();
 
-            if (Document.Caret.Row == row) {
-                if (Document.Caret.Col == line.Length) {
-                    Document.Caret.Col = newLine.Length;
-                } else {
-                    Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
+                if (Document.Caret.Row == row) {
+                    if (Document.Caret.Col == line.Length) {
+                        Document.Caret.Col = newLine.Length;
+                    } else {
+                        Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
+                    }
                 }
-            }
 
-            Document.ReplaceLine(row, newLine);
+                Document.ReplaceLine(row, newLine);
+            } else if (CommandLine.TryParse(line, out var commandLine)) {
+                string commandName;
+                if (StyleConfig.Current.ForceCorrectCommandCasing &&
+                    CommunicationWrapper.Commands.FirstOrDefault(cmd => string.Equals(cmd.Name, commandLine.Command, StringComparison.OrdinalIgnoreCase)) is { } command && !string.IsNullOrEmpty(command.Name))
+                {
+                    commandName = command.Name;
+                } else {
+                    commandName = commandLine.Command;
+                }
+
+                string separator = StyleConfig.Current.CommandArgumentSeparator ?? commandLine.ArgumentSeparator;
+                Document.ReplaceLine(row, string.Join(separator, [commandName, ..commandLine.Arguments]));
+            }
         }
     }
 
