@@ -3456,6 +3456,9 @@ public sealed class Editor : SkiaDrawable {
         calculationState = null;
 
         if (e.Buttons.HasFlag(MouseButtons.Primary)) {
+            // Refocus in case something unfocused the editor
+            Focus();
+
             if (LocationToFolding(e.Location) is { } folding) {
                 ToggleCollapse(folding.MinRow);
 
