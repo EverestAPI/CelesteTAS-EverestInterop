@@ -61,12 +61,17 @@ public sealed class Editor : SkiaDrawable {
             Recalc();
             ScrollCaretIntoView();
 
-            // Detect user-preference for room indexing
-            DetectPreference();
+            if (StyleConfig.Current.RoomLabelStartingIndex == null) {
+                // Detect user-preference for room indexing
+                DetectPreference();
+            }
+
             UpdateRoomLabelIndices([]);
 
             Settings.Changed += () => {
-                DetectPreference();
+                if (StyleConfig.Current.RoomLabelStartingIndex == null) {
+                    DetectPreference();
+                }
                 UpdateRoomLabelIndices([]);
             };
 
@@ -140,7 +145,10 @@ public sealed class Editor : SkiaDrawable {
             }
 
             void UpdateRoomLabelIndices(int[] rowsToIgnore) {
-                if (Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.Disabled) {
+                var autoIndexing = StyleConfig.Current.RoomLabelIndexing ?? Settings.Instance.AutoIndexRoomLabels;
+                int startingIndex = Math.Max(StyleConfig.Current.RoomLabelStartingIndex ?? roomLabelStartIndex, 0);
+
+                if (autoIndexing == AutoRoomIndexing.Disabled) {
                     return;
                 }
 
@@ -149,7 +157,7 @@ public sealed class Editor : SkiaDrawable {
                 // Allows the user to edit labels without them being auto-trimmed
                 string untrimmedLabel = string.Empty;
 
-                foreach ((string line, int row, string filePath, _) in IterateDocumentLines(includeReads: Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.IncludeReads)) {
+                foreach ((string line, int row, string filePath, _) in IterateDocumentLines(includeReads: autoIndexing == AutoRoomIndexing.IncludeReads)) {
                     var match = RoomLabelRegex.Match(line);
                     if (!match.Success) {
                         continue;
@@ -200,10 +208,10 @@ public sealed class Editor : SkiaDrawable {
 
                         if (!rowsToIgnore.Contains(occurrences[i].Row)) {
                             string oldLabel = Document.Lines[occurrences[i].Row]["#".Length..];
-                            string newLabel = $"lvl_{label} ({i + roomLabelStartIndex})";
+                            string newLabel = $"lvl_{label} ({i + startingIndex})";
                             Task.Run(async () => await RefactorLabelName(oldLabel, newLabel).ConfigureAwait(false));
                         }
-                        Document.ReplaceLine(occurrences[i].Row, $"#lvl_{writtenLabel} ({i + roomLabelStartIndex})");
+                        Document.ReplaceLine(occurrences[i].Row, $"#lvl_{writtenLabel} ({i + startingIndex})");
                     }
                 }
             }
