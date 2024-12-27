@@ -408,17 +408,19 @@ public sealed class GameInfoPanel : Panel {
             // Causes the game-info to fit to the scrollable again
             scrollable.Content = gameInfo;
 
+
             // Limit height to certain percentage of entire the window
+            bool horizontalScrollVisible = gameInfo.Width - 1 > scrollable.ClientSize.Width;
             scrollable.Size = new Size(
                 Math.Max(0, ClientSize.Width - Padding.Left - Padding.Right),
-                Math.Max(0, Math.Min(gameInfo.ActualHeight + Padding.Top + Padding.Bottom, (int)(Studio.Instance.Height * Settings.Instance.MaxGameInfoHeight)) - Padding.Top - Padding.Bottom));
+                Math.Max(0, Math.Min(gameInfo.ActualHeight + Padding.Top + Padding.Bottom + (horizontalScrollVisible ? Studio.ScrollBarSize : 0), (int)(Studio.Instance.Height * Settings.Instance.MaxGameInfoHeight)) - Padding.Top - Padding.Bottom));
 
             // Don't show while editing template (cause overlap)
             popoutButton.Visible = !gameInfo.EditingTemplate;
 
             // Account for scroll bar
-            bool scrollBarVisible = gameInfo.Height > scrollable.Height;
-            layout.Move(popoutButton, ClientSize.Width - Padding.Left - Padding.Right - PopoutButton.ButtonSize - (scrollBarVisible ? Studio.ScrollBarSize : 0), 0);
+            bool verticalScrollVisible = gameInfo.Height - 1 > scrollable.ClientSize.Height;
+            layout.Move(popoutButton, ClientSize.Width - Padding.Left - Padding.Right - PopoutButton.ButtonSize - (verticalScrollVisible ? Studio.ScrollBarSize : 0), 0);
         }
 
         void UpdateGameInfoStatus() {
