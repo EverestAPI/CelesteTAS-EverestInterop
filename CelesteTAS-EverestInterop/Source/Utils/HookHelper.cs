@@ -163,7 +163,7 @@ internal static class HookHelper {
     }
 
     /// Creates a callback to conditionally override the return value of the original method without ever even calling it
-    public static void OverrideReturn<T>(this MethodInfo method, Func<bool> condition, Action<T> valueProvider) {
+    public static void OverrideReturn<T>(this MethodInfo method, Func<bool> condition, Func<T> valueProvider) {
 #if DEBUG
         Debug.Assert(method.ReturnType == typeof(T));
 #endif
@@ -176,55 +176,21 @@ internal static class HookHelper {
 
             // Put the return value onto the stack
             cursor.EmitDelegate(valueProvider);
-
             cursor.EmitRet();
         });
     }
 
     /// Creates a callback to conditionally override the return value of the original methods without ever even calling them
-    public static void OverrideReturns<T>(Func<bool> condition, T value, [ItemCanBeNull] params MethodInfo[] methods) {
+    public static void OverrideReturns<T>(Func<bool> condition, T value, params MethodInfo?[] methods) {
         foreach (var method in methods) {
             method?.OverrideReturn(condition, value);
         }
     }
 
     /// Creates a callback to conditionally override the return value of the original methods without ever even calling them
-    public static void OverrideReturns<T>(Func<bool> condition, Action<T> valueProvider, [ItemCanBeNull] params MethodInfo[] methods) {
+    public static void OverrideReturns<T>(Func<bool> condition, Func<T> valueProvider, params MethodInfo?[] methods) {
         foreach (var method in methods) {
             method?.OverrideReturn(condition, valueProvider);
-        }
-    }
-
-    public static void SkipMethod(Type conditionType, string conditionMethodName, string methodName, params Type[] types) {
-        foreach (Type type in types) {
-            if (type?.GetMethodInfo(methodName) is { } method) {
-                SkipMethod(conditionType, conditionMethodName, method);
-            }
-        }
-    }
-
-    public static void SkipMethod(Type conditionType, string conditionMethodName, params MethodInfo[] methodInfos) {
-        foreach (MethodInfo methodInfo in methodInfos) {
-            methodInfo.IlHook(il => {
-                ILCursor ilCursor = new(il);
-                Instruction start = ilCursor.Next;
-                ilCursor.Emit(OpCodes.Call, conditionType.GetMethodInfo(conditionMethodName));
-                ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
-            });
-        }
-    }
-
-    public static void ReturnZeroMethod(Type conditionType, string conditionMethodName, params MethodInfo[] methods) {
-        foreach (MethodInfo methodInfo in methods) {
-            if (methodInfo != null && !methodInfo.IsGenericMethod && methodInfo.DeclaringType?.IsGenericType != true &&
-                methodInfo.ReturnType == typeof(float)) {
-                methodInfo.IlHook(il => {
-                    ILCursor ilCursor = new(il);
-                    Instruction start = ilCursor.Next;
-                    ilCursor.Emit(OpCodes.Call, conditionType.GetMethodInfo(conditionMethodName));
-                    ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ldc_R4, 0f).Emit(OpCodes.Ret);
-                });
-            }
         }
     }
 

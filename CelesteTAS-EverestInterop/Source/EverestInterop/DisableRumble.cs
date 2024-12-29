@@ -7,7 +7,7 @@ namespace TAS.EverestInterop;
 public static class DisableRumble {
     [Load]
     private static void Load() {
-        HookHelper.SkipMethod(typeof(DisableRumble), nameof(IsDisableRumble), typeof(MInput.GamePadData).GetMethodInfo("Rumble"));
+        typeof(MInput.GamePadData).GetMethodInfo("Rumble").SkipMethod(IsDisableRumble);
     }
 
     private static bool IsDisableRumble() {
