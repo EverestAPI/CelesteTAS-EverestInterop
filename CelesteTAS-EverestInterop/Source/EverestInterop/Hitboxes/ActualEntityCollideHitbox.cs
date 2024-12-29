@@ -15,7 +15,7 @@ namespace TAS.EverestInterop.Hitboxes;
 
 public static partial class ActualEntityCollideHitbox {
     private static readonly Dictionary<Entity, Vector2> LastPositions = new();
-    private static readonly Dictionary<Entity, bool> LastColldables = new();
+    private static readonly Dictionary<Entity, bool> LastCollidables = new();
 
     private static bool playerUpdated;
     private static bool dontSaveLastPosition;
@@ -66,10 +66,10 @@ public static partial class ActualEntityCollideHitbox {
         orig(self);
     }
 
-    private static void Clear() {
+    public static void Clear() {
         playerUpdated = false;
         LastPositions.Clear();
-        LastColldables.Clear();
+        LastCollidables.Clear();
     }
 
     private static void ModPlayerOrigUpdateEntity(ILContext il) {
@@ -163,15 +163,59 @@ public static partial class ActualEntityCollideHitbox {
         LastPositions[entity] = entity.Position;
     }
 
-    private static Vector2? LoadActualCollidePosition(this Entity entity) {
+    public static Vector2? LoadActualCollidePosition(this Entity entity) {
         return LastPositions.TryGetValue(entity, out Vector2 result) ? result : null;
     }
 
     private static void SaveActualCollidable(this Entity entity) {
-        LastColldables[entity] = entity.Collidable;
+        LastCollidables[entity] = GetCollidableHelper.GetCollidable(entity);
     }
 
-    private static bool LoadActualCollidable(this Entity entity) {
-        return LastColldables.TryGetValue(entity, out bool result) && result;
+    public static bool LoadActualCollidable(this Entity entity) {
+        return LastCollidables.TryGetValue(entity, out bool result) && result;
+    }
+}
+
+internal static class GetCollidableHelper {
+    private static Dictionary<Type, Func<Entity, bool>> LightningCollidable;
+    public static bool GetCollidable(Entity self) {
+        if (LightningCollidable.TryGetValue(self.GetType(), out Func<Entity, bool> func)) {
+            return func(self);
+        }
+        if (self is Lightning lightning) {
+            // FrostHelper.AttachedLightning inherits from Lightning, so no need to check before
+            return lightning.Collidable && !lightning.disappearing;
+        }
+        return self.Collidable;
+    }
+
+    [Initialize]
+    public static void Initialize() {
+        LightningCollidable = new();
+        if (ModUtils.GetType("ChronoHelper", "Celeste.Mod.ChronoHelper.Entities.DarkLightning") is { } chronoLightningType) {
+            // this is not a subclass of Lightning
+            LightningCollidable.Add(chronoLightningType, e => {
+                if (!e.Collidable) {
+                    return false;
+                }
+                if (chronoLightningType.GetFieldInfo("disappearing").GetValue(e) is bool b) {
+                    return !b;
+                }
+                return true;
+            });
+        }
+
+        if (ModUtils.GetType("Glyph", "Celeste.Mod.AcidHelper.Entities.AcidLightning") is { } acidLightningType) {
+            // this class inherits from Lightning but has its own "toggleOffset" and "disappearing"
+            LightningCollidable.Add(acidLightningType, e => {
+                if (!e.Collidable) {
+                    return false;
+                }
+                if (acidLightningType.GetFieldInfo("disappearing").GetValue(e) is bool b) {
+                    return !b;
+                }
+                return true;
+            });
+        }
     }
 }
