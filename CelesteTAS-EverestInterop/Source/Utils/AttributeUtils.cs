@@ -17,7 +17,7 @@ public static class AttributeUtils {
             .GetTypesSafe()
             .SelectMany(type => type
                 .GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-                .Where(info => info.GetParameters().Length == 0 && info.GetCustomAttribute<T>() != null))
+                .Where(info => info.GetCustomAttribute<T>() != null && info.GetParameters().Length == 0))
             .ToArray();
     }
 
