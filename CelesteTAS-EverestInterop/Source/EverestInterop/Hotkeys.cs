@@ -232,9 +232,6 @@ public static class Hotkeys {
     [Load]
     private static void Load() {
         On.Celeste.Input.Initialize += InputOnInitialize;
-        typeof(ModuleSettingsKeyboardConfigUI)
-            .GetMethodInfo(nameof(ModuleSettingsKeyboardConfigUI.Reset))
-            .IlHook(ModReload);
     }
 
     [Unload]
@@ -245,36 +242,6 @@ public static class Hotkeys {
     private static void InputOnInitialize(On.Celeste.Input.orig_Initialize orig) {
         orig();
         CommunicationWrapper.SendCurrentBindings();
-    }
-
-    private static void ModReload(ILContext il) {
-        bindingProperties = typeof(CelesteTasSettings)
-            .GetProperties(BindingFlags.Instance | BindingFlags.Public)
-            .Where(info => info.PropertyType == typeof(ButtonBinding) &&
-                           info.GetCustomAttribute<DefaultButtonBinding2Attribute>() is { } extraDefaultKeyAttribute &&
-                           extraDefaultKeyAttribute.ExtraKey != Keys.None);
-
-        ILCursor ilCursor = new(il);
-        if (ilCursor.TryGotoNext(
-                MoveType.After,
-                ins => ins.OpCode == OpCodes.Callvirt && ins.Operand.ToString().Contains("<Microsoft.Xna.Framework.Input.Keys>::Add(T)")
-            )) {
-            ilCursor.Emit(OpCodes.Ldloc_1).EmitDelegate<Action<object>>(AddExtraDefaultKey);
-        }
-    }
-
-    private static void AddExtraDefaultKey(object bindingEntry) {
-        if (bindingFieldInfo == null) {
-            bindingFieldInfo = bindingEntry.GetType().GetFieldInfo("Binding");
-        }
-
-        if (bindingFieldInfo?.GetValue(bindingEntry) is not ButtonBinding binding) {
-            return;
-        }
-
-        if (bindingProperties.FirstOrDefault(info => info.GetValue(TasSettings) == binding) is { } propertyInfo) {
-            binding.Keys.Add(propertyInfo.GetCustomAttribute<DefaultButtonBinding2Attribute>().ExtraKey);
-        }
     }
 
     public class Hotkey {
@@ -431,13 +398,5 @@ public static class MouseButtons {
                 DoublePressed = false;
             }
         }
-    }
-}
-
-public class DefaultButtonBinding2Attribute : DefaultButtonBindingAttribute {
-    public readonly XNAKeys ExtraKey;
-
-    public DefaultButtonBinding2Attribute(Buttons button, params XNAKeys[] keys) : base(button, keys.IsEmpty() ? XNAKeys.None : keys[0]) {
-        ExtraKey = keys.Length > 1 ? keys[1] : XNAKeys.None;
     }
 }
