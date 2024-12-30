@@ -923,7 +923,7 @@ public sealed class Editor : SkiaDrawable {
 
                 int? startLabelRow = null;
                 if (commandLine.Arguments.Length > 1) {
-                    (var label, startLabelRow) = readLines
+                    (string label, startLabelRow) = readLines
                         .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[1]}");
                     if (label == null) {
                         continue;
@@ -931,7 +931,7 @@ public sealed class Editor : SkiaDrawable {
                 }
                 int? endLabelRow = null;
                 if (commandLine.Arguments.Length > 2) {
-                    (var label, endLabelRow) = readLines
+                    (string label, endLabelRow) = readLines
                         .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[2]}");
                     if (label == null) {
                         continue;
@@ -942,7 +942,7 @@ public sealed class Editor : SkiaDrawable {
                 endLabelRow ??= readLines.Length - 1;
 
                 fileStack.Push((path, row + 1, endRow, targetCommand)); // Store current state
-                fileStack.Push((fullPath, startLabelRow.Value, endLabelRow.Value - 1, commandLine)); // Setup next state
+                fileStack.Push((fullPath, startLabelRow.Value + 1, endLabelRow.Value - 1, commandLine)); // Setup next state (skip start / end labels)
                 break;
             }
         }
@@ -2104,11 +2104,30 @@ public sealed class Editor : SkiaDrawable {
                 UserData = new CollapseAnchorData()
             });
 
-            if (foldings.FirstOrDefault(f => f.MinRow == row) is { } fold &&
-                Document.Caret.Row >= fold.MinRow && Document.Caret.Row <= fold.MaxRow)
-            {
-                Document.Caret.Row = fold.MinRow;
-                Document.Caret = ClampCaret(Document.Caret);
+            if (foldings.FirstOrDefault(f => f.MinRow == row) is var fold) {
+                // Keep caret outside collapse
+                if (Document.Caret.Row >= fold.MinRow && Document.Caret.Row <= fold.MaxRow) {
+                    Document.Caret.Row = fold.MinRow;
+                    Document.Caret = ClampCaret(Document.Caret);
+                }
+
+                // Clear selection if it's inside the collapse
+                if (!Document.Selection.Empty) {
+                    bool minInside = Document.Selection.Min.Row >= fold.MinRow && Document.Selection.Min.Row <= fold.MaxRow;
+                    bool maxInside = Document.Selection.Max.Row >= fold.MinRow && Document.Selection.Max.Row <= fold.MaxRow;
+
+                    if (minInside && maxInside) {
+                        Document.Selection.Clear();
+                        Document.Caret.Row = fold.MinRow;
+                        Document.Caret = ClampCaret(Document.Caret);
+                    } else if (minInside) {
+                        Document.Caret = ClampCaret(Document.Selection.Max);
+                        Document.Selection.Clear();
+                    } else if (maxInside) {
+                        Document.Caret = ClampCaret(Document.Selection.Min);
+                        Document.Selection.Clear();
+                    }
+                }
             }
         } else {
             Document.RemoveAnchorsIf(anchor => anchor.Row == row && anchor.UserData is CollapseAnchorData);
@@ -2122,13 +2141,32 @@ public sealed class Editor : SkiaDrawable {
                 UserData = new CollapseAnchorData()
             });
 
-            if (foldings.FirstOrDefault(f => f.MinRow == row) is { } fold &&
-                Document.Caret.Row >= fold.MinRow && Document.Caret.Row <= fold.MaxRow)
-            {
-                Document.Caret.Row = fold.MinRow;
-                Document.Caret = ClampCaret(Document.Caret);
+            if (foldings.FirstOrDefault(f => f.MinRow == row) is var fold) {
+                // Keep caret outside collapse
+                if (Document.Caret.Row >= fold.MinRow && Document.Caret.Row <= fold.MaxRow) {
+                    Document.Caret.Row = fold.MinRow;
+                    Document.Caret = ClampCaret(Document.Caret);
+                }
+
+                // Clear selection if it's inside the collapse
+                if (!Document.Selection.Empty) {
+                    bool minInside = Document.Selection.Min.Row >= fold.MinRow && Document.Selection.Min.Row <= fold.MaxRow;
+                    bool maxInside = Document.Selection.Min.Row >= fold.MinRow && Document.Selection.Min.Row <= fold.MaxRow;
+
+                    if (minInside && maxInside) {
+                        Document.Selection.Clear();
+                        Document.Caret.Row = fold.MinRow;
+                        Document.Caret = ClampCaret(Document.Caret);
+                    } else if (minInside) {
+                        Document.Caret = ClampCaret(Document.Selection.Max);
+                        Document.Selection.Clear();
+                    } else if (maxInside) {
+                        Document.Caret = ClampCaret(Document.Selection.Min);
+                        Document.Selection.Clear();
+                    }
+                }
             }
-        } else {
+        } else if (!collapse) {
             Document.RemoveAnchorsIf(anchor => anchor.Row == row && anchor.UserData is CollapseAnchorData);
         }
     }
@@ -2858,7 +2896,7 @@ public sealed class Editor : SkiaDrawable {
         // Otherwise just comment uncommented breakpoints
         bool allCommented = true;
         for (int row = minRow; row <= maxRow; row++) {
-            var line = Document.Lines[row];
+            string line = Document.Lines[row];
 
             if (UncommentedBreakpointRegex.IsMatch(line)) {
                 allCommented = false;
@@ -2867,7 +2905,7 @@ public sealed class Editor : SkiaDrawable {
         }
 
         for (int row = minRow; row <= maxRow; row++) {
-            var line = Document.Lines[row];
+            string line = Document.Lines[row];
             if (allCommented && CommentedBreakpointRegex.IsMatch(line)) {
                 int hashIdx = line.IndexOf('#');
                 Document.ReplaceLine(row, line.Remove(hashIdx, 1));
@@ -2910,8 +2948,8 @@ public sealed class Editor : SkiaDrawable {
         }
 
         for (int row = minRow; row <= maxRow; row++) {
-            var line = Document.Lines[row];
-            var lineTrimmed = line.TrimStart();
+            string line = Document.Lines[row];
+            string lineTrimmed = line.TrimStart();
 
             // Ignore blank lines
             if (string.IsNullOrEmpty(lineTrimmed) || lineTrimmed == "# ") {
@@ -2919,7 +2957,7 @@ public sealed class Editor : SkiaDrawable {
             }
 
             if (lineTrimmed.StartsWith('#')) {
-                if ((!Comment.IsLabel(lineTrimmed) && !ActionLine.TryParse(lineTrimmed[1..], out _)) || lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) {
+                if ((!Comment.IsLabel(lineTrimmed) && !lineTrimmed.StartsWith("#***") && !ActionLine.TryParse(lineTrimmed[1..], out _)) || lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) {
                     // Ignore non-input comments and special labels
                     continue;
                 }
@@ -2967,7 +3005,7 @@ public sealed class Editor : SkiaDrawable {
         // Only remove # when all lines start with it. Otherwise, add another
         bool allCommented = true;
         for (int row = minRow; row <= maxRow; row++) {
-            var line = Document.Lines[row];
+            string line = Document.Lines[row];
 
             if (!line.TrimStart().StartsWith('#')) {
                 allCommented = false;
@@ -2976,7 +3014,7 @@ public sealed class Editor : SkiaDrawable {
         }
 
         for (int row = minRow; row <= maxRow; row++) {
-            var line = Document.Lines[row];
+            string line = Document.Lines[row];
 
             if (allCommented) {
                 int hashIdx = line.IndexOf('#');
@@ -3418,6 +3456,9 @@ public sealed class Editor : SkiaDrawable {
         calculationState = null;
 
         if (e.Buttons.HasFlag(MouseButtons.Primary)) {
+            // Refocus in case something unfocused the editor
+            Focus();
+
             if (LocationToFolding(e.Location) is { } folding) {
                 ToggleCollapse(folding.MinRow);
 
@@ -3654,6 +3695,7 @@ public sealed class Editor : SkiaDrawable {
     public override int DrawY => scrollablePosition.Y;
     public override int DrawWidth => scrollable.Width;
     public override int DrawHeight => scrollable.Height;
+    public override bool CanDraw => !Document.UpdateInProgress;
 
     public override void Draw(SKSurface surface) {
         var canvas = surface.Canvas;

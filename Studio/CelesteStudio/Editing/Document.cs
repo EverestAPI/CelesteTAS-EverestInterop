@@ -131,6 +131,9 @@ public class Document : IDisposable {
 
     private readonly Stack<QueuedUpdate> updateStack = [];
 
+    /// Whether the document is currently being updated and might not be in a valid state
+    public bool UpdateInProgress => updateStack.Count != 0;
+
     /// Reports insertions and deletions of the document
     public event Action<Document, Dictionary<int, string>, Dictionary<int, string>>? TextChanged;
     private void OnTextChanged(Dictionary<int, string> insertions, Dictionary<int, string> deletions)
@@ -864,8 +867,8 @@ public class Document : IDisposable {
                 break;
         }
 
+        int newLineCount = newLines.Length > 0 ? newLines.Length - 1 : 0;
         if (Caret.Row >= row) {
-            int newLineCount = newLines.Length > 0 ? newLines.Length-1 : 0;
             Caret.Row += newLineCount;
         }
 
@@ -876,12 +879,16 @@ public class Document : IDisposable {
                 anchor.OnRemoved?.Invoke();
             }
         }
+
         // Move anchors below down
+        if (newLineCount == 0) {
+            return;
+        }
         for (int currRow = CurrentLines.Count - 1; currRow > row + 1 ; currRow--) {
             if (CurrentAnchors.Remove(currRow, out var belowAnchors)) {
-                CurrentAnchors[currRow + newLines.Length - 2] = belowAnchors;
+                CurrentAnchors[currRow + newLineCount] = belowAnchors;
                 foreach (var anchor in belowAnchors) {
-                    anchor.Row += newLines.Length - 2;
+                    anchor.Row += newLineCount;
                 }
             }
         }

@@ -130,7 +130,6 @@ public sealed class PopupMenu : Scrollable {
         protected override void OnMouseWheel(MouseEventArgs e) {
             // Update selected entry on scroll
             menu.Scroll += OnScroll;
-            Console.WriteLine(e.Delta.Height);
 
             if (Settings.Instance.ScrollSpeed > 0.0f) {
                 // Manually scroll to respect our scroll speed

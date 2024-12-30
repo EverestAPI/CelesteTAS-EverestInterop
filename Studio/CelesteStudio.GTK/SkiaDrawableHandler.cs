@@ -1,13 +1,14 @@
 using Cairo;
 using CelesteStudio.Controls;
 using CelesteStudio.Util;
+using Eto.Forms;
 using Eto.GtkSharp.Forms;
 using SkiaSharp;
 using System;
 
 namespace CelesteStudio.GTK;
 
-public class SkiaDrawableHandler : GtkPanel<Gtk.EventBox, SkiaDrawable, SkiaDrawable.ICallback>, SkiaDrawable.IHandler {
+public class SkiaDrawableHandler : GtkPanel<Gtk.EventBox, SkiaDrawable, Control.ICallback>, SkiaDrawable.IHandler {
     private Gtk.Box content = null!;
 
     protected override WeakConnector CreateConnector() => new SkiaDrawableConnector();
@@ -55,31 +56,37 @@ public class SkiaDrawableHandler : GtkPanel<Gtk.EventBox, SkiaDrawable, SkiaDraw
             }
 
             var drawable = Handler.Widget;
-            int width = drawable.DrawWidth, height = drawable.DrawHeight;
-            if (surface == null || imageSurface == null || width != bitmap?.Width || height != bitmap?.Height) {
-                var colorType = SKImageInfo.PlatformColorType;
+            if (drawable.CanDraw) {
+                int width = drawable.DrawWidth, height = drawable.DrawHeight;
+                if (surface == null || imageSurface == null || width != bitmap?.Width || height != bitmap?.Height) {
+                    var colorType = SKImageInfo.PlatformColorType;
 
-                bitmap?.Dispose();
-                bitmap = new SKBitmap(width, height, colorType, SKAlphaType.Premul);
-                IntPtr pixels = bitmap.GetPixels();
+                    bitmap?.Dispose();
+                    bitmap = new SKBitmap(width, height, colorType, SKAlphaType.Premul);
+                    IntPtr pixels = bitmap.GetPixels();
 
-                surface?.Dispose();
-                surface = SKSurface.Create(new SKImageInfo(bitmap.Info.Width, bitmap.Info.Height, colorType, SKAlphaType.Premul), pixels, bitmap.Info.RowBytes);
-                surface.Canvas.Flush();
+                    surface?.Dispose();
+                    surface = SKSurface.Create(new SKImageInfo(bitmap.Info.Width, bitmap.Info.Height, colorType, SKAlphaType.Premul), pixels, bitmap.Info.RowBytes);
+                    surface.Canvas.Flush();
 
-                imageSurface?.Dispose();
-                imageSurface = new ImageSurface(pixels, Format.Argb32, bitmap.Width, bitmap.Height, bitmap.Width * 4);
+                    imageSurface?.Dispose();
+                    imageSurface = new ImageSurface(pixels, Format.Argb32, bitmap.Width, bitmap.Height, bitmap.Width * 4);
+                }
+
+                var canvas = surface.Canvas;
+                using (new SKAutoCanvasRestore(canvas, true)) {
+                    canvas.Clear(drawable.BackgroundColor.ToSkia());
+                    canvas.Translate(-drawable.DrawX, -drawable.DrawY);
+                    drawable.Draw(surface);
+                }
+            } else {
+                drawable.Invalidate();
             }
 
-            var canvas = surface.Canvas;
-            using (new SKAutoCanvasRestore(canvas, true)) {
-                canvas.Clear(drawable.BackgroundColor.ToSkia());
-                canvas.Translate(-drawable.DrawX, -drawable.DrawY);
-                drawable.Draw(surface);
+            if (imageSurface != null) {
+                args.Cr.SetSourceSurface(imageSurface, drawable.DrawX, drawable.DrawY);
+                args.Cr.Paint();
             }
-
-            args.Cr.SetSourceSurface(imageSurface, drawable.DrawX, drawable.DrawY);
-            args.Cr.Paint();
         }
     }
 

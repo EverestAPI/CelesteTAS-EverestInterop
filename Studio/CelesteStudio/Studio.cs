@@ -84,7 +84,6 @@ public sealed class Studio : Form {
         Instance = this;
         Icon = Assets.AppIcon;
         MinimumSize = new Size(250, 250);
-        AllowDrop = true;
 
         WindowCreationCallback = windowCreationCallback;
 
@@ -179,6 +178,17 @@ public sealed class Studio : Form {
             }.FixBorder();
             Editor = new Editor(Document.Dummy, editorScrollable);
             editorScrollable.Content = Editor;
+
+            // WPF requires a control for drag n' drop support
+            Editor.AllowDrop = true;
+            Editor.DragDrop += (_, e) => {
+                if (e.Data.ContainsUris && e.Data.Uris.Length > 0) {
+                    OpenFile(Uri.UnescapeDataString(e.Data.Uris[0].AbsolutePath));
+                }
+            };
+            Editor.DragEnter += (_, e) => {
+                e.Effects = DragEffects.Copy;
+            };
 
             // On GTK, prevent the scrollable from reacting to Home/End
             if (Eto.Platform.Instance.IsGtk) {
@@ -350,15 +360,6 @@ public sealed class Studio : Form {
     private void ApplySettings() {
         Topmost = Settings.Instance.AlwaysOnTop;
         Menu = CreateMenu(); // Recreate menu to reflect changes
-    }
-
-    protected override void OnDragDrop(DragEventArgs e) {
-        if (e.Data.ContainsUris && e.Data.Uris.Length > 0) {
-            OpenFile(Uri.UnescapeDataString(e.Data.Uris[0].AbsolutePath));
-        }
-    }
-    protected override void OnDragEnter(DragEventArgs e) {
-        e.Effects = DragEffects.Copy;
     }
 
     protected override void OnClosing(CancelEventArgs e) {
