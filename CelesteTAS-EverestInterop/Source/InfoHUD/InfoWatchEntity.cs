@@ -58,10 +58,16 @@ public static class InfoWatchEntity {
     private static AreaKey currentAreaKey;
     internal static List<WeakReference> WatchedEntities = [];
     internal static List<WeakReference> WatchedEntities_Save = []; // Used for save-states
+
     private static readonly HashSet<UniqueEntityId> WatchedEntityIds = [];
 
     /// Entities which are actively watched for the current frame
     internal static readonly HashSet<Entity> CurrentlyWatchedEntities = [];
+
+    [PublicAPI]
+    public static bool IsWatching(Entity entity) {
+        return CurrentlyWatchedEntities.Contains(entity) || (entity.GetEntityData() is EntityData entityData && WatchedEntityIds.Contains(new UniqueEntityId(entity, entityData)));
+    }
 
     internal static void CheckMouseButtons() {
         if (MouseButtons.Right.Pressed) {

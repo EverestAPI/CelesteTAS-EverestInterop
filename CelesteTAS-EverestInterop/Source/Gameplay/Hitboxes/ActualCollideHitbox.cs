@@ -27,7 +27,9 @@ public static class ActualCollideHitbox {
     private static readonly Dictionary<Type, Func<Entity, bool>> CollidableHandlers = new();
 
     // Disable actual-collide hitboxes while they aren't used
-    private static bool Disabled => !TasSettings.ShowHitboxes || TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off || Manager.FastForwarding;
+
+    [PublicAPI]
+    public static bool Disabled => !TasSettings.ShowHitboxes || TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off || Manager.FastForwarding;
 
     private static bool playerUpdated;
     private static bool colliderListRendering;
@@ -142,16 +144,17 @@ public static class ActualCollideHitbox {
         } else {
             "Failed to apply patch for storing entity state during Update for actual-collide-hitboxes".Log(LogLevel.Warn);
         }
+    }
 
-        static void StoreCollider(Entity? entity) {
-            // If a PlayerCollider is checked multiple times, only use the first one
-            if (entity == null || playerUpdated || Disabled) {
-                return;
-            }
-
-            LastPositions[entity] = entity.Position;
-            LastCollidables[entity] = entity.IsCollidable();
+    [PublicAPI]
+    public static void StoreCollider(Entity? entity) {
+        // If a PlayerCollider is checked multiple times, only use the first one
+        if (entity == null || playerUpdated || Disabled) {
+            return;
         }
+
+        LastPositions[entity] = entity.Position;
+        LastCollidables[entity] = entity.IsCollidable();
     }
 
     private static void On_Player_Update(On.Celeste.Player.orig_Update orig, Player self) {
