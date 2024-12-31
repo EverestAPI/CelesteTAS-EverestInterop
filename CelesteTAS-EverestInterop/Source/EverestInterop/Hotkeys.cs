@@ -63,6 +63,8 @@ public static class Hotkeys {
     public static Hotkey CameraRight { get; private set; }
     public static Hotkey CameraZoomIn { get; private set; }
     public static Hotkey CameraZoomOut { get; private set; }
+
+    public static Hotkey OpenConsole { get; private set; }
     public static float RightThumbSticksX => padState.ThumbSticks.Right.X;
 
     public static readonly Dictionary<HotkeyID, Hotkey> KeysDict = new();
@@ -72,7 +74,8 @@ public static class Hotkeys {
     private static readonly List<HotkeyID> HotkeyIDsIgnoreOnStudio = new() {
         HotkeyID.InfoHud, HotkeyID.FreeCamera, HotkeyID.CameraUp, HotkeyID.CameraDown, HotkeyID.CameraLeft, HotkeyID.CameraRight,
         HotkeyID.CameraZoomIn,
-        HotkeyID.CameraZoomOut
+        HotkeyID.CameraZoomOut,
+        HotkeyID.OpenConsole
     };
 
     static Hotkeys() {
@@ -121,6 +124,13 @@ public static class Hotkeys {
         KeysDict[HotkeyID.CameraRight] = CameraRight = BindingToHotkey(new ButtonBinding(0, Keys.Right));
         KeysDict[HotkeyID.CameraZoomIn] = CameraZoomIn = BindingToHotkey(new ButtonBinding(0, Keys.Home));
         KeysDict[HotkeyID.CameraZoomOut] = CameraZoomOut = BindingToHotkey(new ButtonBinding(0, Keys.End));
+
+        ButtonBinding debugConsole = Celeste.Mod.Core.CoreModule.Settings.GetPropertyValue<ButtonBinding>("DebugConsole");
+        ButtonBinding toggleDebugConsole = Celeste.Mod.Core.CoreModule.Settings.GetPropertyValue<ButtonBinding>("ToggleDebugConsole"); // Everest >= 4351
+        List<Keys> keys = debugConsole.Keys.Union(toggleDebugConsole.Keys).ToList();
+        List<Buttons> buttons = debugConsole.Buttons.Union(toggleDebugConsole.Buttons).ToList();
+        KeysDict[HotkeyID.OpenConsole] = OpenConsole = new Hotkey(keys, buttons, false, false);
+
 
         hotKeysInteractWithStudio = KeysDict.Where(pair => !HotkeyIDsIgnoreOnStudio.Contains(pair.Key)).Select(pair => pair.Value).ToList();
         KeysInteractWithStudio = KeysDict.Where(pair => !HotkeyIDsIgnoreOnStudio.Contains(pair.Key))
@@ -215,6 +225,10 @@ public static class Hotkeys {
             if (CenterCamera.Pressed) {
                 TasSettings.CenterCamera = !TasSettings.CenterCamera;
                 CelesteTasModule.Instance.SaveSettings();
+            }
+
+            if (OpenConsole.Pressed) {
+                ConsoleEnhancementFromTasHelper.SetOpenConsole();
             }
         }
 

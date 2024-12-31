@@ -159,6 +159,8 @@ public static class Manager {
                 NextState = State.Paused;
             }
         }
+
+        ConsoleEnhancementFromTasHelper.UpdateCommands();
     }
 
     /// Updates everything around the TAS itself, like hotkeys, studio-communication, etc.
