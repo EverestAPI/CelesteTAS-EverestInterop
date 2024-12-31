@@ -11,6 +11,7 @@ using Monocle;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
+using TAS.Gameplay;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
@@ -84,9 +85,6 @@ public static class SpeedrunToolInterop {
             SafeCommand.DisallowUnsafeInput = disallowUnsafeInput;
             DesyncFixer.AuraHelperSharedRandom = auraRandom.DeepCloneShared();
             BetterInvincible.Invincible = Manager.Running && betterInvincible;
-            // note that tas will not invoke enable/disable run if it's using load state
-            // so if our "Set Invincible true" is after the savepoint, invoked, and get deleted later
-            // then Invincible will still be true after load state
         };
         Action clear = () => {
             savedEntityData = null;

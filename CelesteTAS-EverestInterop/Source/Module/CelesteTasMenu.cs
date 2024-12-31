@@ -11,6 +11,7 @@ using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
+using TAS.Gameplay;
 using TAS.Input;
 using TAS.Utils;
 

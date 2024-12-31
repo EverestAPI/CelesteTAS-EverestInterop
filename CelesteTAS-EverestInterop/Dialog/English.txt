@@ -106,10 +106,8 @@ TAS_SHOW_STUDIO_UPDATE_BANNER=       Show Studio Update Banner
 TAS_OPEN_CONSOLE_IN_TAS=             Allow Opening Console in TAS
 TAS_SCROLLABLE_HISTORY_LOG=          Scrollable Console History Log
 TAS_BETTER_INVINCIBILITY=            Better Invincibility
-TAS_BETTER_INVINCIBLE_DESCRIPTION=   Only applies to TAS.{n}
-                                     Now "Set Invincible true" command makes you invincible only during this TAS,{n}
-                                     and player will not bounce at the bottom of a level boundary,{n}
-                                     or accidentally refill dash while Maddy shouldn't. So this avoids desync.
+TAS_BETTER_INVINCIBLE_DESCRIPTION=   Running "Set Invincible true" will still prevent dying, but avoids gameplay changes like bouncing of the death plane,
+                                     to avoid accidentally desyncing the TAS. Applies only while a TAS is active.
 TAS_HIDE_FREEZE_FRAMES=              Hide Freeze Frames during TAS
 TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_1=When a freeze frame is encountered, run it and continue to the next frame
 TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_2=before rendering. Applies only while a TAS is active.

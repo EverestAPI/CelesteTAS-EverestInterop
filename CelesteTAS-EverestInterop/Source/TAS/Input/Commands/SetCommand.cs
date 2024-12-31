@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
+using TAS.Gameplay;
 using TAS.ModInterop;
 using TAS.Utils;
 
@@ -380,10 +381,6 @@ public static class SetCommand {
             return;
         }
 
-        if (settingName == "Invincible" && BetterInvincible.Handle((Assists)settings, (bool)values[0])) {
-            return;
-        }
-
         if (!HandleSpecialCases(settingName, values[0])) {
             field.SetValue(settings, values[0]);
 
@@ -423,16 +420,19 @@ public static class SetCommand {
 
         switch (settingName) {
             // Assists
-            case "GameSpeed":
+            case nameof(Assists.Invincible) when Manager.Running && TasSettings.BetterInvincible:
+                BetterInvincible.Invincible = (bool) value!;
+                break;
+            case nameof(Assists.GameSpeed):
                 saveData.Assists.GameSpeed = (int) value!;
                 Engine.TimeRateB = saveData.Assists.GameSpeed / 10f;
                 break;
-            case "MirrorMode":
+            case nameof(Assists.MirrorMode):
                 saveData.Assists.MirrorMode = (bool) value!;
                 Celeste.Input.MoveX.Inverted = Celeste.Input.Aim.InvertedX = saveData.Assists.MirrorMode;
                 Celeste.Input.Feather.InvertedX = saveData.Assists.MirrorMode;
                 break;
-            case "PlayAsBadeline":
+            case nameof(Assists.PlayAsBadeline):
                 saveData.Assists.PlayAsBadeline = (bool) value!;
                 if (player != null) {
                     var mode = saveData.Assists.PlayAsBadeline
@@ -445,7 +445,7 @@ public static class SetCommand {
                     }
                 }
                 break;
-            case "DashMode":
+            case nameof(Assists.DashMode):
                 saveData.Assists.DashMode = (Assists.DashModes) value!;
                 if (player != null) {
                     player.Dashes = Math.Min(player.Dashes, player.MaxDashes);
@@ -453,7 +453,7 @@ public static class SetCommand {
                 break;
 
             // SaveData
-            case "VariantMode":
+            case nameof(SaveData.VariantMode):
                 saveData.VariantMode = (bool) value!;
                 saveData.AssistMode = false;
                 if (!saveData.VariantMode) {
@@ -462,7 +462,7 @@ public static class SetCommand {
                     ResetVariants(assists);
                 }
                 break;
-            case "AssistMode":
+            case nameof(SaveData.AssistMode):
                 saveData.AssistMode = (bool) value!;
                 saveData.VariantMode = false;
                 if (!saveData.AssistMode) {
@@ -473,22 +473,23 @@ public static class SetCommand {
                 break;
 
             // Settings
-            case "Rumble":
+            case nameof(Settings.Rumble):
                 settings.Rumble = (RumbleAmount) value!;
                 Celeste.Input.Rumble(RumbleStrength.Medium, RumbleLength.Medium);
                 break;
-            case "GrabMode":
+            case nameof(Settings.GrabMode):
                 settings.GrabMode = (GrabModes) value!;
                 Celeste.Input.ResetGrab();
                 break;
-            case "Fullscreen":
-            case "WindowScale":
-            case "VSync":
-            case "MusicVolume":
-            case "SFXVolume":
-            case "Language":
+            case nameof(Settings.Fullscreen):
+            case nameof(Settings.WindowScale):
+            case nameof(Settings.VSync):
+            case nameof(Settings.MusicVolume):
+            case nameof(Settings.SFXVolume):
+            case nameof(Settings.Language):
                 // Intentional no-op. A TAS should not modify these user preferences
                 break;
+
             default:
                 return false;
         }
