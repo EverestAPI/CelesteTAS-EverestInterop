@@ -9,6 +9,7 @@ using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
+using TAS.InfoHUD;
 using YamlDotNet.Serialization;
 
 namespace TAS.Module;

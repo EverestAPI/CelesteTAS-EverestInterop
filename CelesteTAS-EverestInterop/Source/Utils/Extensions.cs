@@ -751,6 +751,7 @@ internal static class CloneUtil {
 }
 
 internal static class EnumerableExtension {
+    /// Returns the first matching element; otherwise null
     public static T? FirstOrNull<T>(this IEnumerable<T> enumerable, Func<T, bool> predicate) where T : struct {
         foreach (var item in enumerable) {
             if (predicate(item)) {
@@ -759,6 +760,16 @@ internal static class EnumerableExtension {
         }
 
         return null;
+    }
+
+    private readonly struct DynamicComparer<T>(Func<T, T, int> compare) : IComparer<T> {
+        public int Compare(T? x, T? y) => compare(x!, y!);
+    }
+
+    /// Sorts the elements according to the comparision function
+    /// <list type="table"><listheader><term> Value</term><description> Meaning</description></listheader><item><term> Less than zero</term><description><paramref name="x" /> is less than <paramref name="y" />.</description></item><item><term> Zero</term><description><paramref name="x" /> equals <paramref name="y" />.</description></item><item><term> Greater than zero</term><description><paramref name="x" /> is greater than <paramref name="y" />.</description></item></list>
+    public static IEnumerable<T> Sort<T>(this IEnumerable<T> enumerable, Func<T, T, int> compare) {
+        return enumerable.Order(new DynamicComparer<T>(compare));
     }
 }
 

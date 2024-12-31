@@ -4,6 +4,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using TAS.EverestInterop.InfoHUD;
+using TAS.InfoHUD;
 using TAS.Module;
 
 namespace TAS.EverestInterop.Hitboxes;
@@ -29,6 +30,6 @@ public static class HitboxTrigger {
 
     private static bool IsHideTriggerHitbox(Entity entity) {
         return TasSettings.ShowHitboxes && !TasSettings.ShowTriggerHitboxes && entity is Trigger &&
-               !InfoWatchEntity.WatchingEntities.Contains(entity);
+               !InfoWatchEntity.CurrentlyWatchedEntities.Contains(entity);
     }
 }

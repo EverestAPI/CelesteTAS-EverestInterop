@@ -12,6 +12,7 @@ using TAS.Module;
 using TAS.Utils;
 using Mono.Cecil.Cil;
 using Microsoft.Xna.Framework;
+using TAS.InfoHUD;
 
 namespace TAS.EverestInterop;
 

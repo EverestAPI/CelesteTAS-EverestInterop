@@ -12,6 +12,7 @@ using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Gameplay;
+using TAS.InfoHUD;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
@@ -48,7 +49,7 @@ public static class SpeedrunToolInterop {
     public static void AddSaveLoadAction() {
         Action<Dictionary<Type, Dictionary<string, object>>, Level> save = (_, _) => {
             savedEntityData = EntityDataHelper.CachedEntityData.DeepCloneShared();
-            InfoWatchEntity.SavedRequireWatchEntities = InfoWatchEntity.RequireWatchEntities.DeepCloneShared();
+            InfoWatchEntity.WatchedEntities_Save = InfoWatchEntity.WatchedEntities.DeepCloneShared();
             groupCounter = CycleHitboxColor.GroupCounter;
             simulatePauses = StunPauseCommand.SimulatePauses;
             pauseOnCurrentFrame = StunPauseCommand.PauseOnCurrentFrame;
@@ -66,7 +67,7 @@ public static class SpeedrunToolInterop {
         };
         Action<Dictionary<Type, Dictionary<string, object>>, Level> load = (_, _) => {
             EntityDataHelper.CachedEntityData = savedEntityData.DeepCloneShared();
-            InfoWatchEntity.RequireWatchEntities = InfoWatchEntity.SavedRequireWatchEntities.DeepCloneShared();
+            InfoWatchEntity.WatchedEntities = InfoWatchEntity.WatchedEntities_Save.DeepCloneShared();
             CycleHitboxColor.GroupCounter = groupCounter;
             StunPauseCommand.SimulatePauses = simulatePauses;
             StunPauseCommand.PauseOnCurrentFrame = pauseOnCurrentFrame;
@@ -90,7 +91,7 @@ public static class SpeedrunToolInterop {
             savedEntityData = null;
             pressKeys = null;
             followers = null;
-            InfoWatchEntity.SavedRequireWatchEntities.Clear();
+            InfoWatchEntity.WatchedEntities_Save.Clear();
             auraRandom = null;
             betterInvincible = false;
         };

@@ -7,6 +7,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using TAS.EverestInterop.InfoHUD;
+using TAS.InfoHUD;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
@@ -90,7 +91,7 @@ public static class HitboxSimplified {
     }
 
     private static bool HideHitbox(Entity entity) {
-        if (TasSettings.ShowHitboxes && TasSettings.SimplifiedHitboxes && !InfoWatchEntity.WatchingEntities.Contains(entity)) {
+        if (TasSettings.ShowHitboxes && TasSettings.SimplifiedHitboxes && !InfoWatchEntity.CurrentlyWatchedEntities.Contains(entity)) {
             Type type = entity.GetType();
             if (UselessTypes.Contains(type)) {
                 return true;
