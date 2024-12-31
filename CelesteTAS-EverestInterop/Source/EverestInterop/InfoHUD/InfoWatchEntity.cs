@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication;
 using TAS.EverestInterop.Hitboxes;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -37,6 +38,9 @@ public static class InfoWatchEntity {
     public static readonly HashSet<Entity> WatchingEntities = new();
     private static AreaKey requireWatchAreaKey;
 
+    public static event Action<Entity> OnAddOrRemoveWatching = null;
+
+    public static event Action OnClearWatchEntities = null;
 
     [Load]
     private static void Load() {
@@ -74,9 +78,10 @@ public static class InfoWatchEntity {
         if (Engine.Scene is Level level) {
             Vector2 mouseWorldPosition = level.MouseToWorld(MouseButtons.Position);
             Entity tempEntity = new() {Position = mouseWorldPosition, Collider = new Hitbox(1, 1)};
+            HashSet<Entity> unimportantTriggers = TasHelperInterop.GetUnimportantTriggers();
             List<Entity> allEntities = level.Entities.Where(entity =>
                 entity.GetType() != typeof(Entity)
-                && entity is not ParticleSystem).ToList();
+                && entity is not ParticleSystem && !unimportantTriggers.Contains(entity)).ToList();
 
             List<Entity> noColliderEntities = allEntities.Where(entity =>
                 entity.Collider == null
@@ -134,6 +139,8 @@ public static class InfoWatchEntity {
         }
 
         GameInfo.Update();
+
+        OnAddOrRemoveWatching?.Invoke(clickedEntity);
     }
 
     private static void EntityListOnDebugRender(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
@@ -178,6 +185,8 @@ public static class InfoWatchEntity {
         RequireWatchUniqueEntityIds.Clear();
         WatchingEntities.Clear();
         GameInfo.Update();
+
+        OnClearWatchEntities?.Invoke();
     }
 
     public static string GetInfo(string separator = "\n", bool alwaysUpdate = false, int? decimals = null) {

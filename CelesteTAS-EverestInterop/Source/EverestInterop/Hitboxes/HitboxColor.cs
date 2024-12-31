@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Celeste;
@@ -27,6 +28,10 @@ public static class HitboxColor {
     public static Color EntityColorInversely => EntityColor.Invert();
     public static Color EntityColorInverselyLessAlpha => EntityColorInversely * 0.6f;
     public static float UnCollidableAlpha => TasSettings.UnCollidableHitboxesOpacity / 10f;
+
+    public delegate bool HitboxColorGetDelegate(Entity entity, out Color color);
+
+    public static List<HitboxColorGetDelegate> HitboxColorGetters = new();
 
     public static TextMenu.Item CreateEntityHitboxColorButton(TextMenu textMenu, bool inGame) {
         TextMenu.Item item = new TextMenu.Button("Entity Hitbox Color".ToDialogText() + $": {ColorToHex(TasSettings.EntityHitboxColor)}").Pressed(
@@ -138,13 +143,27 @@ public static class HitboxColor {
             return color;
         }
 
-        Color customColor = entity switch {
-            ChangeRespawnTrigger => RespawnTriggerColor,
-            Trigger => TasSettings.TriggerHitboxColor,
-            Platform => TasSettings.PlatformHitboxColor,
-            LookoutBlocker => Color.Green,
-            _ => TasSettings.EntityHitboxColor
-        };
+        Color customColor = Color.Red; // i hate warning CS0165
+        bool found = false;
+
+        foreach (HitboxColorGetDelegate getter in HitboxColorGetters) {
+            if (getter(entity, out Color c)) {
+                customColor = c;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            customColor = entity switch {
+                ChangeRespawnTrigger => RespawnTriggerColor,
+                Trigger => TasSettings.TriggerHitboxColor,
+                Platform => TasSettings.PlatformHitboxColor,
+                LookoutBlocker => Color.Green,
+                _ => TasSettings.EntityHitboxColor
+            };
+        }
+
 
         if (!entity.Collidable) {
             customColor *= UnCollidableAlpha;

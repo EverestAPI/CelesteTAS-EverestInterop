@@ -13,6 +13,7 @@ public static class RestoreSettings {
     private static Assists? origAssists;
     private static bool backupAssists;
     private static Dictionary<EverestModule, object> origModSettings;
+    private static readonly HashSet<EverestModule> blacklist = new();
 
     // ReSharper disable once UnusedMember.Local
     [EnableRun]
@@ -35,6 +36,9 @@ public static class RestoreSettings {
 
         origModSettings = new Dictionary<EverestModule, object>();
         foreach (EverestModule module in Everest.Modules) {
+            if (blacklist.Contains(module)) {
+                continue;
+            }
             if (module._Settings != null && module.SettingsType != null && module._Settings is not CelesteTasSettings) {
                 origModSettings.Add(module, module._Settings.ShallowClone());
             }
@@ -94,5 +98,9 @@ public static class RestoreSettings {
             backupAssists = false;
             origAssists = SaveData.Instance.Assists;
         }
+    }
+
+    public static void AddToBlacklist(EverestModule module) {
+        blacklist.Add(module);
     }
 }
