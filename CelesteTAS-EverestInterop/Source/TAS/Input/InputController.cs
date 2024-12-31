@@ -23,9 +23,9 @@ public class TasFileChangedAttribute : Attribute;
 public class InputController {
     [Initialize]
     private static void Initialize() {
-        AttributeUtils.CollectMethods<ClearInputsAttribute>();
-        AttributeUtils.CollectMethods<ParseFileEndAttribute>();
-        AttributeUtils.CollectMethods<TasFileChangedAttribute>();
+        AttributeUtils.CollectAllMethods<ClearInputsAttribute>();
+        AttributeUtils.CollectAllMethods<ParseFileEndAttribute>();
+        AttributeUtils.CollectAllMethods<TasFileChangedAttribute>();
     }
 
     private readonly Dictionary<string, FileSystemWatcher> watchers = new();

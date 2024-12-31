@@ -61,9 +61,9 @@ internal static class HookHelper {
 #if DEBUG
         if (methodInfo.IsStatic) {
             var parameters = methodInfo.GetParameters();
-            Debug.Assert(parameters.Length >= 1 && parameters[0].ParameterType == typeof(T));
+            Debug.Assert(parameters.Length >= 1 && parameters[0].ParameterType.IsSameOrSubclassOf(typeof(T)));
         } else {
-            Debug.Assert(methodInfo.DeclaringType == typeof(T));
+            Debug.Assert(methodInfo.DeclaringType?.IsSameOrSubclassOf(typeof(T)) ?? false);
         }
 #endif
         methodInfo.IlHook((cursor, _) => {
@@ -87,9 +87,9 @@ internal static class HookHelper {
 #if DEBUG
         if (methodInfo.IsStatic) {
             var parameters = methodInfo.GetParameters();
-            Debug.Assert(parameters.Length >= 1 && parameters[0].ParameterType == typeof(T));
+            Debug.Assert(parameters.Length >= 1 && parameters[0].ParameterType.IsSameOrSubclassOf(typeof(T)));
         } else {
-            Debug.Assert(methodInfo.DeclaringType == typeof(T));
+            Debug.Assert(methodInfo.DeclaringType?.IsSameOrSubclassOf(typeof(T)) ?? false);
         }
 #endif
         methodInfo.IlHook((cursor, _) => {
@@ -126,7 +126,7 @@ internal static class HookHelper {
     /// Creates a callback to conditionally override the return value of the original method without ever even calling it
     public static void OverrideReturn<T>(this MethodInfo method, Func<bool> condition, T value) {
 #if DEBUG
-        Debug.Assert(method.ReturnType == typeof(T));
+        Debug.Assert(typeof(T).IsSameOrSubclassOf(method.ReturnType));
 #endif
         method.IlHook((cursor, _) => {
             var start = cursor.MarkLabel();
@@ -165,7 +165,7 @@ internal static class HookHelper {
     /// Creates a callback to conditionally override the return value of the original method without ever even calling it
     public static void OverrideReturn<T>(this MethodInfo method, Func<bool> condition, Func<T> valueProvider) {
 #if DEBUG
-        Debug.Assert(method.ReturnType == typeof(T));
+        Debug.Assert(typeof(T).IsSameOrSubclassOf(method.ReturnType));
 #endif
         method.IlHook((cursor, _) => {
             var start = cursor.MarkLabel();

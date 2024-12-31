@@ -923,7 +923,7 @@ public sealed class Editor : SkiaDrawable {
 
                 int? startLabelRow = null;
                 if (commandLine.Arguments.Length > 1) {
-                    (var label, startLabelRow) = readLines
+                    (string label, startLabelRow) = readLines
                         .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[1]}");
                     if (label == null) {
                         continue;
@@ -931,7 +931,7 @@ public sealed class Editor : SkiaDrawable {
                 }
                 int? endLabelRow = null;
                 if (commandLine.Arguments.Length > 2) {
-                    (var label, endLabelRow) = readLines
+                    (string label, endLabelRow) = readLines
                         .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[2]}");
                     if (label == null) {
                         continue;
@@ -942,7 +942,7 @@ public sealed class Editor : SkiaDrawable {
                 endLabelRow ??= readLines.Length - 1;
 
                 fileStack.Push((path, row + 1, endRow, targetCommand)); // Store current state
-                fileStack.Push((fullPath, startLabelRow.Value, endLabelRow.Value - 1, commandLine)); // Setup next state
+                fileStack.Push((fullPath, startLabelRow.Value + 1, endLabelRow.Value - 1, commandLine)); // Setup next state (skip start / end labels)
                 break;
             }
         }
@@ -3456,6 +3456,9 @@ public sealed class Editor : SkiaDrawable {
         calculationState = null;
 
         if (e.Buttons.HasFlag(MouseButtons.Primary)) {
+            // Refocus in case something unfocused the editor
+            Focus();
+
             if (LocationToFolding(e.Location) is { } folding) {
                 ToggleCollapse(folding.MinRow);
 
@@ -3692,6 +3695,7 @@ public sealed class Editor : SkiaDrawable {
     public override int DrawY => scrollablePosition.Y;
     public override int DrawWidth => scrollable.Width;
     public override int DrawHeight => scrollable.Height;
+    public override bool CanDraw => !Document.UpdateInProgress;
 
     public override void Draw(SKSurface surface) {
         var canvas = surface.Canvas;

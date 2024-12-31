@@ -40,8 +40,8 @@ public static class Manager {
 
     [Initialize]
     private static void Initialize() {
-        AttributeUtils.CollectMethods<EnableRunAttribute>();
-        AttributeUtils.CollectMethods<DisableRunAttribute>();
+        AttributeUtils.CollectAllMethods<EnableRunAttribute>();
+        AttributeUtils.CollectAllMethods<DisableRunAttribute>();
     }
 
     // Running was originally a field, but is now a property

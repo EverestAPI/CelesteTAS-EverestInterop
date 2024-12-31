@@ -13,9 +13,10 @@ namespace TAS.Module;
 public class CelesteTasModule : EverestModule {
     public CelesteTasModule() {
         Instance = this;
-        AttributeUtils.CollectMethods<LoadAttribute>();
-        AttributeUtils.CollectMethods<UnloadAttribute>();
-        AttributeUtils.CollectMethods<InitializeAttribute>();
+
+        AttributeUtils.CollectOwnMethods<LoadAttribute>();
+        AttributeUtils.CollectOwnMethods<UnloadAttribute>();
+        AttributeUtils.CollectOwnMethods<InitializeAttribute>();
     }
 
     public static CelesteTasModule Instance { get; private set; }
