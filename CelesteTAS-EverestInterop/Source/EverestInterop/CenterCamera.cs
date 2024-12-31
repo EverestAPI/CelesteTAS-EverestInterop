@@ -68,7 +68,6 @@ public static class CenterCamera {
     private static float viewportScale = 1f;
     private static int zoomInterval;
     private static Vector2? lockPosition;
-    public static Vector2 CenterCameraPosition; // export to tas helper
 
     // this must be <= 4096 / 320 = 12.8, it's used in FreeCameraHitbox and 4096 is the maximum texture size
     public const float MaximumViewportScale = 12f;
@@ -185,8 +184,6 @@ public static class CenterCamera {
                 ScreenCamera.Position += screenOffset;
             }
         }
-
-        CenterCameraPosition = camera.Position;
     }
 
     private static void RestoreTheCamera() {
