@@ -259,7 +259,12 @@ public static class Manager {
         };
     }
 
+    public static bool PreventSendStudioState = false; // a cursed demand of tas helper's predictor
+
     internal static void SendStudioState() {
+        if (PreventSendStudioState) {
+            return;
+        }
         var previous = Controller.Previous;
         var state = new StudioState {
             CurrentLine = previous?.Line ?? -1,
