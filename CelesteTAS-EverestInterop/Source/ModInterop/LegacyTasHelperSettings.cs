@@ -5,6 +5,7 @@ internal class LegacyTasHelperSettings {
     public LegacyTasHelperSettings() {
         bool b1 = TasSettings.EnableOpenConsoleInTas;
         bool b2 = TasSettings.EnableScrollableHistoryLog;
-        // not implemented yet
+        bool b3 = TasSettings.BetterInvincible;
+        // implement these if they do merge into celeste tas
     }
 }

@@ -459,6 +459,18 @@ public class CelesteTasSettings : EverestModuleSettings {
             _EnableScrollableHistoryLog = value;
         }
     }
+
+    [YamlMember(Alias = "BetterInvincible")]
+    public bool _BetterInvincible = true;
+
+    [YamlIgnore]
+
+    public bool BetterInvincible {
+        get => Enabled && _BetterInvincible;
+        set {
+            _BetterInvincible = value;
+        }
+    }
     public bool HideFreezeFrames { get; set; } = false;
     public bool Mod9DLighting { get; set; } = false;
     public bool IgnoreGcCollect { get; set; } = true;

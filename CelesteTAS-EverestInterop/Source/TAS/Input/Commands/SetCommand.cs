@@ -380,6 +380,10 @@ public static class SetCommand {
             return;
         }
 
+        if (settingName == "Invincible" && BetterInvincible.Handle((Assists)settings, (bool)values[0])) {
+            return;
+        }
+
         if (!HandleSpecialCases(settingName, values[0])) {
             field.SetValue(settings, values[0]);
 

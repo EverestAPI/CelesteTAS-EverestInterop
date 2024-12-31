@@ -103,6 +103,10 @@ TAS_LAUNCH_STUDIO_AT_BOOT=           启动游戏时打开 Studio
 TAS_ATTEMPT_TO_CONNECT_TO_STUDIO=    尝试连接 Studio
 TAS_OPEN_CONSOLE_IN_TAS=             允许在 TAS 中打开控制台
 TAS_SCROLLABLE_HISTORY_LOG=          可滚动的控制台历史记录
+TAS_BETTER_INVINCIBILITY=            更好的无敌
+TAS_BETTER_INVINCIBLE_DESCRIPTION=   仅在 TAS 中生效.{n}
+                                     现在 "Set Invincible true" 指令会产生一个仅在 TAS 期间生效的无敌效果,{n}
+                                     且这个无敌不会导致玩家在关卡底部弹跳, 意外恢复冲刺等, 从而避免了 TAS desync.
 TAS_HIDE_FREEZE_FRAMES=              TAS 时跳过冻结帧
 TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_1=运行到冻结帧时自动跳过进入下一帧
 TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_2=仅在 TAS 时启用

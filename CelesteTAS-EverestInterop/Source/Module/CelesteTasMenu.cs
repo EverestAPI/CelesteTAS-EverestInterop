@@ -59,6 +59,12 @@ internal static class CelesteTasMenu {
             }));
             subMenu.Add(new TextMenu.OnOff("Open Console In Tas".ToDialogText(), TasSettings.EnableOpenConsoleInTas).Change(value => TasSettings.EnableOpenConsoleInTas = value));
             subMenu.Add(new TextMenu.OnOff("Scrollable History Log".ToDialogText(), TasSettings.EnableScrollableHistoryLog).Change(value => TasSettings.EnableScrollableHistoryLog = value));
+            TextMenu.Item betterInvincible;
+            subMenu.Add(betterInvincible = new TextMenu.OnOff("Better Invincibility".ToDialogText(), TasSettings.BetterInvincible).Change(value => {
+                TasSettings.BetterInvincible = value;
+                BetterInvincible.Invincible = false; // in case that value doesn't get reset for some unknown reason... yeah i have such bug report
+            }));
+            subMenu.AddDescription(menu, betterInvincible, "Better Invincible Description".ToDialogText());
 
             TextMenu.Item hideFreezeFramesItem;
             subMenu.Add(hideFreezeFramesItem = new TextMenu.OnOff("Hide Freeze Frames".ToDialogText(), TasSettings.HideFreezeFrames).Change(value =>

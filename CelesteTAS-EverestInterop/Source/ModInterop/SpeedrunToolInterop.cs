@@ -35,6 +35,7 @@ public static class SpeedrunToolInterop {
     private static Dictionary<Follower, bool> followers;
     private static bool disallowUnsafeInput;
     private static Random auraRandom;
+    private static bool betterInvincible = false;
 
     [Load]
     private static void Load() {
@@ -60,6 +61,7 @@ public static class SpeedrunToolInterop {
             followers = HitboxSimplified.Followers.DeepCloneShared();
             disallowUnsafeInput = SafeCommand.DisallowUnsafeInput;
             auraRandom = DesyncFixer.AuraHelperSharedRandom.DeepCloneShared();
+            betterInvincible = Manager.Running && BetterInvincible.Invincible;
         };
         Action<Dictionary<Type, Dictionary<string, object>>, Level> load = (_, _) => {
             EntityDataHelper.CachedEntityData = savedEntityData.DeepCloneShared();
@@ -81,6 +83,10 @@ public static class SpeedrunToolInterop {
             HitboxSimplified.Followers = followers.DeepCloneShared();
             SafeCommand.DisallowUnsafeInput = disallowUnsafeInput;
             DesyncFixer.AuraHelperSharedRandom = auraRandom.DeepCloneShared();
+            BetterInvincible.Invincible = Manager.Running && betterInvincible;
+            // note that tas will not invoke enable/disable run if it's using load state
+            // so if our "Set Invincible true" is after the savepoint, invoked, and get deleted later
+            // then Invincible will still be true after load state
         };
         Action clear = () => {
             savedEntityData = null;
@@ -88,6 +94,7 @@ public static class SpeedrunToolInterop {
             followers = null;
             InfoWatchEntity.SavedRequireWatchEntities.Clear();
             auraRandom = null;
+            betterInvincible = false;
         };
 
         ConstructorInfo constructor = typeof(SaveLoadAction).GetConstructors()[0];
