@@ -8,6 +8,8 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using StudioCommunication;
+using TAS.Gameplay.Hitboxes;
 using TAS.Module;
 
 namespace TAS.EverestInterop.Hitboxes;
@@ -164,8 +166,11 @@ public static class HitboxColor {
             };
         }
 
-
-        if (!entity.Collidable) {
+        if (TasSettings.ShowActualCollideHitboxes != ActualCollideHitboxType.Off && entity.LoadActualCollidable() is { } actualCollidable) {
+            if (!actualCollidable) {
+                customColor *= UnCollidableAlpha;
+            }
+        } else if (!entity.Collidable) {
             customColor *= UnCollidableAlpha;
         }
 

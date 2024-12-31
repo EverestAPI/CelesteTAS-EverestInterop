@@ -750,6 +750,18 @@ internal static class CloneUtil {
     }
 }
 
+internal static class EnumerableExtension {
+    public static T? FirstOrNull<T>(this IEnumerable<T> enumerable, Func<T, bool> predicate) where T : struct {
+        foreach (var item in enumerable) {
+            if (predicate(item)) {
+                return item;
+            }
+        }
+
+        return null;
+    }
+}
+
 internal static class GameStateExtension {
     public static GameState.Vec2 ToGameStateVec2(this Vector2 vec) => new(vec.X, vec.Y);
     public static GameState.RectI ToGameStateRectI(this Rectangle rect) => new(rect.X, rect.Y, rect.Width, rect.Height);
