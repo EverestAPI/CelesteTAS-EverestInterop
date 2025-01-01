@@ -44,13 +44,6 @@ public static class Manager {
         AttributeUtils.CollectAllMethods<DisableRunAttribute>();
     }
 
-    // Running was originally a field, but is now a property
-    // Some mods still reference it as a field and this is a fallback for those mods to use
-    // This needs to be access via reflection, since otherwise the non-renamed fields would be tried to access
-    [ForceName("Running")]
-    public static bool __ABI_Compat_Running;
-    private static readonly FieldInfo f_Running = typeof(Manager).GetField("Running", BindingFlags.Public | BindingFlags.Static)!;
-
     public static bool Running => CurrState != State.Disabled;
     public static bool FastForwarding => Running && PlaybackSpeed >= 5.0f;
     public static float PlaybackSpeed { get; private set; } = 1.0f;
@@ -89,7 +82,6 @@ public static class Manager {
         }
 
         $"Starting TAS: {Controller.FilePath}".Log();
-        Environment.StackTrace.Log(LogLevel.Verbose);
 
         CurrState = NextState = State.Running;
         PlaybackSpeed = 1.0f;
@@ -108,7 +100,6 @@ public static class Manager {
         }
 
         "Stopping TAS".Log();
-        Environment.StackTrace.Log(LogLevel.Verbose);
 
         CurrState = NextState = State.Disabled;
         Controller.Stop();
@@ -130,7 +121,6 @@ public static class Manager {
         }
 
         CurrState = NextState;
-        f_Running.SetValue(null, Running);
 
         while (mainThreadActions.TryDequeue(out Action action)) {
             action.Invoke();
@@ -160,15 +150,14 @@ public static class Manager {
 
     /// Updates everything around the TAS itself, like hotkeys, studio-communication, etc.
     public static void UpdateMeta() {
-        Hotkeys.Update();
+        Hotkeys.UpdateMeta();
         Savestates.UpdateMeta();
         ConsoleEnhancements.UpdateMeta();
 
         SendStudioState();
 
         // Check if the TAS should be enabled / disabled
-        // NOTE: Do not use Hotkeys.Restart.Pressed unless the fast forwarding optimization in Hotkeys.Update() is removed
-        if (Hotkeys.StartStop.Released) {
+        if (Hotkeys.StartStop.Pressed) {
             if (Running) {
                 DisableRun();
             } else {
@@ -177,7 +166,7 @@ public static class Manager {
             return;
         }
 
-        if (Hotkeys.Restart.Released) {
+        if (Hotkeys.Restart.Pressed) {
             DisableRun();
             EnableRun();
             return;

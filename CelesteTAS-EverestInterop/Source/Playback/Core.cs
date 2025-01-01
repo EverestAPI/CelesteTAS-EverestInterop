@@ -55,11 +55,8 @@ internal static class Core {
 
         elapsedTime += Manager.PlaybackSpeed * Engine.RawDeltaTime;
 
-        // If there isn't a game Update this frame, ensure UpdateMeta is called anyway
-        if (elapsedTime < Engine.RawDeltaTime) {
-            Manager.UpdateMeta();
-            lastMetaUpdate = DateTime.UtcNow;
-        }
+        Manager.UpdateMeta();
+        lastMetaUpdate = DateTime.UtcNow;
 
         while (elapsedTime >= Engine.RawDeltaTime) {
             orig(self, gameTime);
@@ -68,6 +65,10 @@ internal static class Core {
             // Call UpdateMeta every real-time frame
             var now = DateTime.UtcNow;
             if ((now - lastMetaUpdate).TotalSeconds > Engine.RawDeltaTime) {
+                // We need to manually poll FNA events, since we don't return to the FNA game-loop while fast-forwarding
+                var game = Engine.Instance;
+                FNAPlatform.PollEvents(game, ref game.currentAdapter, game.textInputControlDown, ref game.textInputSuppress);
+
                 Manager.UpdateMeta();
                 lastMetaUpdate = now;
             }

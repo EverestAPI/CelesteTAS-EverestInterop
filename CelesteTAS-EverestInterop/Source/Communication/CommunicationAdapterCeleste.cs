@@ -28,7 +28,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
     protected override void OnConnectionChanged() {
         if (Connected) {
             // Stall until input initialized to avoid sending invalid hotkey data
-            while (Hotkeys.KeysDict == null) {
+            while (Hotkeys.AllHotkeys == null) {
                 Thread.Sleep(UpdateRate);
             }
 
@@ -52,7 +52,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 bool released = reader.ReadBoolean();
                 LogVerbose($"Received message Hotkey: {hotkey} ({(released ? "released" : "pressed")})");
 
-                Hotkeys.KeysDict[hotkey].OverrideCheck = !released;
+                Hotkeys.AllHotkeys[hotkey].OverrideCheck = !released;
                 break;
 
             case MessageID.SetCustomInfoTemplate:

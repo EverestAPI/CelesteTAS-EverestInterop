@@ -29,7 +29,7 @@
 
     <ItemGroup>
         <Reference Include="$(CelestePrefix)\Celeste.dll" Publicize="true" />
-        <Reference Include="$(CelestePrefix)\FNA.dll" />
+        <Reference Include="$(CelestePrefix)\FNA.dll" Publicize="true" />
         <Reference Include="$(CelestePrefix)\MMHOOK_Celeste.dll" />
 
         <Reference Include="lib-stripped\SpeedrunTool.dll" />
