@@ -1,19 +1,18 @@
 using System;
-using System.Collections.Generic;
 using Celeste;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
-using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
 using GameInput = Celeste.Input;
 
-namespace TAS.EverestInterop;
+namespace TAS.Playback;
 
-public static class Core {
+/// Main hooks for allowing for TAS playback
+internal static class Core {
     [Load]
     private static void Load() {
         using (new DetourConfigContext(new DetourConfig("CelesteTAS", before: ["*"])).Use()) {
@@ -45,19 +44,33 @@ public static class Core {
     }
 
     private static float elapsedTime = 0.0f;
+    private static DateTime lastMetaUpdate = DateTime.UtcNow;
 
     private static void On_Celeste_Update(On.Celeste.Celeste.orig_Update orig, Celeste.Celeste self, GameTime gameTime) {
-        Manager.UpdateMeta();
-
         if (!TasSettings.Enabled || !Manager.Running) {
+            Manager.UpdateMeta();
             orig(self, gameTime);
             return;
         }
 
         elapsedTime += Manager.PlaybackSpeed * Engine.RawDeltaTime;
+
+        // If there isn't a game Update this frame, ensure UpdateMeta is called anyway
+        if (elapsedTime < Engine.RawDeltaTime) {
+            Manager.UpdateMeta();
+            lastMetaUpdate = DateTime.UtcNow;
+        }
+
         while (elapsedTime >= Engine.RawDeltaTime) {
             orig(self, gameTime);
             elapsedTime -= Engine.RawDeltaTime;
+
+            // Call UpdateMeta every real-time frame
+            var now = DateTime.UtcNow;
+            if ((now - lastMetaUpdate).TotalSeconds > Engine.RawDeltaTime) {
+                Manager.UpdateMeta();
+                lastMetaUpdate = now;
+            }
         }
 
         if (TasSettings.HideFreezeFrames) {
@@ -94,11 +107,6 @@ public static class Core {
         }
 
         Manager.Update();
-
-        // Limit to 60 FPS, even while fast forwarding
-        if (Engine.FrameCounter % (ulong)Manager.PlaybackSpeed == 0) {
-            Manager.UpdateMeta();
-        }
     }
 
     // Update controllers, even if the game isn't focused
