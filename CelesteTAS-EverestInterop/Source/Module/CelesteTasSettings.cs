@@ -9,6 +9,8 @@ using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
+using TAS.Gameplay.Hitboxes;
+using TAS.InfoHUD;
 using YamlDotNet.Serialization;
 
 namespace TAS.Module;
@@ -69,6 +71,10 @@ public class CelesteTasSettings : EverestModuleSettings {
         set {
             StudioShared.SimplifiedHitboxes = value;
             SyncSettings();
+
+            if (value && Engine.Scene != null) {
+                SimplifiedTriggerHitboxes.RecacheTriggers(Engine.Scene);
+            }
         }
     }
 
@@ -434,6 +440,14 @@ public class CelesteTasSettings : EverestModuleSettings {
     public bool AttemptConnectStudio {
         get => Enabled && _AttemptConnectStudio;
         set => _AttemptConnectStudio = value;
+    }
+
+    [YamlMember(Alias = "BetterInvincible")]
+    public bool _BetterInvincible = true;
+    [YamlIgnore]
+    public bool BetterInvincible {
+        get => Enabled && _BetterInvincible;
+        set => _BetterInvincible = value;
     }
 
     public bool HideFreezeFrames { get; set; } = false;

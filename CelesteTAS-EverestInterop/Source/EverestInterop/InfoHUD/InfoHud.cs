@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication;
 using TAS.Entities;
+using TAS.InfoHUD;
 using TAS.Input;
 using TAS.Module;
 using TAS.Utils;

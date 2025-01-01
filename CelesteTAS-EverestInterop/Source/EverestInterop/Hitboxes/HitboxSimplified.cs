@@ -7,6 +7,8 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using TAS.EverestInterop.InfoHUD;
+using TAS.Gameplay.Hitboxes;
+using TAS.InfoHUD;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
@@ -14,10 +16,10 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxSimplified {
-    private static readonly Lazy<GetDelegate<object, bool>> GeckoHostile = new(() =>
+    private static readonly Lazy<GetDelegate<object, bool>?> GeckoHostile = new(() =>
         ModUtils.GetType("JungleHelper", "Celeste.Mod.JungleHelper.Entities.Gecko")?.CreateGetDelegate<object, bool>("hostile"));
 
-    private static readonly Lazy<GetDelegate<object, bool>> CustomClutterBlockBaseEnabled = new(() =>
+    private static readonly Lazy<GetDelegate<object, bool>?> CustomClutterBlockBaseEnabled = new(() =>
         ModUtils.GetType("ClutterHelper", "Celeste.Mod.ClutterHelper.CustomClutterBlockBase")?.CreateGetDelegate<object, bool>("enabled"));
 
     private static readonly HashSet<Type> UselessTypes = new() {
@@ -64,7 +66,8 @@ public static class HitboxSimplified {
 
     [Load]
     private static void Load() {
-        IL.Monocle.Entity.DebugRender += ModDebugRender;
+        typeof(Entity).GetMethodInfo(nameof(Entity.DebugRender)).SkipMethod<Entity>(HideHitbox);
+
         On.Monocle.Hitbox.Render += ModHitbox;
         On.Monocle.Grid.Render += CombineGridHitbox;
         IL.Monocle.Draw.HollowRect_float_float_float_float_Color += AvoidRedrawCorners;
@@ -74,7 +77,6 @@ public static class HitboxSimplified {
 
     [Unload]
     private static void Unload() {
-        IL.Monocle.Entity.DebugRender -= ModDebugRender;
         On.Monocle.Hitbox.Render -= ModHitbox;
         On.Monocle.Grid.Render -= CombineGridHitbox;
         IL.Monocle.Draw.HollowRect_float_float_float_float_Color -= AvoidRedrawCorners;
@@ -82,15 +84,20 @@ public static class HitboxSimplified {
         On.Celeste.Level.End -= LevelOnEnd;
     }
 
-    private static void ModDebugRender(ILContext il) {
-        ILCursor ilCursor = new(il);
-        Instruction start = ilCursor.Next;
-        ilCursor.Emit(OpCodes.Ldarg_0).EmitDelegate<Func<Entity, bool>>(HideHitbox);
-        ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
-    }
-
     private static bool HideHitbox(Entity entity) {
-        if (TasSettings.ShowHitboxes && TasSettings.SimplifiedHitboxes && !InfoWatchEntity.WatchingEntities.Contains(entity)) {
+        if (!TasSettings.ShowHitboxes || InfoWatchEntity.CurrentlyWatchedEntities.Contains(entity)) {
+            return false;
+        }
+
+        if (TriggerHitbox.ShouldHideHitbox(entity)) {
+            return true;
+        }
+
+        if (TasSettings.SimplifiedHitboxes) {
+            if (SimplifiedTriggerHitboxes.ShouldHideHitbox(entity)) {
+                return true;
+            }
+
             Type type = entity.GetType();
             if (UselessTypes.Contains(type)) {
                 return true;

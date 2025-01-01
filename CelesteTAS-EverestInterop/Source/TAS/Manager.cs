@@ -64,28 +64,26 @@ public static class Manager {
     // Hot-reloading support
     [Load]
     private static void RestoreStudioTasFilePath() {
-        Controller.FilePath = Engine.Instance.GetDynamicDataInstance()
-            .Get<string>("CelesteTAS_FilePath");
+        if (Engine.Instance.GetDynamicDataInstance().Get<string>("CelesteTAS_FilePath") is { } filePath) {
+            Controller.FilePath = filePath;
+        }
 
-        Everest.Events.AssetReload.OnBeforeReload += OnAssetReload;
+        // Stop TAS to avoid blocking reload
+        typeof(AssetReloadHelper)
+            .GetMethodInfo(nameof(AssetReloadHelper.Do))
+            .HookBefore(DisableRun);
     }
 
     [Unload]
     private static void SaveStudioTasFilePath() {
-        Engine.Instance.GetDynamicDataInstance()
-            .Set("CelesteTAS_FilePath", Controller.FilePath);
-
-        Everest.Events.AssetReload.OnBeforeReload -= OnAssetReload;
+        Engine.Instance.GetDynamicDataInstance().Set("CelesteTAS_FilePath", Controller.FilePath);
 
         Controller.Stop();
         Controller.Clear();
     }
-
-    private static void OnAssetReload(bool silent) => DisableRun();
 #endif
 
-    public static void EnableRun()
-    {
+    public static void EnableRun() {
         if (Running) {
             return;
         }
@@ -104,8 +102,7 @@ public static class Manager {
         Savestates.EnableRun();
     }
 
-    public static void DisableRun()
-    {
+    public static void DisableRun() {
         if (!Running) {
             return;
         }
@@ -165,6 +162,7 @@ public static class Manager {
     public static void UpdateMeta() {
         Hotkeys.Update();
         Savestates.UpdateMeta();
+        ConsoleEnhancements.UpdateMeta();
 
         SendStudioState();
 
@@ -257,7 +255,12 @@ public static class Manager {
         };
     }
 
+    public static bool PreventSendStudioState = false; // a cursed demand of tas helper's predictor
+
     internal static void SendStudioState() {
+        if (PreventSendStudioState) {
+            return;
+        }
         var previous = Controller.Previous;
         var state = new StudioState {
             CurrentLine = previous?.Line ?? -1,

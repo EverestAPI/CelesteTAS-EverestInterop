@@ -115,6 +115,28 @@ internal static class HookHelper {
             cursor.EmitRet();
         });
     }
+    /// Creates a callback to conditionally call the original method
+    public static void SkipMethod<T>(this MethodInfo method, Func<T, bool> condition) {
+#if DEBUG
+        if (method.IsStatic) {
+            var parameters = method.GetParameters();
+            Debug.Assert(parameters.Length >= 1 && parameters[0].ParameterType.IsSameOrSubclassOf(typeof(T)));
+        } else {
+            Debug.Assert(method.DeclaringType?.IsSameOrSubclassOf(typeof(T)) ?? false);
+        }
+
+        Debug.Assert(method.ReturnType == typeof(void));
+#endif
+        method.IlHook((cursor, _) => {
+            var start = cursor.MarkLabel();
+            cursor.MoveBeforeLabels();
+
+            cursor.EmitLdarg0();
+            cursor.EmitDelegate(condition);
+            cursor.EmitBrfalse(start);
+            cursor.EmitRet();
+        });
+    }
 
     /// Creates a callback to conditionally call the original methods
     public static void SkipMethods(Func<bool> condition, params MethodInfo?[] methods) {

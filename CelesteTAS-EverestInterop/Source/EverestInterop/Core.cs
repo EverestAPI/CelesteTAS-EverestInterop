@@ -21,7 +21,7 @@ public static class Core {
             IL.Monocle.Engine.Update += IL_Engine_Update;
 
             typeof(GameInput)
-                .GetMethod(nameof(GameInput.UpdateGrab))
+                .GetMethod(nameof(GameInput.UpdateGrab))!
                 .SkipMethod(IsPaused);
 
             // The original mod makes the MInput.Update call conditional and invokes UpdateInputs afterwards.

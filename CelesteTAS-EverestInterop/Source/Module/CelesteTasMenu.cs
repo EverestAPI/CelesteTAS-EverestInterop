@@ -11,6 +11,7 @@ using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
+using TAS.Gameplay;
 using TAS.Input;
 using TAS.Utils;
 
@@ -57,6 +58,13 @@ internal static class CelesteTasMenu {
                 TasSettings.AttemptConnectStudio = value;
                 CommunicationWrapper.ChangeStatus();
             }));
+            TextMenu.Item betterInvincible;
+            subMenu.Add(betterInvincible = new TextMenu.OnOff("Better Invincibility".ToDialogText(), TasSettings.BetterInvincible).Change(value => {
+                TasSettings.BetterInvincible = value;
+                BetterInvincible.Invincible = false; // in case that value doesn't get reset for some unknown reason... yeah i have such bug report
+            }));
+            subMenu.AddDescription(menu, betterInvincible, "Better Invincible Description".ToDialogText());
+
             TextMenu.Item hideFreezeFramesItem;
             subMenu.Add(hideFreezeFramesItem = new TextMenu.OnOff("Hide Freeze Frames".ToDialogText(), TasSettings.HideFreezeFrames).Change(value =>
                 TasSettings.HideFreezeFrames = value));

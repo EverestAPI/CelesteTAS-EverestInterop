@@ -199,6 +199,9 @@ public static class GameInfo {
     }
 
     public static void Update(bool updateVel = false) {
+        if (TasHelperInterop.InPrediction) {
+            return;
+        }
         Scene scene = Engine.Scene;
         if (scene is Level level) {
             Player player = level.Tracker.GetEntity<Player>();
