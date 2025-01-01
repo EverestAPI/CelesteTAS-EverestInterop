@@ -805,6 +805,15 @@ public static class TargetQuery {
                     continue;
                 }
 
+                if (targetType.IsEnum) {
+                    if (Enum.TryParse(targetType, arg, ignoreCase: true, out var value) && (int) value < Enum.GetNames(targetType).Length) {
+                        values[index++] = value;
+                        continue;
+                    } else {
+                        return ([], Success: false, ErrorMessage: $"'{arg}' is not a valid enum state for '{targetType.FullName}'");
+                    }
+                }
+
                 if (string.IsNullOrWhiteSpace(arg) || arg == "null") {
                     values[index++] = targetType.IsValueType ? Activator.CreateInstance(targetType) : null;
                     continue;

@@ -11,6 +11,7 @@ using StudioCommunication;
 using StudioCommunication.Util;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using TAS.Entities;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Gameplay;
@@ -282,7 +283,7 @@ public static class SetCommand {
         if (logToConsole) {
             $"Set Command Failed: {message}".ConsoleLog(LogLevel.Error);
         } else {
-            AbortTas($"Set Command Failed: {message}", log: true);
+            Toast.ShowAndLog($"Set Command Failed: {message}", 2.0f);
         }
     }
 
