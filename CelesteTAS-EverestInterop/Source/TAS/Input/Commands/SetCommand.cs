@@ -282,7 +282,7 @@ public static class SetCommand {
         if (logToConsole) {
             $"Set Command Failed: {message}".ConsoleLog(LogLevel.Error);
         } else {
-            AbortTas($"Set Command Failed: {message}");
+            AbortTas($"Set Command Failed: {message}", log: true);
         }
     }
 

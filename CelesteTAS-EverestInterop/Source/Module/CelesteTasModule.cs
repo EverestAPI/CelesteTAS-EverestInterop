@@ -3,8 +3,11 @@ using Celeste;
 using Celeste.Mod;
 using FMOD.Studio;
 using JetBrains.Annotations;
+using System.Collections.Generic;
+using System.IO;
 using TAS.Communication;
 using TAS.EverestInterop;
+using TAS.Tools;
 using TAS.Utils;
 
 namespace TAS.Module;
@@ -41,6 +44,26 @@ public class CelesteTasModule : EverestModule {
     public override void Unload() {
         AttributeUtils.Invoke<UnloadAttribute>();
         CenterCamera.Unload();
+    }
+
+    public override bool ParseArg(string arg, Queue<string> args) {
+        switch (arg) {
+            case "--tas": {
+                if (args.TryDequeue(out string? path)) {
+                    if (!File.Exists(path)) {
+                        $"Specified TAS file '{path}' not found".Log(LogLevel.Error);
+                    } else {
+                        PlayTasAtLaunch.FilePath = path;
+                    }
+                } else {
+                    "Expected file path after --tas CLI argument".Log(LogLevel.Error);
+                }
+                return true;
+            }
+
+            default:
+                return false;
+        }
     }
 
     public override void CreateModMenuSection(TextMenu menu, bool inGame, EventInstance snapshot) {
