@@ -191,7 +191,7 @@ public static class Manager {
             case State.Paused:
                 if (Hotkeys.PauseResume.Pressed) {
                     NextState = State.Running;
-                } else if (Hotkeys.FrameAdvance.Pressed || Hotkeys.FastForward.Check) {
+                } else if (Hotkeys.FrameAdvance.Repeated || Hotkeys.FastForward.Check) {
                     NextState = State.FrameAdvance;
                 }
                 break;

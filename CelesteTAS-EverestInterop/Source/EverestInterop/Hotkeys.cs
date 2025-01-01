@@ -244,16 +244,20 @@ public static class Hotkeys {
 
         internal bool OverrideCheck;
 
-        private DateTime lastPressedTime;
+        private DateTime doublePressTimeout;
+        private DateTime repeatTimeout;
 
         public bool Check { get; private set; }
         public bool Pressed => !LastCheck && Check;
         public bool Released => LastCheck && !Check;
+
         public bool DoublePressed { get; private set; }
+        public bool Repeated { get; private set; }
 
         private bool LastCheck { get; set; }
 
-        private const double DoublePressTimeMS = 200.0;
+        private const double DoublePressTimeoutMS = 200.0;
+        private const double RepeatTimeoutMS = 500.0;
 
         internal void Update(bool updateKey = true, bool updateButton = true) {
             LastCheck = Check;
@@ -273,12 +277,20 @@ public static class Hotkeys {
 
             Check = keyCheck || buttonCheck;
 
+            var now = DateTime.Now;
             if (Pressed) {
-                var now = DateTime.Now;
-                DoublePressed = (now - lastPressedTime).TotalMilliseconds < DoublePressTimeMS;
-                lastPressedTime = DoublePressed ? default : now;
+                DoublePressed = now < doublePressTimeout;
+                doublePressTimeout = DoublePressed ? default : now + TimeSpan.FromMilliseconds(DoublePressTimeoutMS);
+
+                Repeated = true;
+                repeatTimeout = now + TimeSpan.FromMilliseconds(RepeatTimeoutMS);
+            } else if (Check) {
+                DoublePressed = false;
+                Repeated = now >= repeatTimeout;
             } else {
                 DoublePressed = false;
+                Repeated = false;
+                repeatTimeout = default;
             }
         }
 
