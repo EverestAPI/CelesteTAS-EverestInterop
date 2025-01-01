@@ -179,7 +179,7 @@ public static class Manager {
 
         switch (CurrState) {
             case State.Running:
-                if (Hotkeys.PauseResume.Pressed) {
+                if (Hotkeys.PauseResume.Pressed || Hotkeys.FrameAdvance.Pressed) {
                     NextState = State.Paused;
                 }
                 break;
@@ -204,6 +204,13 @@ public static class Manager {
         // Apply fast / slow forwarding
         switch (NextState)
         {
+            case State.Running when Hotkeys.FastForward.Check:
+                PlaybackSpeed = TasSettings.FastForwardSpeed;
+                break;
+            case State.Running when Hotkeys.SlowForward.Check:
+                PlaybackSpeed = TasSettings.SlowForwardSpeed;
+                break;
+
             case State.Paused or State.SlowForward when Hotkeys.SlowForward.Check:
                 PlaybackSpeed = TasSettings.SlowForwardSpeed;
                 NextState = State.SlowForward;
@@ -213,11 +220,7 @@ public static class Manager {
                 NextState = State.Paused;
                 break;
 
-            case State.Running when Hotkeys.FastForward.Check:
-                PlaybackSpeed = TasSettings.FastForwardSpeed;
-                break;
-            case State.Running when Hotkeys.SlowForward.Check:
-                PlaybackSpeed = TasSettings.SlowForwardSpeed;
+            case State.FrameAdvance:
                 break;
 
             default:
