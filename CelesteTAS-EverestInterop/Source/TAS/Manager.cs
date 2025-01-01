@@ -201,9 +201,15 @@ public static class Manager {
                 break;
         }
 
+        // Allow altering the playback speed with the right thumb-stick
+        float normalSpeed = Hotkeys.RightThumbSticksX switch {
+            >=  0.001f => Hotkeys.RightThumbSticksX * TasSettings.FastForwardSpeed,
+            <= -0.001f => (1 + Hotkeys.RightThumbSticksX) * TasSettings.SlowForwardSpeed,
+            _          => 1.0f,
+        };
+
         // Apply fast / slow forwarding
-        switch (NextState)
-        {
+        switch (NextState) {
             case State.Running when Hotkeys.FastForward.Check:
                 PlaybackSpeed = TasSettings.FastForwardSpeed;
                 break;
@@ -216,15 +222,16 @@ public static class Manager {
                 NextState = State.SlowForward;
                 break;
             case State.Paused or State.SlowForward:
-                PlaybackSpeed = 1.0f;
+                PlaybackSpeed = normalSpeed;
                 NextState = State.Paused;
                 break;
 
             case State.FrameAdvance:
+                PlaybackSpeed = normalSpeed;
                 break;
 
             default:
-                PlaybackSpeed = Controller.HasFastForward ? Controller.CurrentFastForward!.Speed : 1.0f;
+                PlaybackSpeed = Controller.HasFastForward ? Controller.CurrentFastForward!.Speed : normalSpeed;
                 break;
         }
     }

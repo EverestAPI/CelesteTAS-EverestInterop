@@ -134,7 +134,7 @@ public static class Hotkeys {
         for (int i = 0; i < 4; i++) {
             var state = GamePad.GetState((PlayerIndex) i);
             if (state.IsConnected) {
-                break;
+                return state;
             }
         }
 
