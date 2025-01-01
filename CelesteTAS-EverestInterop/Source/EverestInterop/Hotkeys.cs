@@ -68,10 +68,6 @@ public static class Hotkeys {
         HotkeyID.OpenConsole
     ];
 
-    static Hotkeys() {
-        InputInitialize();
-    }
-
     /// Checks if the CelesteNet chat is open
     private static bool CelesteNetChatting {
         get {
@@ -87,6 +83,17 @@ public static class Hotkeys {
 
             return p_CelesteNetChatComponent_Active.Value?.GetValue(chat) as bool? == true;
         }
+    }
+
+    internal static bool Initialized { get; private set; } = false;
+
+    [Load]
+    private static void Load() {
+        Everest.Events.Input.OnInitialize += InputInitialize;
+    }
+    [Unload]
+    private static void Unload() {
+        Everest.Events.Input.OnInitialize -= InputInitialize;
     }
 
     private static void InputInitialize() {
@@ -124,6 +131,12 @@ public static class Hotkeys {
         StudioHotkeys = AllHotkeys
             .Where(entry => !StudioIgnoreHotkeys.Contains(entry.Key))
             .ToDictionary(entry => entry.Key, entry => entry.Value.Keys);
+
+        Initialized = true;
+
+        CommunicationWrapper.SendCurrentBindings();
+
+        return;
 
         static Hotkey BindingToHotkey(ButtonBinding binding, bool held = false) {
             return new(binding.Keys, binding.Buttons, true, held);
@@ -220,21 +233,6 @@ public static class Hotkeys {
         foreach (Hotkey hotkey in AllHotkeys.Values) {
             hotkey.OverrideCheck = false;
         }
-    }
-
-    [Load]
-    private static void Load() {
-        On.Celeste.Input.Initialize += InputOnInitialize;
-    }
-
-    [Unload]
-    private static void Unload() {
-        On.Celeste.Input.Initialize -= InputOnInitialize;
-    }
-
-    private static void InputOnInitialize(On.Celeste.Input.orig_Initialize orig) {
-        orig();
-        CommunicationWrapper.SendCurrentBindings();
     }
 
     /// Hotkey which is independent of the game Update loop

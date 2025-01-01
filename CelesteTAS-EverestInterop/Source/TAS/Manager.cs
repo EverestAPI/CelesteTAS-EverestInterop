@@ -150,6 +150,10 @@ public static class Manager {
 
     /// Updates everything around the TAS itself, like hotkeys, studio-communication, etc.
     public static void UpdateMeta() {
+        if (!Hotkeys.Initialized) {
+            return; // Still loading
+        }
+
         Hotkeys.UpdateMeta();
         Savestates.UpdateMeta();
         ConsoleEnhancements.UpdateMeta();
