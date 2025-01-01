@@ -437,30 +437,6 @@ public class CelesteTasSettings : EverestModuleSettings {
         set => _AttemptConnectStudio = value;
     }
 
-
-    [YamlMember(Alias = "EnableOpenConsoleInTas")]
-    public bool _EnableOpenConsoleInTas { get; set; } = true;
-
-    [YamlIgnore]
-    public bool EnableOpenConsoleInTas {
-        get => Enabled && _EnableOpenConsoleInTas;
-        set {
-            _EnableOpenConsoleInTas = value;
-        }
-    }
-
-    [YamlMember(Alias = "EnableScrollableHistoryLog")]
-
-    public bool _EnableScrollableHistoryLog { get; set; } = true;
-
-    [YamlIgnore]
-    public bool EnableScrollableHistoryLog {
-        get => Enabled && _EnableScrollableHistoryLog;
-        set {
-            _EnableScrollableHistoryLog = value;
-        }
-    }
-
     [YamlMember(Alias = "BetterInvincible")]
     public bool _BetterInvincible = true;
     [YamlIgnore]

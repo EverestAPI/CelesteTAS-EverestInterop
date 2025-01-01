@@ -58,8 +58,6 @@ internal static class CelesteTasMenu {
                 TasSettings.AttemptConnectStudio = value;
                 CommunicationWrapper.ChangeStatus();
             }));
-            subMenu.Add(new TextMenu.OnOff("Open Console In Tas".ToDialogText(), TasSettings.EnableOpenConsoleInTas).Change(value => TasSettings.EnableOpenConsoleInTas = value));
-            subMenu.Add(new TextMenu.OnOff("Scrollable History Log".ToDialogText(), TasSettings.EnableScrollableHistoryLog).Change(value => TasSettings.EnableScrollableHistoryLog = value));
             TextMenu.Item betterInvincible;
             subMenu.Add(betterInvincible = new TextMenu.OnOff("Better Invincibility".ToDialogText(), TasSettings.BetterInvincible).Change(value => {
                 TasSettings.BetterInvincible = value;

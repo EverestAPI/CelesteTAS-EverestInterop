@@ -318,10 +318,6 @@ public static class CenterCamera {
             return;
         }
 
-        if (ConsoleEnhancementFromTasHelper.ShouldPreventZoomCamera()) {
-            return;
-        }
-
         if (zoomInterval > 0) {
             zoomInterval--;
         }

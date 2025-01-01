@@ -159,14 +159,13 @@ public static class Manager {
                 NextState = State.Paused;
             }
         }
-
-        ConsoleEnhancementFromTasHelper.UpdateCommands();
     }
 
     /// Updates everything around the TAS itself, like hotkeys, studio-communication, etc.
     public static void UpdateMeta() {
         Hotkeys.Update();
         Savestates.UpdateMeta();
+        ConsoleEnhancements.UpdateMeta();
 
         SendStudioState();
 

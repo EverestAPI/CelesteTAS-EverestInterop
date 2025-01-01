@@ -169,7 +169,7 @@ public static class Hotkeys {
         bool updateButton = true;
 
         if (!Manager.Running) {
-            if (Engine.Commands.Open || CelesteNetChatting) {
+            if (CelesteNetChatting) {
                 updateKey = false;
             }
 
@@ -182,6 +182,10 @@ public static class Hotkeys {
                     updateButton = false;
                 }
             }
+        }
+
+        if (Engine.Commands.Open) {
+            updateKey = false;
         }
 
         if (Manager.FastForwarding) {
@@ -228,7 +232,7 @@ public static class Hotkeys {
             }
 
             if (OpenConsole.Pressed) {
-                ConsoleEnhancementFromTasHelper.SetOpenConsole();
+                ConsoleEnhancements.OpenConsole();
             }
         }
 
