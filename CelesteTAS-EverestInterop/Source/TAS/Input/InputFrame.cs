@@ -51,9 +51,14 @@ public record InputFrame {
         actionLineString = actionLine.ToString();
         checksum = actionLineString.GetHashCode();
 
-        if (float.TryParse(actionLine.FeatherAngle, out float angle)) {
-            float magnitude = float.TryParse(actionLine.FeatherMagnitude, out float m) ? m : 1.0f;
-            (StickPosition, StickPositionShort) = AnalogHelper.ComputeAngleVector(angle, magnitude);
+        if (Actions.Has(Actions.Feather)) {
+            if (float.TryParse(actionLine.FeatherAngle, out float angle)) {
+                float magnitude = float.TryParse(actionLine.FeatherMagnitude, out float m) ? m : 1.0f;
+                (StickPosition, StickPositionShort) = AnalogHelper.ComputeAngleVector(angle, magnitude);
+            } else {
+                // Fallback to 0°
+                (StickPosition, StickPositionShort) = AnalogHelper.ComputeAngleVector(0.0f, 1.0f);
+            }
         }
 
         if (Actions.Has(Actions.LeftDashOnly)) {
