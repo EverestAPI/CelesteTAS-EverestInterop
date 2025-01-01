@@ -70,7 +70,9 @@ internal static class SimplifiedTriggerHitboxes {
         typeof(LightFadeTrigger),
         typeof(AltMusicTrigger),
         typeof(MusicTrigger),
-        typeof(MusicFadeTrigger)
+        typeof(MusicFadeTrigger),
+        // Following types aren't _technically_ a Trigger, but are still included
+        typeof(SpawnFacingTrigger),
     ];
     private static readonly HashSet<Type> everestTriggers = [
         typeof(AmbienceTrigger),
@@ -135,6 +137,10 @@ internal static class SimplifiedTriggerHitboxes {
         AddTypes("VivHelper", "VivHelper.Triggers.ActivateCPP", "VivHelper.Triggers.ConfettiTrigger", "VivHelper.Triggers.FlameLightSwitch", "VivHelper.Triggers.FlameTravelTrigger", "VivHelper.Triggers.FollowerDistanceModifierTrigger", "VivHelper.Triggers.RefillCancelParticleTrigger", "VivHelper.Triggers.SpriteEntityActor");
         AddTypes("XaphanHelper", "Celeste.Mod.XaphanHelper.Triggers.FlagMusicFadeTrigger", "Celeste.Mod.XaphanHelper.Triggers.MultiLightFadeTrigger", "Celeste.Mod.XaphanHelper.Triggers.MultiMusicTrigger");
         AddTypes("YetAnotherHelper", "Celeste.Mod.YetAnotherHelper.Triggers.LightningStrikeTrigger", "Celeste.Mod.YetAnotherHelper.Triggers.RemoveLightSourcesTrigger");
+
+        // Following types aren't _technically_ a Trigger, but are still included
+        AddTypes("StyleMaskHelper", "Celeste.Mod.StyleMaskHelper.Entities.Mask");
+        AddTypes("StrawberryJam2021", "Celeste.Mod.StrawberryJam2021.StylegroundMasks.Mask");
 
         triggerChecks.Add((_, entityType) => moddedTriggers.Contains(entityType));
 
