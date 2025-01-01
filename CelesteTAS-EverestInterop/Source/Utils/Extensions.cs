@@ -751,6 +751,13 @@ internal static class CloneUtil {
 }
 
 internal static class EnumerableExtension {
+    /// Iterates each entry of the IEnumerable and invokes the callback Action
+    public static void ForEach<T>(this IEnumerable<T> enumerable, Action<T> action) {
+        foreach (var item in enumerable) {
+            action(item);
+        }
+    }
+
     /// Returns the first matching element; otherwise null
     public static T? FirstOrNull<T>(this IEnumerable<T> enumerable, Func<T, bool> predicate) where T : struct {
         foreach (var item in enumerable) {
@@ -770,6 +777,15 @@ internal static class EnumerableExtension {
     /// <list type="table"><listheader><term> Value</term><description> Meaning</description></listheader><item><term> Less than zero</term><description><paramref name="x" /> is less than <paramref name="y" />.</description></item><item><term> Zero</term><description><paramref name="x" /> equals <paramref name="y" />.</description></item><item><term> Greater than zero</term><description><paramref name="x" /> is greater than <paramref name="y" />.</description></item></list>
     public static IEnumerable<T> Sort<T>(this IEnumerable<T> enumerable, Func<T, T, int> compare) {
         return enumerable.Order(new DynamicComparer<T>(compare));
+    }
+}
+
+internal static class CollectionExtension {
+    /// Adds all items from the collection to the HashSet
+    public static void AddRange<T>(this HashSet<T> hashSet, params IEnumerable<T> items) {
+        foreach (var item in items) {
+            hashSet.Add(item);
+        }
     }
 }
 

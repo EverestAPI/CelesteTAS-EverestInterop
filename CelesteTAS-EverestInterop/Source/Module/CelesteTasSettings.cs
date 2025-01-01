@@ -9,6 +9,7 @@ using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
+using TAS.Gameplay.Hitboxes;
 using TAS.InfoHUD;
 using YamlDotNet.Serialization;
 
@@ -70,6 +71,10 @@ public class CelesteTasSettings : EverestModuleSettings {
         set {
             StudioShared.SimplifiedHitboxes = value;
             SyncSettings();
+
+            if (value) {
+                SimplifiedTriggerHitboxes.RecacheTriggers(Engine.Scene);
+            }
         }
     }
 
