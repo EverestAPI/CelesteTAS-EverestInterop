@@ -26,8 +26,7 @@ public static class ActualCollideHitbox {
     /// Special cases for entity which check additional variables, other than entity.Collidable
     private static readonly Dictionary<Type, Func<Entity, bool>> CollidableHandlers = new();
 
-    // Disable actual-collide hitboxes while they aren't used
-
+    /// Actual-collide hitboxes are disabled, while they aren't used
     [PublicAPI]
     public static bool Disabled => !TasSettings.ShowHitboxes || TasSettings.ShowActualCollideHitboxes == ActualCollideHitboxType.Off || Manager.FastForwarding;
 
@@ -67,6 +66,18 @@ public static class ActualCollideHitbox {
         return LastCollidables.TryGetValue(entity, out bool result) ? result : null;
     }
 
+    /// Stores the state of the entity's collider as it was during Player.Update
+    [PublicAPI]
+    public static void StoreActualColliderState(Entity? entity) {
+        // If a PlayerCollider is checked multiple times, only use the first one
+        if (entity == null || playerUpdated || Disabled) {
+            return;
+        }
+
+        LastPositions[entity] = entity.Position;
+        LastCollidables[entity] = entity.IsCollidable();
+    }
+
     [Initialize]
     private static void Initialize() {
         if (ModUtils.GetType("SpirialisHelper", "Celeste.Mod.Spirialis.TimeController")?.GetMethodInfo("CustomELUpdate") is { } customELUpdate) {
@@ -77,11 +88,12 @@ public static class ActualCollideHitbox {
         CollidableHandlers.Add(typeof(Lightning), e => e.Collidable && !((Lightning)e).disappearing);
         if (ModUtils.GetType("ChronoHelper", "Celeste.Mod.ChronoHelper.Entities.DarkLightning") is { } chronoLightningType) {
             // Not a subclass of Lightning
+            var disappearingField = chronoLightningType.GetFieldInfo("disappearing");
             CollidableHandlers.Add(chronoLightningType, e => {
                 if (!e.Collidable) {
                     return false;
                 }
-                if (chronoLightningType.GetFieldInfo("disappearing").GetValue(e) is bool b) {
+                if (disappearingField.GetValue(e) is bool b) {
                     return !b;
                 }
                 return true;
@@ -89,11 +101,12 @@ public static class ActualCollideHitbox {
         }
         if (ModUtils.GetType("Glyph", "Celeste.Mod.AcidHelper.Entities.AcidLightning") is { } acidLightningType) {
             // Subclass of Lightning, but has it's own "toggleOffset" and "disappearing"
+            var disappearingField = acidLightningType.GetFieldInfo("disappearing");
             CollidableHandlers.Add(acidLightningType, e => {
                 if (!e.Collidable) {
                     return false;
                 }
-                if (acidLightningType.GetFieldInfo("disappearing").GetValue(e) is bool b) {
+                if (disappearingField.GetValue(e) is bool b) {
                     return !b;
                 }
                 return true;
@@ -131,7 +144,7 @@ public static class ActualCollideHitbox {
         // Store player
         if (cursor.TryGotoNext(MoveType.After, ins => ins.MatchCallvirt(typeof(Tracker).GetMethodInfo(nameof(Tracker.GetComponents)).MakeGenericMethod(typeof(PlayerCollider))))) {
             cursor.Emit(OpCodes.Ldarg_0);
-            cursor.EmitDelegate(StoreCollider);
+            cursor.EmitDelegate(StoreActualColliderState);
         } else {
             "Failed to apply patch for storing player state during Update for actual-collide-hitboxes".Log(LogLevel.Warn);
         }
@@ -140,22 +153,15 @@ public static class ActualCollideHitbox {
         if (cursor.TryGotoNext(MoveType.After, ins => ins.MatchCastclass<PlayerCollider>())) {
             cursor.EmitDup();
             cursor.EmitCall(typeof(Component).GetPropertyInfo(nameof(Component.Entity)).GetMethod!);
-            cursor.EmitDelegate(StoreCollider);
+            cursor.EmitDelegate(StoreActualColliderState);
         } else {
             "Failed to apply patch for storing entity state during Update for actual-collide-hitboxes".Log(LogLevel.Warn);
         }
     }
 
     [PublicAPI]
-    public static void StoreCollider(Entity? entity) {
-        // If a PlayerCollider is checked multiple times, only use the first one
-        if (entity == null || playerUpdated || Disabled) {
-            return;
-        }
-
-        LastPositions[entity] = entity.Position;
-        LastCollidables[entity] = entity.IsCollidable();
-    }
+    [Obsolete("Use StoreActualColliderState instead")]
+    public static void StoreCollider(Entity? entity) => StoreActualColliderState(entity);
 
     private static void On_Player_Update(On.Celeste.Player.orig_Update orig, Player self) {
         orig(self);
