@@ -72,7 +72,7 @@ public class CelesteTasSettings : EverestModuleSettings {
             StudioShared.SimplifiedHitboxes = value;
             SyncSettings();
 
-            if (value) {
+            if (value && Engine.Scene != null) {
                 SimplifiedTriggerHitboxes.RecacheTriggers(Engine.Scene);
             }
         }

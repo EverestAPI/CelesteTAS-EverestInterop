@@ -19,7 +19,7 @@ internal static class SimplifiedTriggerHitboxes {
     // Cache triggers to avoid checking all conditions for each trigger each frame
     private static readonly HashSet<Entity> currentUnimportantTriggers = [];
 
-    public static bool IsUnimportant(Entity entity) {
+    public static bool ShouldHideHitbox(Entity entity) {
         return currentUnimportantTriggers.Contains(entity);
     }
 

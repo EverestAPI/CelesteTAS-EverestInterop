@@ -85,8 +85,16 @@ public static class HitboxSimplified {
     }
 
     private static bool HideHitbox(Entity entity) {
-        if (TasSettings.ShowHitboxes && TasSettings.SimplifiedHitboxes && !InfoWatchEntity.CurrentlyWatchedEntities.Contains(entity)) {
-            if (SimplifiedTriggerHitboxes.IsUnimportant(entity)) {
+        if (!TasSettings.ShowHitboxes || InfoWatchEntity.CurrentlyWatchedEntities.Contains(entity)) {
+            return false;
+        }
+
+        if (TriggerHitbox.ShouldHideHitbox(entity)) {
+            return true;
+        }
+
+        if (TasSettings.SimplifiedHitboxes) {
+            if (SimplifiedTriggerHitboxes.ShouldHideHitbox(entity)) {
                 return true;
             }
 

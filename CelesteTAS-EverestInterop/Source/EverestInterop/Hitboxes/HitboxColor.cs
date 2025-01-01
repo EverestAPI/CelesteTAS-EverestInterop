@@ -19,6 +19,7 @@ public static class HitboxColor {
     public static readonly Color DefaultTriggerColor = Color.MediumPurple;
     public static readonly Color DefaultPlatformColor = Color.Coral;
     public static readonly Color RespawnTriggerColor = Color.YellowGreen;
+    public static readonly Color CameraTriggerColor = Color.DarkGoldenrod;
     public static readonly Color PufferHeightCheckColor = Color.WhiteSmoke;
     public static readonly Color PufferPushRadiusColor = Color.DarkRed;
 
@@ -30,10 +31,6 @@ public static class HitboxColor {
     public static Color EntityColorInversely => EntityColor.Invert();
     public static Color EntityColorInverselyLessAlpha => EntityColorInversely * 0.6f;
     public static float UnCollidableAlpha => TasSettings.UnCollidableHitboxesOpacity / 10f;
-
-    public delegate bool HitboxColorGetDelegate(Entity entity, out Color color);
-
-    public static List<HitboxColorGetDelegate> HitboxColorGetters = new();
 
     public static TextMenu.Item CreateEntityHitboxColorButton(TextMenu textMenu, bool inGame) {
         TextMenu.Item item = new TextMenu.Button("Entity Hitbox Color".ToDialogText() + $": {ColorToHex(TasSettings.EntityHitboxColor)}").Pressed(
@@ -148,23 +145,12 @@ public static class HitboxColor {
         Color customColor = Color.Red; // i hate warning CS0165
         bool found = false;
 
-        foreach (HitboxColorGetDelegate getter in HitboxColorGetters) {
-            if (getter(entity, out Color c)) {
-                customColor = c;
-                found = true;
-                break;
-            }
-        }
-
-        if (!found) {
-            customColor = entity switch {
-                ChangeRespawnTrigger => RespawnTriggerColor,
-                Trigger => TasSettings.TriggerHitboxColor,
-                Platform => TasSettings.PlatformHitboxColor,
-                LookoutBlocker => Color.Green,
-                _ => TasSettings.EntityHitboxColor
-            };
-        }
+        customColor = entity switch {
+            Trigger => TriggerHitbox.GetHitboxColor(entity),
+            Platform => TasSettings.PlatformHitboxColor,
+            LookoutBlocker => Color.Green,
+            _ => TasSettings.EntityHitboxColor
+        };
 
         if (TasSettings.ShowActualCollideHitboxes != ActualCollideHitboxType.Off && entity.LoadActualCollidable() is { } actualCollidable) {
             if (!actualCollidable) {
