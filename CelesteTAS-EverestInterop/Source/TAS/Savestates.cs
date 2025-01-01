@@ -69,11 +69,11 @@ public static class Savestates {
         }
 
         // Only save-state when the current breakpoint is the last save-state one
-        if (Manager.Controller.Inputs.Count > Manager.Controller.CurrentFrameInTas &&
-            Manager.Controller.CurrentFastForward is { SaveState: true } currentFastForward &&
-            Manager.Controller.FastForwards.Last(pair => pair.Value.SaveState).Value == currentFastForward &&
-            SavedCurrentFrame != currentFastForward.Frame)
-        {
+        if (Manager.Controller.Inputs.Count > Manager.Controller.CurrentFrameInTas
+            && Manager.Controller.FastForwards.GetValueOrDefault(Manager.Controller.CurrentFrameInTas) is { SaveState: true } currentFastForward
+            && Manager.Controller.FastForwards.Last(pair => pair.Value.SaveState).Value == currentFastForward
+            && SavedCurrentFrame != currentFastForward.Frame
+        ) {
             SaveState(byBreakpoint: true);
             return;
         }

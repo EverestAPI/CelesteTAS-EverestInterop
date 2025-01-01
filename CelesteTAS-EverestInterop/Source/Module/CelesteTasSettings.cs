@@ -73,7 +73,7 @@ public class CelesteTasSettings : EverestModuleSettings {
             SyncSettings();
 
             if (value && Engine.Scene != null) {
-                SimplifiedTriggerHitboxes.RecacheTriggers(Engine.Scene);
+                TriggerHitbox.RecacheTriggers(Engine.Scene);
             }
         }
     }

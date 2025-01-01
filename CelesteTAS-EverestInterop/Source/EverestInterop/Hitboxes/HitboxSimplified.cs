@@ -94,7 +94,7 @@ public static class HitboxSimplified {
         }
 
         if (TasSettings.SimplifiedHitboxes) {
-            if (SimplifiedTriggerHitboxes.ShouldHideHitbox(entity)) {
+            if (TriggerHitbox.ShouldHideHitbox(entity)) {
                 return true;
             }
 
