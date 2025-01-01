@@ -78,20 +78,41 @@ internal static class SimplifiedTriggerHitboxes {
         typeof(AmbienceTrigger),
         typeof(AmbienceVolumeTrigger),
         typeof(CustomBirdTutorialTrigger),
-        typeof(MusicLayerTrigger)
+        typeof(MusicLayerTrigger),
     ];
     private static readonly HashSet<Type> moddedTriggers = [];
 
     [Initialize]
     private static void Initialize() {
-        triggerChecks.Clear();
         triggerChecks.Add((_, entityType) => vanillaTriggers.Contains(entityType));
         triggerChecks.Add((_, entityType) => everestTriggers.Contains(entityType));
 
         // ExtendedVariants triggers might be unimportant, depending on the variant
         if (ExtendedVariantsInterop.GetVariantsEnum() is not null) {
             IEnumerable<string> unimportantVariantNames = [
-                "RoomLighting"
+                "RoomLighting",
+                "RoomBloom",
+                "GlitchEffect",
+                "ColorGrading",
+                "ScreenShakeIntensity",
+                "AnxietyEffect",
+                "BlurLevel",
+                "ZoomLevel",
+                "BackgroundBrightness",
+                "DisableMadelineSpotlight",
+                "ForegroundEffectOpacity",
+                "MadelineIsSilhouette",
+                "DashTrailAllTheTime",
+                "FriendlyBadelineFollower",
+                "MadelineHasPonytail",
+                "MadelineBackpackMode",
+                "BackgroundBlurLevel",
+                "AlwaysInvisible",
+                "DisplaySpeedometer",
+                "DisableKeysSpotlight",
+                "SpinnerColor",
+                "InvisibleMotion",
+                "PlayAsBadeline",
             ];
             var unimportantVariants = unimportantVariantNames
                 .Select(name => ExtendedVariantsInterop.ParseVariant(name)())
@@ -112,7 +133,6 @@ internal static class SimplifiedTriggerHitboxes {
         // To reduce work, only mods with >= 5 dependencies are included
         // Last update: 2023-12-21, 426 triggers
 
-        moddedTriggers.Clear();
         AddTypes("AurorasHelper", "Celeste.Mod.AurorasHelper.ResetMusicTrigger", "Celeste.Mod.AurorasHelper.PlayAudioTrigger", "Celeste.Mod.AurorasHelper.ShowSubtitlesTrigger");
         AddTypes("AvBdayHelper2021", "Celeste.Mod.AvBdayHelper.Code.Triggers.ScreenShakeTrigger");
         AddTypes("CherryHelper", "Celeste.Mod.CherryHelper.AudioPlayTrigger");
