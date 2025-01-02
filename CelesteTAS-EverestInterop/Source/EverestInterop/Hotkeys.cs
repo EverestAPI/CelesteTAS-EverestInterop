@@ -87,16 +87,8 @@ public static class Hotkeys {
 
     internal static bool Initialized { get; private set; } = false;
 
-    [Load]
-    private static void Load() {
-        Everest.Events.Input.OnInitialize += InputInitialize;
-    }
-    [Unload]
-    private static void Unload() {
-        Everest.Events.Input.OnInitialize -= InputInitialize;
-    }
-
-    private static void InputInitialize() {
+    [Initialize]
+    private static void Initialize() {
         AllHotkeys.Clear();
         AllHotkeys[HotkeyID.Start] = StartStop = BindingToHotkey(TasSettings.KeyStart);
         AllHotkeys[HotkeyID.Restart] = Restart = BindingToHotkey(TasSettings.KeyRestart);
@@ -252,7 +244,7 @@ public static class Hotkeys {
         public bool DoublePressed { get; private set; }
         public bool Repeated { get; private set; }
 
-        private bool LastCheck { get; set; }
+        public bool LastCheck { get; set; }
 
         private const double DoublePressTimeoutMS = 200.0;
         private const double RepeatTimeoutMS = 500.0;
