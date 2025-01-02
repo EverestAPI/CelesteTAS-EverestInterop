@@ -2,21 +2,21 @@ using TAS.Utils;
 
 namespace TAS.Input;
 
-public record Comment {
-    public readonly string FilePath;
+/// /// Represents a commented line in a TAS file
+public readonly record struct Comment {
     public readonly int Frame;
-    public readonly int Line;
+
+    public readonly string FilePath;
+    public readonly int FileLine;
+
     public readonly string Text;
 
-    public Comment(string filePath, int frame, int line, string text) {
-        FilePath = filePath;
+    public Comment(int frame, string filePath, int fileLine, string text) {
         Frame = frame;
-        Line = line;
-
-        if (text.IsNotNullOrEmpty()) {
-            text = text.Substring(1, text.Length - 1).Trim();
-        }
-
-        Text = text;
+        FilePath = filePath;
+        FileLine = fileLine;
+        Text = string.IsNullOrEmpty(text)
+            ? string.Empty
+            : text["#".Length..].Trim();
     }
 }

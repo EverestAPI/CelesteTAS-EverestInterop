@@ -69,6 +69,7 @@ public class TasCommandAttribute(string name) : Attribute {
     }
 }
 
+/// Represents a fully parsed command-line in a TAS file
 public readonly record struct Command(
     CommandLine CommandLine,
     TasCommandAttribute Attribute,

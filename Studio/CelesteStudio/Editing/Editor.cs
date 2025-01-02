@@ -1434,7 +1434,7 @@ public sealed class Editor : SkiaDrawable {
             {
                 // Rename label
                 string line = Document.Lines[Document.Caret.Row];
-                if (Comment.IsLabel(line)) {
+                if (CommentLine.IsLabel(line)) {
                     string oldLabel = line["#".Length..];
                     string newLabel = RenameLabelDialog.Show(oldLabel);
 
@@ -2957,7 +2957,7 @@ public sealed class Editor : SkiaDrawable {
             }
 
             if (lineTrimmed.StartsWith('#')) {
-                if ((!Comment.IsLabel(lineTrimmed) && !lineTrimmed.StartsWith("#***") && !ActionLine.TryParse(lineTrimmed[1..], out _)) || lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) {
+                if ((!CommentLine.IsLabel(lineTrimmed) && !lineTrimmed.StartsWith("#***") && !ActionLine.TryParse(lineTrimmed[1..], out _)) || lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) {
                     // Ignore non-input comments and special labels
                     continue;
                 }
@@ -3424,7 +3424,7 @@ public sealed class Editor : SkiaDrawable {
             string line = Document.Lines[row];
 
             // Go to the next label / breakpoint
-            if (Comment.IsLabel(Document.Lines[row]) || line.TrimStart().StartsWith("***")) {
+            if (CommentLine.IsLabel(Document.Lines[row]) || line.TrimStart().StartsWith("***")) {
                 break;
             }
 

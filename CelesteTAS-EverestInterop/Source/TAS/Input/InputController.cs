@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Celeste.Mod;
 using JetBrains.Annotations;
+using StudioCommunication;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
@@ -32,6 +33,7 @@ public class InputController {
 
     public readonly List<InputFrame> Inputs = [];
     public readonly SortedDictionary<int, List<Command>> Commands = new();
+    public readonly SortedDictionary<int, List<Comment>> Comments = new();
     public readonly SortedDictionary<int, FastForward> FastForwards = new();
     public readonly SortedDictionary<int, FastForward> FastForwardLabels = new();
 
@@ -44,6 +46,7 @@ public class InputController {
     public int CurrentParsingFrame => Inputs.Count;
 
     public List<Command> CurrentCommands => Commands.GetValueOrDefault(CurrentFrameInTas) ?? [];
+    public List<Comment> CurrentComments => Comments.GetValueOrDefault(CurrentFrameInTas) ?? [];
 
     public FastForward? CurrentFastForward => NextLabelFastForward ??
                                                FastForwards.FirstOrDefault(pair => pair.Key > CurrentFrameInTas).Value ??
@@ -242,15 +245,14 @@ public class InputController {
                 FastForwards[CurrentParsingFrame] = fastForward;
             }
         } else if (lineText.StartsWith("#")) {
-            // A label need to start with a # and immediately follow with the text
-            if (lineText.Length >= 2 && lineText[0] == '#' && char.IsLetter(lineText[1])) {
+            if (CommentLine.IsLabel(lineText)) {
                 FastForwardLabels[CurrentParsingFrame] = new FastForward(CurrentParsingFrame, "", studioLine);
             }
 
-            // if (!Comments.TryGetValue(path, out var comments)) {
-            //     Comments[path] = comments = new List<Comment>();
-            // }
-            // comments.Add(new Comment(path, CurrentParsingFrame, subLine, lineText));
+            if (!Comments.TryGetValue(CurrentParsingFrame, out var comments)) {
+                Comments[CurrentParsingFrame] = comments = [];
+            }
+            comments.Add(new Comment(CurrentParsingFrame, path, fileLine, lineText));
         } else if (!AutoInputCommand.TryInsert(path, lineText, studioLine, repeatIndex, repeatCount)) {
             AddFrames(lineText, studioLine, repeatIndex, repeatCount);
         }
@@ -380,11 +382,24 @@ public class InputController {
     }
 
     public InputController Clone() {
-        InputController clone = new();
+        var clone = new InputController {
+            filePath = filePath,
+            checksum = checksum,
 
-        clone.filePath = filePath;
+            NeedsReload = NeedsReload,
+            CurrentFrameInTas = CurrentFrameInTas,
+            CurrentFrameInInput = CurrentFrameInInput
+        };
 
         clone.Inputs.AddRange(Inputs);
+
+        foreach (int frame in Commands.Keys) {
+            clone.Commands[frame] = [..Commands[frame]];
+        }
+        foreach (int frame in Comments.Keys) {
+            clone.Comments[frame] = [..Comments[frame]];
+        }
+
         foreach ((int line, var fastForward) in FastForwards) {
             clone.FastForwards.Add(line, fastForward);
         }
@@ -392,25 +407,9 @@ public class InputController {
             clone.FastForwardLabels.Add(line, fastForward);
         }
 
-        // foreach (string filePath in Comments.Keys) {
-        //     clone.Comments[filePath] = new List<Comment>(Comments[filePath]);
-        // }
-
-        foreach (int frame in Commands.Keys) {
-            clone.Commands[frame] = [..Commands[frame]];
-        }
-
-        clone.NeedsReload = NeedsReload;
         foreach (var file in UsedFiles) {
             clone.UsedFiles.Add(file);
         }
-        clone.CurrentFrameInTas = CurrentFrameInTas;
-        clone.CurrentFrameInInput = CurrentFrameInInput;
-        // clone.CurrentFrameInInputForHud = CurrentFrameInInputForHud;
-        // clone.SavestateChecksum = clone.CalcChecksum(CurrentFrameInTas);
-
-        clone.checksum = checksum;
-        // clone.initializationFrameCount = initializationFrameCount;
 
         return clone;
     }

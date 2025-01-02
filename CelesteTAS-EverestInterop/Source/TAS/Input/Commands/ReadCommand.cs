@@ -89,7 +89,7 @@ public static class ReadCommand {
                 // Don't include labels before the starting one for the ending label
                 bool afterStartingLabel = args.Length == 2;
                 foreach (string line in File.ReadAllText(fullPath).ReplaceLineEndings("\n").Split('\n')) {
-                    if (!StudioCommunication.Comment.IsLabel(line)) {
+                    if (!StudioCommunication.CommentLine.IsLabel(line)) {
                         continue;
                     }
 
