@@ -144,10 +144,22 @@ internal static class TriggerHitbox {
                 "ExtendedVariants.Entities.Legacy.ExtendedVariantFadeTrigger",
                 "ExtendedVariants.Entities.ForMappers.FloatExtendedVariantFadeTrigger"
             ).ForEach(type => {
-                triggerChecks.Add((entity, entityType) => entityType == type
-                                                          && entity.GetFieldValue<object>("variantChange") is { } variantChange
-                                                          && unimportantVariants.Contains(variantChange));
+                triggerChecks.Add((entity, entityType) =>
+                    entityType == type
+                    && entity.GetFieldValue<object>("variantChange") is { } variantChange
+                    && unimportantVariants.Contains(variantChange)
+                );
             });
+
+            if (ModUtils.GetType("ExtendedVariantMode", "ExtendedVariants.Entities.ForMappers.AbstractExtendedVariantTrigger`1") is { } abstractExtendedVariantTriggerType) {
+                triggerChecks.Add((entity, entityType) =>
+                    entityType.BaseType is { } type
+                    && type.IsGenericType
+                    && type.GetGenericTypeDefinition() == abstractExtendedVariantTriggerType
+                    && entity.GetFieldValue<object>("variantChange") is { } variantChange
+                    && unimportantVariants.Contains(variantChange)
+                );
+            }
         }
 
         // Gather camera triggers to recolor them
