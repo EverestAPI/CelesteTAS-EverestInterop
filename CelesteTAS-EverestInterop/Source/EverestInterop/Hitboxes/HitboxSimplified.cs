@@ -94,10 +94,6 @@ public static class HitboxSimplified {
         }
 
         if (TasSettings.SimplifiedHitboxes) {
-            if (TriggerHitbox.ShouldHideHitbox(entity)) {
-                return true;
-            }
-
             Type type = entity.GetType();
             if (UselessTypes.Contains(type)) {
                 return true;
