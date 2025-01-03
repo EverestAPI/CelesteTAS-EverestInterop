@@ -48,6 +48,7 @@ public static class StudioHelper {
     private static string TempStudioInstallDirectory => Path.Combine(StudioDirectory, ".temp_install");
     private static string VersionFile => Path.Combine(StudioDirectory, ".version");
     private static string DownloadPath => Path.Combine(StudioDirectory, FileName);
+    private static string InnerArchivePath => Path.Combine(StudioDirectory, ".InnerArchive.zip");
 
     private static string DownloadURL {
         get {
@@ -228,42 +229,17 @@ public static class StudioHelper {
         bool skipDownload = false;
 
         if (File.Exists(DownloadPath)) {
-            await using (var fs = File.OpenRead(DownloadPath)) {
-                string hash = BitConverter.ToString(await md5.ComputeHashAsync(fs)).Replace("-", "");
-                if (Checksum.Equals(hash, StringComparison.OrdinalIgnoreCase)) {
-                    skipDownload = true;
-                } else {
-                    $"Checksum for {FileName} doesn't match. Expected {Checksum}, found {hash}".Log(LogLevel.Verbose);
-                }
-            }
-
-            if (!skipDownload) {
-                // Try handling double ZIPs caused by GitHub actions
-                if (DoubleZipArchive) {
-                    string innerPath;
-                    using (var zip = ZipFile.OpenRead(DownloadPath)) {
-                        var entry = zip.Entries[0]; // There should only be a single entry in this case
-                        innerPath = Path.Combine(StudioDirectory, entry.Name);
-                        $"Extracting inner ZIP archive: '{entry.Name}'".Log(LogLevel.Verbose);
-
-                        entry.ExtractToFile(innerPath);
-                    }
-
-                    File.Move(innerPath, DownloadPath, overwrite: true);
-                }
-
-                await using var fs = File.OpenRead(DownloadPath);
-                string hash = BitConverter.ToString(await md5.ComputeHashAsync(fs)).Replace("-", "");
-                if (Checksum.Equals(hash, StringComparison.OrdinalIgnoreCase)) {
-                    skipDownload = true;
-                } else {
-                    $"Checksum for inner archive of {FileName} doesn't match. Expected {Checksum}, found {hash}".Log(LogLevel.Verbose);
-                }
+            await using var fs = File.OpenRead(DownloadPath);
+            string hash = BitConverter.ToString(await md5.ComputeHashAsync(fs)).Replace("-", "");
+            if (Checksum.Equals(hash, StringComparison.OrdinalIgnoreCase)) {
+                skipDownload = true;
+            } else {
+                $"Checksum for {FileName} doesn't match. Expected {Checksum}, found {hash}".Log(LogLevel.Verbose);
             }
         }
 
         if (!skipDownload) {
-            // Existing archive doesn't match at all
+            // Existing archive doesn't match
             if (File.Exists(DownloadPath)) {
                 File.Delete(DownloadPath);
             }
@@ -295,16 +271,18 @@ public static class StudioHelper {
 
             // Handle double ZIPs caused by GitHub actions
             if (DoubleZipArchive) {
-                string innerPath;
-                using (var zip = ZipFile.OpenRead(DownloadPath)) {
-                    var entry = zip.Entries[0]; // There should only be a single entry in this case
-                    innerPath = Path.Combine(StudioDirectory, entry.Name);
-                    $"Extracting inner ZIP archive: '{entry.Name}'".Log(LogLevel.Verbose);
-
-                    entry.ExtractToFile(innerPath);
+                if (File.Exists(InnerArchivePath)) {
+                    File.Delete(InnerArchivePath);
                 }
 
-                File.Move(innerPath, DownloadPath, overwrite: true);
+                using (var zip = ZipFile.OpenRead(DownloadPath)) {
+                    var entry = zip.Entries[0]; // There should only be a single entry in this case
+                    $"Extracting inner ZIP archive: '{entry.Name}'".Log(LogLevel.Verbose);
+
+                    entry.ExtractToFile(InnerArchivePath);
+                }
+
+                File.Move(InnerArchivePath, DownloadPath, overwrite: true);
             }
         }
 
@@ -474,6 +452,7 @@ public static class StudioHelper {
 
     private static void ReportError(string error, string? additionalInfo = null) {
         error.Log(LogLevel.Error);
+        additionalInfo?.Log(LogLevel.Error);
 
         if (!Directory.Exists(StudioDirectory)) {
             Directory.CreateDirectory(StudioDirectory);
