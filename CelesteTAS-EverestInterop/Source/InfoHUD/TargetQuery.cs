@@ -71,7 +71,9 @@ public static class TargetQuery {
             return;
         }
 
-        if (results.Count == 1) {
+        if (results.Count == 0) {
+            "No instances found".ConsoleLog(LogLevel.Error);
+        } else if (results.Count == 1) {
             results[0].Value.ConsoleLog();
         } else {
             foreach ((object? value, object? baseInstance) in results) {
@@ -120,10 +122,8 @@ public static class TargetQuery {
                     return false;
                 }
 
-                if (instances.IsEmpty()) {
-                    allResults.Add((values[0], null));
-                } else {
-                    allResults.AddRange(values.Select((value, i) => (value, (object?)instances[i])));
+                if (!instances.IsEmpty()) {
+                    allResults.AddRange(values.Select((value, i) => (value, (object?) instances[i])));
                 }
 
                 return true;

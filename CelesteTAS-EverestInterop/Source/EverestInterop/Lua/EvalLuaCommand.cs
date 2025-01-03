@@ -108,16 +108,16 @@ public static class EvalLuaCommand {
         EvalLuaImpl(commandAndSeparatorRegex.Replace(commandLine.OriginalText, ""));
     }
 
-    public static object[] EvalLuaImpl(string code) {
+    public static object?[]? EvalLuaImpl(string code) {
         string localCode = ReadContent("bin/env");
         code = $"{localCode}\n{code}";
 
-        object[] objects;
+        object?[]? objects;
         try {
             objects = Everest.LuaLoader.Run(code, null);
         } catch (Exception e) {
             e.Log();
-            return new object[] {e};
+            return [e];
         }
 
         return objects;

@@ -16,8 +16,8 @@ namespace TAS.InfoHUD;
 
 /// Handles parsing of custom Info HUD templates
 public static class InfoCustom {
-
     private static readonly Regex TargetQueryRegex = new(@"\{(.*?)\}", RegexOptions.Compiled);
+    private static readonly Regex TableRegex = new(@"\|\|(.*?)\|\|", RegexOptions.Compiled);
     private static readonly Regex LuaRegex = new(@"\[\[(.+?)\]\]", RegexOptions.Compiled);
 
     /// Should return true if the value was successfully formatted, otherwise false
@@ -42,53 +42,125 @@ public static class InfoCustom {
     }
     /// Parses a single line of a custom Info HUD template into actual values for the current frame
     public static IEnumerable<string> ParseTemplateLine(string templateLine, int decimals) {
-        /* Replace single results inline and format an aligned list for multiple results
+        /* Replace single results inline and can format an aligned list for multiple results
          * Example:
          *
-         * JumpThruPos: {JumpThru.Position=} | {JumpThru.X=} : {Player.X} # {Level.Wind=} ; {JumpThru.Y=}
+         *     Template:
+         * JumpThruPos: ||{JumpThru.Position=} | {JumpThru.X=} : {Player.X} # {Level.Wind=} ; {JumpThru.Y=}|| ABC={Session.SID}
+         * Glider Data: X={Glider.X} Y={Glider.Y}
          *
+         *     Single Entity:
+         * JumpThruPos: JumpThru.Position=3608.00, -2040.00 | JumpThru.X=3608 : 3872.00 # Level-Wind=400 ; JumpThru.Y=-2040.00
+         * Glider Data: X=3872.00 Y=2080.00
+         *
+         *     Multiple Entities:
          * JumpThruPos: # Level.Wind=400
          *     [9b:0] JumpThru.Position=3608.00, -2040.00  | JumpThru.X=3608.00  ; JumpThru.Y=-2040.00
          *     [9b:0] JumpThru.Position=36082.00, -2040.00 | JumpThru.X=36082.00 ; JumpThru.Y=-2040.00
-         *     [1:0]  Player.X=3872.00
-         *
-         * JumpThruPos: JumpThru.Position=3608.00, -2040.00 | JumpThru.X=3608 : Player.X=3872.00 # Level-Wind=400 ; JumpThru.Y=-2040.00
+         *     [1:0]  3872.00
+         * Glider Data: X={[9c:3] 3872.00, [9c:5] 8273.00} Y={[9c:3] 2080.00, [9c:5] 802.00}
          */
 
-        StringBuilder mainResult = new();
-        Dictionary<string, List<string>> entityResults = [];
+        // A table is a mapping of result types -> it's query results (including prefix)
+        List<Dictionary<string, List<string>>> tables = [];
 
-        // Find target-queries
-        Match? lastMatch = null;
-        Type? lastResultType = null;
-        foreach (Match match in TargetQueryRegex.Matches(templateLine)) {
-            string betweenText;
-            bool firstMatch = lastMatch == null;
-            if (firstMatch) {
-                betweenText = templateLine[..match.Index];
-            } else {
-                betweenText = templateLine[(lastMatch!.Index + lastMatch.Length)..match.Index];
+        // Find tables (and remove them to avoid duplicate results)
+        templateLine = TableRegex.Replace(templateLine, tableMatch => {
+            string tableQuery = tableMatch.Groups[1].Value;
+            Dictionary<string, List<string>> tableResults = [];
+
+            Type? firstResultType = null;
+            bool hideTypes = true; // Don't show types if all result are of the same type
+
+            Match? lastMatch = null;
+            foreach (Match match in TargetQueryRegex.Matches(tableQuery)) {
+                string prefixText; // Text before target-queries
+                if (lastMatch == null) {
+                    prefixText = tableQuery[..match.Index];
+                } else {
+                    prefixText = tableQuery[(lastMatch.Index + lastMatch.Length)..match.Index];
+                }
+                lastMatch = match;
+
+                string query = match.Groups[1].Value;
+
+                // Find query prefix
+                string queryPrefix;
+                if (query[^1] == ':') {
+                    queryPrefix = $"{query} "; // query: value
+                    query = query[..^1];
+                } else if (query[^1] == '=') {
+                    queryPrefix = query; // query=value
+                    query = query[..^1];
+                } else {
+                    queryPrefix = "";
+                }
+
+                // Find custom formatter
+                ValueFormatter? formatter = null;
+                foreach ((string name, var customFormatter) in CustomFormatters) {
+                    if (query.EndsWith(name)) {
+                        query = query[..^name.Length];
+                        formatter = customFormatter;
+                    }
+                }
+
+                (var queryResults, bool success, string errorMessage) = TargetQuery.GetMemberValues(query);
+                if (!success) {
+                    tableResults.AddToKey("Error", $"{prefixText}{queryPrefix}<{errorMessage}>");
+                    continue;
+                }
+
+                foreach ((object? value, object? baseInstance) in queryResults) {
+                    var currResultType = baseInstance?.GetType();
+                    firstResultType ??= currResultType;
+
+                    if (firstResultType != currResultType) {
+                        hideTypes = false;
+                    }
+
+                    if (formatter == null || !formatter(value, decimals, out string valueStr)) {
+                        valueStr = DefaultFormatter(value, decimals);
+                    }
+
+                    string key = currResultType?.Name ?? "";
+                    string result = $"{queryPrefix}{valueStr}";
+
+                    if (baseInstance is Entity entity && entity.GetEntityData()?.ToEntityId() is { } entityId) {
+                        key += $"[{entityId}]";
+                    }
+
+                    if (tableResults.TryGetValue(key, out var results)) {
+                        results.Add(prefixText + result);
+                    } else {
+                        tableResults[key] = [prefixText.TrimStart() +result];
+                    }
+                }
             }
-            lastMatch = match;
 
+            if (hideTypes && firstResultType != null) {
+                tableResults = tableResults.ToDictionary(entry => entry.Key[firstResultType.Name.Length..], entry => entry.Value);
+            }
+
+            tables.Add(tableResults);
+
+            return string.Empty;
+        });
+
+        // Find main queries
+        string mainResult = TargetQueryRegex.Replace(templateLine, match => {
             string query = match.Groups[1].Value;
 
-            // Ignore empty queries
-            if (string.IsNullOrWhiteSpace(query)) {
-                mainResult.Append(betweenText);
-                continue;
-            }
-
-            // Find prefix
-            string prefix;
+            // Find query prefix
+            string queryPrefix;
             if (query[^1] == ':') {
-                prefix = $"{query} "; // query: value
+                queryPrefix = $"{query} "; // query: value
                 query = query[..^1];
             } else if (query[^1] == '=') {
-                prefix = query; // query=value
+                queryPrefix = query; // query=value
                 query = query[..^1];
             } else {
-                prefix = "";
+                queryPrefix = "";
             }
 
             // Find custom formatter
@@ -100,98 +172,95 @@ public static class InfoCustom {
                 }
             }
 
-            (var results, bool success, string errorMessage) = TargetQuery.GetMemberValues(query);
+            (var queryResults, bool success, string errorMessage) = TargetQuery.GetMemberValues(query);
             if (!success) {
-                mainResult.Append(betweenText);
-                mainResult.Append($"<{errorMessage}>");
-                continue;
+                return $"{queryPrefix}<{errorMessage}>";
             }
 
-            bool appendedMainResult = false; // Prevent appending betweenText multiple times
+            if (queryResults.Count == 0) {
+                return "<Not found>";
+            }
+            if (queryResults.Count == 1) {
+                if (formatter == null || !formatter(queryResults[0].Value, decimals, out string valueStr)) {
+                    valueStr = DefaultFormatter(queryResults[0].Value, decimals);
+                }
 
-            foreach ((object? value, object? baseInstance) in results) {
-                var currResultType = baseInstance?.GetType();
+                return $"{queryPrefix}{valueStr}";
+            }
+
+            var resultCollection = new StringBuilder("{ ");
+            bool firstValue = true;
+            foreach ((object? value, object? baseInstance) in queryResults) {
+                if (!firstValue) {
+                    resultCollection.Append(", ");
+                }
+                firstValue = false;
 
                 if (formatter == null || !formatter(value, decimals, out string valueStr)) {
                     valueStr = DefaultFormatter(value, decimals);
                 }
 
                 if (baseInstance is Entity entity && entity.GetEntityData()?.ToEntityId() is { } entityId) {
-                    if (firstMatch && !appendedMainResult) {
-                        mainResult.Append(betweenText);
-                        appendedMainResult = true;
-                    }
-
-                    string result = $"{prefix}{valueStr}";
-                    entityResults.AddToKey($"{currResultType?.Name ?? ""}[{entityId}]", (firstMatch ? "" : betweenText) + result);
+                    resultCollection.Append($"[{entityId}] {queryPrefix}{valueStr}");
                 } else {
-                    if (appendedMainResult) {
-                        mainResult.Append(", ");
-                    } else {
-                        // Trim start to ignore spacing for previous different matches
-                        mainResult.Append(lastResultType == currResultType ? betweenText : betweenText.TrimStart());
-                        appendedMainResult = true;
-                    }
-
-                    mainResult.Append(prefix);
-                    mainResult.Append(valueStr);
+                    resultCollection.Append($"{queryPrefix}{valueStr}");
                 }
-
-                lastResultType = currResultType;
             }
-        }
+            resultCollection.Append(" }");
 
-        if (lastMatch == null) {
-            mainResult.Append(templateLine);
-        } else {
-            mainResult.Append(templateLine[(lastMatch!.Index + lastMatch.Length)..]);
-        }
+            return resultCollection.ToString();
+        });
 
         // Evaluate Lua code for main line
-        yield return LuaRegex.Replace(mainResult.ToString(), match => {
+        yield return LuaRegex.Replace(mainResult, match => {
             if (TargetQuery.EnforceLegal) {
                 return "<Cannot safely evaluate Lua code during EnforceLegal>";
             }
 
             string code = match.Groups[1].Value;
-            object?[] objects = EvalLuaCommand.EvalLuaImpl(code);
+            object?[]? objects = EvalLuaCommand.EvalLuaImpl(code);
             return objects == null ? "null" : string.Join(", ", objects.Select(o => o?.ToString() ?? "null"));
         });
 
-        // Format entity lines
-        var entityLines = entityResults.ToDictionary(
-            entry => entry.Key,
-            entry => new StringBuilder($"  {entry.Key} "));
+        // Format tables
+        foreach (var table in tables) {
+            var lines = table.ToDictionary(
+                entry => entry.Key,
+                entry => new StringBuilder($"  {entry.Key} "));
 
-        int resultIdx = 0;
-        bool allDone = false;
-        while (!allDone) {
-            if (entityLines.Count > 0) {
+            if (lines.Count == 0) {
+                continue;
+            }
+
+            int resultIdx = 0;
+            bool allDone = false;
+
+            while (!allDone) {
                 // Align all lines
-                int maxLength = entityLines
+                int maxLength = lines
                     .Select(entry => entry.Value.Length)
                     .Aggregate(Math.Max);
-                foreach (var (_, entityLine) in entityLines) {
-                    entityLine.Append(' ', maxLength - entityLine.Length);
-                }
-            }
-
-            // Append next parameter
-            allDone = true;
-            foreach ((string entityKey, var results) in entityResults) {
-                if (resultIdx >= results.Count) {
-                    continue;
+                foreach (var (_, line) in lines) {
+                    line.Append(' ', maxLength - line.Length);
                 }
 
-                entityLines[entityKey].Append(results[resultIdx]);
-                allDone = false;
+                // Append next parameter
+                allDone = true;
+                foreach ((string key, var results) in table) {
+                    if (resultIdx >= results.Count) {
+                        continue;
+                    }
+
+                    lines[key].Append(results[resultIdx]);
+                    allDone = false;
+                }
+
+                resultIdx++;
             }
 
-            resultIdx++;
-        }
-
-        foreach (var (_, entityLine) in entityLines) {
-            yield return entityLine.ToString();
+            foreach (var (_, line) in lines) {
+                yield return line.ToString();
+            }
         }
     }
 

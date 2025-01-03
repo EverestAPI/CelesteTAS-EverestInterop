@@ -101,8 +101,8 @@ public static class EntityDataHelper {
         }
     }
 
-    public static EntityData GetEntityData(this Entity entity) {
-        return entity != null && CachedEntityData.TryGetValue(entity, out EntityData data) ? data : null;
+    public static EntityData? GetEntityData(this Entity? entity) {
+        return entity != null && CachedEntityData.TryGetValue(entity, out var data) ? data : null;
     }
 
     private static void LevelOnEnd(On.Celeste.Level.orig_End orig, Level self) {
