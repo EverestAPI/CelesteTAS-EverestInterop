@@ -64,15 +64,16 @@
         <Copy SourceFiles="$(OutputPath)JetBrains.FormatRipper.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
     </Target>
 
-    <!-- Assets (use symlinks in debug builds on POSIX, since MSBuild is useless) -->
+    <!-- Assets (use symlinks in debug builds - only on UNIX, since MSBuild is useless) -->
     <Target Name="LinkAssets" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug' and '$(OS)' == 'Unix' and $(UseSymlinks) != false">
         <Copy SourceFiles="" DestinationFiles="..\bin\env.lua" UseSymboliclinksIfPossible="true" />
 
         <Exec Command="rm -rf ../bin/env.lua &amp;&amp; ln -s ../CelesteTAS-EverestInterop/Source/EverestInterop/Lua/env.lua ../bin/env.lua"/>
 
-        <Exec Command="rm -rf ../everest.yaml &amp;&amp; ln -s CelesteTAS-EverestInterop/everest.yaml ../everest.yaml"/>
-        <Exec Command="rm -rf ../Dialog &amp;&amp; ln -s CelesteTAS-EverestInterop/Dialog ../Dialog"/>
-        <Exec Command="rm -rf ../Graphics &amp;&amp; ln -s CelesteTAS-EverestInterop/Graphics ../Graphics"/>
+        <!-- Replace with symlinks if they aren't already -->
+        <Exec Command="if [ ! -L ../everest.yaml ]; then rm -rf ../everest.yaml &amp;&amp; ln -s CelesteTAS-EverestInterop/everest.yaml ../everest.yaml; fi"/>
+        <Exec Command="if [ ! -L ../Dialog ]; then rm -rf ../Dialog &amp;&amp; ln -s CelesteTAS-EverestInterop/Dialog ../Dialog; fi"/>
+        <Exec Command="if [ ! -L ../Graphics ]; then rm -rf ../Graphics &amp;&amp; ln -s CelesteTAS-EverestInterop/Graphics ../Graphics; fi"/>
     </Target>
     <Target Name="CopyAssets" AfterTargets="Build" Condition="'$(Configuration)' != 'Debug' or '$(OS)' != 'Unix' or $(UseSymlinks) == false">
         <ItemGroup>
