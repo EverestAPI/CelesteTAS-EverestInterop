@@ -325,7 +325,7 @@ public static class SetCommand {
         }
 
         // Handle special cases
-        if (baseTypes.Count == 1 && baseTypes[0] == typeof(Settings) || baseTypes[0] == typeof(SaveData) || baseTypes[0] == typeof(Assists)) {
+        if (baseTypes.Count == 1 && (baseTypes[0] == typeof(Settings) || baseTypes[0] == typeof(SaveData) || baseTypes[0] == typeof(Assists))) {
             SetGameSetting(memberArgs[0], args[1..]);
             return;
         }
@@ -339,23 +339,46 @@ public static class SetCommand {
         }
 
         foreach (var type in baseTypes) {
-            (var targetType, bool success) = TargetQuery.ResolveMemberType(type, memberArgs);
-            if (!success) {
-                ReportError($"Failed to find members '{string.Join('.', memberArgs)}' on type '{type}'");
-                return;
-            }
+            if (componentTypes.IsNotEmpty()) {
+                foreach (var componentType in componentTypes) {
+                    (var targetType, bool success) = TargetQuery.ResolveMemberType(componentType, memberArgs);
+                    if (!success) {
+                        ReportError($"Failed to find members '{string.Join('.', memberArgs)}' on type '{componentType}'");
+                        return;
+                    }
 
-            (object?[] values, success, string errorMessage) = TargetQuery.ResolveValues(args[1..], [targetType]);
-            if (!success) {
-                ReportError(errorMessage);
-                return;
-            }
+                    (object?[] values, success, string errorMessage) = TargetQuery.ResolveValues(args[1..], [targetType]);
+                    if (!success) {
+                        ReportError(errorMessage);
+                        return;
+                    }
 
-            var instances = TargetQuery.ResolveTypeInstances(type, componentTypes, entityId);
-            success = TargetQuery.SetMemberValues(type, instances, values[0], memberArgs);
-            if (!success) {
-                ReportError($"Failed to set members '{string.Join('.', memberArgs)}' of type '{targetType}' on type '{type}' to '{values[0]}'");
-                return;
+                    var instances = TargetQuery.ResolveTypeInstances(type, [componentType], entityId);
+                    success = TargetQuery.SetMemberValues(componentType, instances, values[0], memberArgs);
+                    if (!success) {
+                        ReportError($"Failed to set members '{string.Join('.', memberArgs)}' of type '{targetType}' on type '{componentType}' to '{values[0]}'");
+                        return;
+                    }
+                }
+            } else {
+                (var targetType, bool success) = TargetQuery.ResolveMemberType(type, memberArgs);
+                if (!success) {
+                    ReportError($"Failed to find members '{string.Join('.', memberArgs)}' on type '{type}'");
+                    return;
+                }
+
+                (object?[] values, success, string errorMessage) = TargetQuery.ResolveValues(args[1..], [targetType]);
+                if (!success) {
+                    ReportError(errorMessage);
+                    return;
+                }
+
+                var instances = TargetQuery.ResolveTypeInstances(type, componentTypes, entityId);
+                success = TargetQuery.SetMemberValues(type, instances, values[0], memberArgs);
+                if (!success) {
+                    ReportError($"Failed to set members '{string.Join('.', memberArgs)}' of type '{targetType}' on type '{type}' to '{values[0]}'");
+                    return;
+                }
             }
         }
     }
