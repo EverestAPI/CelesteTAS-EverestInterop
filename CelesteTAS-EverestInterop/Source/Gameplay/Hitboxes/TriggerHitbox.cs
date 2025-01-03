@@ -24,6 +24,7 @@ internal static class TriggerHitbox {
 
     public static bool ShouldHideHitbox(Entity entity) {
         return !TasSettings.ShowTriggerHitboxes && entity is Trigger
+            || TasSettings.SimplifiedHitboxes && !TasSettings.ShowCameraHitboxes && cameraTriggers.Contains(entity.GetType())
             || TasSettings.SimplifiedHitboxes && currentUnimportantTriggers.Contains(entity);
     }
 
