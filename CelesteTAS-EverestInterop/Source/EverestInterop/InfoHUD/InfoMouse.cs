@@ -6,6 +6,7 @@ using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Communication;
+using TAS.InfoHUD;
 using TAS.Module;
 using TAS.Utils;
 

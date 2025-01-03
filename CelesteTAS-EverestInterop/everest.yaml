@@ -3,7 +3,7 @@
   DLL: bin/CelesteTAS-EverestInterop.dll
   Dependencies:
     - Name: EverestCore
-      Version: 1.5034.0
+      Version: 1.5105.0
   OptionalDependencies:
     - Name: SpeedrunTool
       Version: 3.16.4

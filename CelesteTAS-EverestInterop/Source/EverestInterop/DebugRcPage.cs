@@ -24,8 +24,8 @@ public static class DebugRcPage {
             StringBuilder builder = new();
             Everest.DebugRC.WriteHTMLStart(c, builder);
             WriteLine(builder, $"Running: {Manager.Running}");
-            WriteLine(builder, $"State: {Manager.States}");
-            WriteLine(builder, $"SaveState: {Savestates.IsSaved_Safe()}");
+            WriteLine(builder, $"State: {Manager.CurrState}");
+            WriteLine(builder, $"SaveState: {Savestates.IsSaved_Safe}");
             WriteLine(builder, $"CurrentFrame: {Manager.Controller.CurrentFrameInTas}");
             WriteLine(builder, $"TotalFrames: {Manager.Controller.Inputs.Count}");
             WriteLine(builder, $"RoomName: {GameInfo.LevelName}");
@@ -49,31 +49,28 @@ public static class DebugRcPage {
                 Everest.DebugRC.WriteHTMLStart(c, builder);
                 WriteLine(builder, $"<h2>ERROR: {message}</h2>");
                 WriteLine(builder, "Example: <a href='/tas/sendhotkey?id=Start&action=press'>/tas/sendhotkey?id=Start&action=press</a>");
-                WriteLine(builder, $"Available id: {string.Join(", ", Enum.GetNames(typeof(HotkeyID)).Select(id => $"<a href='/tas/sendhotkey?id={id}'>{id}</a>"))}");
+                WriteLine(builder, $"Available IDs: {string.Join(", ", Enum.GetNames(typeof(HotkeyID)).Select(id => $"<a href='/tas/sendhotkey?id={id}'>{id}</a>"))}");
                 WriteLine(builder, "Available action: press, release");
                 Everest.DebugRC.WriteHTMLEnd(c, builder);
                 Everest.DebugRC.Write(c, builder.ToString());
             }
 
-            NameValueCollection args = Everest.DebugRC.ParseQueryString(c.Request.RawUrl);
-            string idValue = args["id"];
-            string pressValue = args["action"];
+            var args = Everest.DebugRC.ParseQueryString(c.Request.RawUrl);
+            string? idValue = args["id"];
+            string? pressValue = args["action"];
 
-            if (idValue.IsNullOrEmpty()) {
-                WriteIdErrorPage("No id given.");
-            } else {
-                if (Enum.TryParse(idValue, true, out HotkeyID id) && (int) id < Enum.GetNames(typeof(HotkeyID)).Length) {
-                    if (Hotkeys.KeysDict.TryGetValue(id, out Hotkeys.Hotkey hotkey)) {
-                        bool press = !"release".Equals(pressValue, StringComparison.InvariantCultureIgnoreCase);
-                        hotkey.OverrideCheck = press;
-                        Everest.DebugRC.Write(c, "OK");
-                    } else {
-                        WriteIdErrorPage($"Hotkeys.KeysDict doesn't have id {id}, please report to the developer.");
-                    }
-                } else {
-                    WriteIdErrorPage("Invalid id value.");
-                }
+            if (string.IsNullOrEmpty(idValue)) {
+                WriteIdErrorPage("No ID given.");
+                return;
             }
+            if (!Enum.TryParse<HotkeyID>(idValue, ignoreCase: true, out var id) || !Hotkeys.AllHotkeys.TryGetValue(id, out var hotkey)) {
+                WriteIdErrorPage("Invalid ID value.");
+                return;
+            }
+
+            bool press = !"release".Equals(pressValue, StringComparison.InvariantCultureIgnoreCase);
+            hotkey.OverrideCheck = press;
+            Everest.DebugRC.Write(c, "OK");
         }
     };
 
@@ -129,7 +126,7 @@ TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}
                 } else {
                     WriteLine(builder, "OK");
                     Manager.AddMainThreadAction(() => {
-                        InputController.StudioTasFilePath = filePath;
+                        Manager.Controller.FilePath = filePath;
                         Manager.EnableRun();
                     });
                 }

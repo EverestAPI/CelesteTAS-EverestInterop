@@ -235,14 +235,6 @@ public static class CommunicationWrapper {
         autoCompleteEntryCache[hash] = result;
     }
 
-    public static T? GetRawData<T>(string template, bool alwaysList = false) {
-        if (!Connected) {
-            return default;
-        }
-
-        return (T?)comm!.RequestGameData(GameDataType.RawInfo, (template, alwaysList), TimeSpan.FromSeconds(15), typeof(T)).Result ?? default;
-    }
-
     public static async Task<GameState?> GetGameState() {
         if (!Connected) {
             return null;

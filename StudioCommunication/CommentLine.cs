@@ -1,6 +1,6 @@
 namespace StudioCommunication;
 
-public class Comment {
+public static class CommentLine {
 
     /// A comment is considered a label, if it's a single # immediately followed by the label name
     /// For example: "#lvl_1", "#Start", "#cycle_a"

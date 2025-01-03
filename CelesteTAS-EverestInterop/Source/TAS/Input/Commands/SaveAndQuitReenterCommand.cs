@@ -1,11 +1,8 @@
-using System.Collections.Generic;
 using System.Reflection;
 using Celeste;
-using Celeste.Mod;
-using Mono.Cecil.Cil;
 using Monocle;
-using MonoMod.Utils;
 using StudioCommunication;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -20,7 +17,7 @@ public static class SaveAndQuitReenterCommand {
                 return 0;
             }
 
-            if (Engine.Scene is Overworld {Current: OuiFileSelect select}) {
+            if (Engine.Scene is Overworld { Current: OuiFileSelect select }) {
                 return select.SlotIndex;
             }
 
@@ -28,39 +25,24 @@ public static class SaveAndQuitReenterCommand {
         }
     }
 
-    // Contains which slot was used for each command, to ensure that inputs before the current frame stay the same
-    public static Dictionary<int, int> InsertedSlots = new();
-
     [Load]
     private static void Load() {
-        FieldInfo fieldInfo = typeof(SaveAndQuitReenterCommand).GetFieldInfo(nameof(justPressedSnQ));
+        var f_justPressedSnQ = typeof(SaveAndQuitReenterCommand).GetFieldInfo(nameof(justPressedSnQ));
 
-        // v1400
-        MethodInfo pauseMethod = typeof(Level)
+        // Set justPressedSnQ to true when button is pressed
+        typeof(Level)
             .GetNestedType("<>c__DisplayClass149_0", BindingFlags.NonPublic)
-            ?.GetMethodInfo("<Pause>b__8");
+            .GetMethodInfo("<Pause>b__8")
+            .IlHook((cursor, _) => cursor
+                .EmitLdcI4(/*true*/ 1)
+                .EmitStsfld(f_justPressedSnQ));
 
-        // v1312
-        if (pauseMethod == null) {
-            pauseMethod = typeof(Level)
-                .GetNestedType("<>c__DisplayClass146_5", BindingFlags.NonPublic)
-                ?.GetMethodInfo("<Pause>b__11");
-        }
-
-        if (pauseMethod == null) {
-            "[SaveAndQuitReenterCommand] Failed to hook pause action".Log(LogLevel.Warn);
-            return;
-        }
-
-        pauseMethod.IlHook((cursor, _) => cursor.Emit(OpCodes.Ldc_I4_1).Emit(OpCodes.Stsfld,fieldInfo));
-
-        typeof(Level).GetMethod("Update").IlHook((cursor, _) => cursor.Emit(OpCodes.Ldc_I4_0)
-            .Emit(OpCodes.Stsfld, fieldInfo));
-    }
-
-    [ClearInputs]
-    private static void Clear() {
-        InsertedSlots.Clear();
+        // Reset justPressedSnQ back to false
+        typeof(Level)
+            .GetMethod("Update")
+            .IlHook((cursor, _) => cursor
+                .EmitLdcI4(/*false*/ 0)
+                .EmitStsfld(f_justPressedSnQ));
     }
 
     [DisableRun]
@@ -74,15 +56,9 @@ public static class SaveAndQuitReenterCommand {
 
         if (ParsingCommand) {
             int slot = ActiveFileSlot;
-            if (InsertedSlots.TryGetValue(studioLine, out int prevSlot)) {
-                slot = prevSlot;
-            } else {
-                InsertedSlots[studioLine] = slot;
-            }
-
             bool safe = SafeCommand.DisallowUnsafeInputParsing;
             if (safe) {
-                Command.TryParse(controller, filePath, fileLine, "Unsafe", controller.CurrentParsingFrame, studioLine, out _);
+                controller.ReadLine("Unsafe", filePath, fileLine, studioLine);
             }
 
             LibTasHelper.AddInputFrame("58");
@@ -116,29 +92,20 @@ public static class SaveAndQuitReenterCommand {
             }
 
             if (safe) {
-                Command.TryParse(controller, filePath, fileLine, "Safe", controller.CurrentParsingFrame, studioLine, out _);
+                controller.ReadLine("Safe", filePath, fileLine, studioLine);
             }
         } else {
             if (!justPressedSnQ) {
                 AbortTas("SaveAndQuitReenter must be exactly after pressing the \"Save & Quit\" button");
                 return;
             }
-
-            if (Engine.Scene is not Level level) {
+            if (Engine.Scene is not Level) {
                 AbortTas("SaveAndQuitReenter can't be used outside levels");
                 return;
             }
 
-            // Re-insert inputs of the save file slot changed
-            if (InsertedSlots.TryGetValue(studioLine, out int slot) && slot != ActiveFileSlot) {
-                InsertedSlots[studioLine] = ActiveFileSlot;
-                // Avoid clearing our InsertedSlots info when RefreshInputs()
-                Dictionary<int, int> backup = new(InsertedSlots);
-                controller.NeedsReload = true;
-                controller.RefreshInputs(enableRun: false);
-                InsertedSlots.Clear();
-                InsertedSlots.AddRange(backup);
-            }
+            // Ensure the inputs are for the current save slot
+            controller.RefreshInputs(forceRefresh: true);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Celeste;
@@ -7,6 +8,8 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using StudioCommunication;
+using TAS.Gameplay.Hitboxes;
 using TAS.Module;
 
 namespace TAS.EverestInterop.Hitboxes;
@@ -16,6 +19,7 @@ public static class HitboxColor {
     public static readonly Color DefaultTriggerColor = Color.MediumPurple;
     public static readonly Color DefaultPlatformColor = Color.Coral;
     public static readonly Color RespawnTriggerColor = Color.YellowGreen;
+    public static readonly Color CameraTriggerColor = Color.DarkGoldenrod;
     public static readonly Color PufferHeightCheckColor = Color.WhiteSmoke;
     public static readonly Color PufferPushRadiusColor = Color.DarkRed;
 
@@ -138,15 +142,21 @@ public static class HitboxColor {
             return color;
         }
 
-        Color customColor = entity switch {
-            ChangeRespawnTrigger => RespawnTriggerColor,
-            Trigger => TasSettings.TriggerHitboxColor,
+        Color customColor = Color.Red; // i hate warning CS0165
+        bool found = false;
+
+        customColor = entity switch {
+            Trigger => TriggerHitbox.GetHitboxColor(entity),
             Platform => TasSettings.PlatformHitboxColor,
             LookoutBlocker => Color.Green,
             _ => TasSettings.EntityHitboxColor
         };
 
-        if (!entity.Collidable) {
+        if (TasSettings.ShowActualCollideHitboxes != ActualCollideHitboxType.Off && entity.LoadActualCollidable() is { } actualCollidable) {
+            if (!actualCollidable) {
+                customColor *= UnCollidableAlpha;
+            }
+        } else if (!entity.Collidable) {
             customColor *= UnCollidableAlpha;
         }
 

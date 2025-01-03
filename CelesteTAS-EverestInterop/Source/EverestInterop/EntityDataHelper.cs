@@ -8,6 +8,7 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -100,8 +101,8 @@ public static class EntityDataHelper {
         }
     }
 
-    public static EntityData GetEntityData(this Entity entity) {
-        return entity != null && CachedEntityData.TryGetValue(entity, out EntityData data) ? data : null;
+    public static EntityData? GetEntityData(this Entity? entity) {
+        return entity != null && CachedEntityData.TryGetValue(entity, out var data) ? data : null;
     }
 
     private static void LevelOnEnd(On.Celeste.Level.orig_End orig, Level self) {
@@ -226,31 +227,31 @@ public static class EntityDataHelper {
     private static void ModSpawnEntity(ILContext il) {
         ILCursor cursor = new(il);
 
-        if (cursor.TryGotoNext(
-                i => i.OpCode == OpCodes.Callvirt && i.Operand.ToString() == "System.Void Monocle.Scene::Add(Monocle.Entity)")) {
-            cursor.Emit(OpCodes.Dup).Emit(OpCodes.Ldarg_0);
+        if (cursor.TryGotoNext(ins => ins.OpCode == OpCodes.Callvirt && ins.Operand.ToString() == "System.Void Monocle.Scene::Add(Monocle.Entity)")) {
+            cursor.EmitDup();
+            cursor.EmitLdarg0();
+
+            // TODO: Better match
             if (il.ToString().Contains("ldfld Celeste.SeekerStatue Celeste.SeekerStatue/<>c__DisplayClass3_0::<>4__this")
                 && ModUtils.VanillaAssembly.GetType("Celeste.SeekerStatue+<>c__DisplayClass3_0")?.GetFieldInfo("<>4__this") is { } seekerStatue
                ) {
-                cursor.Emit(OpCodes.Ldfld, seekerStatue);
+                cursor.EmitLdfld(seekerStatue);
             }
 
-            cursor.EmitDelegate<Action<Entity, Entity>>(SetCustomEntityData);
-        }
-    }
+            cursor.EmitStaticDelegate("SetCustomEntityData", static (Entity spawnedEntity, Entity entity) => {
+                if (entity.GetEntityData() is { } entityData) {
+                    EntityData clonedEntityData = entityData.ShallowClone();
+                    if (spawnedEntity is FireBall fireBall) {
+                        clonedEntityData.ID = clonedEntityData.ID * -100 - fireBall.index;
+                    } else if (entity is CS03_OshiroRooftop) {
+                        clonedEntityData.ID = 2;
+                    } else {
+                        clonedEntityData.ID *= -1;
+                    }
 
-    private static void SetCustomEntityData(Entity spawnedEntity, Entity entity) {
-        if (entity.GetEntityData() is { } entityData) {
-            EntityData clonedEntityData = entityData.ShallowClone();
-            if (spawnedEntity is FireBall fireBall) {
-                clonedEntityData.ID = clonedEntityData.ID * -100 - fireBall.index;
-            } else if (entity is CS03_OshiroRooftop) {
-                clonedEntityData.ID = 2;
-            } else {
-                clonedEntityData.ID *= -1;
-            }
-
-            spawnedEntity.SetEntityData(clonedEntityData);
+                    spawnedEntity.SetEntityData(clonedEntityData);
+                }
+            });
         }
     }
 

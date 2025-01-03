@@ -10,6 +10,7 @@ using MonoMod.Cil;
 using StudioCommunication;
 using TAS.Input;
 using TAS.Input.Commands;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 using Comment = TAS.Input.Comment;
@@ -18,7 +19,7 @@ namespace TAS.EverestInterop;
 
 public static class AreaCompleteInfo {
     private class Meta : ITasCommandMeta {
-        public string Insert => $"CompleteInfo{CommandInfo.Separator}[0;A 1]";
+        public string Insert => $"CompleteInfo{CommandInfo.Separator}[0;A{CommandInfo.Separator}1]";
         public bool HasArguments => true;
     }
 
@@ -176,25 +177,20 @@ public static class AreaCompleteInfo {
             key = new AreaKey(id, mode).ToString();
         }
 
-        if (!completeInfos.TryGetValue(key, out StringBuilder info)) {
+        if (!completeInfos.TryGetValue(key, out var info)) {
             completeInfos[key] = info = new StringBuilder();
         }
 
         info.Clear();
-        if (Manager.Controller.Comments.TryGetValue(filePath, out List<Comment> comments)) {
-            bool firstComment = true;
-            foreach (Comment comment in comments.Where(c => c.Line > fileLine)) {
-                if (fileLine + 1 == comment.Line) {
-                    if (!firstComment) {
-                        info.AppendLine();
-                    }
 
-                    firstComment = false;
-                    info.Append($"{comment.Text}");
-                    fileLine++;
-                } else {
-                    break;
+        if (Manager.Controller.CurrentComments is { Count: > 0 } comments) {
+            bool firstComment = true;
+            foreach (var comment in comments) {
+                if (!firstComment) {
+                    info.AppendLine();
                 }
+
+                info.AppendLine(comment.Text);
             }
         }
     }

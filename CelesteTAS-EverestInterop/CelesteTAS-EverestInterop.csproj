@@ -5,6 +5,7 @@
         <RootNamespace>TAS</RootNamespace>
         <TargetFramework>net7.0</TargetFramework>
         <LangVersion>latest</LangVersion>
+        <Nullable>enable</Nullable>
 
         <CelestePrefix Condition="'$(CelestePrefix)' == '' And Exists('../../../Celeste.dll')">../../..</CelestePrefix>
         <CelestePrefix Condition="'$(CelestePrefix)' == ''">lib-stripped</CelestePrefix>
@@ -28,7 +29,7 @@
 
     <ItemGroup>
         <Reference Include="$(CelestePrefix)\Celeste.dll" Publicize="true" />
-        <Reference Include="$(CelestePrefix)\FNA.dll" />
+        <Reference Include="$(CelestePrefix)\FNA.dll" Publicize="true" />
         <Reference Include="$(CelestePrefix)\MMHOOK_Celeste.dll" />
 
         <Reference Include="lib-stripped\SpeedrunTool.dll" />
@@ -36,13 +37,16 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="MonoMod.RuntimeDetour" Version="22.01.04.03" />
+        <PackageReference Include="CelesteAnalyzer" Version="*" />
+
+        <PackageReference Include="MonoMod.RuntimeDetour" Version="25.0.2" />
         <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1" PrivateAssets="all" />
 
         <PackageReference Include="SharpZipLib" Version="1.4.2" IncludeAssets="all" />
         <PackageReference Include="YamlDotNet" Version="13.1.1" />
 
-        <PackageReference Include="JetBrains.Profiler.Api" Version="1.1.8" Condition="'$(Configuration)' == 'Debug'" />
+        <PackageReference Include="JetBrains.Annotations" Version="2024.2.0" />
+        <PackageReference Include="JetBrains.Profiler.Api" Version="1.4.6" Condition="'$(Configuration)' == 'Debug'" />
     </ItemGroup>
 
     <!-- Assemblies -->
@@ -54,18 +58,22 @@
 
         <Copy SourceFiles="$(OutputPath)ICSharpCode.SharpZipLib.dll" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)MemoryPack.Core.dll" DestinationFolder="..\bin" />
+
         <Copy SourceFiles="$(OutputPath)JetBrains.Profiler.Api.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
+        <Copy SourceFiles="$(OutputPath)JetBrains.HabitatDetector.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
+        <Copy SourceFiles="$(OutputPath)JetBrains.FormatRipper.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
     </Target>
 
-    <!-- Assets (use symlinks in debug builds on POSIX, since MSBuild is useless) -->
+    <!-- Assets (use symlinks in debug builds - only on UNIX, since MSBuild is useless) -->
     <Target Name="LinkAssets" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug' and '$(OS)' == 'Unix' and $(UseSymlinks) != false">
         <Copy SourceFiles="" DestinationFiles="..\bin\env.lua" UseSymboliclinksIfPossible="true" />
 
-        <Exec Command="rm -rf ../bin/env.lua &amp;&amp; ln -s CelesteTAS-EverestInterop/Source/EverestInterop/Lua/env.lua ../bin/env.lua"/>
+        <Exec Command="rm -rf ../bin/env.lua &amp;&amp; ln -s ../CelesteTAS-EverestInterop/Source/EverestInterop/Lua/env.lua ../bin/env.lua"/>
 
-        <Exec Command="rm -rf ../everest.yaml &amp;&amp; ln -s CelesteTAS-EverestInterop/everest.yaml ../everest.yaml"/>
-        <Exec Command="rm -rf ../Dialog &amp;&amp; ln -s CelesteTAS-EverestInterop/Dialog ../Dialog"/>
-        <Exec Command="rm -rf ../Graphics &amp;&amp; ln -s CelesteTAS-EverestInterop/Graphics ../Graphics"/>
+        <!-- Replace with symlinks if they aren't already -->
+        <Exec Command="if [ ! -L ../everest.yaml ]; then rm -rf ../everest.yaml &amp;&amp; ln -s CelesteTAS-EverestInterop/everest.yaml ../everest.yaml; fi"/>
+        <Exec Command="if [ ! -L ../Dialog ]; then rm -rf ../Dialog &amp;&amp; ln -s CelesteTAS-EverestInterop/Dialog ../Dialog; fi"/>
+        <Exec Command="if [ ! -L ../Graphics ]; then rm -rf ../Graphics &amp;&amp; ln -s CelesteTAS-EverestInterop/Graphics ../Graphics; fi"/>
     </Target>
     <Target Name="CopyAssets" AfterTargets="Build" Condition="'$(Configuration)' != 'Debug' or '$(OS)' != 'Unix' or $(UseSymlinks) == false">
         <ItemGroup>

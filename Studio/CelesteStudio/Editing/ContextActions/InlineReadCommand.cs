@@ -70,7 +70,7 @@ public class InlineReadCommand : ContextAction {
 
         var labels = lines
             .Select((line, row) => (line, row))
-            .Where(pair => Comment.IsLabel(pair.line))
+            .Where(pair => CommentLine.IsLabel(pair.line))
             .Select(pair => pair with { line = pair.line[1..] }) // Remove the #
             .ToArray();
 

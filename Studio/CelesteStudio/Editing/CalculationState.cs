@@ -1,6 +1,6 @@
 using System;
 using System.Diagnostics;
-using CelesteStudio.Data;
+using StudioCommunication;
 
 namespace CelesteStudio.Editing;
 

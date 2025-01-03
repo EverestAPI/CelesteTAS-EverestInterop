@@ -22,7 +22,8 @@ public static class EvalLuaCommand {
         public bool HasArguments => true;
     }
 
-    private static bool consoleCommandRunning;
+    internal static bool ConsoleCommandRunning;
+
     private const string CommandName = "EvalLua";
     private static readonly Regex commandAndSeparatorRegex = new(@$"^{CommandName}[ |,]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly FieldInfo DebugRClogFieldInfo = typeof(Commands).GetFieldInfo("debugRClog");
@@ -48,7 +49,7 @@ public static class EvalLuaCommand {
 
                 method.IlHook((cursor, _) => {
                     // insert codes after "rawCommand.Split(new[] {' ', ','}, StringSplitOptions.RemoveEmptyEntries);"
-                    if (cursor.TryGotoNext(MoveType.After, instr => instr.MatchCallvirt<string>("Split"))) {
+                    if (cursor.TryGotoNext(MoveType.After, ins => ins.MatchCallvirt<string>("Split"))) {
                         cursor.Emit(OpCodes.Ldloc_0).EmitDelegate<Func<string[], string, string[]>>(
                             (commandAndArgs, rawCommand) => {
                                 if (commandAndArgs[0].ToLower() == CommandName && commandAndArgs.Length >= 2) {
@@ -76,7 +77,7 @@ public static class EvalLuaCommand {
     }
 
     public static void Log(object message) {
-        if (consoleCommandRunning) {
+        if (ConsoleCommandRunning) {
             Engine.Commands.Log(message);
         }
 
@@ -91,9 +92,9 @@ public static class EvalLuaCommand {
             code = commandAndSeparatorRegex.Replace(firstHistory, "");
         }
 
-        consoleCommandRunning = true;
+        ConsoleCommandRunning = true;
         object[] result = EvalLuaImpl(code);
-        consoleCommandRunning = false;
+        ConsoleCommandRunning = false;
         LogResult(result);
     }
 
@@ -107,16 +108,16 @@ public static class EvalLuaCommand {
         EvalLuaImpl(commandAndSeparatorRegex.Replace(commandLine.OriginalText, ""));
     }
 
-    public static object[] EvalLuaImpl(string code) {
+    public static object?[]? EvalLuaImpl(string code) {
         string localCode = ReadContent("bin/env");
         code = $"{localCode}\n{code}";
 
-        object[] objects;
+        object?[]? objects;
         try {
             objects = Everest.LuaLoader.Run(code, null);
         } catch (Exception e) {
             e.Log();
-            return new object[] {e};
+            return [e];
         }
 
         return objects;
