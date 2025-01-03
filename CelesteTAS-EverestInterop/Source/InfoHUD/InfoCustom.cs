@@ -295,6 +295,8 @@ public static class InfoCustom {
     /// Fallback for when no specific formatter is applicable
     private static string DefaultFormatter(object? obj, int decimals) {
         switch (obj) {
+            case string stringValue:
+                return stringValue;
             case Vector2 vectorValue:
                 return vectorValue.ToSimpleString(decimals);
             case Vector2Double vectorValue:
