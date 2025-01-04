@@ -146,12 +146,7 @@ public static class Hotkeys {
         // No controller connected
         return default;
     }
-
-    [Obsolete("Use UpdateMeta")]
-    public static void Update() => UpdateMeta();
-
-    // Used by TAS Helper
-    public static void UpdateMeta() {
+    internal static void UpdateMeta() {
         // Determined which inputs are already used for something else
         bool updateKey = true;
         bool updateButton = true;
