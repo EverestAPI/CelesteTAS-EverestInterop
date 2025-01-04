@@ -52,18 +52,31 @@ public static class ConsoleEnhancements {
             return;
         }
 
+        justClosed = false;
         if (Engine.Commands.Open) {
             Engine.Commands.UpdateOpen();
+            if (!Engine.Commands.Open) {
+                justClosed = true;
+            }
         } else if (Engine.Commands.Enabled) {
             Engine.Commands.UpdateClosed();
         }
     }
 
+    private static bool justClosed = false;
     internal static void OpenConsole() {
         if (!Manager.Running) {
             return; // Only allow inside a TAS, since outside it's already handled
         }
         if (Engine.Commands.Open) {
+            return;
+        }
+        if (justClosed) {
+            // when commands open, hotkeys are not updated (in Hotkeys.UpdateMeta(), updateKey = false)
+            // so if without this extra check:
+            // Gameloop 1: Commands open
+            // Gameloop 2: CoreModule.(Toggle)DebugConsole gets pressed (note this is not our OpenConsole hotkey), and Commands get closed
+            // Gameloop 3: Hotkeys find Commands are closed and decide to update, and find that OpenConsole gets pressed, so it Opens Console again!
             return;
         }
 
