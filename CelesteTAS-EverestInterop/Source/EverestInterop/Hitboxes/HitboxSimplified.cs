@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Celeste;
+using JetBrains.Annotations;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
@@ -84,7 +85,8 @@ public static class HitboxSimplified {
         On.Celeste.Level.End -= LevelOnEnd;
     }
 
-    private static bool HideHitbox(Entity entity) {
+    [PublicAPI]
+    public static bool HideHitbox(Entity entity) {
         if (!TasSettings.ShowHitboxes || InfoWatchEntity.CurrentlyWatchedEntities.Contains(entity)) {
             return false;
         }
