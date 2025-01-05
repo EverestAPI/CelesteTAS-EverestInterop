@@ -48,7 +48,8 @@ public static class Manager {
     public static bool FastForwarding => Running && PlaybackSpeed >= 5.0f;
     public static float PlaybackSpeed { get; private set; } = 1.0f;
 
-    public static State CurrState, NextState;
+    public static State CurrState { get; set; }
+    public static State NextState { get; set; }
     public static readonly InputController Controller = new();
 
     private static readonly ConcurrentQueue<Action> mainThreadActions = new();
@@ -162,9 +163,12 @@ public static class Manager {
 
         // Check if the TAS should be enabled / disabled
         if (Hotkeys.StartStop.Pressed) {
+            Console.WriteLine($"Running: {Running} ({CurrState} / {NextState})");
             if (Running) {
+                Console.WriteLine($"Disable");
                 DisableRun();
             } else {
+                Console.WriteLine($"Enable");
                 EnableRun();
             }
             return;

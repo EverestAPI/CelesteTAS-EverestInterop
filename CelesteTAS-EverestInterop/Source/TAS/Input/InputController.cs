@@ -49,8 +49,8 @@ public class InputController {
     public List<Comment> CurrentComments => Comments.GetValueOrDefault(CurrentFrameInTas) ?? [];
 
     public FastForward? CurrentFastForward => NextLabelFastForward ??
-                                               FastForwards.FirstOrDefault(pair => pair.Key > CurrentFrameInTas).Value ??
-                                               FastForwards.LastOrDefault().Value;
+                                              FastForwards.FirstOrDefault(pair => pair.Key > CurrentFrameInTas).Value ??
+                                              FastForwards.LastOrDefault().Value;
     public bool HasFastForward => CurrentFastForward is { } forward && forward.Frame > CurrentFrameInTas;
 
     public FastForward? NextLabelFastForward;

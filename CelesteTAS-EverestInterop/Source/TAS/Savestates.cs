@@ -4,6 +4,8 @@ using System.Reflection;
 using Celeste;
 using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Monocle;
+using System;
+using System.Diagnostics.CodeAnalysis;
 using TAS.EverestInterop;
 using TAS.Input;
 using TAS.ModInterop;
@@ -15,7 +17,7 @@ namespace TAS;
 /// Handles saving / loading game state with SpeedrunTool
 public static class Savestates {
     // These fields can't just be pulled from the current frame and therefore need to be saved too
-    private static readonly Dictionary<FieldInfo, object> SavedGameInfo = new() {
+    private static readonly Dictionary<FieldInfo, object?> SavedGameInfo = new() {
         {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPos)), null},
         {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastDiff)), null},
         {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerPos)), null},
@@ -24,12 +26,12 @@ public static class Savestates {
 
     private static bool savedByBreakpoint;
     private static int savedChecksum;
-    private static InputController savedController;
+    private static InputController? savedController;
 
     private static int SavedLine =>
         (savedByBreakpoint
             ? Manager.Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.Line
-            : Manager.Controller.Inputs.GetValueOrDefault(SavedCurrentFrame)?.Line) ?? -1;
+            : Manager.Controller.Inputs!.GetValueOrDefault(SavedCurrentFrame)?.Line) ?? -1;
 
     public static int StudioHighlightLine => IsSaved_Safe ? SavedLine : -1;
     private static int SavedCurrentFrame => IsSaved ? savedController.CurrentFrameInTas : -1;
@@ -39,6 +41,8 @@ public static class Savestates {
                                                     Manager.Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.SaveState != true;
 
     public static bool IsSaved_Safe => SpeedrunToolInterop.Installed && IsSaved;
+
+    [MemberNotNullWhen(true, nameof(savedController))]
     private static bool IsSaved => StateManager.Instance.IsSaved &&
                                    StateManager.Instance.SavedByTas &&
                                    savedController != null &&
@@ -79,7 +83,10 @@ public static class Savestates {
         }
 
         // Autoload state after entering the level, if the TAS was started outside the level
-        if (IsSaved && Engine.Scene is Level && Manager.Controller.CurrentFrameInTas < savedController.CurrentFrameInTas) {
+        if (Manager.Running && IsSaved
+            && Engine.Scene is Level
+            && Manager.Controller.CurrentFrameInTas < savedController.CurrentFrameInTas
+        ) {
             LoadState();
         }
     }
@@ -91,7 +98,7 @@ public static class Savestates {
         }
 
         if (Manager.Running && Hotkeys.SaveState.Pressed) {
-            SaveState(false);
+            SaveState(byBreakpoint: false);
             return;
         }
         if (Hotkeys.ClearState.Pressed) {
@@ -132,6 +139,8 @@ public static class Savestates {
     }
 
     public static void LoadState() {
+        Environment.StackTrace.DebugLog();
+
         // Don't load save-states while recording
         if (TASRecorderInterop.Recording) {
             return;
