@@ -7,14 +7,12 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication;
 using TAS.Entities;
-using TAS.InfoHUD;
 using TAS.Input;
 using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD;
 
-// TODO show info hud on overworld
 public static class InfoHud {
     private static EaseInSubMenu subMenuItem;
     public static Vector2 Size { get; private set; }
@@ -23,13 +21,16 @@ public static class InfoHud {
     private static void Load() {
         On.Celeste.Level.Render += LevelOnRender;
         On.Celeste.Pico8.Emulator.Render += EmulatorOnRender;
+        On.Monocle.Scene.Render += SceneOnRender;
     }
 
     [Unload]
     private static void Unload() {
         On.Celeste.Level.Render -= LevelOnRender;
         On.Celeste.Pico8.Emulator.Render -= EmulatorOnRender;
+        On.Monocle.Scene.Render -= SceneOnRender;
     }
+
 
     private static void LevelOnRender(On.Celeste.Level.orig_Render orig, Level self) {
         orig(self);
@@ -45,6 +46,14 @@ public static class InfoHud {
         InfoMouse.DragAndDropHud();
     }
 
+    private static void SceneOnRender(On.Monocle.Scene.orig_Render orig, Scene self) {
+        orig(self);
+
+        if (self is Overworld) {
+            DrawInfo(self, drawSubpixelIndicator: false);
+            InfoMouse.DragAndDropHud();
+        }
+    }
     public static void Toggle() {
         if (Hotkeys.InfoHud.DoublePressed) {
             TasSettings.InfoHud = !TasSettings.InfoHud;
@@ -58,7 +67,7 @@ public static class InfoHud {
         }
     }
 
-    private static void DrawInfo(Scene scene) {
+    private static void DrawInfo(Scene scene, bool drawSubpixelIndicator = true) {
         if (!TasSettings.Enabled || !TasSettings.InfoHud) {
             return;
         }
@@ -94,7 +103,9 @@ public static class InfoHud {
         float infoAlpha = 1f;
 
         Size = JetBrainsMonoFont.Measure(text) * fontSize;
-        Size = InfoSubPixelIndicator.TryExpandSize(Size, padding);
+        if (drawSubpixelIndicator) {
+            Size = InfoSubPixelIndicator.TryExpandSize(Size, padding);
+        }
 
         float maxX = viewWidth - Size.X - margin - padding * 2;
         float maxY = viewHeight - Size.Y - margin - padding * 2;
@@ -116,7 +127,9 @@ public static class InfoHud {
 
         Draw.Rect(bgRect, Color.Black * alpha);
 
-        InfoSubPixelIndicator.DrawIndicator(bgRect.Bottom, padding, infoAlpha);
+        if (drawSubpixelIndicator) {
+            InfoSubPixelIndicator.DrawIndicator(bgRect.Bottom, padding, infoAlpha);
+        }
 
         Vector2 textPosition = new(x + padding, y + padding);
         Vector2 scale = new(fontSize);

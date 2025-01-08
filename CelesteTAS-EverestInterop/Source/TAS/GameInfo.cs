@@ -369,7 +369,7 @@ public static class GameInfo {
                     ouiName = $"{oui.GetType().Name} ";
                 }
 
-                Status = ExactStatus = $"Overworld {ouiName}{overworld.ShowInputUI}";
+                Status = ExactStatus = ouiName;
             } else if (scene != null) {
                 Status = ExactStatus = scene.GetType().Name;
             }
