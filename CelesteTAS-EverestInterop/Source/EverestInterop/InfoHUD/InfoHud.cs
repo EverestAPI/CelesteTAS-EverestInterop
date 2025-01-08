@@ -200,13 +200,21 @@ public static class InfoHud {
                 TasSettings.InfoCustomTemplate = TextInput.GetClipboardText() ?? string.Empty;
                 CelesteTasModule.Instance.SaveSettings();
             }));
-            subMenu.Add(new TextMenuExt.EnumerableSlider<HudOptions>("Info Watch Entity".ToDialogText(), CreateHudOptions(),
-                TasSettings.InfoWatchEntity).Change(value => TasSettings.InfoWatchEntity = value));
-            subMenu.Add(new TextMenuExt.EnumerableSlider<WatchEntityType>("Info Watch Entity Type".ToDialogText(), new[] {
+
+            subMenu.Add(new TextMenuExt.EnumerableSlider<WatchEntityType>("Info Watch Entity Hud Type".ToDialogText(), new[] {
+                new KeyValuePair<WatchEntityType, string>(WatchEntityType.None, "Info Watch Entity None".ToDialogText()),
                 new KeyValuePair<WatchEntityType, string>(WatchEntityType.Position, "Info Watch Entity Position".ToDialogText()),
                 new KeyValuePair<WatchEntityType, string>(WatchEntityType.DeclaredOnly, "Info Watch Entity Declared Only".ToDialogText()),
                 new KeyValuePair<WatchEntityType, string>(WatchEntityType.All, "Info Watch Entity All".ToDialogText()),
-            }, TasSettings.InfoWatchEntityType).Change(value => TasSettings.InfoWatchEntityType = value));
+            }, TasSettings.InfoWatchEntityHudType).Change(value => TasSettings.InfoWatchEntityHudType = value));
+            subMenu.Add(new TextMenuExt.EnumerableSlider<WatchEntityType>("Info Watch Entity Studio Type".ToDialogText(), new[] {
+                new KeyValuePair<WatchEntityType, string>(WatchEntityType.None, "Info Watch Entity None".ToDialogText()),
+                new KeyValuePair<WatchEntityType, string>(WatchEntityType.Position, "Info Watch Entity Position".ToDialogText()),
+                new KeyValuePair<WatchEntityType, string>(WatchEntityType.DeclaredOnly, "Info Watch Entity Declared Only".ToDialogText()),
+                new KeyValuePair<WatchEntityType, string>(WatchEntityType.All, "Info Watch Entity All".ToDialogText()),
+            }, TasSettings.InfoWatchEntityHudType).Change(value => TasSettings.InfoWatchEntityStudioType = value));
+            subMenu.Add(new TextMenu.OnOff("Info Watch Entity Log To Command".ToDialogText(), TasSettings.InfoWatchEntityLogToCommand)
+                .Change(value => TasSettings.InfoWatchEntityLogToCommand = value));
             subMenu.Add(new TextMenuExt.IntSlider("Info Text Size".ToDialogText(), 5, 20, TasSettings.InfoTextSize).Change(value =>
                 TasSettings.InfoTextSize = value));
             subMenu.Add(new TextMenuExt.IntSlider("Info Subpixel Indicator Size".ToDialogText(), 5, 20, TasSettings.InfoSubpixelIndicatorSize)

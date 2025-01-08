@@ -139,8 +139,6 @@ public static class Savestates {
     }
 
     public static void LoadState() {
-        Environment.StackTrace.DebugLog();
-
         // Don't load save-states while recording
         if (TASRecorderInterop.Recording) {
             return;
