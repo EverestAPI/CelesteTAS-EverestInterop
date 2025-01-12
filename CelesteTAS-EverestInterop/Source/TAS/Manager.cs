@@ -163,12 +163,9 @@ public static class Manager {
 
         // Check if the TAS should be enabled / disabled
         if (Hotkeys.StartStop.Pressed) {
-            Console.WriteLine($"Running: {Running} ({CurrState} / {NextState})");
             if (Running) {
-                Console.WriteLine($"Disable");
                 DisableRun();
             } else {
-                Console.WriteLine($"Enable");
                 EnableRun();
             }
             return;
