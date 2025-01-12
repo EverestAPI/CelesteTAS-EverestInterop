@@ -14,6 +14,7 @@ using TAS.EverestInterop;
 using TAS.Input;
 using TAS.Module;
 using TAS.Utils;
+using Component = On.Monocle.Component;
 
 namespace TAS;
 
@@ -48,8 +49,7 @@ public static class Manager {
     public static bool FastForwarding => Running && PlaybackSpeed >= 5.0f;
     public static float PlaybackSpeed { get; private set; } = 1.0f;
 
-    public static State CurrState { get; set; }
-    public static State NextState { get; set; }
+    public static State CurrState, NextState;
     public static readonly InputController Controller = new();
 
     private static readonly ConcurrentQueue<Action> mainThreadActions = new();

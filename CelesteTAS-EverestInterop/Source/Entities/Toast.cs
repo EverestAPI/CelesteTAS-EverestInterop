@@ -8,6 +8,11 @@ using TAS.Utils;
 
 namespace TAS.Entities;
 
+public class DashCollision() : Component(active: false, visible: false) {
+    public Solid Hit = null!;
+    public bool IsBounceHit = false;
+}
+
 [Tracked]
 internal class Toast : Entity {
     private const int Padding = 25;

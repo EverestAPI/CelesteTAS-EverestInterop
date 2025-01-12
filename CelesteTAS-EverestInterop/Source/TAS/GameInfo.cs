@@ -153,9 +153,7 @@ public static class GameInfo {
     private static void SceneOnAfterUpdate(On.Monocle.Scene.orig_AfterUpdate orig, Scene self) {
         orig(self);
 
-        if (Manager.FastForwarding) {
-            return;
-        }
+        // TODO: While fast forwarding, only store required data for frame and compute string later
 
         if (self is Level level) {
             Update(!level.wasPaused);
