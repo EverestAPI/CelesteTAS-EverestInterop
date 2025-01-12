@@ -9,6 +9,7 @@ using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.Gameplay.Hitboxes;
+using TAS.Utils;
 using YamlDotNet.Serialization;
 
 namespace TAS.Module;
@@ -270,10 +271,9 @@ public class CelesteTasSettings : EverestModuleSettings {
         }
     }
 
-    public bool WatchEntity => HudWatchEntity || StudioWatchEntity;
-    public bool HudWatchEntity => InfoWatchEntityHudType != WatchEntityType.None;
-
-    public bool StudioWatchEntity => InfoWatchEntityStudioType != WatchEntityType.None;
+    internal bool WatchEntity => HudWatchEntity || StudioWatchEntity;
+    internal bool HudWatchEntity => InfoWatchEntityHudType != WatchEntityType.None;
+    internal bool StudioWatchEntity => InfoWatchEntityStudioType != WatchEntityType.None;
 
     public WatchEntityType InfoWatchEntityHudType {
         get => StudioShared.InfoWatchEntityHudType;
@@ -291,7 +291,7 @@ public class CelesteTasSettings : EverestModuleSettings {
         }
     }
 
-    public bool InfoWatchEntityLogToCommand = true;
+    public bool InfoWatchEntityLogToConsole { get; set; } = true;
 
     [SettingIgnore]
     public string InfoCustomTemplate { get; set; } =

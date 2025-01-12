@@ -289,7 +289,7 @@ public static class InfoWatchEntity {
     }
 
     private static void PrintAllSimpleValues(Entity entity) {
-        ("Info of Clicked Entity:\n" + GetEntityValues(entity, WatchEntityType.All)).Log(string.Empty, TasSettings.InfoWatchEntityLogToCommand);
+        ("Info of Clicked Entity:\n" + GetEntityValues(entity, WatchEntityType.All)).Log(string.Empty, TasSettings.InfoWatchEntityLogToConsole);
     }
 
     /// Formats all member values into a multi-line string
