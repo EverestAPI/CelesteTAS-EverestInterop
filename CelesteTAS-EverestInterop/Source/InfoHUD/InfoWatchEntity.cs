@@ -16,11 +16,6 @@ using TAS.Utils;
 
 namespace TAS.InfoHUD;
 
-public enum WatchEntityType {
-    Position,
-    DeclaredOnly,
-    All
-}
 
 /// Displays information about specific entities inside the Info HUD
 public static class InfoWatchEntity {
@@ -179,9 +174,9 @@ public static class InfoWatchEntity {
         ClearWatching?.Invoke();
     }
 
-    internal static string GetInfo(string separator = "\n", bool alwaysUpdate = false, int? decimals = null) {
+    internal static string GetInfo(WatchEntityType watchEntityType, string separator = "\n", bool alwaysUpdate = false, int? decimals = null) {
         CurrentlyWatchedEntities.Clear();
-        if (Engine.Scene is not Level level || TasSettings.InfoWatchEntity == HudOptions.Off && !alwaysUpdate) {
+        if (Engine.Scene is not Level level || !TasSettings.WatchEntity && !alwaysUpdate) {
             return string.Empty;
         }
 
@@ -197,8 +192,50 @@ public static class InfoWatchEntity {
             allEntities
                 .Select(entity => {
                     CurrentlyWatchedEntities.Add(entity);
-                    return GetEntityValues(entity, TasSettings.InfoWatchEntityType, separator, decimals.Value);
+                    return GetEntityValues(entity, watchEntityType, separator, decimals.Value);
                 }));
+    }
+
+    [PublicAPI]
+    public static bool ForceUpdateInfo = false; // for TasHelper.AutoWatchEntity
+
+    internal static void UpdateInfo(string separator = "\n", int? decimals = null) {
+        CurrentlyWatchedEntities.Clear();
+        GameInfo.HudWatchingInfo = string.Empty;
+        GameInfo.StudioWatchingInfo = string.Empty;
+        if (Engine.Scene is not Level level || !TasSettings.WatchEntity && !ForceUpdateInfo) {
+            return;
+        }
+
+        decimals ??= TasSettings.CustomInfoDecimals;
+
+        var allEntities =
+            WatchedEntities
+                .Where(reference => reference.IsAlive)
+                .Select(reference => (Entity)reference.Target!)
+                .Concat(ResolveEntityIds(level).Values);
+
+        CurrentlyWatchedEntities.AddRange(allEntities);
+
+        if (!TasSettings.HudWatchEntity) {
+            GameInfo.HudWatchingInfo = string.Empty;
+        } else {
+            GameInfo.HudWatchingInfo = string.Join(separator,
+            allEntities
+                .Select(entity => GetEntityValues(entity, TasSettings.InfoWatchEntityHudType, separator, decimals.Value))
+            );
+        }
+
+        if (!TasSettings.StudioWatchEntity || !Communication.CommunicationWrapper.Connected) {
+            GameInfo.StudioWatchingInfo = string.Empty;
+        } else if (TasSettings.InfoWatchEntityStudioType == TasSettings.InfoWatchEntityHudType) {
+            GameInfo.StudioWatchingInfo = GameInfo.HudWatchingInfo;
+        } else {
+            GameInfo.StudioWatchingInfo = string.Join(separator,
+            allEntities
+                .Select(entity => GetEntityValues(entity, TasSettings.InfoWatchEntityStudioType, separator, decimals.Value))
+            );
+        }
     }
 
     [Load]
@@ -252,11 +289,15 @@ public static class InfoWatchEntity {
     }
 
     private static void PrintAllSimpleValues(Entity entity) {
-        ("Info of Clicked Entity:\n" + GetEntityValues(entity, WatchEntityType.All)).Log(string.Empty, true);
+        ("Info of Clicked Entity:\n" + GetEntityValues(entity, WatchEntityType.All)).Log(string.Empty, TasSettings.InfoWatchEntityLogToConsole);
     }
 
     /// Formats all member values into a multi-line string
     private static string GetEntityValues(Entity entity, WatchEntityType watchEntityType, string separator = "\n", int decimals = 2) {
+        if (watchEntityType == WatchEntityType.None) {
+            return "";
+        }
+
         var entityType = entity.GetType();
 
         string entityId = "";

@@ -159,7 +159,7 @@ public static class ExportGameInfo {
                 output += $"\t{customInfo.ReplaceLineBreak(" ")}";
             }
 
-            if (InfoWatchEntity.GetInfo("\t", true, GetDecimals(TasSettings.CustomInfoDecimals, GameSettings.MaxDecimals)) is { } watchInfo &&
+            if (InfoWatchEntity.GetInfo(TasSettings.InfoWatchEntityHudType, "\t", true, GetDecimals(TasSettings.CustomInfoDecimals, GameSettings.MaxDecimals)) is { } watchInfo &&
                 watchInfo.IsNotEmpty()) {
                 output += $"\t{watchInfo}";
             }
