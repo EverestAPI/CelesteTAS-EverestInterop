@@ -18,7 +18,7 @@ public static class IntegrateReadFiles {
         int totalFrameCount = 0;
 
         string currentTargetCommand = string.Empty;
-        foreach ((string line, _, string filePath, var targetCommand) in Studio.Instance.Editor.IterateDocumentLines(includeReads: true, sourceFile)) {
+        foreach ((string line, _, string filePath, var targetCommand) in FileRefactor.IterateLines(sourceFile, followReadCommands: true)) {
             // Write original read command as comment
             if (targetCommand != null && currentTargetCommand != targetCommand.Value.OriginalText) {
                 integratedLines.Add($"# {targetCommand.Value.OriginalText}");
@@ -35,11 +35,7 @@ public static class IntegrateReadFiles {
 
         // Sum up RecordCount
         int totalRecordCount = 0;
-        foreach (string file in files) {
-            if (!Editor.FileCache.TryGetValue(file, out string[]? lines)) {
-                Editor.FileCache[file] = lines = File.ReadAllLines(file);
-            }
-
+        foreach (string[] lines in files.Select(FileRefactor.ReadLines)) {
             foreach (string line in lines) {
                 if (recordCountRegex.Match(line) is { Success: true } match && int.TryParse(match.Groups[1].Value, out int count)) {
                     totalRecordCount += count;

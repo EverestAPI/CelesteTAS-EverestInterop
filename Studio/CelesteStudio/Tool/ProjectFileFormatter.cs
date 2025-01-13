@@ -47,10 +47,12 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
         const int rowWidth = 200;
 
         // General config
-        projectRoot = Editor.FindProjectRoot(Studio.Instance.Editor.Document.FilePath);
+        projectRoot = FileRefactor.FindProjectRoot(Studio.Instance.Editor.Document.FilePath);
+        var currentConfig = StyleConfig.Load(Path.Combine(projectRoot, StyleConfig.ConfigFile));
+
         projectRootButton = new Button { Text = projectRoot, Width = 200 };
         projectRootButton.Click += (_, _) => {
-            var dialog = new SelectFolderDialog() {
+            var dialog = new SelectFolderDialog {
                 Title = "Select project root folder",
                 Directory = projectRoot
             };
@@ -58,25 +60,28 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
             if (dialog.ShowDialog(this) == DialogResult.Ok) {
                 projectRoot = dialog.Directory;
                 projectRootButton.Text = projectRoot;
+
+                currentConfig = StyleConfig.Load(Path.Combine(projectRoot, StyleConfig.ConfigFile));
             }
         };
 
         // Auto-room-indexing
         editRoomIndices = new CheckBox { Width = rowWidth, Checked = true };
-        startingIndex = new NumericStepper { MinValue = 0, DecimalPlaces = 0, Width = rowWidth, Value = StyleConfig.Current.RoomLabelStartingIndex ?? 0 };
+        startingIndex = new NumericStepper { MinValue = 0, DecimalPlaces = 0, Width = rowWidth, Value = currentConfig.RoomLabelStartingIndex ?? 0, Enabled = currentConfig.RoomLabelStartingIndex == null };
         roomIndexType = new DropDown {
             Items = {
                 new ListItem { Text = "Only current File", Key = nameof(AutoRoomIndexing.CurrentFile) },
                 new ListItem { Text = "Including Read-commands", Key = nameof(AutoRoomIndexing.IncludeReads) },
             },
-            SelectedKey = StyleConfig.Current.RoomLabelIndexing?.ToString() ?? nameof(AutoRoomIndexing.CurrentFile),
-            Width = rowWidth
+            SelectedKey = currentConfig.RoomLabelIndexing?.ToString() ?? nameof(AutoRoomIndexing.CurrentFile),
+            Width = rowWidth,
+            Enabled = currentConfig.RoomLabelIndexing == null,
         };
 
         // Command formatting
         editCommands = new CheckBox { Width = rowWidth, Checked = true };
         forceCorrectCasing = new CheckBox { Width = rowWidth, Checked = true };
-        argumentSeparator = new TextBox { Width = rowWidth, Text = StyleConfig.Current.CommandArgumentSeparator ?? ", " };
+        argumentSeparator = new TextBox { Width = rowWidth, Text = currentConfig.CommandArgumentSeparator ?? ", ", Enabled = currentConfig.CommandArgumentSeparator == null };
 
         var autoRoomIndexingLayout = new DynamicLayout { DefaultSpacing = new Size(10, 10) };
         {
@@ -200,15 +205,15 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
             }
 
             totalTasks++;
-            Task.Run(async () => {
+            Task.Run(() => {
                 Console.WriteLine($"Reformatting '{file}'...");
 
                 try {
                     if (formatRoomIndices) {
-                        await UpdateRoomLabelIndices(file, startIndex, includeReads).ConfigureAwait(false);
+                        FileRefactor.FixRoomLabelIndices(file, includeReads ? AutoRoomIndexing.IncludeReads : AutoRoomIndexing.CurrentFile, startIndex);
                     }
                     if (formatCommands) {
-                        await UpdateCommands(file, forceCase, separator).ConfigureAwait(false);
+                        FileRefactor.FormatFile(file, forceCase, separator);
                     }
 
                     Console.WriteLine($"Successfully reformatted '{file}'");
@@ -217,12 +222,14 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
                 }
 
                 finishedTasks++;
-                await Application.Instance.InvokeAsync(UpdateProgress).ConfigureAwait(false);
+                Application.Instance.Invoke(UpdateProgress);
             });
         }
 
         UpdateProgress();
         progressPopup.ShowModal();
+
+        return;
 
         void UpdateProgress() {
             progressLabel.Text = finishedTasks == totalTasks
@@ -235,126 +242,6 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
                 doneButton.Enabled = true;
                 progressPopup.Title = "Complete";
             }
-        }
-    }
-
-    // Mostly copied from Editor
-    private async Task UpdateRoomLabelIndices(string filePath, int startIndex, bool includeReads) {
-        var editor = Studio.Instance.Editor;
-
-        // room label without indexing -> lines of all occurrences
-        Dictionary<string, List<(int Row, bool Update)>> roomLabels = [];
-
-        foreach ((string line, int row, string file, _) in editor.IterateDocumentLines(includeReads, filePath)) {
-            var match = Editor.RoomLabelRegex.Match(line);
-            if (!match.Success) {
-                continue;
-            }
-
-            bool isCurrentFile = file == filePath;
-            string label = match.Groups[1].Value.Trim();
-
-            if (roomLabels.TryGetValue(label, out var list)) {
-                list.Add((row, isCurrentFile));
-            } else {
-                roomLabels[label] = [(row, isCurrentFile)];
-            }
-        }
-
-        string[]? lines = null;
-        if (filePath != editor.Document.FilePath) {
-            await editor.RefactorSemaphore.WaitAsync().ConfigureAwait(false);
-            if (!Editor.FileCache.TryGetValue(filePath, out lines)) {
-                Editor.FileCache[filePath] = lines = await File.ReadAllLinesAsync(filePath).ConfigureAwait(false);
-            }
-            editor.RefactorSemaphore.Release();
-        }
-
-        using var __ = editor.Document.Update(raiseEvents: false);
-        foreach ((string label, var occurrences) in roomLabels) {
-            if (occurrences.Count == 1) {
-                if (!occurrences[0].Update) {
-                    continue;
-                }
-
-                if (filePath == editor.Document.FilePath) {
-                    await editor.RefactorLabelName(editor.Document.Lines[occurrences[0].Row]["#".Length..], $"lvl_{label}", filePath).ConfigureAwait(false);
-                    editor.Document.ReplaceLine(occurrences[0].Row, $"#lvl_{label}");
-                } else {
-                    await editor.RefactorLabelName(lines![occurrences[0].Row]["#".Length..], $"lvl_{label}", filePath).ConfigureAwait(false);
-                    lines[occurrences[0].Row] = $"#lvl_{label}";
-                }
-
-                continue;
-            }
-
-            for (int i = 0; i < occurrences.Count; i++) {
-                if (!occurrences[i].Update) {
-                    continue;
-                }
-
-                if (filePath == editor.Document.FilePath) {
-                    await editor.RefactorLabelName(editor.Document.Lines[occurrences[i].Row]["#".Length..], $"lvl_{label} ({i + startIndex})", filePath).ConfigureAwait(false);
-                    editor.Document.ReplaceLine(occurrences[i].Row, $"#lvl_{label} ({i + startIndex})");
-                } else {
-                    await editor.RefactorLabelName(lines![occurrences[i].Row]["#".Length..], $"lvl_{label} ({i + startIndex})", filePath).ConfigureAwait(false);
-                    lines[occurrences[i].Row] = $"#lvl_{label} ({i + startIndex})";
-                }
-            }
-        }
-
-        if (filePath != editor.Document.FilePath) {
-            await Studio.Instance.Editor.RefactorSemaphore.WaitAsync().ConfigureAwait(false);
-            await File.WriteAllTextAsync(filePath, Document.FormatLinesToText(lines!)).ConfigureAwait(false);
-            Studio.Instance.Editor.RefactorSemaphore.Release();
-        }
-    }
-
-    private async Task UpdateCommands(string filePath, bool forceCase, string separator) {
-        var editor = Studio.Instance.Editor;
-
-        if (filePath == editor.Document.FilePath) {
-            using var __ = editor.Document.Update(raiseEvents: false);
-
-            for (int row = 0; row < editor.Document.Lines.Count; row++) {
-                if (!CommandLine.TryParse(editor.Document.Lines[row], out var commandLine)) {
-                    continue;
-                }
-
-                string commandName;
-                if (forceCase && CommunicationWrapper.Commands.FirstOrDefault(cmd => string.Equals(cmd.Name, commandLine.Command, StringComparison.OrdinalIgnoreCase)) is var command && !string.IsNullOrEmpty(command.Name)) {
-                    commandName = command.Name;
-                } else {
-                    commandName = commandLine.Command;
-                }
-
-                editor.Document.ReplaceLine(row, string.Join(separator, [commandName, ..commandLine.Arguments]));
-            }
-        } else {
-            await editor.RefactorSemaphore.WaitAsync().ConfigureAwait(false);
-            if (!Editor.FileCache.TryGetValue(filePath, out string[]? lines)) {
-                Editor.FileCache[filePath] = lines = await File.ReadAllLinesAsync(filePath).ConfigureAwait(false);
-            }
-            editor.RefactorSemaphore.Release();
-
-            for (int row = 0; row < lines.Length; row++) {
-                if (!CommandLine.TryParse(lines[row], out var commandLine)) {
-                    continue;
-                }
-
-                string commandName;
-                if (forceCase && CommunicationWrapper.Commands.FirstOrDefault(cmd => string.Equals(cmd.Name, commandLine.Command, StringComparison.OrdinalIgnoreCase)) is var command && !string.IsNullOrEmpty(command.Name)) {
-                    commandName = command.Name;
-                } else {
-                    commandName = commandLine.Command;
-                }
-
-                lines[row] = string.Join(separator, [commandName, ..commandLine.Arguments]);
-            }
-
-            await editor.RefactorSemaphore.WaitAsync().ConfigureAwait(false);
-            await File.WriteAllTextAsync(filePath, Document.FormatLinesToText(lines)).ConfigureAwait(false);
-            editor.RefactorSemaphore.Release();
         }
     }
 

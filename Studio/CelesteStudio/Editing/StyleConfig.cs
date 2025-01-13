@@ -12,7 +12,7 @@ namespace CelesteStudio.Editing;
 
 /// Defined by an ".studioconfig.toml" file in the root of the project
 public struct StyleConfig() {
-    private const string ConfigFile = ".studioconfig.toml";
+    public const string ConfigFile = ".studioconfig.toml";
 
     public static StyleConfig Current { get; private set; } = new();
 
@@ -28,22 +28,24 @@ public struct StyleConfig() {
                 return;
             }
 
-            string projectRoot = Editor.FindProjectRoot(document.FilePath);
-            string configPath = Path.Combine(projectRoot, ConfigFile);
-
-            if (!File.Exists(configPath)) {
-                return;
-            }
-
-            Console.WriteLine($"Found project style config '{configPath}'");
-
-            try {
-                var toml = TomlParser.ParseFile(configPath);
-                Current = TomletMain.To<StyleConfig>(toml, new TomlSerializerOptions());
-            } catch (Exception ex) {
-                Console.Error.WriteLine("Failed to load project style config");
-                Console.Error.WriteLine(ex);
-            }
+            Current = Load(Path.Combine(FileRefactor.FindProjectRoot(document.FilePath), ConfigFile));
         };
+    }
+    public static StyleConfig Load(string configPath) {
+        if (!File.Exists(configPath)) {
+            return new StyleConfig();
+        }
+
+        Console.WriteLine($"Found project style config '{configPath}'");
+
+        try {
+            var toml = TomlParser.ParseFile(configPath);
+            return TomletMain.To<StyleConfig>(toml, new TomlSerializerOptions());
+        } catch (Exception ex) {
+            Console.Error.WriteLine("Failed to load project style config");
+            Console.Error.WriteLine(ex);
+
+            return new StyleConfig();
+        }
     }
 }
