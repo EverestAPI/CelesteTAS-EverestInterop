@@ -48,9 +48,12 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
 
         // General config
         projectRoot = FileRefactor.FindProjectRoot(Studio.Instance.Editor.Document.FilePath);
-        var currentConfig = StyleConfig.Load(Path.Combine(projectRoot, StyleConfig.ConfigFile));
+        string projectConfigPath = Path.Combine(projectRoot, StyleConfig.ConfigFile);
 
-        projectRootButton = new Button { Text = projectRoot, Width = 200 };
+        var currentConfig = StyleConfig.Load(projectConfigPath);
+
+        // Only allow changing if a config for the current project isn't present
+        projectRootButton = new Button { Text = projectRoot, Width = 200, Enabled = !File.Exists(projectConfigPath) };
         projectRootButton.Click += (_, _) => {
             var dialog = new SelectFolderDialog {
                 Title = "Select project root folder",

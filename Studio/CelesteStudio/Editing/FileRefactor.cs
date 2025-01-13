@@ -55,21 +55,7 @@ public static class FileRefactor {
             if (ActionLine.TryParse(line, out var actionLine)) {
                 lines[row] = actionLine.ToString();
             } else if (CommandLine.TryParse(line, out var commandLine)) {
-                string commandName;
-
-                if (StyleConfig.Current.ForceCorrectCommandCasing
-                   && CommunicationWrapper.Commands.FirstOrDefault(cmd => string.Equals(cmd.Name, commandLine.Command, StringComparison.OrdinalIgnoreCase)) is var command
-                   && !string.IsNullOrEmpty(command.Name)
-                ) {
-                    commandName = command.Name;
-                } else {
-                    commandName = commandLine.Command;
-                }
-
-                // Special-case for console commands to use spaces, like in-game console commands
-                string separator = commandLine.IsCommand("console") ? " " : StyleConfig.Current.CommandArgumentSeparator ?? commandLine.ArgumentSeparator;
-                // Wrap arguments in "" if necessary
-                lines[row] = string.Join(separator, [commandName, ..commandLine.Arguments.Select(arg => arg.Contains(separator) ? $"\"{arg}\"" : arg)]);
+                lines[row] = commandLine.Format(CommunicationWrapper.Commands, forceCommandCasing, commandSeparator);
             }
         }
     }
