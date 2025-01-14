@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <!-- Pop up a console in debug builds for easier access to logs -->
     <PropertyGroup Condition="'$(Configuration)' == 'Debug'">

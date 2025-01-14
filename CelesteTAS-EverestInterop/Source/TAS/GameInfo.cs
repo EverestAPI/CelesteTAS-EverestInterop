@@ -30,7 +30,8 @@ public static class GameInfo {
     public static string ExactStatusWithoutTime = string.Empty;
     public static string LevelName = string.Empty;
     public static string ChapterTime = string.Empty;
-    public static string WatchingInfo = string.Empty;
+    public static string HudWatchingInfo = string.Empty;
+    public static string StudioWatchingInfo = string.Empty;
     public static string CustomInfo = string.Empty;
     public static Vector2Double LastDiff;
     public static Vector2Double LastPos;
@@ -55,8 +56,8 @@ public static class GameInfo {
                 infos.Add(CustomInfo);
             }
 
-            if ((TasSettings.InfoWatchEntity & HudOptions.HudOnly) != 0 && WatchingInfo.IsNotNullOrWhiteSpace()) {
-                infos.Add(WatchingInfo);
+            if (TasSettings.HudWatchEntity && HudWatchingInfo.IsNotNullOrWhiteSpace()) {
+                infos.Add(HudWatchingInfo);
             }
 
             return string.Join("\n\n", infos);
@@ -75,8 +76,8 @@ public static class GameInfo {
                 infos.Add(CustomInfo);
             }
 
-            if ((TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0 && WatchingInfo.IsNotNullOrWhiteSpace()) {
-                infos.Add(WatchingInfo);
+            if (TasSettings.StudioWatchEntity && StudioWatchingInfo.IsNotNullOrWhiteSpace()) {
+                infos.Add(StudioWatchingInfo);
             }
 
             return string.Join("\n\n", infos);
@@ -91,15 +92,15 @@ public static class GameInfo {
                 infos.Add(InfoMouse.MouseInfo);
             }
 
-            WatchingInfo = InfoWatchEntity.GetInfo(alwaysUpdate: true, decimals: GameSettings.MaxDecimals);
+            StudioWatchingInfo = InfoWatchEntity.GetInfo(TasSettings.InfoWatchEntityStudioType, alwaysUpdate: true, decimals: GameSettings.MaxDecimals);
             CustomInfo = InfoCustom.GetInfo(GameSettings.MaxDecimals);
 
             if (CustomInfo.IsNotNullOrWhiteSpace()) {
                 infos.Add(CustomInfo);
             }
 
-            if (WatchingInfo.IsNotNullOrWhiteSpace()) {
-                infos.Add(WatchingInfo);
+            if (StudioWatchingInfo.IsNotNullOrWhiteSpace()) {
+                infos.Add(StudioWatchingInfo);
             }
 
             return string.Join("\n\n", infos);
@@ -355,7 +356,8 @@ public static class GameInfo {
         } else {
             LevelName = string.Empty;
             ChapterTime = string.Empty;
-            WatchingInfo = string.Empty;
+            HudWatchingInfo = string.Empty;
+            StudioWatchingInfo = string.Empty;
             CustomInfo = string.Empty;
             if (scene is SummitVignette summit) {
                 Status = ExactStatus = $"SummitVignette {summit.ready}";
@@ -365,7 +367,7 @@ public static class GameInfo {
                     ouiName = $"{oui.GetType().Name} ";
                 }
 
-                Status = ExactStatus = $"Overworld {ouiName}{overworld.ShowInputUI}";
+                Status = ExactStatus = ouiName;
             } else if (scene != null) {
                 Status = ExactStatus = scene.GetType().Name;
             }
@@ -373,12 +375,7 @@ public static class GameInfo {
     }
 
     private static void UpdateAdditionInfo() {
-        if (TasSettings.InfoHud && (TasSettings.InfoWatchEntity & HudOptions.HudOnly) != 0 ||
-            (TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0 && CommunicationWrapper.Connected) {
-            WatchingInfo = InfoWatchEntity.GetInfo();
-        } else {
-            WatchingInfo = string.Empty;
-        }
+        InfoWatchEntity.UpdateInfo();
 
         if (TasSettings.InfoHud && (TasSettings.InfoCustom & HudOptions.HudOnly) != 0 ||
             (TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && CommunicationWrapper.Connected) {
