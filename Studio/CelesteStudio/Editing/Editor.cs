@@ -2668,7 +2668,10 @@ public sealed class Editor : SkiaDrawable {
             if (!Document.Selection.Empty) {
                 RemoveRange(Document.Selection.Min, Document.Selection.Max);
                 Document.Caret.Col = Document.Selection.Min.Col;
+
                 line = Document.Lines[Document.Caret.Row];
+                lineTrimmedStart = line.TrimStart();
+                leadingSpaces = line.Length - lineTrimmedStart.Length;
             } else if (line.Trim() == "#") {
                 // Replace empty comment
                 Document.ReplaceLine(Document.Caret.Row, string.Empty);
@@ -2678,18 +2681,23 @@ public sealed class Editor : SkiaDrawable {
 
             // Auto-insert # for multiline comments (not labels, not folds!)
             // Additionally don't auto-multiline when caret is before #
-            string prefix = Settings.Instance.AutoMultilineComments && Document.Caret.Col > leadingSpaces && lineTrimmedStart.StartsWith("# ") ? "# " : "";
-            Document.Caret.Col = Math.Max(Document.Caret.Col, prefix.Length);
+            if (Settings.Instance.AutoMultilineComments && Document.Caret.Col > leadingSpaces && lineTrimmedStart.StartsWith("# ")) {
+                const string prefix = "# ";
 
-            string beforeCaret = line[(prefix.Length + leadingSpaces)..Document.Caret.Col];
-            string afterCaret = line[Document.Caret.Col..];
+                Document.Caret.Col = Math.Max(Document.Caret.Col, prefix.Length);
 
-            int newRow = Document.Caret.Row + offset;
+                string beforeCaret = line[(prefix.Length + leadingSpaces)..Document.Caret.Col];
+                string afterCaret = line[Document.Caret.Col..];
 
-            Document.ReplaceLine(Document.Caret.Row, prefix + (up ? afterCaret : beforeCaret));
-            Document.InsertLine(newRow, prefix + (up ? beforeCaret : afterCaret));
-            Document.Caret.Row = newRow;
-            Document.Caret.Col = desiredVisualCol = prefix.Length + (up ? beforeCaret.Length : 0);
+                int newRow = Document.Caret.Row + offset;
+
+                Document.ReplaceLine(Document.Caret.Row, prefix + (up ? afterCaret : beforeCaret));
+                Document.InsertLine(newRow, prefix + (up ? beforeCaret : afterCaret));
+                Document.Caret.Row = newRow;
+                Document.Caret.Col = desiredVisualCol = prefix.Length + (up ? beforeCaret.Length : 0);
+            } else {
+                Document.Insert($"{Document.NewLine}");
+            }
         } else {
             int newRow = Document.Caret.Row + offset;
             if (GetCollapse(Document.Caret.Row) is { } collapse) {
