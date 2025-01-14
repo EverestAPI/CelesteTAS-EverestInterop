@@ -141,20 +141,19 @@ public class Document : IDisposable {
 
     /// Formats lines of a file into a single string, using consistent formatting rules
     public static string FormatLinesToText(IEnumerable<string> lines) {
-        // TODO: Maybe don't allocate this much on every save?
-        string text = string.Join(NewLine, lines.Select(line => {
-            // Trim whitespace, remove invalid characters, format lines
-            if (ActionLine.TryParse(line, out var actionLine)) {
-                return actionLine.ToString();
-            } else {
-                return new string(line.Trim().Where(c => !char.IsControl(c) && c != char.MaxValue).ToArray());
-            }
-        }));
+        return string.Join("", lines
+            // Trim leading empty lines
+            .SkipWhile(string.IsNullOrWhiteSpace)
+            // Trim trailing empty lines
+            .Reverse().SkipWhile(string.IsNullOrWhiteSpace).Reverse()
+            .Select(line => {
+                if (ActionLine.TryParse(line, out var actionLine)) {
+                    return $"{actionLine}{NewLine}";
+                }
 
-        // Require exactly 1 empty line at end of file
-        text = text.TrimEnd(NewLine) + $"{NewLine}";
-
-        return text;
+                // Trim whitespace and remove invalid characters
+                return new string(line.Trim().Where(c => !char.IsControl(c) && c != char.MaxValue).ToArray()) + $"{NewLine}";
+            }));
     }
 
     private Document(string? filePath) {
