@@ -21,7 +21,6 @@ public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, Eto.Forms.Cont
         private WriteableBitmap? bitmap;
 
         protected override void OnRender(DrawingContext drawingContext) {
-            System.Console.WriteLine($"Triggered OnRender: {DateTime.Now} | {drawable.DrawX} {drawable.DrawY} {drawable.DrawWidth} {drawable.DrawHeight} {drawable.CanDraw}");
             base.OnRender(drawingContext);
 
             var m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
@@ -56,8 +55,12 @@ public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, Eto.Forms.Cont
                 canvas.Flush();
 
                 bitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
-                drawingContext.DrawImage(bitmap, new Rect(drawable.DrawX, drawable.DrawY, width / dpiX, height / dpiY));
+                if (DateTime.Now.Second % 10 > 5) {
+                    bitmap.Invalidate();
+                }
                 bitmap.Unlock();
+
+                drawingContext.DrawImage(bitmap, new Rect(drawable.DrawX, drawable.DrawY, width / dpiX, height / dpiY));
             } else {
                 drawable.Invalidate();
             }
