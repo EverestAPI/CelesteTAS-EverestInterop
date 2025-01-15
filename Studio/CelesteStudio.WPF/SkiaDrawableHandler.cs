@@ -21,6 +21,7 @@ public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, Eto.Forms.Cont
         private WriteableBitmap? bitmap;
 
         protected override void OnRender(DrawingContext drawingContext) {
+            System.Console.WriteLine($"Triggered OnRender: {DateTime.Now}");
             base.OnRender(drawingContext);
 
             var m = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
