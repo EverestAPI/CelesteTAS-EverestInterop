@@ -6,15 +6,12 @@ using Celeste.Mod;
 using Celeste.Pico8;
 using JetBrains.Annotations;
 using Monocle;
-using MonoMod;
 using StudioCommunication;
-using System.Reflection;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Input;
 using TAS.Module;
 using TAS.Utils;
-using Component = On.Monocle.Component;
 
 namespace TAS;
 
@@ -123,29 +120,35 @@ public static class Manager {
 
         CurrState = NextState;
 
-        while (mainThreadActions.TryDequeue(out Action action)) {
+        while (mainThreadActions.TryDequeue(out var action)) {
             action.Invoke();
         }
 
         Savestates.Update();
 
-        if (Running && CurrState != State.Paused && !IsLoading()) {
-            if (Controller.HasFastForward) {
-                NextState = State.Running;
-            }
+        if (!Running || CurrState == State.Paused || IsLoading()) {
+            return;
+        }
 
-            if (!Controller.CanPlayback) {
-                DisableRun();
-                return;
-            }
+        if (Controller.HasFastForward) {
+            NextState = State.Running;
+        }
 
-            Controller.AdvanceFrame();
+        if (!Controller.CanPlayback) {
+            DisableRun();
+            return;
+        }
 
-            // Pause the TAS if breakpoint is not placed at the end
-            if (Controller.Break) {
-                Controller.NextLabelFastForward = null;
-                NextState = State.Paused;
-            }
+        Controller.AdvanceFrame();
+
+        // Auto-pause at end of drafts
+        if (!Controller.CanPlayback && IsDraft()) {
+            NextState = State.Paused;
+        }
+        // Pause the TAS if breakpoint is hit
+        else if (Controller.Break) {
+            Controller.NextLabelFastForward = null;
+            NextState = State.Paused;
         }
     }
 
@@ -197,7 +200,15 @@ public static class Manager {
                 if (Hotkeys.PauseResume.Pressed) {
                     NextState = State.Running;
                 } else if (Hotkeys.FrameAdvance.Repeated || Hotkeys.FastForward.Check) {
-                    NextState = State.FrameAdvance;
+                    // Prevent frame-advancing into the end of the TAS
+                    if (!Controller.CanPlayback) {
+                        Controller.RefreshInputs(); // Ensure there aren't any new inputs
+                    }
+                    if (Controller.CanPlayback) {
+                        NextState = State.FrameAdvance;
+                    } else {
+                        // TODO: Display toast "Reached end-of-file". Currently not possible due to them not being updated
+                    }
                 }
                 break;
 
@@ -257,6 +268,16 @@ public static class Manager {
             Emulator emulator => emulator.game == null,
             _ => Engine.Scene is LevelExit or LevelLoader or GameLoader || Engine.Scene.GetType().Name == "LevelExitToLobby",
         };
+    }
+
+    /// Determine if current TAS file is a draft
+    private static bool IsDraft() {
+        // Require any FileTime or ChapterTime, alternatively MidwayFileTime or MidwayChapterTime at the end for the TAS to be counted as finished
+        return Controller.Commands.Values
+            .SelectMany(commands => commands)
+            .All(command => !command.Is("FileTime") && !command.Is("ChapterTime"))
+        && Controller.Commands.GetValueOrDefault(Controller.Inputs.Count, [])
+            .All(command => !command.Is("MidwayFileTime") && !command.Is("MidwayChapterTime"));
     }
 
     public static bool PreventSendStudioState = false; // a cursed demand of tas helper's predictor
