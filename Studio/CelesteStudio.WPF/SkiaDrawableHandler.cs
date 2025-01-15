@@ -34,7 +34,7 @@ public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, Eto.Forms.Cont
             }
 
             if (drawable.CanDraw) {
-                if (width != bitmap.PixelWidth || height != bitmap.PixelHeight) {
+                if (bitmap == null || width != bitmap.PixelWidth || height != bitmap.PixelHeight) {
                     bitmap = null;
                     surface = null;
                 }
