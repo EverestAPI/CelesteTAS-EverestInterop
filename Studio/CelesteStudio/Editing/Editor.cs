@@ -336,6 +336,7 @@ public sealed class Editor : SkiaDrawable {
 
         // Need to redraw the line numbers when scrolling horizontally
         scrollable.Scroll += (_, _) => {
+            Console.WriteLine($"Scroll from {scrollablePosition.X} {scrollablePosition.Y} -> {scrollable.ScrollPosition.X} {scrollable.ScrollPosition.Y}");
             scrollablePosition = scrollable.ScrollPosition;
             Invalidate();
         };
@@ -3698,6 +3699,7 @@ public sealed class Editor : SkiaDrawable {
     public override bool CanDraw => !Document.UpdateInProgress;
 
     public override void Draw(SKSurface surface) {
+        Console.WriteLine($"Draw at {scrollablePosition.X} {scrollablePosition.Y} {scrollable.Width} {scrollable.Height}");
         var canvas = surface.Canvas;
 
         using var strokePaint = new SKPaint();
