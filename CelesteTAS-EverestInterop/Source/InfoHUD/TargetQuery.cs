@@ -158,20 +158,22 @@ public static class TargetQuery {
             return [module.SettingsType];
         }
 
-        // Simply increase used arguments until something is found
+        // Greedily increase amount of tested arguments
+        string currentType = string.Empty;
+        int currentIndex = 0;
+
         for (int i = 1; i <= queryArgs.Length; i++) {
             string typeName = string.Join('.', queryArgs[..i]);
 
-            if (baseTypeCache.TryGetValue(typeName, out var pair)) {
-                componentTypes = pair.ComponentTypes;
-                entityId = pair.EntityID;
-                memberArgs = queryArgs[i..];
-                return pair.Types;
+            if (baseTypeCache.ContainsKey(typeName)) {
+                currentType = typeName;
+                currentIndex = i;
+                continue;
             }
 
             var match = BaseTypeRegex.Match(typeName);
             if (!match.Success) {
-                continue;
+                break; // No further matches
             }
 
             // Remove the entity ID from the type check
@@ -182,17 +184,27 @@ public static class TargetQuery {
                 entityId = new EntityID(match.Groups[5].Value, id);
             }
 
-            if (allTypes.TryGetValue(checkTypeName, out var types)) {
-                if (!allTypes.TryGetValue(componentTypeName, out componentTypes!)) {
-                    componentTypes = [];
-                }
-
-                baseTypeCache[typeName] = (Types: types, ComponentTypes: componentTypes, EntityID: entityId);
-                memberArgs = queryArgs[i..];
-                return types;
+            if (!allTypes.TryGetValue(checkTypeName, out var types)) {
+                break; // No further existing types
             }
+
+            if (!allTypes.TryGetValue(componentTypeName, out componentTypes!)) {
+                componentTypes = [];
+            }
+
+            baseTypeCache[typeName] = (Types: types, ComponentTypes: componentTypes, EntityID: entityId);
+            currentType = typeName;
+            currentIndex = i;
         }
 
+        if (baseTypeCache.TryGetValue(currentType, out var pair)) {
+            componentTypes = pair.ComponentTypes;
+            entityId = pair.EntityID;
+            memberArgs = queryArgs[currentIndex..];
+            return pair.Types;
+        }
+
+        // No matching type found
         memberArgs = queryArgs;
         return [];
     }
