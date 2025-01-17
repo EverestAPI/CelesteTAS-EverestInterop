@@ -34,21 +34,21 @@ public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, Eto.Forms.Cont
             }
 
             if (drawable.CanDraw) {
-                if (bitmap == null || width != bitmap.PixelWidth || height != bitmap.PixelHeight) {
-                    bitmap = null;
-                    surface = null;
-                }
+                // if (bitmap == null || width != bitmap.PixelWidth || height != bitmap.PixelHeight) {
+                //     bitmap = null;
+                //     surface = null;
+                // }
 
-                if (bitmap == null) {
+                // if (bitmap == null) {
                     const double bitmapDpi = 96.0;
                     bitmap = new WriteableBitmap(width, height, bitmapDpi * dpiX, bitmapDpi * dpiY, PixelFormats.Pbgra32, null);
-                }
-                if (surface == null) {
+                // }
+                // if (surface == null) {
                     surface?.Dispose();
                     surface = SKSurface.Create(new SKImageInfo(width, height, SKImageInfo.PlatformColorType, SKAlphaType.Premul), bitmap.BackBuffer, bitmap.BackBufferStride, new SKSurfaceProperties(SKPixelGeometry.Unknown));
                     surface.Canvas.Scale((float)dpiX, (float)dpiY);
                     surface.Canvas.Save();
-                }
+                // }
 
                 bitmap.Lock();
 
@@ -65,17 +65,17 @@ public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, Eto.Forms.Cont
 
                 drawingContext.DrawImage(bitmap, new Rect(drawable.DrawX, drawable.DrawY, width / dpiX, height / dpiY));
 
-                if (DateTime.Now.Second % 15 > 10) {
-                    bitmap = null;
-                    System.Console.WriteLine("Bitmap clear");
-                } else if (DateTime.Now.Second % 15 > 5) {
-                    surface = null;
-                    System.Console.WriteLine("Surface clear");
-                } else {
-                    bitmap = null;
-                    surface = null;
-                    System.Console.WriteLine("Bitmap surface clear");
-                }
+                // if (DateTime.Now.Second % 15 > 10) {
+                //     bitmap = null;
+                //     System.Console.WriteLine("Bitmap clear");
+                // } else if (DateTime.Now.Second % 15 > 5) {
+                //     surface = null;
+                //     System.Console.WriteLine("Surface clear");
+                // } else {
+                //     bitmap = null;
+                //     surface = null;
+                //     System.Console.WriteLine("Bitmap surface clear");
+                // }
             } else {
                 drawable.Invalidate();
             }
