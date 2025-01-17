@@ -8,6 +8,7 @@ using Celeste.Mod;
 using StudioCommunication;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Web;
 using TAS.Communication;
 using TAS.Input;
 using TAS.Module;
@@ -31,7 +32,7 @@ public static class DebugRcPage {
             WriteLine(builder, $"RoomName: {GameInfo.LevelName}");
             WriteLine(builder, $"ChapterTime: {GameInfo.ChapterTime}");
             WriteLine(builder, "Game Info: ");
-            builder.Append($@"<pre>{GameInfo.ExactStudioInfo}</pre>");
+            builder.Append($@"<pre>{HttpUtility.HtmlEncode(GameInfo.ExactStudioInfo)}</pre>");
             Everest.DebugRC.WriteHTMLEnd(c, builder);
             Everest.DebugRC.Write(c, builder.ToString());
         }
@@ -166,6 +167,6 @@ TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}
     }
 
     private static void WriteLine(StringBuilder builder, string text) {
-        builder.Append($@"{text}<br />");
+        builder.Append($@"{HttpUtility.HtmlEncode(text)}<br />");
     }
 }
