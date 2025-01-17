@@ -99,9 +99,9 @@ public static class Manager {
 
         "Stopping TAS".Log();
 
+        AttributeUtils.Invoke<DisableRunAttribute>();
         CurrState = NextState = State.Disabled;
         Controller.Stop();
-        AttributeUtils.Invoke<DisableRunAttribute>();
     }
 
     /// Will start the TAS on the next update cycle
