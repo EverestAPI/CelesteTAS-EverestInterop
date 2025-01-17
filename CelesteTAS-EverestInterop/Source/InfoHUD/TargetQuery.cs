@@ -122,8 +122,10 @@ public static class TargetQuery {
                     return false;
                 }
 
-                if (!instances.IsEmpty()) {
-                    allResults.AddRange(values.Select((value, i) => (value, (object?) instances[i])));
+                if (instances.IsEmpty()) {
+                    allResults.Add((values[0], null));
+                } else {
+                    allResults.AddRange(values.Select((value, i) => (value, (object?)instances[i])));
                 }
 
                 return true;
@@ -287,7 +289,7 @@ public static class TargetQuery {
                 currentType = field.FieldType;
                 continue;
             }
-            if (currentType.GetPropertyInfo(member) is { } property && property.GetGetMethod() != null) {
+            if (currentType.GetPropertyInfo(member) is { } property && property.GetMethod != null) {
                 currentType = property.PropertyType;
                 continue;
             }
@@ -334,7 +336,7 @@ public static class TargetQuery {
                 continue;
             }
 
-            if (currentType.GetPropertyInfo(member) is { } property && property.GetGetMethod() != null) {
+            if (currentType.GetPropertyInfo(member) is { } property && property.GetMethod != null) {
                 currentType = property.PropertyType;
                 continue;
             }
@@ -372,7 +374,7 @@ public static class TargetQuery {
                     }
                     continue;
                 }
-                if (currentType.GetPropertyInfo(member) is { } property && property.GetGetMethod() != null) {
+                if (currentType.GetPropertyInfo(member) is { } property && property.GetMethod != null) {
                     if (PreventCodeExecution && !forceAllowCodeExecution) {
                         return (Value: null, Success: false, ErrorMessage: $"Cannot safely get property '{member}' during EnforceLegal");
                     }
@@ -448,7 +450,7 @@ public static class TargetQuery {
                     continue;
                 }
 
-                if (currentType.GetPropertyInfo(member) is { } property && property.GetSetMethod() != null) {
+                if (currentType.GetPropertyInfo(member) is { } property && property.SetMethod != null) {
                     if (PreventCodeExecution) {
                         return false; // Cannot safely invoke methods during EnforceLegal
                     }
@@ -533,7 +535,7 @@ public static class TargetQuery {
                 } else {
                     field.SetValue(currentObject, value);
                 }
-            } else if (currentType.GetPropertyInfo(memberArgs[^1]) is { } property && property.GetSetMethod() != null) {
+            } else if (currentType.GetPropertyInfo(memberArgs[^1]) is { } property && property.SetMethod != null) {
                 // Special case to support binding custom keys
                 if (property.PropertyType == typeof(ButtonBinding) && !PreventCodeExecution && property.GetValue(currentObject) is ButtonBinding binding) {
                     var nodes = binding.Button.Nodes;
@@ -623,7 +625,7 @@ public static class TargetQuery {
                     } else {
                         field.SetValue(currentObject, value);
                     }
-                } else if (currentType.GetPropertyInfo(member) is { } property && property.GetSetMethod() != null) {
+                } else if (currentType.GetPropertyInfo(member) is { } property && property.SetMethod != null) {
                     if (PreventCodeExecution) {
                         return false; // Cannot safely invoke methods during EnforceLegal
                     }
@@ -677,7 +679,7 @@ public static class TargetQuery {
                     continue;
                 }
 
-                if (currentType.GetPropertyInfo(member) is { } property && property.GetSetMethod() != null) {
+                if (currentType.GetPropertyInfo(member) is { } property && property.SetMethod != null) {
                     if (PreventCodeExecution) {
                         return false; // Cannot safely invoke methods during EnforceLegal
                     }

@@ -59,7 +59,7 @@ public static class LuaHelpers {
                     return fieldInfo.GetValue(instance);
                 }
             }
-            if (type.GetPropertyInfo(memberName) is { } propertyInfo && propertyInfo.GetGetMethod() != null) {
+            if (type.GetPropertyInfo(memberName) is { } propertyInfo && propertyInfo.GetMethod != null) {
                 if (propertyInfo.IsStatic()) {
                     return propertyInfo.GetValue(null);
                 } else {
@@ -92,7 +92,7 @@ public static class LuaHelpers {
                     fieldInfo.SetValue(instance, value);
                 }
             }
-            if (type.GetPropertyInfo(memberName) is { } propertyInfo && propertyInfo.GetSetMethod() != null) {
+            if (type.GetPropertyInfo(memberName) is { } propertyInfo && propertyInfo.SetMethod != null) {
                 value = ConvertType(value, type, propertyInfo.PropertyType);
                 if (propertyInfo.IsStatic()) {
                     propertyInfo.SetValue(null, value);

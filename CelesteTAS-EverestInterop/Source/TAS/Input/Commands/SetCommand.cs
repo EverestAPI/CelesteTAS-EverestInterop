@@ -92,7 +92,7 @@ public static class SetCommand {
                 // Mod settings
                 foreach (var mod in Everest.Modules) {
                     if (mod.SettingsType != null && (mod.SettingsType.GetAllFieldInfos().Any() ||
-                                                     mod.SettingsType.GetAllProperties().Any(p => p.GetSetMethod() != null)))
+                                                     mod.SettingsType.GetAllProperties().Any(p => p.SetMethod != null)))
                     {
                         yield return new CommandAutoCompleteEntry { Name = $"{mod.Metadata.Name}.", Extra = "Mod Setting", IsDone = false };
                     }
@@ -116,7 +116,7 @@ public static class SetCommand {
                         type.GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
                             .All(f => f.IsInitOnly || !IsSettableType(f.FieldType)) &&
                         type.GetProperties(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
-                            .All(p => !IsSettableType(p.PropertyType) || p.GetSetMethod() == null))
+                            .All(p => !IsSettableType(p.PropertyType) || p.SetMethod == null))
                     {
                         continue;
                     }
@@ -175,7 +175,7 @@ public static class SetCommand {
             foreach (var property in type.GetProperties(bindingFlags).OrderBy(p => p.Name)) {
                 // Filter-out compiler generated properties
                 if (property.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !property.Name.Contains('<') && !property.Name.Contains('>') &&
-                    IsSettableType(property.PropertyType) && property.GetSetMethod() != null)
+                    IsSettableType(property.PropertyType) && property.SetMethod != null)
                 {
                     yield return new CommandAutoCompleteEntry { Name = property.Name, Extra = property.PropertyType.CSharpName(), IsDone = IsFinalTarget(property.PropertyType), };
                 }
@@ -254,7 +254,7 @@ public static class SetCommand {
                     type = field.FieldType;
                     continue;
                 }
-                if (type.GetPropertyInfo(member) is { } property && property.GetSetMethod() != null) {
+                if (type.GetPropertyInfo(member) is { } property && property.SetMethod != null) {
                     type = property.PropertyType;
                     continue;
                 }
