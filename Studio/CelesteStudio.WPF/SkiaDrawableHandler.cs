@@ -34,7 +34,7 @@ public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, Eto.Forms.Cont
             }
 
             if (drawable.CanDraw) {
-                if (bitmap == null || surface == null || width != bitmap.PixelWidth || height != bitmap.PixelHeight) {
+                if (bitmap == null || surface == null || width != bitmap.PixelWidth || height != bitmap.PixelHeight || Settings.Instance.WPFSkiaHack) {
                     const double bitmapDpi = 96.0;
                     bitmap = new WriteableBitmap(width, height, bitmapDpi * dpiX, bitmapDpi * dpiY, PixelFormats.Pbgra32, null);
 
