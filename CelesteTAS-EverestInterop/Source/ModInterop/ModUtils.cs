@@ -4,7 +4,10 @@ using System.Reflection;
 using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.Helpers;
+using FMOD;
 using System.Collections.Generic;
+using TAS.Utils;
+using Debug = System.Diagnostics.Debug;
 
 namespace TAS.ModInterop;
 
@@ -14,9 +17,25 @@ internal static class ModUtils {
     public static Type? GetType(string modName, string name, bool throwOnError = false, bool ignoreCase = false) {
         return GetAssembly(modName)?.GetType(name, throwOnError, ignoreCase);
     }
-    /// Returns all specified types from the given mod
+
+    /// Returns all specified types from the given mod, if present
     public static IEnumerable<Type> GetTypes(string modName, params string[] fullTypeNames) {
-       return GetAssembly(modName)?.GetTypes().Where(type => fullTypeNames.Contains(type.FullName)) ?? [];
+        var asm = GetAssembly(modName);
+        if (asm == null) {
+            yield break;
+        }
+
+        foreach (string fullTypeName in fullTypeNames) {
+            var type = asm.GetType(fullTypeName);
+            if (type == null) {
+                $"Failed to find type '{fullTypeName}' in assembly '{asm}'".Log(LogLevel.Error);
+#if DEBUG
+                throw new TypeAccessException();
+#endif
+            }
+
+            yield return type;
+        }
     }
 
     public static Type? GetType(string name, bool throwOnError = false, bool ignoreCase = false) {
