@@ -19,7 +19,7 @@ namespace TAS.EverestInterop;
 /// Contains all the logic for getting data from a target-query
 public static class TargetQuery {
     /// Prevents invocations of methods / execution of Lua code in the Custom Info
-    public static bool EnforceLegal => EnforceLegalCommand.EnabledWhenRunning && !AssertCommand.Running;
+    public static bool PreventCodeExecution => EnforceLegalCommand.EnabledWhenRunning;
 
     private static readonly Dictionary<string, List<Type>> allTypes = new();
     private static readonly Dictionary<string, (List<Type> Types, List<Type> ComponentTypes, EntityID? EntityID)> baseTypeCache = [];
@@ -89,7 +89,7 @@ public static class TargetQuery {
     }
 
     /// Parses a target-query and returns the results for that
-    public static (List<(object? Value, object? BaseInstance)> Results, bool Success, string ErrorMessage) GetMemberValues(string query) {
+    public static (List<(object? Value, object? BaseInstance)> Results, bool Success, string ErrorMessage) GetMemberValues(string query, bool forceAllowCodeExecution = false) {
         string[] queryArgs = query.Split('.');
 
         var baseTypes = ResolveBaseTypes(queryArgs, out string[] memberArgs, out var componentTypes, out var entityId);
@@ -117,7 +117,7 @@ public static class TargetQuery {
             }
 
             bool ProcessType(Type type, out string errorMessage) {
-                (var values, bool success, errorMessage) = ResolveMemberValues(type, instances, memberArgs);
+                (var values, bool success, errorMessage) = ResolveMemberValues(type, instances, memberArgs, forceAllowCodeExecution);
                 if (!success) {
                     return false;
                 }
@@ -353,7 +353,7 @@ public static class TargetQuery {
     }
 
     /// Recursively resolves the value of the specified members
-    public static (object? Value, bool Success, string ErrorMessage) ResolveMemberValue(Type baseType, object? baseObject, string[] memberArgs) {
+    public static (object? Value, bool Success, string ErrorMessage) ResolveMemberValue(Type baseType, object? baseObject, string[] memberArgs, bool forceAllowCodeExecution = false) {
         var currentType = baseType;
         var currentObject = baseObject;
         foreach (string member in memberArgs) {
@@ -373,7 +373,7 @@ public static class TargetQuery {
                     continue;
                 }
                 if (currentType.GetPropertyInfo(member) is { } property && property.GetGetMethod() != null) {
-                    if (EnforceLegal) {
+                    if (PreventCodeExecution && !forceAllowCodeExecution) {
                         return (Value: null, Success: false, ErrorMessage: $"Cannot safely get property '{member}' during EnforceLegal");
                     }
 
@@ -403,15 +403,15 @@ public static class TargetQuery {
     }
 
     /// Recursively resolves the value of the specified members for multiple instances at once
-    public static (List<object?> Values, bool Success, string ErrorMessage) ResolveMemberValues(Type baseType, List<object> baseObjects, string[] memberArgs) {
+    public static (List<object?> Values, bool Success, string ErrorMessage) ResolveMemberValues(Type baseType, List<object> baseObjects, string[] memberArgs, bool forceAllowCodeExecution = false) {
         if (baseObjects.IsEmpty()) {
-            (object? result, bool success, string errorMessage) = ResolveMemberValue(baseType, null, memberArgs);
+            (object? result, bool success, string errorMessage) = ResolveMemberValue(baseType, null, memberArgs, forceAllowCodeExecution);
             return ([result], success, errorMessage);
         } else {
             List<object?> values = new(capacity: baseObjects.Count);
 
             foreach (object obj in baseObjects) {
-                (object? result, bool success, string errorMessage) = ResolveMemberValue(baseType, obj, memberArgs);
+                (object? result, bool success, string errorMessage) = ResolveMemberValue(baseType, obj, memberArgs, forceAllowCodeExecution);
 
                 if (!success) {
                     return (Values: [], Success: false, errorMessage);
@@ -449,7 +449,7 @@ public static class TargetQuery {
                 }
 
                 if (currentType.GetPropertyInfo(member) is { } property && property.GetSetMethod() != null) {
-                    if (EnforceLegal) {
+                    if (PreventCodeExecution) {
                         return false; // Cannot safely invoke methods during EnforceLegal
                     }
 
@@ -535,7 +535,7 @@ public static class TargetQuery {
                 }
             } else if (currentType.GetPropertyInfo(memberArgs[^1]) is { } property && property.GetSetMethod() != null) {
                 // Special case to support binding custom keys
-                if (property.PropertyType == typeof(ButtonBinding) && !EnforceLegal && property.GetValue(currentObject) is ButtonBinding binding) {
+                if (property.PropertyType == typeof(ButtonBinding) && !PreventCodeExecution && property.GetValue(currentObject) is ButtonBinding binding) {
                     var nodes = binding.Button.Nodes;
                     var mouseButtons = binding.Button.Binding.Mouse;
                     var data = (ButtonBindingData)value!;
@@ -590,7 +590,7 @@ public static class TargetQuery {
                     return true;
                 }
 
-                if (EnforceLegal) {
+                if (PreventCodeExecution) {
                     return false; // Cannot safely invoke methods during EnforceLegal
                 }
 
@@ -624,7 +624,7 @@ public static class TargetQuery {
                         field.SetValue(currentObject, value);
                     }
                 } else if (currentType.GetPropertyInfo(member) is { } property && property.GetSetMethod() != null) {
-                    if (EnforceLegal) {
+                    if (PreventCodeExecution) {
                         return false; // Cannot safely invoke methods during EnforceLegal
                     }
 
@@ -656,7 +656,7 @@ public static class TargetQuery {
 
     /// Recursively resolves the value of the specified members
     public static bool InvokeMemberMethod(Type baseType, object? baseObject, object?[] parameters, string[] memberArgs) {
-        if (EnforceLegal) {
+        if (PreventCodeExecution) {
             return false; // Cannot safely invoke methods during EnforceLegal
         }
 
@@ -678,7 +678,7 @@ public static class TargetQuery {
                 }
 
                 if (currentType.GetPropertyInfo(member) is { } property && property.GetSetMethod() != null) {
-                    if (EnforceLegal) {
+                    if (PreventCodeExecution) {
                         return false; // Cannot safely invoke methods during EnforceLegal
                     }
 

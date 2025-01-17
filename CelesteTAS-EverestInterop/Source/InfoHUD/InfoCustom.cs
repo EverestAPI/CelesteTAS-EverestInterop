@@ -30,18 +30,18 @@ public static class InfoCustom {
     };
 
     /// Returns the parsed info for the current template
-    public static string GetInfo(int? decimals = null) {
-        return string.Join('\n', ParseTemplate(StringExtensions.SplitLines(TasSettings.InfoCustomTemplate), decimals ?? TasSettings.CustomInfoDecimals));
+    public static string GetInfo(int? decimals = null, bool forceAllowCodeExecution = false) {
+        return string.Join('\n', ParseTemplate(StringExtensions.SplitLines(TasSettings.InfoCustomTemplate), decimals ?? TasSettings.CustomInfoDecimals, forceAllowCodeExecution));
     }
 
     #region Parsing
 
     /// Parses lines of a custom Info HUD template into actual values for the current frame
-    public static IEnumerable<string> ParseTemplate(IEnumerable<string> template, int decimals) {
-        return template.SelectMany(line => ParseTemplateLine(line, decimals));
+    public static IEnumerable<string> ParseTemplate(IEnumerable<string> template, int decimals, bool forceAllowCodeExecution = false) {
+        return template.SelectMany(line => ParseTemplateLine(line, decimals, forceAllowCodeExecution));
     }
     /// Parses a single line of a custom Info HUD template into actual values for the current frame
-    public static IEnumerable<string> ParseTemplateLine(string templateLine, int decimals) {
+    public static IEnumerable<string> ParseTemplateLine(string templateLine, int decimals, bool forceAllowCodeExecution = false) {
         /* Replace single results inline and can format an aligned list for multiple results
          * Example:
          *
@@ -105,7 +105,7 @@ public static class InfoCustom {
                     }
                 }
 
-                (var queryResults, bool success, string errorMessage) = TargetQuery.GetMemberValues(query);
+                (var queryResults, bool success, string errorMessage) = TargetQuery.GetMemberValues(query, forceAllowCodeExecution);
                 if (!success) {
                     tableResults.AddToKey("Error", $"{prefixText}{queryPrefix}<{errorMessage}>");
                     continue;
@@ -172,7 +172,7 @@ public static class InfoCustom {
                 }
             }
 
-            (var queryResults, bool success, string errorMessage) = TargetQuery.GetMemberValues(query);
+            (var queryResults, bool success, string errorMessage) = TargetQuery.GetMemberValues(query, forceAllowCodeExecution);
             if (!success) {
                 return $"{queryPrefix}<{errorMessage}>";
             }
@@ -213,7 +213,7 @@ public static class InfoCustom {
 
         // Evaluate Lua code for main line
         yield return LuaRegex.Replace(mainResult, match => {
-            if (TargetQuery.EnforceLegal) {
+            if (TargetQuery.PreventCodeExecution) {
                 return "<Cannot safely evaluate Lua code during EnforceLegal>";
             }
 

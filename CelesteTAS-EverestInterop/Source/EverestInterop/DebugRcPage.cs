@@ -16,7 +16,7 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop;
 
-public static class DebugRcPage {
+internal static class DebugRcPage {
     private static readonly RCEndPoint InfoEndPoint = new() {
         Path = "/tas/info",
         Name = "CelesteTAS Info",
@@ -24,6 +24,7 @@ public static class DebugRcPage {
         Handle = c => {
             StringBuilder builder = new();
             Everest.DebugRC.WriteHTMLStart(c, builder);
+
             WriteLine(builder, $"Running: {Manager.Running}");
             WriteLine(builder, $"State: {Manager.CurrState}");
             WriteLine(builder, $"SaveState: {Savestates.IsSaved_Safe}");
@@ -32,7 +33,10 @@ public static class DebugRcPage {
             WriteLine(builder, $"RoomName: {GameInfo.LevelName}");
             WriteLine(builder, $"ChapterTime: {GameInfo.ChapterTime}");
             WriteLine(builder, "Game Info: ");
-            builder.Append($@"<pre>{HttpUtility.HtmlEncode(GameInfo.ExactStudioInfo)}</pre>");
+
+            var args = Everest.DebugRC.ParseQueryString(c.Request.RawUrl);
+            builder.Append($"<pre>{HttpUtility.HtmlEncode(args["forceAllowCodeExecution"] == "true" ? GameInfo.ExactStudioInfoAllowCodeExecution : GameInfo.ExactStudioInfo)}</pre>");
+
             Everest.DebugRC.WriteHTMLEnd(c, builder);
             Everest.DebugRC.Write(c, builder.ToString());
         }

@@ -63,7 +63,7 @@ public static class AssertCommand {
             string? failureMessage = args.Length >= 4 ? args[3] : null;
 
             Running = true;
-            string actual = string.Join("\n", InfoCustom.ParseTemplateLine(actualTemplate, 0));
+            string actual = string.Join("\n", InfoCustom.ParseTemplateLine(actualTemplate, 0, forceAllowCodeExecution: true));
             Running = false;
 
             switch (condition) {

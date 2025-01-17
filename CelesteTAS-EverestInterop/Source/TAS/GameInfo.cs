@@ -107,6 +107,29 @@ public static class GameInfo {
         }
     }
 
+    public static string ExactStudioInfoAllowCodeExecution {
+        get {
+            List<string> infos = new() {ExactStatus};
+
+            if (InfoMouse.MouseInfo.IsNotEmpty()) {
+                infos.Add(InfoMouse.MouseInfo);
+            }
+
+            StudioWatchingInfo = InfoWatchEntity.GetInfo(TasSettings.InfoWatchEntityStudioType, alwaysUpdate: true, decimals: GameSettings.MaxDecimals);
+            CustomInfo = InfoCustom.GetInfo(GameSettings.MaxDecimals, forceAllowCodeExecution: true);
+
+            if (CustomInfo.IsNotNullOrWhiteSpace()) {
+                infos.Add(CustomInfo);
+            }
+
+            if (StudioWatchingInfo.IsNotNullOrWhiteSpace()) {
+                infos.Add(StudioWatchingInfo);
+            }
+
+            return string.Join("\n\n", infos);
+        }
+    }
+
     private static int FramesPerGameSecond => (int) Math.Round(1 / Engine.RawDeltaTime / Engine.TimeRateB);
     private static int FramesPerRealSecond => (int) Math.Round(1 / Engine.RawDeltaTime);
 
