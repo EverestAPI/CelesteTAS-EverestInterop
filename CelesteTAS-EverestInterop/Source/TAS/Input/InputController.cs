@@ -127,7 +127,7 @@ public class InputController {
             if (Manager.NextState == Manager.State.Disabled) {
                 // The TAS contains something invalid
                 Clear();
-                Manager.DisableRun();
+                Manager.DisableRunLater();
             } else {
                 NeedsReload = false;
                 StartWatchers();
