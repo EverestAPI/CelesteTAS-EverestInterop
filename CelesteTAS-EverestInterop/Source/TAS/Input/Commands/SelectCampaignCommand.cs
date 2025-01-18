@@ -112,6 +112,10 @@ internal static class SelectCampaignCommand {
             AbortTas($"Save-File name must be between {OuiFileNaming.MinNameLength} and {OuiFileNaming.MaxNameLengthNormal} characters long");
             return;
         }
+        if (saveFileName[0] == ' ') {
+            AbortTas("Save-File name cannot start with a space");
+            return;
+        }
 
         if (controller.CurrentParsingFrame != 0) {
             AbortTas("SelectCampaign command must be at beginning of file");
@@ -152,21 +156,7 @@ internal static class SelectCampaignCommand {
     }
 
     private static void InputName(InputController controller, string saveFileName, int studioLine) {
-        // Use real OuiFileNaming as reference
-        var fileNaming = new OuiFileNaming();
-        fileNaming.ReloadLetters(Dialog.Clean("name_letters"));
-        fileNaming.optionsScale = 0.75f;
-        fileNaming.cancel = Dialog.Clean("name_back");
-        fileNaming.space = Dialog.Clean("name_space");
-        fileNaming.backspace = Dialog.Clean("name_backspace");
-        fileNaming.accept = Dialog.Clean("name_accept");
-        fileNaming.cancelWidth = ActiveFont.Measure(fileNaming.cancel).X * fileNaming.optionsScale;
-        fileNaming.spaceWidth = ActiveFont.Measure(fileNaming.space).X * fileNaming.optionsScale;
-        fileNaming.backspaceWidth = ActiveFont.Measure(fileNaming.backspace).X * fileNaming.optionsScale;
-        fileNaming.beginWidth = ActiveFont.Measure(fileNaming.accept).X * fileNaming.optionsScale * 1.25f;
-        fileNaming.optionsWidth = fileNaming.cancelWidth + fileNaming.spaceWidth + fileNaming.backspaceWidth + fileNaming.beginWidth + fileNaming.widestLetter * 3.0f;
-
-        if (fileNaming.Japanese) {
+        if (Settings.Instance.Language == "japanese") {
             AbortTas("Japanese language is currently not supported for inputting a file name");
             return;
         }
@@ -174,23 +164,66 @@ internal static class SelectCampaignCommand {
         controller.AddFrames("1,O", studioLine);
         controller.AddFrames("41", studioLine);
 
+        // Prepare available letters
+        string[] letters = Dialog.Clean("name_letters")
+            .SplitLines()
+            .ToArray();
+
+        int maxLetterLength = letters
+            .Select(line => line.Length)
+            .Aggregate(Math.Max);
+
+        // The "space" button is larger than a single char
+        float widestLetter = letters
+            .SelectMany(line => line)
+            .Select(c => ActiveFont.Measure(c).X)
+            .Aggregate(Math.Max);
+
+        const float optionsScale = 0.75f;
+        float cancelWidth = ActiveFont.Measure(Dialog.Clean("name_back")).X * optionsScale;
+        float spaceWidth = ActiveFont.Measure(Dialog.Clean("name_space")).X * optionsScale;
+        float backspaceWidth = ActiveFont.Measure(Dialog.Clean("name_backspace")).X * optionsScale;
+        float beginWidth = ActiveFont.Measure(Dialog.Clean("name_accept")).X * optionsScale * 1.25f;
+        float optionsWidth = cancelWidth + spaceWidth + backspaceWidth + beginWidth + widestLetter * 3f;
+
+        float boxPadding = widestLetter;
+        float boxWidth = Math.Max(maxLetterLength * widestLetter, optionsWidth) + boxPadding * 2f;
+        float innerWidth = boxWidth - boxPadding * 2f;
+
+        var spaceLocations = Enumerable.Range(0, maxLetterLength)
+            // Based on OuiFileNaming code
+            .Select(index => (RealX: index * widestLetter, Position: (index, letters.Length)))
+            .Where(pair => !(pair.RealX < cancelWidth + (innerWidth - cancelWidth - beginWidth - backspaceWidth - spaceWidth - widestLetter * 3f) / 2f)
+                               && (pair.RealX < innerWidth - beginWidth - backspaceWidth - widestLetter * 2f))
+            .Select(pair => pair.Position)
+            .ToArray();
+
+        var spaceExitLocation = (X: (int)((innerWidth - beginWidth - backspaceWidth - spaceWidth / 2f - widestLetter * 2f) / widestLetter), Y: letters.Length);
+
+        letters = letters
+            .Select(line => line.Replace(' ', char.MaxValue))
+            .Concat([new string(char.MaxValue, spaceExitLocation.X) + ' ' + new string(char.MaxValue, maxLetterLength - spaceExitLocation.X - 1)])
+            .ToArray();
+
         // Is a BFS for writing out a name overcomplicating it?
+        var start = (X: 0, Y: 0);
+
         foreach (char targetChar in saveFileName) {
-            int targetLine = Array.FindIndex(fileNaming.letters, line => line.Contains(targetChar));
+            int targetLine = Array.FindIndex(letters, line => line.Contains(targetChar));
             if (targetLine == -1) {
                 AbortTas($"Character '{targetChar}' not available in current language");
                 return;
             }
 
-            int targetIndex = fileNaming.letters[targetLine].IndexOf(targetChar);
+            int targetIndex = letters[targetLine].IndexOf(targetChar);
             if (targetIndex == -1) {
                 AbortTas($"Character '{targetChar}' not available in current language");
                 return;
             }
 
             // Search for optimal path
-            var start = (X: fileNaming.index, Y: fileNaming.line);
             var end = (X: targetIndex, Y: targetLine);
+            Console.WriteLine($" == '{targetChar}' ({end}) ==");
 
             var queue = new Queue<(int X, int Y)>();
             var visited = new HashSet<(int X, int Y)>();
@@ -209,19 +242,26 @@ internal static class SelectCampaignCommand {
                     int nx = current.X;
                     int ny = current.Y;
 
-                    // Skip whitespace while moving
+                    // Skip blanks while moving
                     do {
                         // Handle horizontal wrapping. Avoid snapping while moving vertically
                         if (dx != 0) {
-                            nx = (nx + dx).Mod(fileNaming.letters[ny].Length);
+                            nx = (nx + dx).Mod(letters[ny].Length);
                         }
 
                         ny += dy;
 
-                        if (ny < 0 || ny >= fileNaming.letters.Length) {
+                        // Special-case check for "space", since it's larger
+                        if (spaceLocations.Contains<(int X, int Y)>((nx, ny))) {
+                            nx = spaceExitLocation.X;
+                            ny = spaceExitLocation.Y;
+                            break;
+                        }
+
+                        if (ny < 0 || ny >= letters.Length) {
                             goto NextNeighbour; // Current neighbour has gone out-of-bounds
                         }
-                    } while (nx >= fileNaming.letters[ny].Length || char.IsWhiteSpace(fileNaming.letters[ny][nx]));
+                    } while (nx >= letters[ny].Length || letters[ny][nx] == char.MaxValue);
 
                     var next = (nx, ny);
 
@@ -234,9 +274,6 @@ internal static class SelectCampaignCommand {
                 }
             }
 
-            fileNaming.index = targetIndex;
-            fileNaming.line = targetLine;
-
             if (!visited.Contains(end)) {
                 AbortTas($"Failed to write out name '{saveFileName}'");
                 return;
@@ -248,22 +285,36 @@ internal static class SelectCampaignCommand {
 
             while (currentCell != start) {
                 var prevCell = parent[currentCell];
+                Console.WriteLine($"- {currentCell} <- {prevCell}");
 
                 // Manually handle horizontal wrapping
-                if (prevCell.X == 0 && currentCell.X == fileNaming.letters[currentCell.Y].Length - 1) {
+                if (prevCell.X == 0 && currentCell.X == letters[currentCell.Y].Length - 1) {
                     path.Add((-1, currentCell.Y - prevCell.Y));
-                } else if (currentCell.X == 0 && prevCell.X == fileNaming.letters[currentCell.Y].Length - 1) {
+                } else if (currentCell.X == 0 && prevCell.X == letters[currentCell.Y].Length - 1) {
                     path.Add((1, currentCell.Y - prevCell.Y));
-                } else {
+                }
+                // Manually handle space button
+                else if (currentCell == spaceExitLocation) {
+                    path.Add((0, 1));
+                } else if (prevCell == spaceExitLocation) {
+                    path.Add((0, -1));
+                }
+                // Normal movement
+                else {
                     path.Add((currentCell.X - prevCell.X, currentCell.Y - prevCell.Y));
                 }
+
                 currentCell = prevCell;
             }
 
             path.Reverse();
 
+            start = end;
+
             // Write inputs
             foreach ((int moveX, int moveY) in path) {
+                Console.WriteLine($"* {moveX},{moveY}");
+
                 if (moveX > 0) {
                     controller.AddFrames(controller.Inputs.Count % 2 == 0 ? "1,R" : "1,F,90", studioLine);
                 } else if (moveX < 0) {
