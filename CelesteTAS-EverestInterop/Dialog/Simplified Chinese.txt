@@ -105,7 +105,8 @@ TAS_LAUNCH_STUDIO_AT_BOOT=           启动游戏时打开 Studio
 TAS_ATTEMPT_TO_CONNECT_TO_STUDIO=    尝试连接 Studio
 TAS_OPEN_CONSOLE_IN_TAS=             允许在 TAS 中打开控制台
 TAS_BETTER_INVINCIBILITY=            更好的无敌
-TAS_BETTER_INVINCIBLE_DESCRIPTION=   运行 "Set Invincible true" 既会阻止死亡, 同时也会避免例如在掉落致死时自动弹跳的游戏物理变化,{n}
+TAS_BETTER_INVINCIBLE_DESCRIPTION=   运行 "Set Invincible true" 既会阻止死亡,{n}
+                                     同时也会避免例如在掉落致死时自动弹跳的游戏物理变化,{n}
                                      从而避免 TAS 意外 desync. 仅在 TAS 运行期间生效.
 TAS_HIDE_FREEZE_FRAMES=              TAS 时跳过冻结帧
 TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_1=运行到冻结帧时自动跳过进入下一帧
