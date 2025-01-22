@@ -119,6 +119,7 @@ public static class Hotkeys {
             debugConsole.Keys.Union(toggleDebugConsole.Keys).ToList(),
             debugConsole.Buttons.Union(toggleDebugConsole.Buttons).ToList(),
             keyCombo: false, held: false);
+        // should we update OpenConsole hotkey if Everest's DebugConsole gets rebind? maybe no?
 
         StudioHotkeys = AllHotkeys
             .Where(entry => !StudioIgnoreHotkeys.Contains(entry.Key))
