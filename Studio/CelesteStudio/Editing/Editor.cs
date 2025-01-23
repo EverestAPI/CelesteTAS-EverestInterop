@@ -2372,7 +2372,9 @@ public sealed class Editor : SkiaDrawable {
                     Document.Caret.Col = customBindEnd + 1;
                 }
 
-                goto FinishEdit; // Skip regular logic
+                // Skip regular logic
+                Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
+                goto FinishEdit;
             }
 
             var typedAction = typedCharacter.ActionForChar();
@@ -2455,8 +2457,14 @@ public sealed class Editor : SkiaDrawable {
                 }
             }
 
+            // Allow commenting out the line
+            if (typedCharacter == '#' && Document.Caret.Col <= leadingSpaces) {
+                Document.ReplaceLine(Document.Caret.Row, $"#{actionLine}");
+            } else {
+                Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
+            }
+
             FinishEdit:
-            Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
             Document.Caret = ClampCaret(Document.Caret);
         }
         // Just write it as text
