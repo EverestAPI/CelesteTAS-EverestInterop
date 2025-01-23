@@ -205,7 +205,7 @@ public static class SetCommand {
                     return GetParameterTypeAutoCompleteEntries(fAssists.FieldType);
                 }
             }
-            if (targetArgs.Length == 1 && targetArgs[0] == "ExtendedVariantMode") {
+            if (targetArgs.Length == 2 && targetArgs[0] == "ExtendedVariantMode") {
                 // Special case for setting extended variants
                 var variant = ExtendedVariantsInterop.ParseVariant(targetArgs[1]);
                 var variantType = ExtendedVariantsInterop.GetVariantType(new(variant));
@@ -215,7 +215,7 @@ public static class SetCommand {
                 }
             }
             if (targetArgs.Length >= 1 && Everest.Modules.FirstOrDefault(m => m.Metadata.Name == targetArgs[0] && m.SettingsType != null) is { } mod) {
-                return GetParameterTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, targetArgs));
+                return GetParameterTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, targetArgs[1..]));
             }
             if (targetArgs.Length >= 1 && TargetQuery.ResolveBaseTypes(targetArgs, out string[] memberArgs, out _, out _) is { } types && types.IsNotEmpty()) {
                 // Assume the first type
