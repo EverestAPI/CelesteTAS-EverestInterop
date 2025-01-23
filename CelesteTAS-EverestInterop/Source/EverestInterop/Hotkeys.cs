@@ -119,7 +119,20 @@ public static class Hotkeys {
             debugConsole.Keys.Union(toggleDebugConsole.Keys).ToList(),
             debugConsole.Buttons.Union(toggleDebugConsole.Buttons).ToList(),
             keyCombo: false, held: false);
-        // should we update OpenConsole hotkey if Everest's DebugConsole gets rebind? maybe no?
+
+        // Respond to rebinding
+        Everest.Events.Input.OnInitialize += () => {
+            debugConsole = Celeste.Mod.Core.CoreModule.Settings.DebugConsole;
+            toggleDebugConsole = Celeste.Mod.Core.CoreModule.Settings.ToggleDebugConsole;
+
+            AllHotkeys[HotkeyID.OpenConsole].Keys.Clear();
+            AllHotkeys[HotkeyID.OpenConsole].Keys.AddRange(debugConsole.Keys);
+            AllHotkeys[HotkeyID.OpenConsole].Keys.AddRange(toggleDebugConsole.Keys);
+
+            AllHotkeys[HotkeyID.OpenConsole].Buttons.Clear();
+            AllHotkeys[HotkeyID.OpenConsole].Buttons.AddRange(debugConsole.Buttons);
+            AllHotkeys[HotkeyID.OpenConsole].Buttons.AddRange(toggleDebugConsole.Buttons);
+        };
 
         StudioHotkeys = AllHotkeys
             .Where(entry => !StudioIgnoreHotkeys.Contains(entry.Key))
