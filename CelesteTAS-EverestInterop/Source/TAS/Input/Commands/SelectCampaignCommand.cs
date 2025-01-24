@@ -32,13 +32,8 @@ internal static class SelectCampaignCommand {
         }
     }
 
-    /// Next available save-file slot
-    private static int EmptyFileSlot {
+    private static int MaxSaveFileSlots {
         get {
-            if (LibTasHelper.Exporting) {
-                return -1;
-            }
-
             // Taken from Everest
             int maxSaveFile;
             if (CoreModule.Settings.MaxSaveSlots != null) {
@@ -61,9 +56,21 @@ internal static class SelectCampaignCommand {
                 maxSaveFile += 2;
             }
 
+            return maxSaveFile;
+        }
+    }
+
+    /// Next available save-file slot
+    private static int EmptyFileSlot {
+        get {
+            if (LibTasHelper.Exporting) {
+                return -1;
+            }
+
             bool hasSlots = false;
             int firstEmpty = int.MaxValue;
 
+            int maxSaveFile = MaxSaveFileSlots;
             for (int slot = 0; slot < maxSaveFile; slot++) {
                 if (!UserIO.Exists(SaveData.GetFilename(slot))) {
                     firstEmpty = Math.Min(slot, firstEmpty);
@@ -147,7 +154,7 @@ internal static class SelectCampaignCommand {
         controller.ReadLine("Assert,Equal,True,[[local ui = scene.Current; return ui ~= nil and ui.SlotSelected and not ui.Slots[ui.SlotIndex].Exists and getValue(ui.Slots[ui.SlotIndex], \"buttonIndex\") == 0]]", filePath, fileLine, studioLine);
 
         controller.AddFrames("1,D", studioLine);
-        InputName(controller, saveFileName, studioLine);
+        InputName(controller, slot, saveFileName, studioLine);
 
         SelectCampaign(controller, campaignName, studioLine);
 
@@ -155,14 +162,22 @@ internal static class SelectCampaignCommand {
         controller.ReadLine("Assert,Equal,True,[[local ui = scene.Current; return ui ~= nil and ui.SlotSelected and not ui.Slots[ui.SlotIndex].Exists and getValue(ui.Slots[ui.SlotIndex], \"buttonIndex\") == 0]]", filePath, fileLine, studioLine);
     }
 
-    private static void InputName(InputController controller, string saveFileName, int studioLine) {
+    private static void InputName(InputController controller, int slot, string saveFileName, int studioLine) {
         if (Settings.Instance.Language == "japanese") {
             AbortTas("Japanese language is currently not supported for inputting a file name");
             return;
         }
 
         controller.AddFrames("1,O", studioLine);
-        controller.AddFrames("41", studioLine);
+
+        int maxSaveFile = MaxSaveFileSlots;
+        for (int i = 0; i < maxSaveFile; i++) {
+            if (Math.Abs(slot - i) <= 2) {
+                // Each visible slots causes a delay of 3f
+                controller.AddFrames("3", studioLine);
+            }
+        }
+        controller.AddFrames("32", studioLine);
 
         // Prepare available letters
         string[] letters = Dialog.Clean("name_letters")
@@ -223,7 +238,6 @@ internal static class SelectCampaignCommand {
 
             // Search for optimal path
             var end = (X: targetIndex, Y: targetLine);
-            Console.WriteLine($" == '{targetChar}' ({end}) ==");
 
             var queue = new Queue<(int X, int Y)>();
             var visited = new HashSet<(int X, int Y)>();
@@ -285,7 +299,6 @@ internal static class SelectCampaignCommand {
 
             while (currentCell != start) {
                 var prevCell = parent[currentCell];
-                Console.WriteLine($"- {currentCell} <- {prevCell}");
 
                 // Manually handle horizontal wrapping
                 if (prevCell.X == 0 && currentCell.X == letters[currentCell.Y].Length - 1) {
@@ -313,8 +326,6 @@ internal static class SelectCampaignCommand {
 
             // Write inputs
             foreach ((int moveX, int moveY) in path) {
-                Console.WriteLine($"* {moveX},{moveY}");
-
                 if (moveX > 0) {
                     controller.AddFrames(controller.Inputs.Count % 2 == 0 ? "1,R" : "1,F,90", studioLine);
                 } else if (moveX < 0) {
