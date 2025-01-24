@@ -17,7 +17,7 @@ public sealed class GameInfo : Panel {
     /// Label specifically optimized for displaying monospaced text in the game-info
     private sealed class InfoLabel(Func<string> textProvider) : SkiaDrawable {
         public override unsafe void Draw(SKSurface surface) {
-            var text = textProvider().AsMemory();
+            var text = textProvider().AsSpan();
 
             var canvas = surface.Canvas;
             var font = FontManager.SKStatusFont;
@@ -25,12 +25,14 @@ public sealed class GameInfo : Panel {
             float maxWidth = 0.0f;
             float height = 0.0f;
 
-            foreach (var line in text.SplitLines()) {
-                using var handle = line.Pin();
-                using var blob = SKTextBlob.Create((IntPtr)handle.Pointer, line.Length * sizeof(char), SKTextEncoding.Utf16, font); // C# strings are UTF16
+            foreach (var line in new LineIterator(text)) {
+                fixed (char* pLine = &line.GetPinnableReference()) {
+                    // TODO: Avoid allocating a SKTextBlob object
+                    using var blob = SKTextBlob.Create((IntPtr) pLine, line.Length * sizeof(char), SKTextEncoding.Utf16, font); // C# strings are UTF16
 
-                if (blob != null) {
-                    canvas.DrawText(blob, 0.0f, height + font.Offset(), Settings.Instance.Theme.StatusFgPaint);
+                    if (blob != null) {
+                        canvas.DrawText(blob, 0.0f, height + font.Offset(), Settings.Instance.Theme.StatusFgPaint);
+                    }
                 }
 
                 maxWidth = Math.Max(font.CharWidth() * line.Length, maxWidth);
