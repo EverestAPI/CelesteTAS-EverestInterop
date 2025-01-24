@@ -7,6 +7,7 @@ using Celeste.Pico8;
 using JetBrains.Annotations;
 using Monocle;
 using StudioCommunication;
+using System.Runtime.InteropServices.ComTypes;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Input;
@@ -312,5 +313,43 @@ public static class Manager {
         }
 
         CommunicationWrapper.SendState(state);
+    }
+
+    [Monocle.Command("dump_tas", "Dumps the parsed TAS file into the console (CelesteTAS)"), UsedImplicitly]
+    private static void CmdDumpTas() {
+        // Pretend to start a TAS. so that AbortTas detection works
+        NextState = State.Running;
+        Controller.RefreshInputs(forceRefresh: true);
+        if (NextState == State.Disabled) {
+            "TAS contains errors. Cannot dump to console".ConsoleLog(LogLevel.Error);
+            return;
+        }
+        NextState = State.Disabled;
+
+        $"TAS file dump for '{Controller.FilePath}':".Log();
+
+        var writer = Console.Out;
+        for (int i = 0; i < Controller.Inputs.Count;) {
+            foreach (var comment in Controller.Comments!.GetValueOrDefault(i) ?? []) {
+                writer.WriteLine($"#{comment.Text}");
+            }
+            foreach (var command in Controller.Commands!.GetValueOrDefault(i) ?? []) {
+                if (command.Attribute.ExecuteTiming == ExecuteTiming.Parse) {
+                    // Comment-out parse-only commands
+                    writer.WriteLine($"# {command.CommandLine.ToString()}");
+                } else {
+                    writer.WriteLine(command.CommandLine.ToString());
+                }
+            }
+            if (Controller.FastForwards.TryGetValue(i, out var fastForward)) {
+                writer.WriteLine(fastForward.ToString());
+            }
+
+            writer.WriteLine(Controller.Inputs[i]);
+            i += Controller.Inputs[i].Frames;
+        }
+        writer.Flush();
+
+        "Successfully dumped TAS file to console".ConsoleLog();
     }
 }
