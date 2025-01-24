@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       windows_cache_key: ${{ steps.compute-key.outputs.windows_key }}
-      linux_cache_key: ${{ steps.compute-key.outputs.windows_key }}
-      macos_cache_key: ${{ steps.compute-key.outputs.windows_key }}
+      linux_cache_key: ${{ steps.compute-key.outputs.linux_key }}
+      macos_cache_key: ${{ steps.compute-key.outputs.macos_key }}
       windows_cache_hit: ${{ steps.check-windows.outputs.cache-hit }}
       linux_cache_hit: ${{ steps.check-linux.outputs.cache-hit }}
       macos_cache_hit: ${{ steps.check-macos.outputs.cache-hit }}
