@@ -13,7 +13,7 @@ using StudioCommunication;
 namespace CelesteStudio.Tool;
 
 public sealed class JadderlineForm : Form {
-    private const string Version = "1.1.0";
+    private const string Version = "1.1.1";
 
     private readonly NumericStepper playerPos;
     private readonly NumericStepper playerSpeed;
@@ -60,7 +60,7 @@ public sealed class JadderlineForm : Form {
         };
         moveOnly = new CheckBox { Width = rowWidth };
         additionalInputs = new TextBox { Width = rowWidth };
-        output = new TextArea { ReadOnly = true, Font = FontManager.EditorFontRegular, Width = 250 };
+        output = new TextArea { ReadOnly = true, Font = FontManager.EditorFont, Width = 250 };
 
         var layout = new DynamicLayout { DefaultSpacing = new Size(10, 10) };
         layout.BeginHorizontal();
@@ -277,17 +277,17 @@ public sealed class JadderlineForm : Form {
             mult = -1f;
         }
         if (!input) { // Holding neutral
-            playerSpeed -= frictionNorm * mult;
+            playerSpeed -= frictionNorm * mult * DeltaTime;
             if (playerSpeed * mult < 0f) {
                 playerSpeed = 0f;
             }
         } else if (playerSpeed * mult <= max) { // Coming up to max speed
-            playerSpeed += frictionNorm * mult;
+            playerSpeed += frictionNorm * mult * DeltaTime;
             if (playerSpeed * mult > max) {
                 playerSpeed = max * mult;
             }
         } else { // Over max speed
-            playerSpeed -= frictionOverMax * mult;
+            playerSpeed -= frictionOverMax * mult * DeltaTime;
             if (playerSpeed * mult < max) {
                 playerSpeed = max * mult;
             }

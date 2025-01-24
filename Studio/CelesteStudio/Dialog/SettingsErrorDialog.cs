@@ -68,17 +68,14 @@ public class SettingsErrorDialog : Dialog<SettingsErrorAction> {
                 },
             },
         };
-        Icon = Assets.AppIcon;
-        Studio.RegisterDialog(this);
 
         Result = SettingsErrorAction.None;
 
         Load += (_, _) => {
-            // Need to make theme is applied
+            // Need to make sure, the theme is applied
             Settings.OnThemeChanged();
-            Studio.Instance.WindowCreationCallback(this);
         };
-        Shown += (_, _) => Location = new Point((int)((Screen.WorkingArea.Width - Width) / 2), (int)((Screen.WorkingArea.Height - Height) / 2));
+        Studio.RegisterDialog(this);
     }
 
     protected override void OnClosing(CancelEventArgs e) {

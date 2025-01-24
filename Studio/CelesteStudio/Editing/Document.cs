@@ -5,6 +5,7 @@ using System.Linq;
 using CelesteStudio.Communication;
 using CelesteStudio.Util;
 using Eto.Forms;
+using StudioCommunication;
 using StudioCommunication.Util;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -109,8 +110,8 @@ public class Document : IDisposable {
 
     private readonly UndoStack undoStack = new();
 
-    private List<string> CurrentLines;
-    public List<string> Lines => CurrentLines;
+    private readonly List<string> CurrentLines;
+    public IReadOnlyList<string> Lines => CurrentLines;
 
     /// An anchor is a part of the document, which will move with the text its placed on.
     /// They can hold arbitrary user data.
@@ -130,6 +131,9 @@ public class Document : IDisposable {
 
     private readonly Stack<QueuedUpdate> updateStack = [];
 
+    /// Whether the document is currently being updated and might not be in a valid state
+    public bool UpdateInProgress => updateStack.Count != 0;
+
     /// Reports insertions and deletions of the document
     public event Action<Document, Dictionary<int, string>, Dictionary<int, string>>? TextChanged;
     private void OnTextChanged(Dictionary<int, string> insertions, Dictionary<int, string> deletions)
@@ -137,12 +141,19 @@ public class Document : IDisposable {
 
     /// Formats lines of a file into a single string, using consistent formatting rules
     public static string FormatLinesToText(IEnumerable<string> lines) {
-        string text = string.Join(NewLine, lines);
+        return string.Join("", lines
+            // Trim leading empty lines
+            .SkipWhile(string.IsNullOrWhiteSpace)
+            // Trim trailing empty lines
+            .Reverse().SkipWhile(string.IsNullOrWhiteSpace).Reverse()
+            .Select(line => {
+                if (ActionLine.TryParse(line, out var actionLine)) {
+                    return $"{actionLine}{NewLine}";
+                }
 
-        // Require exactly 1 empty line at end of file
-        text = text.TrimEnd(NewLine) + $"{NewLine}";
-
-        return text;
+                // Trim whitespace and remove invalid characters
+                return new string(line.Trim().Where(c => !char.IsControl(c) && c != char.MaxValue).ToArray()) + $"{NewLine}";
+            }));
     }
 
     private Document(string? filePath) {
@@ -240,8 +251,6 @@ public class Document : IDisposable {
         }
         Console.WriteLine($"Change: {e.FullPath} - {e.ChangeType}");
 
-        Editor.FileCache.Clear(); // Clear everything, just to be save
-
         // Need to try multiple times, since the file might still be used by other processes
         // The file might also just be temporarily be deleted and re-created by an external tool
         var newLines = Task.Run(async () => {
@@ -320,9 +329,12 @@ public class Document : IDisposable {
         }
     }
     public void RemoveAnchorsIf(Predicate<Anchor> predicate) {
+        List<Anchor> removedAnchors = [];
         foreach ((int _, List<Anchor> list) in CurrentAnchors) {
+            removedAnchors.AddRange(list.Where(anchor => predicate(anchor)));
             list.RemoveAll(predicate);
         }
+        removedAnchors.ForEach(anchor => anchor.OnRemoved?.Invoke());
     }
     public Anchor? FindFirstAnchor(Func<Anchor, bool> predicate) {
         foreach ((int _, List<Anchor> list) in CurrentAnchors) {
@@ -426,10 +438,14 @@ public class Document : IDisposable {
             Document = document;
             this.raiseEvents = raiseEvents;
 
+            if (document.updateStack.Count == 0) {
+                document.undoStack.PrepareState(document);
+            }
             document.updateStack.Push(this);
-            document.undoStack.PrepareState(document);
         }
 
+        /// Pushes the modification onto the undo-stack and raises events if enabled
+        /// Automatically called with the using-syntax
         public void Dispose() {
             Document.updateStack.Pop();
 
@@ -471,32 +487,38 @@ public class Document : IDisposable {
 
     /// Represents a small modification of the document with insertions and deletions
     public readonly struct Patch(Document document, QueuedUpdate? update = null) : IDisposable {
-        // Insertions are at the lines where the new text will be
-        // Deletions are at the lines where the line currently is
-        public readonly Dictionary<int, string> Insertions = [], Deletions = [];
+        /// Insertions at the lines where the new text will be (after deletions are applied!)
+        public readonly Dictionary<int, string> Insertions = [];
+        /// Deletions at the lines where the line currently is (before insertions are applied!)
+        public readonly Dictionary<int, string> Deletions = [];
 
         private readonly QueuedUpdate update = update ?? document.updateStack.Peek();
 
+        /// Inserts the line at the specified row
         public void Insert(int row, string line) {
             Insertions[row] = line;
         }
+        /// Inserts the lines, starting at the specified row
         public void InsertRange(int row, IEnumerable<string> lines) {
             foreach (string line in lines) {
                 Insertions[row++] = line;
             }
         }
 
+        /// Removes the specified row
         public void Delete(int row) {
             if (!Insertions.Remove(row)) {
                 Deletions.Add(row, document.CurrentLines[row]);
             }
         }
+        /// Removes an inclusive range from minRow..maxRow
         public void DeleteRange(int minRow, int maxRow) {
             for (int row = minRow; row <= maxRow; row++) {
                 Delete(row);
             }
         }
 
+        /// Replaces a single line
         public void Modify(int row, string line) {
             if (!Insertions.Remove(row)) {
                 Deletions.Add(row, document.CurrentLines[row]);
@@ -515,6 +537,8 @@ public class Document : IDisposable {
             }
         }
 
+        /// Applies the patch to the document and adds it to the update
+        /// Automatically called with the using-syntax
         public void Dispose() {
             CleanupNoOps();
             if (Insertions.Count == 0 && Deletions.Count == 0) {
@@ -525,6 +549,7 @@ public class Document : IDisposable {
             update.Patches.Add(this);
         }
 
+        /// Creates a deep copy
         public Patch Copy() {
             var patch = new Patch(document, update);
             foreach ((int row, string line) in Insertions) {
@@ -535,6 +560,7 @@ public class Document : IDisposable {
             }
             return patch;
         }
+        /// Creates a deep copy with insertions / deletions swapped
         public Patch CopySwapped() {
             var patch = new Patch(document, update);
             foreach ((int row, string line) in Insertions) {
@@ -546,22 +572,81 @@ public class Document : IDisposable {
             return patch;
         }
 
+        /// Merges the patches A and B, where A is based on the initial state and B is based on after A is applied
         public static Patch Merge(Patch a, Patch b) {
-            foreach ((int row, string line) in b.Deletions) {
-                if (!a.Insertions.Remove(row)) {
-                    a.Deletions.Add(row, line);
-                }
+            List<int> rowsToShift = [];
 
-                foreach ((int insertionRow, string insertionLine) in a.Insertions) {
-                    if (insertionRow >= row) {
-                        a.Insertions[insertionRow - 1] = insertionLine;
-                        a.Insertions.Remove(insertionRow);
-                    }
+            // Cancel out deletions / insertions
+            int[] intersections = a.Insertions.Keys.Intersect(b.Deletions.Keys).ToArray();
+            foreach (int row in intersections.OrderBy(row => row)) {
+                a.Insertions.Remove(row);
+                b.Deletions.Remove(row);
+
+                // Shift up insertions in A
+                rowsToShift.Clear();
+                rowsToShift.AddRange(a.Insertions.Keys.Where(aRow => aRow > row));
+
+                foreach (int aRow in rowsToShift.OrderBy(aRow => aRow)) {
+                    string value = a.Insertions[aRow];
+                    a.Insertions[aRow - 1] = value;
+                    a.Insertions.Remove(aRow);
                 }
             }
 
+            // Shift down deletions in B
+            foreach ((int aRow, _) in a.Deletions.OrderBy(entry => entry.Key)) {
+                rowsToShift.Clear();
+                rowsToShift.AddRange(b.Deletions.Keys.Where(bRow => bRow >= aRow));
+
+                foreach (int row in rowsToShift.OrderBy(row => row).Reverse()) {
+                    string value = b.Deletions[row];
+                    b.Deletions[row + 1] = value;
+                    b.Deletions.Remove(row);
+                }
+            }
+
+            // Shift up deletions in B
+            foreach ((int aRow, _) in a.Insertions.OrderBy(entry => entry.Key).Reverse()) {
+                rowsToShift.Clear();
+                rowsToShift.AddRange(b.Deletions.Keys.Where(bRow => bRow > aRow));
+
+                foreach (int row in rowsToShift.OrderBy(row => row)) {
+                    string value = b.Deletions[row];
+                    b.Deletions[row - 1] = value;
+                    b.Deletions.Remove(row);
+                }
+            }
+
+            // Shift down insertions in A
+            foreach ((int bRow, _) in b.Insertions.OrderBy(entry => entry.Key)) {
+                rowsToShift.Clear();
+                rowsToShift.AddRange(a.Insertions.Keys.Where(aRow => aRow >= bRow));
+
+                foreach (int row in rowsToShift.OrderBy(row => row).Reverse()) {
+                    string value = a.Insertions[row];
+                    a.Insertions[row + 1] = value;
+                    a.Insertions.Remove(row);
+                }
+            }
+
+            // Shift up insertions in A
+            foreach ((int bRow, _) in b.Deletions.OrderBy(entry => entry.Key)) {
+                rowsToShift.Clear();
+                rowsToShift.AddRange(a.Insertions.Keys.Where(aRow => aRow > bRow));
+
+                foreach (int row in rowsToShift.OrderBy(row => row)) {
+                    string value = a.Insertions[row];
+                    a.Insertions[row - 1] = value;
+                    a.Insertions.Remove(row);
+                }
+            }
+
+            // Merge
             foreach ((int row, string line) in b.Insertions) {
-                a.Insertions.Add(row, line);
+                a.Insertions[row] = line;
+            }
+            foreach ((int row, string line) in b.Deletions) {
+                a.Deletions[row] = line;
             }
 
             return a;
@@ -600,6 +685,12 @@ public class Document : IDisposable {
 
         CurrentAnchors = diff.Anchors;
         Caret = diff.Caret;
+
+        if (Settings.Instance.AutoSave) {
+            Save();
+        } else {
+            Dirty = true;
+        }
     }
     public void Redo() {
         if (undoStack.Redo() is not { } diff) {
@@ -619,6 +710,12 @@ public class Document : IDisposable {
 
         CurrentAnchors = diff.Anchors;
         Caret = diff.Caret;
+
+        if (Settings.Instance.AutoSave) {
+            Save();
+        } else {
+            Dirty = true;
+        }
     }
 
     public void Insert(string text) => Caret = Insert(Caret, text);
@@ -667,8 +764,8 @@ public class Document : IDisposable {
 
                     // Invalidate in between
                     if (pos.Col >= anchor.MinCol && pos.Col <= anchor.MaxCol) {
-                        anchor.OnRemoved?.Invoke();
                         anchors.Remove(anchor);
+                        anchor.OnRemoved?.Invoke();
                         continue;
                     }
                     if (pos.Col >= anchor.MinCol) {
@@ -714,6 +811,16 @@ public class Document : IDisposable {
             int newLineCount = text.Count(c => c == NewLine) + 1;
             Caret.Row += newLineCount;
         }
+
+        // Move anchors below down
+        for (int currRow = CurrentLines.Count - 1; currRow > row; currRow--) {
+            if (CurrentAnchors.Remove(currRow, out var belowAnchors)) {
+                CurrentAnchors[currRow + newLines.Length - 1] = belowAnchors;
+                foreach (var anchor in belowAnchors) {
+                    anchor.Row += newLines.Length - 1;
+                }
+            }
+        }
     }
     public void InsertLines(int row, string[] newLines) {
         using var patch = new Patch(this);
@@ -722,6 +829,16 @@ public class Document : IDisposable {
 
         if (Caret.Row >= row) {
             Caret.Row += newLines.Length;
+        }
+
+        // Move anchors below down
+        for (int currRow = CurrentLines.Count - 1; currRow > row; currRow--) {
+            if (CurrentAnchors.Remove(currRow, out var belowAnchors)) {
+                CurrentAnchors[currRow + newLines.Length - 1] = belowAnchors;
+                foreach (var anchor in belowAnchors) {
+                    anchor.Row += newLines.Length - 1;
+                }
+            }
         }
     }
 
@@ -747,9 +864,30 @@ public class Document : IDisposable {
                 break;
         }
 
+        int newLineCount = newLines.Length > 0 ? newLines.Length - 1 : 0;
         if (Caret.Row >= row) {
-            int newLineCount = newLines.Length > 0 ? newLines.Length-1 : 0;
             Caret.Row += newLineCount;
+        }
+
+        // Remove anchors
+        if (CurrentAnchors.TryGetValue(row, out var anchors)) {
+            CurrentAnchors[row] = [];
+            foreach (var anchor in anchors) {
+                anchor.OnRemoved?.Invoke();
+            }
+        }
+
+        // Move anchors below down
+        if (newLineCount == 0) {
+            return;
+        }
+        for (int currRow = CurrentLines.Count - 1; currRow > row + 1 ; currRow--) {
+            if (CurrentAnchors.Remove(currRow, out var belowAnchors)) {
+                CurrentAnchors[currRow + newLineCount] = belowAnchors;
+                foreach (var anchor in belowAnchors) {
+                    anchor.Row += newLineCount;
+                }
+            }
         }
     }
 
@@ -758,6 +896,13 @@ public class Document : IDisposable {
 
         patch.Modify(rowA, CurrentLines[rowB]);
         patch.Modify(rowB, CurrentLines[rowA]);
+
+        // Swap anchors
+        var aAnchors = CurrentAnchors.TryGetValue(rowA, out var anchors) ? anchors : [];
+        var bAnchors = CurrentAnchors.TryGetValue(rowA, out anchors) ? anchors : [];
+
+        CurrentAnchors[rowA] = bAnchors;
+        CurrentAnchors[rowB] = aAnchors;
     }
 
     public void RemoveRange(CaretPosition start, CaretPosition end) {
@@ -785,8 +930,8 @@ public class Document : IDisposable {
                         continue;
                     }
 
-                    anchor.OnRemoved?.Invoke();
                     anchors.Remove(anchor);
+                    anchor.OnRemoved?.Invoke();
                 }
             }
         }
@@ -839,8 +984,8 @@ public class Document : IDisposable {
                     // Remove entirely when it's 0 wide
                     anchor.MinCol == anchor.MaxCol && startCol <= anchor.MinCol && endCol >= anchor.MaxCol)
                 {
-                    anchor.OnRemoved?.Invoke();
                     anchors.Remove(anchor);
+                    anchor.OnRemoved?.Invoke();
                 }
 
                 if (endCol <= anchor.MinCol) {
@@ -859,12 +1004,50 @@ public class Document : IDisposable {
     public void RemoveLine(int row) {
         using var patch = new Patch(this);
         patch.Delete(row);
+
+        // Remove anchors
+        if (CurrentAnchors.TryGetValue(row, out var anchors)) {
+            CurrentAnchors[row] = [];
+            foreach (var anchor in anchors) {
+                anchor.OnRemoved?.Invoke();
+            }
+        }
+
+        // Move anchors below up
+        for (int currRow = row + 1; currRow < CurrentLines.Count; currRow++) {
+            if (CurrentAnchors.Remove(currRow, out var aboveAnchors)) {
+                CurrentAnchors[currRow - 1] = aboveAnchors;
+                foreach (var anchor in aboveAnchors) {
+                    anchor.Row -= 1;
+                }
+            }
+        }
     }
 
     /// Removes an inclusive range of lines from min..max
     public void RemoveLines(int min, int max) {
         using var patch = new Patch(this);
         patch.DeleteRange(min, max);
+
+        // Remove anchors
+        for (int row = min; row <= max; row++) {
+            if (CurrentAnchors.TryGetValue(row, out var anchors)) {
+                CurrentAnchors[row] = [];
+                foreach (var anchor in anchors) {
+                    anchor.OnRemoved?.Invoke();
+                }
+            }
+        }
+
+        // Move anchors below up
+        for (int currRow = max + 1; currRow < CurrentLines.Count; currRow++) {
+            if (CurrentAnchors.Remove(currRow, out var aboveAnchors)) {
+                CurrentAnchors[currRow - (max - min)] = aboveAnchors;
+                foreach (var anchor in aboveAnchors) {
+                    anchor.Row -= max - min;
+                }
+            }
+        }
     }
 
     /// Replaces the inclusive range startCol..endCol with text inside the line

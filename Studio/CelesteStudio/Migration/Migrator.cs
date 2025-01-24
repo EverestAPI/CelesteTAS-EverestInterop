@@ -42,8 +42,11 @@ public static class Migrator {
         bool studioV2Present = File.Exists(Path.Combine(Studio.CelesteDirectory ?? string.Empty, "Celeste Studio.toml"));
 
 #if DEBUG
-        // Update to the latest migration in debug builds
-        newVersion = migrations[^1].Version;
+        // Update to the next migration in debug builds
+        var asmVersion = Assembly.GetExecutingAssembly().GetName().Version!;
+        newVersion = migrations[^1].Version > asmVersion
+            ? migrations[^1].Version
+            : asmVersion;
 #else
         newVersion = Assembly.GetExecutingAssembly().GetName().Version!;
 #endif
@@ -58,8 +61,8 @@ public static class Migrator {
             oldVersion = Version.TryParse(File.ReadAllText(LatestVersionPath), out var version) ? version : newVersion;
         }
 #if DEBUG
-        // Always apply the latest migration in debug builds
-        if (migrations[^2].Version < oldVersion) {
+        // Always apply the next migration in debug builds
+        if (migrations[^2].Version < oldVersion && newVersion == migrations[^1].Version) {
             oldVersion = migrations[^2].Version;
         }
 #endif
@@ -111,19 +114,11 @@ public static class Migrator {
                             throw new ArgumentOutOfRangeException();
                     }
                 }
-
-                string versionName = version.ToString(3);
-                if (asm.GetManifestResourceStream($"Changelogs/v{versionName}.md") is { } stream) {
-                    changelogs.Add((versionName, stream));
-                }
             }
         }
 
         Studio.Instance.Shown += (_, _) => {
-            foreach ((string? versionName, var stream) in changelogs) {
-                WhatsNewDialog.Show($"Whats new in Studio v{versionName}?", new StreamReader(stream).ReadToEnd());
-                stream.Dispose();
-            }
+            ChangelogDialog.Show();
         };
     }
 

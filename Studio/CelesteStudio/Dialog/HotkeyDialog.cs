@@ -25,7 +25,6 @@ public class HotkeyDialog : Dialog<Keys> {
                 new Button((_, _) => Close(Keys.None)) { Text = "Clear" },
             }
         };
-        Icon = Assets.AppIcon;
         Topmost = true;
 
         Result = currentHotkey;
@@ -103,8 +102,7 @@ public class HotkeyDialog : Dialog<Keys> {
             }
         };
 
-        Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
-        Shown += (_, _) => Location = ParentWindow.Location + new Point((ParentWindow.Width - Width) / 2, (ParentWindow.Height - Height) / 2);
+        Studio.RegisterDialog(this, ParentWindow);
     }
 
     public static Keys Show(Window parent, Keys currentHotkey, Dictionary<MenuEntry, Keys>? keyBindings, List<Snippet>? snippets) {

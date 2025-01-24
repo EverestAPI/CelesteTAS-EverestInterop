@@ -3,6 +3,8 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFramework>net7.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <Nullable>enable</Nullable>
         <RuntimeIdentifiers>osx-x64;osx-arm64</RuntimeIdentifiers>
 
         <SupportedOSPlatformVersion>10.15</SupportedOSPlatformVersion>
@@ -21,6 +23,8 @@
 
         <!-- Use an CI-build, since it contains a fix for using context menu hotkeys inside the editor -->
         <PackageReference Include="Eto.Platform.Mac64" Version="2.8.4-ci-20240710.9879198421" />
+
+        <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="2.88.8" />
     </ItemGroup>
 
     <ItemGroup>

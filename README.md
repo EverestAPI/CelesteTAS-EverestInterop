@@ -7,7 +7,7 @@
 ---
 
 - Install [Everest](https://everestapi.github.io/) if you haven't already.
-- (Recommended) Use the 1-click installer [here](https://gamebanana.com/tools/6715). (Alternatively) [Download the latest auto-build](https://0x0a.de/twoclick/?nightly.link/EverestAPI/CelesteTAS-EverestInterop/workflows/Build/rewrite/CelesteTAS.zip).
+- (Recommended) Use the 1-click installer [here](https://gamebanana.com/tools/6715). (Alternatively) [Download the latest auto-build](https://0x0a.de/twoclick/?nightly.link/EverestAPI/CelesteTAS-EverestInterop/workflows/Build/master/CelesteTAS.zip).
 - Make sure the mod is enabled in the in-game mod options.
 - Enable the mod-setting `Celeste TAS > More Options > Launch Studio at Boot`. Celeste Studio, our input editor, should now automatically launch. (You can find the Studio documentation [here](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Celeste-Studio))
 - Alternatively, you can start Celeste Studio directly. It'll be installed in the `CelesteStudio` directory inside your Celeste install. 

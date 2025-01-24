@@ -22,5 +22,6 @@ public enum HotkeyID : byte {
     CameraLeft,
     CameraRight,
     CameraZoomIn,
-    CameraZoomOut
+    CameraZoomOut,
+    OpenConsole
 }

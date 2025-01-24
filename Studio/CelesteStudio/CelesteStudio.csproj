@@ -4,8 +4,9 @@
         <TargetFramework>net7.0</TargetFramework>
         <LangVersion>latest</LangVersion>
         <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
-        <Version>3.2.0</Version>
+        <Version>3.6.2</Version>
     </PropertyGroup>
 
     <PropertyGroup Condition="($(RuntimeIdentifier) == '' and $([MSBuild]::IsOSPlatform('Linux'))) or $(RuntimeIdentifier.StartsWith('linux'))">
@@ -22,12 +23,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Eto.Forms" Version="2.8.3" />
-        <PackageReference Include="Samboy063.Tomlet" Version="5.3.1" />
-        <PackageReference Include="Markdig" Version="0.37.0" />
+        <PackageReference Include="Eto.Forms" Version="2.8.3"/>
 
-        <ProjectReference Include="..\..\StudioCommunication\StudioCommunication.csproj" />
-        <ProjectReference Include="..\..\external\Featherline\Featherline.csproj" />
+        <PackageReference Include="SkiaSharp" Version="2.88.8" />
+        <PackageReference Include="Samboy063.Tomlet" Version="5.3.1"/>
+        <PackageReference Include="Markdig" Version="0.37.0"/>
+
+        <ProjectReference Include="..\..\StudioCommunication\StudioCommunication.csproj"/>
+        <ProjectReference Include="..\..\external\Featherline\Featherline.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -36,24 +39,22 @@
 
     <!-- Windows requires .otf, macOS requires .ttf and GTK doesn't seem to care -->
     <ItemGroup Condition="$(IsMacOS) == 'true'">
-        <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Regular.ttf" LogicalName="JetBrainsMono/JetBrainsMono-Regular"/>
+        <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Light.ttf" LogicalName="JetBrainsMono/JetBrainsMono-Regular"/>
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Bold.ttf" LogicalName="JetBrainsMono/JetBrainsMono-Bold"/>
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Italic.ttf" LogicalName="JetBrainsMono/JetBrainsMono-Italic"/>
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-BoldItalic.ttf" LogicalName="JetBrainsMono/JetBrainsMono-BoldItalic"/>
     </ItemGroup>
     <ItemGroup Condition="$(IsMacOS) != 'true'">
-        <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Regular.otf" LogicalName="JetBrainsMono/JetBrainsMono-Regular"/>
+        <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Light.otf" LogicalName="JetBrainsMono/JetBrainsMono-Regular"/>
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Bold.otf" LogicalName="JetBrainsMono/JetBrainsMono-Bold"/>
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Italic.otf" LogicalName="JetBrainsMono/JetBrainsMono-Italic"/>
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-BoldItalic.otf" LogicalName="JetBrainsMono/JetBrainsMono-BoldItalic"/>
     </ItemGroup>
 
-    <!-- Changelogs -->
+    <!-- Changelog (generated during Release action) -->
     <ItemGroup>
-        <EmbeddedResource Include="Assets\Changelogs\v3.0.0.md" LogicalName="Changelogs/v3.0.0.md"/>
-        <EmbeddedResource Include="Assets\Changelogs\v3.0.0\*.png" LogicalName="Changelogs/v3.0.0/%(Filename).png"/>
-
-        <EmbeddedResource Include="Assets\Changelogs\v3.2.0.md" LogicalName="Changelogs/v3.2.0.md"/>
+        <EmbeddedResource Condition="Exists('Assets\VersionInfo.txt')" Include="Assets\VersionInfo.txt" LogicalName="VersionInfo.txt"/>
+        <EmbeddedResource Condition="Exists('Assets\Changelog.md')" Include="Assets\Changelog.md" LogicalName="Changelog.md"/>
     </ItemGroup>
 
 </Project>

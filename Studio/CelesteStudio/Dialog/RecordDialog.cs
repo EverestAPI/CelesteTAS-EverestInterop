@@ -19,7 +19,6 @@ public class RecordDialog : Dialog<bool> {
             Orientation = Orientation.Horizontal,
             Items = { new Label { Text = "File Name" }, textBox },
         };
-        Icon = Assets.AppIcon;
 
         DefaultButton = new Button((_, _) => Close(true)) { Text = "&Record" };
         AbortButton = new Button((_, _) => Close(false)) { Text = "&Cancel" };
@@ -28,8 +27,6 @@ public class RecordDialog : Dialog<bool> {
         NegativeButtons.Add(AbortButton);
 
         Studio.RegisterDialog(this);
-        Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
-        Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
     }
 
     public static void Show() {

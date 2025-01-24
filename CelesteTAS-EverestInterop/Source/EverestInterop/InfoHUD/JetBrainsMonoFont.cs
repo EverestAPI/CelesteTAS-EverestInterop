@@ -14,13 +14,9 @@ public static class JetBrainsMonoFont {
 
     public static PixelFont Font {
         get {
-            if (Engine.Scene is Overworld) {
-                return null;
-            } else {
-                // try fixing a crash via use Fonts.orig_Load() instead of Fonts.Load()
-                // https://discord.com/channels/403698615446536203/1205319809525354537/1205319809525354537
-                return Fonts.Get(FontFace) ?? Fonts.orig_Load(FontFace);
-            }
+            // try fixing a crash via use Fonts.orig_Load() instead of Fonts.Load()
+            // https://discord.com/channels/403698615446536203/1205319809525354537/1205319809525354537
+            return Fonts.Get(FontFace) ?? Fonts.orig_Load(FontFace);
         }
     }
 

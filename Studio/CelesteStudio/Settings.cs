@@ -13,7 +13,6 @@ using Eto.Drawing;
 using Eto.Forms;
 using StudioCommunication.Util;
 using System.Diagnostics;
-using System.Net;
 using Tomlet;
 using Tomlet.Attributes;
 using Tomlet.Exceptions;
@@ -47,8 +46,8 @@ public sealed class Settings {
     public static event Action? Changed;
     public static void OnChanged() => Changed?.Invoke();
 
-    public static event Action? ThemeChanged;
-    public static void OnThemeChanged() => ThemeChanged?.Invoke();
+    public static event Action ThemeChanged = () => Instance.Theme.InvalidateCache();
+    public static void OnThemeChanged() => ThemeChanged.Invoke();
 
     public static event Action FontChanged = FontManager.OnFontChanged;
     public static void OnFontChanged() => FontChanged.Invoke();
@@ -65,10 +64,10 @@ public sealed class Settings {
     [TomlNonSerialized]
     public Theme Theme {
         get {
-            if (Theme.BuiltinThemes.TryGetValue(ThemeName, out Theme builtinTheme)) {
+            if (Theme.BuiltinThemes.TryGetValue(ThemeName, out var builtinTheme)) {
                 return builtinTheme;
             }
-            if (CustomThemes.TryGetValue(ThemeName, out Theme customTheme)) {
+            if (CustomThemes.TryGetValue(ThemeName, out var customTheme)) {
                 return customTheme;
             }
             // Fall back to light theme
@@ -116,11 +115,13 @@ public sealed class Settings {
     public AutoRoomIndexing AutoIndexRoomLabels { get; set; } = AutoRoomIndexing.CurrentFile;
     public bool AutoSelectFullActionLine { get; set; } = true;
     public bool SyncCaretWithPlayback { get; set; } = true;
+    public bool AutoMultilineComments { get; set; } = true;
 
     public bool SendInputsToCeleste { get; set; } = true;
     public bool SendInputsOnActionLines { get; set; } = true;
     public bool SendInputsOnCommands { get; set; } = true;
     public bool SendInputsOnComments { get; set; } = false;
+    public bool SendInputsDisableWhileRunning { get; set; } = true;
     public bool SendInputsNonWritable { get; set; } = true;
     public float SendInputsTypingTimeout { get; set; } = 0.3f;
 
@@ -168,6 +169,10 @@ public sealed class Settings {
 
     public bool FindMatchCase { get; set; }
 
+    /// In some rare cases, only creating a new WritableBitmap causes an update to the editor
+    /// Since this can cause a significant increase in resources, it's behind a flag
+    public bool WPFSkiaHack { get; set; } = false;
+
     // Zoom is temporary, so not saved
     [TomlNonSerialized]
     public float FontZoom { get; set; } = 1.0f;
@@ -212,30 +217,26 @@ public sealed class Settings {
                 Instance.KeyBindings = Instance._keyBindings.ToDictionary(pair => Enum.Parse<MenuEntry>(pair.Key), pair => pair.Value);
 
                 // Apply default values if fields are missing in a theme
-                var customThemes = toml.GetSubTable(nameof(CustomThemes));
-                foreach (var (themeName, themeFields) in customThemes.Entries) {
-                    if (themeFields is not TomlTable themeTable) {
-                        continue;
-                    }
+                if (toml.TryGetValue(nameof(CustomThemes), out var customThemesValue) && customThemesValue is TomlTable customThemes) {
+                    foreach ((string themeName, var themeFields) in customThemes.Entries) {
+                        if (themeFields is not TomlTable themeTable) {
+                            continue;
+                        }
 
-                    var currentTheme = Instance.CustomThemes[themeName];
-                    var fallbackTheme = currentTheme.DarkMode
-                        ? Theme.BuiltinThemes[Theme.BuiltinDark]
-                        : Theme.BuiltinThemes[Theme.BuiltinLight];
+                        var currentTheme = Instance.CustomThemes[themeName];
+                        var fallbackTheme = currentTheme.DarkMode
+                            ? Theme.BuiltinThemes[Theme.BuiltinDark]
+                            : Theme.BuiltinThemes[Theme.BuiltinLight];
 
-                    // Need to box the theme, since it's a struct
-                    var currentThemeBox = (object)currentTheme;
+                        foreach (var field in typeof(Theme).GetFields(BindingFlags.Public | BindingFlags.Instance)) {
+                            if (!themeTable.ContainsKey(field.Name)) {
+                                var fallbackValue = field.GetValue(fallbackTheme);
+                                field.SetValue(currentTheme, fallbackValue);
 
-                    foreach (var field in typeof(Theme).GetFields(BindingFlags.Public | BindingFlags.Instance)) {
-                        if (!themeTable.ContainsKey(field.Name)) {
-                            var fallbackValue = field.GetValue(fallbackTheme);
-                            field.SetValue(currentThemeBox, fallbackValue);
-
-                            Console.WriteLine($"Warning: Custom theme '{themeName}' is missing field '{field.Name}'! Defaulting to {fallbackValue}");
+                                Console.WriteLine($"Warning: Custom theme '{themeName}' is missing field '{field.Name}'! Defaulting to {fallbackValue}");
+                            }
                         }
                     }
-
-                    Instance.CustomThemes[themeName] = (Theme)currentThemeBox;
                 }
 
                 OnChanged();

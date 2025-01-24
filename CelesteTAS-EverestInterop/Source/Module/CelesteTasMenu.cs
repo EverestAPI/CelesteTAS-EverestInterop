@@ -11,6 +11,7 @@ using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
+using TAS.Gameplay;
 using TAS.Input;
 using TAS.Utils;
 
@@ -51,10 +52,19 @@ internal static class CelesteTasMenu {
                     StudioHelper.LaunchStudio();
                 }
             }));
+            subMenu.Add(new TextMenu.OnOff("Show Studio Update Banner".ToDialogText(), TasSettings.ShowStudioUpdateBanner).Change(value =>
+                TasSettings.ShowStudioUpdateBanner = value));
             subMenu.Add(new TextMenu.OnOff("Attempt To Connect To Studio".ToDialogText(), TasSettings.AttemptConnectStudio).Change(value => {
                 TasSettings.AttemptConnectStudio = value;
                 CommunicationWrapper.ChangeStatus();
             }));
+            TextMenu.Item betterInvincible;
+            subMenu.Add(betterInvincible = new TextMenu.OnOff("Better Invincibility".ToDialogText(), TasSettings.BetterInvincible).Change(value => {
+                TasSettings.BetterInvincible = value;
+                BetterInvincible.Invincible = false; // in case that value doesn't get reset for some unknown reason... yeah i have such bug report
+            }));
+            subMenu.AddDescription(menu, betterInvincible, "Better Invincible Description".ToDialogText());
+
             TextMenu.Item hideFreezeFramesItem;
             subMenu.Add(hideFreezeFramesItem = new TextMenu.OnOff("Hide Freeze Frames".ToDialogText(), TasSettings.HideFreezeFrames).Change(value =>
                 TasSettings.HideFreezeFrames = value));
@@ -201,7 +211,7 @@ internal static class CelesteTasMenu {
             menu.Add(easeInSubMenu);
         }
 
-        foreach (string text in Split(InputController.TasFilePath, 60).Reverse()) {
+        foreach (string text in Split(Manager.Controller.FilePath, 60).Reverse()) {
             enabledDescriptions.Add(AddEnabledDescription(enabledItem, menu, text));
         }
 

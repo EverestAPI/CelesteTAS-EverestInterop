@@ -58,11 +58,8 @@ public class WhatsNewDialog : Eto.Forms.Dialog {
         }
 
         Title = title;
-        Icon = Assets.AppIcon;
-        Studio.RegisterDialog(this);
 
-        Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
-        Shown += (_, _) => Location = new Point((int)((Screen.WorkingArea.Width - Width) / 2), (int)((Screen.WorkingArea.Height - Height) / 2));
+        Studio.RegisterDialog(this);
     }
 
     public static void Show(string title, string markdown) => new WhatsNewDialog(title, markdown).ShowModal();
