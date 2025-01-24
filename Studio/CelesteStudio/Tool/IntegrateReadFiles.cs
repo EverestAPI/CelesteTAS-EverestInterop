@@ -2,6 +2,7 @@ using CelesteStudio.Editing;
 using StudioCommunication;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace CelesteStudio.Tool;
