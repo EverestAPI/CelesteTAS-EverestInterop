@@ -7,12 +7,43 @@ using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
 using SkiaSharp;
+using StudioCommunication;
 using StudioCommunication.Util;
 using System.ComponentModel;
 
 namespace CelesteStudio.Editing;
 
 public sealed class GameInfo : Panel {
+    /// Label specifically optimized for displaying monospaced text in the game-info
+    private sealed class InfoLabel(Func<string> textProvider) : SkiaDrawable {
+        public override unsafe void Draw(SKSurface surface) {
+            var text = textProvider().AsSpan();
+
+            var canvas = surface.Canvas;
+            var font = FontManager.SKStatusFont;
+
+            float maxWidth = 0.0f;
+            float height = 0.0f;
+
+            foreach (var line in new LineIterator(text)) {
+                fixed (char* pLine = &line.GetPinnableReference()) {
+                    // TODO: Avoid allocating a SKTextBlob object
+                    using var blob = SKTextBlob.Create((IntPtr) pLine, line.Length * sizeof(char), SKTextEncoding.Utf16, font); // C# strings are UTF16
+
+                    if (blob != null) {
+                        canvas.DrawText(blob, 0.0f, height + font.Offset(), Settings.Instance.Theme.StatusFgPaint);
+                    }
+                }
+
+                maxWidth = Math.Max(font.CharWidth() * line.Length, maxWidth);
+                height += font.LineHeight();
+            }
+
+            Width = (int) maxWidth;
+            Height = (int) height;
+        }
+    }
+
     private sealed class SubpixelIndicator : SkiaDrawable {
         public override void Draw(SKSurface surface) {
             var canvas = surface.Canvas;
@@ -87,8 +118,8 @@ public sealed class GameInfo : Panel {
         set => infoTemplateArea.Width = Math.Max(0, value);
     }
 
-    private readonly Label frameInfo;
-    private readonly Label gameStatus;
+    private readonly InfoLabel frameInfo;
+    private readonly InfoLabel gameStatus;
     private readonly SubpixelIndicator subpixelIndicator;
 
     private readonly TextArea infoTemplateArea;
@@ -103,20 +134,10 @@ public sealed class GameInfo : Panel {
     public GameInfo() {
         Padding = 0;
 
-        frameInfo = new Label {
-            Text = string.Empty,
-            TextColor = Settings.Instance.Theme.StatusFg,
-            Font = FontManager.StatusFont,
-            Wrap = WrapMode.None,
-        };
+        frameInfo = new InfoLabel(() => frameInfoBuilder.ToString());
+        gameStatus = new InfoLabel(() => CommunicationWrapper.GameInfo is { } gameInfo && !string.IsNullOrEmpty(gameInfo) ? gameInfo : DisconnectedText);
         RecalcFrameInfo();
-        gameStatus = new Label {
-            Text = string.Empty,
-            TextColor = Settings.Instance.Theme.StatusFg,
-            Font = FontManager.StatusFont,
-            Wrap = WrapMode.None,
-        };
-        RecalcGameStatus();
+
         subpixelIndicator = new SubpixelIndicator { Width = 100, Height = 100 };
         subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
         subpixelIndicator.Invalidate();
@@ -166,13 +187,13 @@ public sealed class GameInfo : Panel {
         };
         CommunicationWrapper.ConnectionChanged += () => {
             RecalcFrameInfo();
-            RecalcGameStatus();
+            gameStatus.Invalidate();
             subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
             subpixelIndicator.Invalidate();
         };
         CommunicationWrapper.StateUpdated += (_, _) => {
             RecalcFrameInfo();
-            RecalcGameStatus();
+            gameStatus.Invalidate();
             subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
             subpixelIndicator.Invalidate();
         };
@@ -193,14 +214,14 @@ public sealed class GameInfo : Panel {
 
         // React to settings changes
         Settings.ThemeChanged += () => {
-            frameInfo.TextColor = Settings.Instance.Theme.StatusFg;
-            gameStatus.TextColor = Settings.Instance.Theme.StatusFg;
+            frameInfo.Invalidate();
+            gameStatus.Invalidate();
             infoTemplateArea.TextColor = Settings.Instance.Theme.StatusFg;
             subpixelIndicator.Invalidate();
         };
         Settings.FontChanged += () => {
-            frameInfo.Font = FontManager.StatusFont;
-            gameStatus.Font = FontManager.StatusFont;
+            frameInfo.Invalidate();
+            gameStatus.Invalidate();
             infoTemplateArea.Font = FontManager.StatusFont;
             subpixelIndicator.Invalidate();
         };
@@ -284,13 +305,7 @@ public sealed class GameInfo : Panel {
             frameInfoBuilder.Append(selectedFrames);
         }
 
-        frameInfo.Text = frameInfoBuilder.ToString();
-    }
-
-    private void RecalcGameStatus() {
-        gameStatus.Text = CommunicationWrapper.Connected && CommunicationWrapper.GameInfo is { } gameInfo && !string.IsNullOrEmpty(gameInfo)
-            ? gameInfo
-            : DisconnectedText;
+        frameInfo.Invalidate();
     }
 }
 
@@ -386,17 +401,11 @@ public sealed class GameInfoPanel : Panel {
         Padding = 10;
         Content = layout;
 
-        Load += (_, _) => {
-            UpdateGameInfoStatus();
-        };
+        Load += (_, _) => UpdateGameInfoStatus();
+        Settings.Changed += UpdateGameInfoStatus;
 
         BackgroundColor = Settings.Instance.Theme.StatusBg;
-        Settings.Changed += () => {
-            UpdateGameInfoStatus();
-        };
-        Settings.ThemeChanged += () => {
-            BackgroundColor = Settings.Instance.Theme.StatusBg;
-        };
+        Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.StatusBg;
 
         return;
 

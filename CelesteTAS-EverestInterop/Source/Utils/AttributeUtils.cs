@@ -3,24 +3,44 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Celeste.Mod;
+using Celeste.Mod.Helpers;
+using TAS.Module;
 
 namespace TAS.Utils;
 
-internal static class AttributeUtils {
-    private static readonly object[] Parameterless = { };
-    private static readonly IDictionary<Type, IEnumerable<MethodInfo>> MethodInfos = new Dictionary<Type, IEnumerable<MethodInfo>>();
+public static class AttributeUtils {
+    private static readonly Dictionary<Type, MethodInfo[]> attributeMethods = new();
 
-    public static void CollectMethods<T>() where T : Attribute {
-        MethodInfos[typeof(T)] = typeof(AttributeUtils).Assembly.GetTypesSafe().SelectMany(type => type
-            .GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-            .Where(info => info.GetParameters().Length == 0 && info.GetCustomAttribute<T>() != null));
+    /// Gathers all static, parameterless methods with attribute T
+    /// Only searches through CelesteTAS itself
+    public static void CollectOwnMethods<T>() where T : Attribute {
+        attributeMethods[typeof(T)] = typeof(CelesteTasModule).Assembly
+            .GetTypesSafe()
+            .SelectMany(type => type
+                .GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+                .Where(info => info.GetCustomAttribute<T>() != null && info.GetParameters().Length == 0))
+            .ToArray();
     }
 
+    /// Gathers all static, parameterless methods with attribute T
+    /// Only searches through all mods - Should only be called after Load()
+    public static void CollectAllMethods<T>() where T : Attribute {
+        attributeMethods[typeof(T)] = FakeAssembly.GetFakeEntryAssembly()
+            .GetTypesSafe()
+            .SelectMany(type => type
+                .GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+                .Where(info => info.GetCustomAttribute<T>() != null && info.GetParameters().Length == 0))
+            .ToArray();
+    }
+
+    /// Invokes all previously gathered methods for attribute T
     public static void Invoke<T>() where T : Attribute {
-        if (MethodInfos.TryGetValue(typeof(T), out IEnumerable<MethodInfo> methodInfos)) {
-            foreach (MethodInfo methodInfo in methodInfos) {
-                methodInfo.Invoke(null, Parameterless);
-            }
+        if (!attributeMethods.TryGetValue(typeof(T), out var methods)) {
+            return;
+        }
+
+        foreach (var method in methods) {
+            method.Invoke(null, []);
         }
     }
 }

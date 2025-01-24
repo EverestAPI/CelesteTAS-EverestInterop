@@ -1434,7 +1434,7 @@ public sealed class Editor : SkiaDrawable {
             {
                 // Rename label
                 string line = Document.Lines[Document.Caret.Row];
-                if (Comment.IsLabel(line)) {
+                if (CommentLine.IsLabel(line)) {
                     string oldLabel = line["#".Length..];
                     string newLabel = RenameLabelDialog.Show(oldLabel);
 
@@ -2372,7 +2372,9 @@ public sealed class Editor : SkiaDrawable {
                     Document.Caret.Col = customBindEnd + 1;
                 }
 
-                goto FinishEdit; // Skip regular logic
+                // Skip regular logic
+                Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
+                goto FinishEdit;
             }
 
             var typedAction = typedCharacter.ActionForChar();
@@ -2455,8 +2457,14 @@ public sealed class Editor : SkiaDrawable {
                 }
             }
 
+            // Allow commenting out the line
+            if (typedCharacter == '#' && Document.Caret.Col <= leadingSpaces) {
+                Document.ReplaceLine(Document.Caret.Row, $"#{actionLine}");
+            } else {
+                Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
+            }
+
             FinishEdit:
-            Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
             Document.Caret = ClampCaret(Document.Caret);
         }
         // Just write it as text
@@ -2668,7 +2676,10 @@ public sealed class Editor : SkiaDrawable {
             if (!Document.Selection.Empty) {
                 RemoveRange(Document.Selection.Min, Document.Selection.Max);
                 Document.Caret.Col = Document.Selection.Min.Col;
+
                 line = Document.Lines[Document.Caret.Row];
+                lineTrimmedStart = line.TrimStart();
+                leadingSpaces = line.Length - lineTrimmedStart.Length;
             } else if (line.Trim() == "#") {
                 // Replace empty comment
                 Document.ReplaceLine(Document.Caret.Row, string.Empty);
@@ -2678,18 +2689,23 @@ public sealed class Editor : SkiaDrawable {
 
             // Auto-insert # for multiline comments (not labels, not folds!)
             // Additionally don't auto-multiline when caret is before #
-            string prefix = Settings.Instance.AutoMultilineComments && Document.Caret.Col > leadingSpaces && lineTrimmedStart.StartsWith("# ") ? "# " : "";
-            Document.Caret.Col = Math.Max(Document.Caret.Col, prefix.Length);
+            if (Settings.Instance.AutoMultilineComments && Document.Caret.Col > leadingSpaces && lineTrimmedStart.StartsWith("# ")) {
+                const string prefix = "# ";
 
-            string beforeCaret = line[(prefix.Length + leadingSpaces)..Document.Caret.Col];
-            string afterCaret = line[Document.Caret.Col..];
+                Document.Caret.Col = Math.Max(Document.Caret.Col, prefix.Length);
 
-            int newRow = Document.Caret.Row + offset;
+                string beforeCaret = line[(prefix.Length + leadingSpaces)..Document.Caret.Col];
+                string afterCaret = line[Document.Caret.Col..];
 
-            Document.ReplaceLine(Document.Caret.Row, prefix + (up ? afterCaret : beforeCaret));
-            Document.InsertLine(newRow, prefix + (up ? beforeCaret : afterCaret));
-            Document.Caret.Row = newRow;
-            Document.Caret.Col = desiredVisualCol = prefix.Length + (up ? beforeCaret.Length : 0);
+                int newRow = Document.Caret.Row + offset;
+
+                Document.ReplaceLine(Document.Caret.Row, prefix + (up ? afterCaret : beforeCaret));
+                Document.InsertLine(newRow, prefix + (up ? beforeCaret : afterCaret));
+                Document.Caret.Row = newRow;
+                Document.Caret.Col = desiredVisualCol = prefix.Length + (up ? beforeCaret.Length : 0);
+            } else {
+                Document.Insert($"{Document.NewLine}");
+            }
         } else {
             int newRow = Document.Caret.Row + offset;
             if (GetCollapse(Document.Caret.Row) is { } collapse) {
@@ -2957,7 +2973,7 @@ public sealed class Editor : SkiaDrawable {
             }
 
             if (lineTrimmed.StartsWith('#')) {
-                if ((!Comment.IsLabel(lineTrimmed) && !lineTrimmed.StartsWith("#***") && !ActionLine.TryParse(lineTrimmed[1..], out _)) || lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) {
+                if ((!CommentLine.IsLabel(lineTrimmed) && !lineTrimmed.StartsWith("#***") && !ActionLine.TryParse(lineTrimmed[1..], out _)) || lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) {
                     // Ignore non-input comments and special labels
                     continue;
                 }
@@ -3424,7 +3440,7 @@ public sealed class Editor : SkiaDrawable {
             string line = Document.Lines[row];
 
             // Go to the next label / breakpoint
-            if (Comment.IsLabel(Document.Lines[row]) || line.TrimStart().StartsWith("***")) {
+            if (CommentLine.IsLabel(Document.Lines[row]) || line.TrimStart().StartsWith("***")) {
                 break;
             }
 

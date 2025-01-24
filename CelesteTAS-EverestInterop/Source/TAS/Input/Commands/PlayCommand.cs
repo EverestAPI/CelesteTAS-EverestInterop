@@ -25,7 +25,7 @@ public static class PlayCommand {
 
             // Don't include labels before the current line
             foreach (string line in File.ReadAllText(filePath).ReplaceLineEndings("\n").Split('\n').Skip(fileLine)) {
-                if (!StudioCommunication.Comment.IsLabel(line)) {
+                if (!StudioCommunication.CommentLine.IsLabel(line)) {
                     continue;
                 }
 
@@ -40,7 +40,7 @@ public static class PlayCommand {
     [TasCommand("Play", ExecuteTiming = ExecuteTiming.Parse, MetaDataProvider = typeof(PlayMeta))]
     private static void Play(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         string[] args = commandLine.Arguments;
-        if (!ReadCommand.TryGetLine(args[0], InputController.TasFilePath, out int startLine)) {
+        if (!ReadCommand.TryGetLine(args[0], Manager.Controller.FilePath, out int startLine)) {
             AbortTas($"\"Play, {string.Join(", ", args)}\" failed\n{args[0]} is invalid", true);
             return;
         }
@@ -54,6 +54,6 @@ public static class PlayCommand {
             return;
         }
 
-        Manager.Controller.ReadFile(InputController.TasFilePath, startLine, int.MaxValue, startLine - 1);
+        Manager.Controller.ReadFile(Manager.Controller.FilePath, startLine, int.MaxValue, startLine - 1);
     }
 }

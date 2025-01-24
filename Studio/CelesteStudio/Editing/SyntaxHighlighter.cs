@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using CelesteStudio.Data;
-using CelesteStudio.Util;
 using Eto.Drawing;
 using SkiaSharp;
+using StudioCommunication;
 
 namespace CelesteStudio.Editing;
 
@@ -124,8 +123,9 @@ public class SyntaxHighlighter {
             }
         }
 
-        if (!ActionLine.TryParse(line, out _))
+        if (!ActionLine.TryParse(line, out _)) {
             return new LineStyle { Segments = [new LineStyle.Segment { StartIdx = 0, EndIdx = line.Length - 1, Type = StyleType.Command } ] };
+        }
 
         var segments = new List<LineStyle.Segment> {
             new() { StartIdx = 0, EndIdx = Math.Min(line.Length - 1, ActionLine.MaxFramesDigits - 1), Type = StyleType.Frame }

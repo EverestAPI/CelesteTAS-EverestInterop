@@ -1,5 +1,6 @@
 using System.Linq;
 using CelesteStudio.Data;
+using StudioCommunication;
 
 namespace CelesteStudio.Editing.ContextActions;
 
