@@ -24,7 +24,10 @@ namespace CelesteStudio.Editing;
 
 public sealed class Editor : SkiaDrawable {
     /// Reports insertions and deletions of the underlying document
-    public event Action<Document, Dictionary<int, string>, Dictionary<int, string>> TextChanged = (_, _, _) => {};
+    public event Action<Document, Dictionary<int, string>, Dictionary<int, string>> TextChanged = (_, _, _) => { };
+
+    /// The currently open file has changed. The previous document might not be available (for example during startup).
+    public event Action<Document?, Document> DocumentChanged = (_, _) => { };
 
     private Document? document;
     public Document Document {
@@ -39,7 +42,11 @@ public sealed class Editor : SkiaDrawable {
                 }
             }
 
+            DocumentChanged(document, value);
             document = value;
+
+            // Ensure everything is properly formatted
+            FormatLines(Enumerable.Range(0, document.Lines.Count).ToArray());
 
             // Jump to end when file only 10 lines, else the start
             document.Caret = document.Lines.Count is > 0 and <= 10
@@ -51,35 +58,15 @@ public sealed class Editor : SkiaDrawable {
 
             // Reset various state
             ActivePopupMenu = null;
-            FileCache.Clear(); // Unrelated to the file, but good to refresh semi-regularly
 
             FixInvalidInputs();
             Recalc();
             ScrollCaretIntoView();
 
-            // Detect user-preference for room indexing
-            DetectPreference();
-            UpdateRoomLabelIndices([]);
-
+            Task.Run(() => FileRefactor.FixRoomLabelIndices(Document.FilePath, StyleConfig.Current, Document.Caret.Row));
             Settings.Changed += () => {
-                DetectPreference();
-                UpdateRoomLabelIndices([]);
+                Task.Run(() => FileRefactor.FixRoomLabelIndices(Document.FilePath, StyleConfig.Current, Document.Caret.Row));
             };
-
-            void DetectPreference() {
-                if (Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.Disabled) {
-                    return;
-                }
-
-                roomLabelStartIndex = 0;
-                foreach ((string line, _, _, _) in IterateDocumentLines(includeReads: Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.IncludeReads)) {
-                    var match = RoomLabelRegex.Match(line);
-                    if (match is { Success: true, Groups.Count: >= 3} && int.TryParse(match.Groups[2].Value, out int startIndex)) {
-                        roomLabelStartIndex = startIndex;
-                        return;
-                    }
-                }
-            }
 
             // Calculate total frame count
             TotalFrameCount = 0;
@@ -112,7 +99,7 @@ public sealed class Editor : SkiaDrawable {
             void HandleTextChanged(Document _, Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
                 lastModification = DateTime.UtcNow;
 
-                ConvertToActionLines(insertions.Keys);
+                FormatLines(insertions.Keys);
 
                 // Adjust total frame count
                 foreach (string deletion in deletions.Values) {
@@ -128,80 +115,11 @@ public sealed class Editor : SkiaDrawable {
                     TotalFrameCount += actionLine.FrameCount;
                 }
 
-                UpdateRoomLabelIndices(rowsToIgnore: insertions.Keys.ToArray());
+                Task.Run(() => FileRefactor.FixRoomLabelIndices(Document.FilePath, StyleConfig.Current, Document.Caret.Row));
                 Recalc();
                 ScrollCaretIntoView();
 
                 TextChanged(document, insertions, deletions);
-            }
-
-            void UpdateRoomLabelIndices(int[] rowsToIgnore) {
-                if (Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.Disabled) {
-                    return;
-                }
-
-                // room label without indexing -> lines of all occurrences
-                Dictionary<string, List<(int Row, bool Update)>> roomLabels = [];
-                // Allows the user to edit labels without them being auto-trimmed
-                string untrimmedLabel = string.Empty;
-
-                foreach ((string line, int row, string filePath, _) in IterateDocumentLines(includeReads: Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.IncludeReads)) {
-                    var match = RoomLabelRegex.Match(line);
-                    if (!match.Success) {
-                        continue;
-                    }
-
-                    bool isCurrentFile = filePath == Document.FilePath;
-
-                    string label = match.Groups[1].Value.Trim();
-                    if (row == Document.Caret.Row && isCurrentFile) {
-                        untrimmedLabel = match.Groups[1].Value;
-                    }
-
-                    if (roomLabels.TryGetValue(label, out var list)) {
-                        list.Add((row, isCurrentFile));
-                    } else {
-                        roomLabels[label] = [(row, isCurrentFile)];
-                    }
-                }
-
-                using var __ = Document.Update(raiseEvents: false);
-                foreach ((string label, var occurrences) in roomLabels) {
-                    if (occurrences.Count == 1) {
-                        if (!occurrences[0].Update) {
-                            continue;
-                        }
-
-                        string writtenLabel = occurrences[0].Row == Document.Caret.Row
-                            ? untrimmedLabel
-                            : label;
-
-                        if (!rowsToIgnore.Contains(occurrences[0].Row)) {
-                            string oldLabel = Document.Lines[occurrences[0].Row]["#".Length..];
-                            string newLabel = $"lvl_{label}";
-                            Task.Run(async () => await RefactorLabelName(oldLabel, newLabel).ConfigureAwait(false));
-                        }
-                        Document.ReplaceLine(occurrences[0].Row, $"#lvl_{writtenLabel}");
-                        continue;
-                    }
-
-                    for (int i = 0; i < occurrences.Count; i++) {
-                        if (!occurrences[i].Update) {
-                            continue;
-                        }
-
-                        string writtenLabel = occurrences[i].Row == Document.Caret.Row
-                            ? untrimmedLabel
-                            : label;
-
-                        if (!rowsToIgnore.Contains(occurrences[i].Row)) {
-                            string oldLabel = Document.Lines[occurrences[i].Row]["#".Length..];
-                            string newLabel = $"lvl_{label} ({i + roomLabelStartIndex})";
-                            Task.Run(async () => await RefactorLabelName(oldLabel, newLabel).ConfigureAwait(false));
-                        }
-                        Document.ReplaceLine(occurrences[i].Row, $"#lvl_{writtenLabel} ({i + roomLabelStartIndex})");
-                    }
-                }
             }
         }
     }
@@ -269,9 +187,6 @@ public sealed class Editor : SkiaDrawable {
     /// Indicates last modification time, used to check if the user is currently typing
     private DateTime lastModification = DateTime.UtcNow;
 
-    /// User-preference for the starting index of room labels
-    private int roomLabelStartIndex;
-
     /// Current total frame count (including commands if connected to Celeste)
     public int TotalFrameCount;
 
@@ -307,11 +222,15 @@ public sealed class Editor : SkiaDrawable {
     private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
     private static readonly Regex AllBreakpointRegex = new(@"^\s*#*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex TimestampRegex = new(@"^\s*#+\s*(\d+:)?\d{1,2}:\d{2}\.\d{3}\(\d+\)", RegexOptions.Compiled);
-    public static readonly Regex RoomLabelRegex = new(@"^#lvl_([^\(\)]*)(?:\s\((\d+)\))?$", RegexOptions.Compiled);
 
     public Editor(Document document, Scrollable scrollable) {
         this.document = document;
         this.scrollable = scrollable;
+
+        StyleConfig.Initialize(this);
+        FileRefactor.Initialize(this);
+
+        DocumentChanged(null, document);
 
         CanFocus = true;
         Cursor = Cursors.IBeam;
@@ -803,28 +722,15 @@ public sealed class Editor : SkiaDrawable {
         return false;
     }
 
-    /// Applies the correct action-line formatting to all specified lines
-    private void ConvertToActionLines(IEnumerable<int> rows) {
+    /// Applies the correct formatting to all specified lines
+    private void FormatLines(ICollection<int> rows) {
         using var __ = Document.Update(raiseEvents: false);
 
-        // Convert to action lines, if possible
+        string[] lines = Document.Lines.ToArray();
+        FileRefactor.FormatLines(lines, rows, StyleConfig.Current.ForceCorrectCommandCasing, StyleConfig.Current.CommandArgumentSeparator);
+
         foreach (int row in rows) {
-            string line = Document.Lines[row];
-            if (!ActionLine.TryParse(line, out var actionLine)) {
-                continue;
-            }
-
-            string newLine = actionLine.ToString();
-
-            if (Document.Caret.Row == row) {
-                if (Document.Caret.Col == line.Length) {
-                    Document.Caret.Col = newLine.Length;
-                } else {
-                    Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
-                }
-            }
-
-            Document.ReplaceLine(row, newLine);
+            Document.ReplaceLine(row, lines[row]);
         }
     }
 
@@ -863,256 +769,6 @@ public sealed class Editor : SkiaDrawable {
                     Document.ReplaceLine(bottomRow, (bottomLine.Value with { FrameCount = Math.Min(bottomLine.Value.FrameCount + 1, ActionLine.MaxFrames) }).ToString());
                 }
             }
-        }
-    }
-
-    /// Caches the file contents in lines of external files
-    public static readonly Dictionary<string, string[]> FileCache = [];
-
-    /// Iterates over all lines of the document, optionally following Read-commands
-    public IEnumerable<(string Line, int Row, string File, CommandLine? TargetCommand)> IterateDocumentLines(bool includeReads, string? filePath = null) {
-        filePath ??= Document.FilePath;
-        if (!FileCache.ContainsKey(filePath) && filePath != Document.FilePath) {
-            FileCache[filePath] = File.ReadAllLines(filePath);
-        }
-
-        if (!includeReads) {
-            string[] lines = filePath == Document.FilePath ? Document.Lines.ToArray() : FileCache[filePath];
-
-            for (int row = 0; row < lines.Length; row++) {
-                yield return (lines[row], row, filePath, null);
-            }
-
-            yield break;
-        }
-
-        Stack<(string Path, int CurrRow, int EndRow, CommandLine? TargetCommand)> fileStack = [];
-        fileStack.Push((filePath, 0, Document.Lines.Count - 1, null));
-
-        while (fileStack.TryPop(out var file)) {
-            (string path, int currRow, int endRow, var targetCommand) = file;
-            string[] lines = path == Document.FilePath ? Document.Lines.ToArray() : FileCache[path];
-
-            for (int row = currRow; row <= endRow && row < lines.Length; row++) {
-                string line = lines[row];
-
-                if (!CommandLine.TryParse(line, out var commandLine) ||
-                    !commandLine.IsCommand("Read") || commandLine.Arguments.Length < 1)
-                {
-                    yield return (line, row, path, targetCommand);
-                    continue;
-                }
-
-                // Follow Read-command
-                if (Path.GetDirectoryName(path) is not { } documentDir) {
-                    continue;
-                }
-
-                string fullPath = Path.Combine(documentDir, $"{commandLine.Arguments[0]}.tas");
-                if (!File.Exists(fullPath)) {
-                    continue;
-                }
-
-                if (!FileCache.TryGetValue(fullPath, out string[]? cacheLines)) {
-                    FileCache[fullPath] = cacheLines = File.ReadAllLines(fullPath);
-                }
-
-                var readLines = cacheLines
-                    .Select((readLine, i) => (line: readLine, i))
-                    .ToArray();
-
-                int? startLabelRow = null;
-                if (commandLine.Arguments.Length > 1) {
-                    (string label, startLabelRow) = readLines
-                        .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[1]}");
-                    if (label == null) {
-                        continue;
-                    }
-                }
-                int? endLabelRow = null;
-                if (commandLine.Arguments.Length > 2) {
-                    (string label, endLabelRow) = readLines
-                        .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[2]}");
-                    if (label == null) {
-                        continue;
-                    }
-                }
-
-                startLabelRow ??= 0;
-                endLabelRow ??= readLines.Length - 1;
-
-                fileStack.Push((path, row + 1, endRow, targetCommand)); // Store current state
-                fileStack.Push((fullPath, startLabelRow.Value + 1, endLabelRow.Value - 1, commandLine)); // Setup next state (skip start / end labels)
-                break;
-            }
-        }
-    }
-
-    public readonly SemaphoreSlim RefactorSemaphore = new(1);
-
-    /// Changes the name of a label, updating all references to it in the project
-    public async Task RefactorLabelName(string oldLabel, string newLabel, string? filePath = null) {
-        if (oldLabel == newLabel) {
-            return; // Already has that name
-        }
-
-        filePath ??= Document.FilePath;
-        string projectRoot = FindProjectRoot(filePath);
-
-        // Find all commands which reference this label
-        List<(string FilePath, int Row, CommandLine Line)> commands = [];
-
-        await RefactorSemaphore.WaitAsync().ConfigureAwait(false);
-        Console.WriteLine($"Performing label refactor for '{oldLabel}' => '{newLabel}' file '{filePath}'");
-
-        try {
-            // External Read-commands
-            string[] files = Directory.GetFiles(projectRoot, "*.tas", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.Hidden });
-            foreach (string file in files) {
-                if (file == filePath || Directory.Exists(file)) {
-                    continue;
-                }
-
-                if (!FileCache.TryGetValue(file, out string[]? lines)) {
-                    FileCache[file] = lines = await File.ReadAllLinesAsync(file).ConfigureAwait(false);
-                }
-
-                for (int row = 0; row < lines.Length; row++) {
-                    string line = lines[row];
-                    if (CommandLine.TryParse(line, out var commandLine) && commandLine.IsCommand("Read") &&
-                        // Verify command points to our file
-                        commandLine.Arguments.Length >= 1 && string.Equals(
-                            Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file)!, $"{commandLine.Arguments[0]}.tas")),
-                            Path.GetFullPath(filePath),
-                            StringComparison.OrdinalIgnoreCase
-                        ) && (
-                            // Check in start label
-                            commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel ||
-                            // Check in end label
-                            commandLine.Arguments.Length >= 3 && commandLine.Arguments[2] == oldLabel))
-                    {
-                        commands.Add((file, row, commandLine));
-                    }
-                }
-            }
-            // Internal Play-commands
-            string[]? internalLines;
-            if (filePath == Document.FilePath) {
-                internalLines = Document.Lines.ToArray();
-            } else if (!FileCache.TryGetValue(filePath, out internalLines)) {
-                FileCache[filePath] = internalLines = await File.ReadAllLinesAsync(filePath).ConfigureAwait(false);
-            }
-
-            for (int row = 0; row < internalLines.Length; row++) {
-                string line = internalLines[row];
-                if (CommandLine.TryParse(line, out var commandLine) && commandLine.IsCommand("Play") && (
-                        // Check in start label
-                        commandLine.Arguments.Length >= 1 && commandLine.Arguments[0] == oldLabel ||
-                        // Check in end label
-                        commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel))
-                {
-                    commands.Add((string.Empty, row, commandLine));
-                }
-            }
-
-
-            // Apply changes to external Read-command
-            foreach ((string file, int row, var commandLine) in commands) {
-                if (!commandLine.IsCommand("Read")) {
-                    continue;
-                }
-
-                // Start label
-                if (commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel) {
-                    commandLine.Arguments[1] = newLabel;
-                }
-                // End label
-                if (commandLine.Arguments.Length >= 3 && commandLine.Arguments[2] == oldLabel) {
-                    commandLine.Arguments[2] = newLabel;
-                }
-
-                string[] lines = FileCache[file];
-                lines[row] = commandLine.ToString();
-
-                await File.WriteAllTextAsync(file, Document.FormatLinesToText(lines)).ConfigureAwait(false);
-                Console.WriteLine($"Edited command '{commandLine.OriginalText}' => '{commandLine}' file {file} line {row}");
-            }
-            // Apply changes to internal Play-command
-            using var __ = Document.Update(raiseEvents: false);
-            foreach ((_, int row, var commandLine) in commands) {
-                if (!commandLine.IsCommand("Play")) {
-                    continue;
-                }
-
-                // Start label
-                if (commandLine.Arguments.Length >= 1 && commandLine.Arguments[0] == oldLabel) {
-                    commandLine.Arguments[0] = newLabel;
-                }
-                // End label
-                if (commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel) {
-                    commandLine.Arguments[1] = newLabel;
-                }
-
-                if (filePath == Document.FilePath) {
-                    Document.ReplaceLine(row, commandLine.ToString());
-                } else {
-                    string[] lines = FileCache[filePath];
-                    lines[row] = commandLine.ToString();
-
-                    await File.WriteAllTextAsync(filePath, Document.FormatLinesToText(lines)).ConfigureAwait(false);
-                    Console.WriteLine($"Edited command '{commandLine.OriginalText}' => '{commandLine}' file {filePath} line {row}");
-                }
-            }
-
-            Console.WriteLine($"Label refactor for '{oldLabel}' => '{newLabel}' done");
-        } catch (Exception ex) {
-            Console.WriteLine($"Failed to refactor room label: {ex}");
-        } finally {
-            RefactorSemaphore.Release();
-        }
-    }
-
-    private static readonly Dictionary<string, string> projectRootCache = [];
-
-    /// Locates a probable root directory for the current TAS project
-    public static string FindProjectRoot(string filePath) {
-        if (projectRootCache.TryGetValue(filePath, out string? projectRoot)) {
-            return projectRoot;
-        }
-
-        // 1st approach: Search for a Git repository
-        for (string? path = Path.GetDirectoryName(filePath); !string.IsNullOrEmpty(path); path = Path.GetDirectoryName(path)) {
-            if (Directory.Exists(Path.Combine(path, ".git")) &&
-                // Require at least 75% of files in the repo to be TAS files
-                GetTasFilePercentage(path) >= 0.75f)
-            {
-                projectRootCache[filePath] = path;
-                return path;
-            }
-        }
-
-        // 2nd approach: Go up until there is a sudden drop in the percentage
-        const int maxDepth = 5;
-        int currentDepth = 0;
-        float previousPercentage = 1.0f;
-        string previousPath = string.Empty;
-
-        for (string? path = Path.GetDirectoryName(filePath); currentDepth <= maxDepth && !string.IsNullOrEmpty(path); previousPath = path, path = Path.GetDirectoryName(path), currentDepth++) {
-            float currentPercentage = GetTasFilePercentage(path);
-            if (previousPercentage - currentPercentage >= 0.2f || currentPercentage <= 0.75f) {
-                return previousPath;
-            }
-        }
-
-        // No good solution could be found
-        return Path.GetDirectoryName(filePath)!;
-
-        static float GetTasFilePercentage(string path) {
-            string[] allFiles = Directory.GetFiles(path, "*", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.Directory | FileAttributes.Hidden });
-
-            return allFiles.Count(file => file.EndsWith(".tas")) /
-                   // Ignore documentation in the total
-                   Math.Max(1.0f, allFiles.Count(file => !file.EndsWith(".md") && !file.EndsWith(".txt")));
         }
     }
 
@@ -1438,7 +1094,7 @@ public sealed class Editor : SkiaDrawable {
                     string oldLabel = line["#".Length..];
                     string newLabel = RenameLabelDialog.Show(oldLabel);
 
-                    Task.Run(async () => await RefactorLabelName(oldLabel, newLabel).ConfigureAwait(false));
+                    FileRefactor.RefactorLabelName(Document.FilePath, oldLabel, newLabel);
 
                     using var __ = Document.Update();
                     Document.ReplaceLine(Document.Caret.Row, $"#{newLabel}");
@@ -1560,7 +1216,7 @@ public sealed class Editor : SkiaDrawable {
             StartCalculation(op);
             e.Handled = true;
         } else {
-            // Allow A-Z to handled by the action line editing
+            // Allow A-Z to be handled by the action line editing
             if (e.Key is >= Keys.A and <= Keys.Z) {
                 calculationState = null;
                 e.Handled = false;

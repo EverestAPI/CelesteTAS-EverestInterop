@@ -642,6 +642,12 @@ public sealed class Studio : Form {
         inputSendingMenu.Items.Add(new SeparatorMenuItem());
         inputSendingMenu.Items.Add(MenuUtils.CreateSettingNumberInput("Typing Timeout", nameof(Settings.SendInputsTypingTimeout), 0.0f, 5.0f, 0.1f));
 
+        var autoIndexRoomLabels = MenuUtils.CreateSettingEnum<AutoRoomIndexing>("Auto-Index Room Labels", nameof(Settings.AutoIndexRoomLabels), ["Disabled", "Current File", "Include Read-commands"]);
+        var commandSeparator = MenuUtils.CreateSettingEnum<CommandSeparator>("Command Separator", nameof(Settings.CommandSeparator), ["Space (\" \")", "Comma (\",\")", "Space + Comma (\", \")"]);
+
+        autoIndexRoomLabels.Enabled = StyleConfig.Current.RoomLabelIndexing == null;
+        commandSeparator.Enabled = StyleConfig.Current.CommandArgumentSeparator == null;
+
         MenuItem[] items = [
             new SubMenuItem { Text = "&File", Items = {
                 MenuEntry.File_New.ToAction(OnNewFile),
@@ -673,7 +679,7 @@ public sealed class Studio : Form {
             new SubMenuItem { Text = "&Preferences", Items = {
                 MenuUtils.CreateSettingToggle("&Auto Save File", nameof(Settings.AutoSave)),
                 MenuUtils.CreateSettingToggle("Auto Remove Mutually Exclusive Actions", nameof(Settings.AutoRemoveMutuallyExclusiveActions)),
-                MenuUtils.CreateSettingEnum<AutoRoomIndexing>("Auto-Index Room Labels", nameof(Settings.AutoIndexRoomLabels), ["Disabled", "Current File", "Include Read-commands"]),
+                autoIndexRoomLabels,
                 MenuUtils.CreateSettingToggle("Auto-Select Full Input line", nameof(Settings.AutoSelectFullActionLine)),
                 MenuUtils.CreateSettingToggle("Auto-Multiline Comments", nameof(Settings.AutoMultilineComments)),
                 MenuUtils.CreateSettingToggle("Sync &Caret with Playback", nameof(Settings.SyncCaretWithPlayback)),
@@ -685,7 +691,7 @@ public sealed class Studio : Form {
                 MenuUtils.CreateSettingNumberInput("Max Unfolded Lines", nameof(Settings.MaxUnfoldedLines), 0, int.MaxValue, 1),
                 MenuUtils.CreateSettingEnum<InsertDirection>("Insert Direction", nameof(Settings.InsertDirection), ["Above Current Line", "Below Current Line"]),
                 MenuUtils.CreateSettingEnum<CaretInsertPosition>("Caret Insert Position", nameof(Settings.CaretInsertPosition), ["After Inserted Text", "Keep at Previous Position"]),
-                MenuUtils.CreateSettingEnum<CommandSeparator>("Command Separator", nameof(Settings.CommandSeparator), ["Space (\" \")", "Comma (\",\")", "Space + Comma (\", \")"]),
+                commandSeparator,
             }},
             new SubMenuItem { Text = "&View", Items = {
                 // TODO: Use MenuEntry.View_ShowGameInfo again
