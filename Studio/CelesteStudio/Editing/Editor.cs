@@ -730,6 +730,10 @@ public sealed class Editor : SkiaDrawable {
         FileRefactor.FormatLines(lines, rows, StyleConfig.Current.ForceCorrectCommandCasing, StyleConfig.Current.CommandArgumentSeparator);
 
         foreach (int row in rows) {
+            if (row == Document.Caret.Row) {
+                continue;
+            }
+
             Document.ReplaceLine(row, lines[row]);
         }
     }
