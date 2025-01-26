@@ -75,18 +75,21 @@ public static class MetadataCommands {
 
     [TasCommand("MidwayFileTime", Aliases = ["MidwayFileTime:", "MidwayFileTime："], CalcChecksum = false)]
     private static void MidwayFileTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
-        if (TasStartFileTime != null && SaveData.Instance != null) {
-            UpdateAllMetadata("MidwayFileTime",
-                _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartFileTime.Value),
-                command => Manager.Controller.CurrentCommands.Contains(command));
-        }
-    }
-
-    [TasCommand("MidwayChapterTime", Aliases = new[] {"MidwayChapterTime:", "MidwayChapterTime："}, CalcChecksum = false)]
-    private static void MidwayChapterTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
-        if (!Manager.Running || Engine.Scene is not Level level || !level.Session.StartedFromBeginning) {
+        if (TasStartFileTime == null || SaveData.Instance == null) {
             return;
         }
+
+        UpdateAllMetadata("MidwayFileTime",
+            _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartFileTime.Value),
+            command => Manager.Controller.CurrentCommands.Contains(command));
+    }
+
+    [TasCommand("MidwayChapterTime", Aliases = ["MidwayChapterTime:", "MidwayChapterTime："], CalcChecksum = false)]
+    private static void MidwayChapterTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        if (!Manager.Running || Engine.Scene is not Level level) {
+            return;
+        }
+
         UpdateAllMetadata("MidwayChapterTime",
             _ => GameInfo.GetChapterTime(level),
             command => Manager.Controller.CurrentCommands.Contains(command));
@@ -107,7 +110,7 @@ public static class MetadataCommands {
             command => int.TryParse(command.Args.FirstOrDefault() ?? "0", out int _));
     }
 
-    private static void UpdateAllMetadata(string commandName, Func<Command, string> getMetadata, Func<Command, bool> predicate = null) {
+    private static void UpdateAllMetadata(string commandName, Func<Command, string> getMetadata, Func<Command, bool>? predicate = null) {
         string tasFilePath = Manager.Controller.FilePath;
         var metadataCommands = Manager.Controller.Commands.SelectMany(pair => pair.Value)
             .Where(command => command.Is(commandName) && command.FilePath == Manager.Controller.FilePath)
