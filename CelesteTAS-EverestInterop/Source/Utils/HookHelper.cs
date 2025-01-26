@@ -52,7 +52,7 @@ internal static class HookHelper {
     /// Creates a callback before the original method is called
     public static void HookBefore(this MethodBase methodInfo, Action action) {
         methodInfo.IlHook((cursor, _) => {
-            cursor.EmitDelegate(action);
+            cursor.EmitStaticDelegate("HookBefore", action);
         });
     }
 
@@ -68,7 +68,7 @@ internal static class HookHelper {
 #endif
         methodInfo.IlHook((cursor, _) => {
             cursor.EmitLdarg0();
-            cursor.EmitDelegate(action);
+            cursor.EmitStaticDelegate("HookBefore", action);
         });
     }
 
@@ -76,7 +76,7 @@ internal static class HookHelper {
     public static void HookAfter(this MethodBase methodInfo, Action action) {
         methodInfo.IlHook((cursor, _) => {
             while (cursor.TryGotoNext(MoveType.AfterLabel, ins => ins.MatchRet())) {
-                cursor.EmitDelegate(action);
+                cursor.EmitStaticDelegate("HookAfter", action);
                 cursor.Index++;
             }
         });
@@ -95,7 +95,7 @@ internal static class HookHelper {
         methodInfo.IlHook((cursor, _) => {
             while (cursor.TryGotoNext(MoveType.AfterLabel, ins => ins.MatchRet())) {
                 cursor.EmitLdarg0();
-                cursor.EmitDelegate(action);
+                cursor.EmitStaticDelegate("HookAfter", action);
                 cursor.Index++;
             }
         });
@@ -110,7 +110,7 @@ internal static class HookHelper {
             var start = cursor.MarkLabel();
             cursor.MoveBeforeLabels();
 
-            cursor.EmitDelegate(condition);
+            cursor.EmitStaticDelegate("SkipMethod", condition);
             cursor.EmitBrfalse(start);
             cursor.EmitRet();
         });
@@ -132,7 +132,7 @@ internal static class HookHelper {
             cursor.MoveBeforeLabels();
 
             cursor.EmitLdarg0();
-            cursor.EmitDelegate(condition);
+            cursor.EmitStaticDelegate("SkipMethod", condition);
             cursor.EmitBrfalse(start);
             cursor.EmitRet();
         });
@@ -154,7 +154,7 @@ internal static class HookHelper {
             var start = cursor.MarkLabel();
             cursor.MoveBeforeLabels();
 
-            cursor.EmitDelegate(condition);
+            cursor.EmitStaticDelegate("OverrideReturn", condition);
             cursor.EmitBrfalse(start);
 
             // Put the return value onto the stack
@@ -173,10 +173,8 @@ internal static class HookHelper {
                     break;
 
                 default:
-                    // The type doesn't have a specific IL-instruction, so we have to use a lambda
-#pragma warning disable CL0001
-                    cursor.EmitDelegate(() => value);
-#pragma warning restore CL0001
+                    // The type doesn't have a specific IL-instruction, so the reference-store
+                    cursor.EmitReference(value);
                     break;
             }
 
@@ -193,11 +191,38 @@ internal static class HookHelper {
             var start = cursor.MarkLabel();
             cursor.MoveBeforeLabels();
 
-            cursor.EmitDelegate(condition);
+            cursor.EmitStaticDelegate("OverrideReturn", condition);
             cursor.EmitBrfalse(start);
 
             // Put the return value onto the stack
-            cursor.EmitDelegate(valueProvider);
+            cursor.EmitStaticDelegate("OverrideReturn", valueProvider);
+            cursor.EmitRet();
+        });
+    }
+
+    /// Creates a callback to conditionally override the return value of the original method without ever even calling it
+    public static void OverrideReturn<TParam, TReturn>(this MethodInfo method, Func<TParam, bool> condition, Func<TParam, TReturn> valueProvider) {
+#if DEBUG
+        if (method.IsStatic) {
+            var parameters = method.GetParameters();
+            Debug.Assert(parameters.Length >= 1 && parameters[0].ParameterType.IsSameOrSubclassOf(typeof(TParam)));
+        } else {
+            Debug.Assert(method.DeclaringType?.IsSameOrSubclassOf(typeof(TParam)) ?? false);
+        }
+
+        Debug.Assert(typeof(TReturn).IsSameOrSubclassOf(method.ReturnType));
+#endif
+        method.IlHook((cursor, _) => {
+            var start = cursor.MarkLabel();
+            cursor.MoveBeforeLabels();
+
+            cursor.EmitLdarg0();
+            cursor.EmitStaticDelegate("OverrideReturn", condition);
+            cursor.EmitBrfalse(start);
+
+            // Put the return value onto the stack
+            cursor.EmitLdarg0();
+            cursor.EmitStaticDelegate("OverrideReturn", valueProvider);
             cursor.EmitRet();
         });
     }

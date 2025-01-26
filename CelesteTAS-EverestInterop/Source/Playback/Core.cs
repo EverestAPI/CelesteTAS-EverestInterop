@@ -50,7 +50,19 @@ internal static class Core {
     private static void On_Celeste_Update(On.Celeste.Celeste.orig_Update orig, Celeste.Celeste self, GameTime gameTime) {
         if (!TasSettings.Enabled || !Manager.Running) {
             Manager.UpdateMeta();
-            orig(self, gameTime);
+
+            try {
+                orig(self, gameTime);
+            } catch (Exception ex) {
+                if (!SyncChecker.Active) {
+                    throw; // Let Everest handle this
+                }
+
+                SyncChecker.ReportCrash(ex.ToString());
+                Manager.DisableRun();
+                return;
+            }
+
             return;
         }
 
@@ -72,7 +84,6 @@ internal static class Core {
                 return;
             }
 
-            orig(self, gameTime);
             elapsedTime -= Engine.RawDeltaTime;
 
             // Call UpdateMeta every real-time frame
@@ -110,15 +121,14 @@ internal static class Core {
     private static void IL_Engine_Update(ILContext il) {
         var cur = new ILCursor(il);
 
-        if (cur.TryGotoNext(MoveType.After, ins => ins.MatchCall(typeof(MInput), nameof(MInput.Update)))) {
-            var label = cur.DefineLabel();
+        cur.GotoNext(MoveType.After, ins => ins.MatchCall(typeof(MInput), nameof(MInput.Update)));
 
-            // Prevent further execution while the TAS is paused
-            cur.EmitDelegate(IsPaused);
-            cur.Emit(OpCodes.Brfalse, label);
-            cur.Emit(OpCodes.Ret);
-            cur.MarkLabel(label);
-        }
+        // Prevent further execution while the TAS is paused
+        var label = cur.DefineLabel();
+        cur.EmitDelegate(IsPaused);
+        cur.EmitBrfalse(label);
+        cur.EmitRet();
+        cur.MarkLabel(label);
     }
 
     private static bool IsPaused() => Manager.CurrState == Manager.State.Paused && !Manager.IsLoading();

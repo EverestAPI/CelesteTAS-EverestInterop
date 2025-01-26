@@ -1,4 +1,5 @@
 using Celeste;
+using Celeste.Mod.Core;
 using Monocle;
 using TAS.Module;
 
@@ -22,10 +23,15 @@ internal static class PlayTasAtLaunch {
         orig(self, last, next);
 
         if (FilePath != null && next is Overworld) {
-            Manager.Controller.FilePath = FilePath;
-            Manager.EnableRun();
+            // Allow scene to initialize itself
+            CoreModule.Settings.DebugMode = CoreModuleSettings.VanillaTristate.Everest;
+            next.OnEndOfFrame += () => {
+                Manager.Controller.FilePath = FilePath;
+                Manager.EnableRun();
 
-            FilePath = null;
+                FilePath = null;
+            };
+
         }
     }
 }

@@ -1,5 +1,5 @@
-﻿using System.Net;
-using System.Net.Sockets;
+﻿#define DEBUG_CELESTETAS
+
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -204,7 +204,7 @@ public static class Program {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                     if (RuntimeInformation.OSArchitecture == Architecture.X64) {
                         miniInstallerName = "MiniInstaller-win64.exe";
-                    } else if (RuntimeInformation.OSArchitecture == Architecture.X64) {
+                    } else if (RuntimeInformation.OSArchitecture == Architecture.X86) {
                         miniInstallerName = "MiniInstaller-win.exe";
                     } else {
                         await Console.Error.WriteLineAsync($"Failed to install Everest: Unsupported Windows architecture '{RuntimeInformation.OSArchitecture}'");
@@ -447,7 +447,7 @@ public static class Program {
         // Generate blacklist.txt
         blacklist.AddRange(Directory.EnumerateDirectories(Path.Combine(config.GameDirectory, "Mods")).Select(Path.GetFileName)!);
 
-#if DEBUG
+#if DEBUG_CELESTETAS
         // Use directory version of CelesteTAS for development
         blacklist.Remove("CelesteTAS-EverestInterop");
         blacklist.Add("CelesteTAS.zip");

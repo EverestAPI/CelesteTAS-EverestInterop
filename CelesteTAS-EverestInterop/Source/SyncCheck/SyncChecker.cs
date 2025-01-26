@@ -1,11 +1,16 @@
 using Celeste;
 using Celeste.Mod;
+using Celeste.Mod.Core;
+using Celeste.Mod.UI;
 using Monocle;
+using MonoMod.Cil;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using TAS.Input;
 using TAS.Module;
+using TAS.Utils;
+using BindingFlags = System.Reflection.BindingFlags;
 
 #nullable enable
 
@@ -81,6 +86,10 @@ internal static class SyncChecker {
 
     /// Indicates that a time command was updated with another time
     public static void ReportWrongTime(string filePath, int fileLine, string oldTime, string newTime) {
+        if (!Active) {
+            return;
+        }
+
         Logger.Error("CelesteTAS/SyncCheck", $"Detected wrong time in file '{filePath}' line {fileLine}: '{oldTime}' vs '{newTime}'");
 
         if (currentStatus != SyncCheckResult.Status.WrongTime) {
@@ -92,6 +101,10 @@ internal static class SyncChecker {
 
     /// Indicates that an unsafe action was performed in safe-mode
     public static void ReportUnsafeAction() {
+        if (!Active) {
+            return;
+        }
+
         Logger.Error("CelesteTAS/SyncCheck", $"Detected unsafe action");
 
         currentStatus = SyncCheckResult.Status.UnsafeAction;
@@ -100,6 +113,10 @@ internal static class SyncChecker {
 
     /// Indicates that an Assert-command failed
     public static void ReportAssertFailed(string lineText, string filePath, int fileLine, string expected, string actual) {
+        if (!Active) {
+            return;
+        }
+
         Logger.Error("CelesteTAS/SyncCheck", $"Detected failed assertion '{lineText}' in file '{filePath}' line {fileLine}: Expected '{expected}', got '{actual}'");
 
         currentStatus = SyncCheckResult.Status.UnsafeAction;
@@ -108,15 +125,66 @@ internal static class SyncChecker {
 
     /// Indicates that a crash happened while sync-checking
     public static void ReportCrash(string ex) {
+        if (!Active) {
+            return;
+        }
+
         Logger.Error("CelesteTAS/SyncCheck", $"Detected a crash: {ex}");
 
         currentStatus = SyncCheckResult.Status.Crash;
         currentAdditionalInformation.Crash = ex;
     }
 
-    [Initialize]
-    private static void Initialize() {
+    [Load]
+    private static void Load() {
         On.Celeste.Celeste.OnSceneTransition += On_Celeste_OnSceneTransition;
+
+        // Apply certain patches already done in headless mode, which are required to properly perform a sync check
+        if (!Everest.Flags.IsHeadless) {
+            // Skip intro animation
+            typeof(GameLoader)
+                .GetMethodInfo(nameof(GameLoader.Begin))
+                .HookAfter((GameLoader loader) => loader.skipped = true);
+
+            // Skip auto updates
+            typeof(GameLoader)
+                .GetMethodInfo("_GetNextScene")
+                .IlHook((cursor, _) => {
+                    cursor.EmitLdarg0();
+                    cursor.EmitLdarg1();
+                    cursor.EmitNewobj(typeof(OverworldLoader).GetConstructor([typeof(Overworld.StartMode), typeof(HiresSnow)])!);
+                    cursor.EmitRet();
+                });
+
+            // Skip OOBE
+            typeof(OuiOOBE)
+                .GetMethodInfo(nameof(OuiOOBE.IsStart))
+                .IlHook((cursor, _) => {
+                    cursor.EmitLdcI4(/* false */ 0);
+                    cursor.EmitRet();
+                });
+            typeof(OuiTitleScreen)
+                .GetMethodInfo(nameof(OuiTitleScreen.IsStart))
+                .IlHook((cursor, _) => {
+                    cursor.EmitLdarg0();
+                    cursor.EmitLdarg1();
+                    cursor.EmitLdarg2();
+                    cursor.EmitCallvirt(typeof(OuiTitleScreen).GetMethodInfo($"orig_{nameof(OuiTitleScreen.IsStart)}"));
+                    cursor.EmitRet();
+                });
+
+            // Disable DiscordSDK
+            typeof(CoreModule)
+                .GetMethodInfo(nameof(CoreModule.LoadSettings))
+                .IlHook((cursor, _) => {
+                    ILLabel? target = null;
+                    cursor.GotoNext(MoveType.After,
+                        instr => instr.MatchCallOrCallvirt<CoreModuleSettings>($"get_{nameof(CoreModuleSettings.DiscordRichPresence)}"),
+                        instr => instr.MatchBrfalse(out target));
+
+                    cursor.EmitBr(target!);
+                });
+        }
     }
     [Unload]
     private static void Unload() {
@@ -135,9 +203,13 @@ internal static class SyncChecker {
                 Engine.Instance.Exit();
             }
 
-            if (fileQueue.TryDequeue(out string? file)) {
-                CheckFile(file);
-            }
+            // Allow scene to initialize itself
+            CoreModule.Settings.DebugMode = CoreModuleSettings.VanillaTristate.Everest;
+            next.OnEndOfFrame += () => {
+                if (fileQueue.TryDequeue(out string? file)) {
+                    CheckFile(file);
+                }
+            };
         }
     }
 
@@ -150,8 +222,14 @@ internal static class SyncChecker {
         Logger.Info("CelesteTAS/SyncCheck", $"Starting check for file: '{file}'");
 
         Manager.Controller.FilePath = file;
-        // Insert breakpoint at the end
-        Manager.Controller.FastForwards.Add(Manager.Controller.Inputs.Count, new FastForward(Manager.Controller.Inputs.Count, "", Manager.Controller.Inputs[^1].Line));
         Manager.EnableRun();
+    }
+
+    [ParseFileEnd]
+    private static void ParseFileEnd() {
+        if (Active) {
+            // Insert breakpoint at the end
+            Manager.Controller.FastForwards[Manager.Controller.Inputs.Count] = new FastForward(Manager.Controller.Inputs.Count, "", Manager.Controller.Inputs[^1].Line);
+        }
     }
 }

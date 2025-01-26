@@ -56,7 +56,7 @@ internal static class SelectCampaignCommand {
                 maxSaveFile += 2;
             }
 
-            return maxSaveFile;
+            return Math.Max(3, maxSaveFile);
         }
     }
 
@@ -130,7 +130,7 @@ internal static class SelectCampaignCommand {
         }
 
         controller.ReadLine("Unsafe", filePath, fileLine, studioLine);
-        controller.ReadLine("console overworld", filePath, fileLine, studioLine);
+        controller.ReadLine("console titlescreen", filePath, fileLine, studioLine);
         controller.AddFrames("2", studioLine);
         LibTasHelper.AddInputFrame("1,O");
         LibTasHelper.AddInputFrame("89");
@@ -172,7 +172,7 @@ internal static class SelectCampaignCommand {
 
         int maxSaveFile = MaxSaveFileSlots;
         for (int i = 0; i < maxSaveFile; i++) {
-            if (Math.Abs(slot - i) <= 2) {
+            if (Math.Abs(Math.Max(0, slot) - i) <= 2) {
                 // Each visible slots causes a delay of 3f
                 controller.AddFrames("3", studioLine);
             }
