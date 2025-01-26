@@ -156,44 +156,47 @@ public static class InfoHud {
         return playerRect.Intersects(bgRect);
     }
 
-    // TODO add a setting 'InfoTasInputLines'
+    // TODO add a setting 'Info TasInputLines'
     private static void WriteTasInput(StringBuilder stringBuilder) {
-        InputController controller = Manager.Controller;
-        List<InputFrame> inputs = controller.Inputs;
-        if (Manager.Running && controller.CurrentFrameInTas >= 0 && controller.CurrentFrameInTas <= inputs.Count) {
-            InputFrame current = controller.Current;
-            if (controller.CurrentFrameInTas >= 1 && current != controller.Previous) {
-                current = controller.Previous;
-            }
+        var controller = Manager.Controller;
+        var inputs = controller.Inputs;
 
-            InputFrame previous = current.Previous;
-            InputFrame next = current.Next;
+        if (!Manager.Running || controller.CurrentFrameInTas < 0 || controller.CurrentFrameInTas >= inputs.Count) {
+            return;
+        }
 
-            int maxLine = Math.Max(current.Line, Math.Max(previous?.Line ?? 0, next?.Line ?? 0)) + 1;
-            int linePadLeft = maxLine.ToString().Length;
+        var current = controller.Current;
+        if (controller.CurrentFrameInTas >= 1 && current != controller.Previous) {
+            current = controller.Previous!;
+        }
 
-            int maxFrames = Math.Max(current.Frames, Math.Max(previous?.Frames ?? 0, next?.Frames ?? 0));
-            int framesPadLeft = maxFrames.ToString().Length;
+        var previous = current.Previous;
+        var next = current.Next;
 
-            string FormatInputFrame(InputFrame inputFrame) {
-                return
-                    $"{(inputFrame.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - inputFrame.Frames.ToString().Length)}{inputFrame}";
-            }
+        int maxLine = Math.Max(current.Line, Math.Max(previous?.Line ?? 0, next?.Line ?? 0)) + 1;
+        int linePadLeft = maxLine.ToString().Length;
 
-            if (previous != null) {
-                stringBuilder.AppendLine(FormatInputFrame(previous));
-            }
+        int maxFrames = Math.Max(current.Frames, Math.Max(previous?.Frames ?? 0, next?.Frames ?? 0));
+        int framesPadLeft = maxFrames.ToString().Length;
 
-            string currentStr = FormatInputFrame(current);
-            int currentFrameLength = controller.CurrentFrameInInput.ToString().Length;
-            int inputWidth = currentStr.Length + currentFrameLength + 2;
-            inputWidth = Math.Max(inputWidth, 20);
-            stringBuilder.AppendLine(
-                $"{currentStr.PadRight(inputWidth - currentFrameLength)}{controller.CurrentFrameInInput}{current.RepeatString}");
+        string FormatInputFrame(InputFrame inputFrame) {
+            return
+                $"{(inputFrame.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - inputFrame.Frames.ToString().Length)}{inputFrame}";
+        }
 
-            if (next != null) {
-                stringBuilder.AppendLine(FormatInputFrame(next));
-            }
+        if (previous != null) {
+            stringBuilder.AppendLine(FormatInputFrame(previous));
+        }
+
+        string currentStr = FormatInputFrame(current);
+        int currentFrameLength = controller.CurrentFrameInInput.ToString().Length;
+        int inputWidth = currentStr.Length + currentFrameLength + 2;
+        inputWidth = Math.Max(inputWidth, 20);
+        stringBuilder.AppendLine(
+            $"{currentStr.PadRight(inputWidth - currentFrameLength)}{controller.CurrentFrameInInput}{current.RepeatString}");
+
+        if (next != null) {
+            stringBuilder.AppendLine(FormatInputFrame(next));
         }
     }
 
