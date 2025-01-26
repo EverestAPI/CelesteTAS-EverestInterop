@@ -135,20 +135,20 @@ public static class Manager {
             NextState = State.Running;
         }
 
-        if (!Controller.CanPlayback) {
+        Controller.AdvanceFrame(out bool couldPlayback);
+
+        if (!couldPlayback) {
             DisableRun();
             return;
         }
 
-        Controller.AdvanceFrame();
-
         // Auto-pause at end of drafts
-        if (!Controller.CanPlayback && IsDraft()) {
+        if (!couldPlayback && IsDraft()) {
             NextState = State.Paused;
         }
         // Pause the TAS if breakpoint is hit
         // Special-case for end of regular files, to update *Time-commands
-        else if (Controller.Break && (Controller.CanPlayback || IsDraft())) {
+        else if (Controller.Break && (couldPlayback || IsDraft())) {
             Controller.NextLabelFastForward = null;
             NextState = State.Paused;
         }

@@ -146,13 +146,12 @@ public class InputController {
     }
 
     /// Moves the controller 1 frame forward, updating inputs and triggering commands
-    public void AdvanceFrame() {
+    public void AdvanceFrame(out bool couldPlayback) {
         RefreshInputs();
 
-        Console.WriteLine($"Advance {Current} -> {Next} ({CurrentFrameInTas} / {CurrentFrameInInput}: {CurrentCommands}({CurrentCommands.Count})");
+        couldPlayback = CanPlayback;
+
         foreach (var command in CurrentCommands) {
-            Console.WriteLine($"{command.Attribute.Name}: {command} ({command.CommandLine}) | {command.Attribute.ExecuteTiming.Has(ExecuteTiming.Runtime) &&
-                                                                                               (!EnforceLegalCommand.EnabledWhenRunning || command.Attribute.LegalInFullGame)}");
             if (command.Attribute.ExecuteTiming.Has(ExecuteTiming.Runtime) &&
                 (!EnforceLegalCommand.EnabledWhenRunning || command.Attribute.LegalInFullGame))
             {
