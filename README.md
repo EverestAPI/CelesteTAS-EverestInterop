@@ -13,6 +13,11 @@
 - Alternatively, you can start Celeste Studio directly. It'll be installed in the `CelesteStudio` directory inside your Celeste install. 
 - You can find the most up-to-date input files [here](https://github.com/VampireFlower/CelesteTAS).
 
+## Documentation
+
+You can find documentation around CelesteTAS and Celeste Studio, as well as general TASing references on the [wiki](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki).  
+If you want to contribute to tooling documentation or TASing references, feel free to edit the wiki!
+
 ## Input File
 The input file is a text file with `tas` as a suffix, e.g. `1A.tas`.
 
@@ -96,34 +101,6 @@ When center camera is enabled, double press mouse right button or double press f
 
 ### Rectangle Selection Info
 Hold the Info HUD hotkey and the mouse right down to select a rectangle. Copies the position of the top left and bottom right corners when the mouse button is released. This helps to define checkpoints for [Featherline](https://github.com/tntfalle/featherline).
-
-### Watch Entity
-Enable `Info HUD`, holding info hud hotkey then left-click to add the entity to be watched, while holding watch trigger hotkey to watch trigger, right-click to clear the watching entities. Supports exporting watching entities info via
-the `StartExportGameInfo` command.
-
-### Custom Info
-The contents of the curly brackets will be converted to actual data, here are some examples:
-- `{EntityName.field...}` Find all entities. e.g. `{Strawberry.Position}`
-- `{EntityName[entityId].field...}` Find the entity with the specified entityId. e.g. `{Strawberry[1:12].Position}` means 1A gold berry. You can get the entityId by opening the console and left-clicking on the entity.
-- `{EntityName@AssemblyName.field...}` Add the assembly name, if the simple name exists in multiple helpers and you want to specify the helper. e.g. `{CustomSpinner@FrostTempleHelper.Position}` and `{CustomSpinner@VivHelper.Position}`. You can get the assembly name by opening the console and left-clicking on the entity.
-- `{Level.field...}` Get the value of level field. e.g. `Wind: {Level.Wind}`.
-- `{Session.field...}` Get the value of session field. e.g. `Room: {Session.Level}`.
-- `{ClassName.staticField.field...}` Non-entity and non-level types that can get the value of a static field.
-- `{Player.Position.Length()}` Invoke method is supported, but must be parameterless and return a non-void type. Be careful not to invoke method that change the game state, as this will cause tas desync.
-- `{Player.AutoJumpTimer.toFrame()}` add `toFrame()` to the end can change the float value to frames.
-- `{Player.Speed.toPixelPerFrame()}` add `toPixelPerFrame()` to the end can change the float/vector2 speed unit to pixel/frame.
-- `{Player.Position:}` add `:` or `=` to the end will add label before the value. e.g. `{Player.Position:}` is the same as `Player.Position: {Player.Position}`.
-- `AutoJump: {Player.AutoJump} ({Player.AutoJumpTimer.toFrame()})`
-- `Theo: {TheoCrystal.Position}`
-- `TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}`
-- `KeyCycle: {Key.sprite.CurrentAnimationFrame}`
-- `CustomSpinner: {CustomSpinner.Position}` or `CustomSpinner: {FrostHelper.CustomSpinner@FrostTempleHelper.Position}`
-
-The contents wrapped in double center brackets will be executed as lua code, [check here for how to write lua](https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/master/Docs/Commands.md#evallua).
-Be careful not to change the game state, as this will cause tas desync.
-Here are some examples:
-- `[[return player.Position]]`
-- `[[return player.Position, player.Speed]]` Return multiple results. 
 
 ## Other Useful Tools
 - [TAS Recorder](https://gamebanana.com/tools/14085): High quality fixed framerate TAS encoder, cross-platform (use this instead of .kkapture or ldcapture) 
