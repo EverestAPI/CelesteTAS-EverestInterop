@@ -186,6 +186,11 @@ public static class Manager {
 
         SendStudioState();
 
+        // Pending EnableRun/DisableRun. Prevent overwriting
+        if (Running && NextState == State.Disabled || !Running && NextState != State.Disabled) {
+            return;
+        }
+
         // Check if the TAS should be enabled / disabled
         if (Hotkeys.StartStop.Pressed) {
             if (Running) {
