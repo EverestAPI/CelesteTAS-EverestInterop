@@ -7,10 +7,10 @@ using Celeste.Pico8;
 using JetBrains.Annotations;
 using Monocle;
 using StudioCommunication;
-using System.Runtime.InteropServices.ComTypes;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Input;
+using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
 
@@ -151,6 +151,26 @@ public static class Manager {
         else if (Controller.Break && (Controller.CanPlayback || IsDraft())) {
             Controller.NextLabelFastForward = null;
             NextState = State.Paused;
+        }
+
+        // Prevent executing unsafe actions unless explicitly allowed
+        if (SafeCommand.DisallowUnsafeInput && Controller.CurrentFrameInTas > 1) {
+            // Only allow specific scenes
+            if (Engine.Scene is not (Level or LevelLoader or LevelExit or Emulator or LevelEnter)) {
+                DisableRun();
+            }
+            // Disallow modifying options
+            else if (Engine.Scene is Level level && level.Tracker.GetEntity<TextMenu>() is { } menu) {
+                var item = menu.Items.FirstOrDefault();
+
+                if (item is TextMenu.Header { Title: { } title }
+                    && (title == Dialog.Clean("OPTIONS_TITLE") || title == Dialog.Clean("MENU_VARIANT_TITLE")
+                        || Dialog.Has("MODOPTIONS_EXTENDEDVARIANTS_PAUSEMENU_BUTTON") && title == Dialog.Clean("MODOPTIONS_EXTENDEDVARIANTS_PAUSEMENU_BUTTON").ToUpperInvariant())
+                    || item is TextMenuExt.HeaderImage { Image: "menu/everest" }
+                ) {
+                    DisableRun();
+                }
+            }
         }
     }
 
