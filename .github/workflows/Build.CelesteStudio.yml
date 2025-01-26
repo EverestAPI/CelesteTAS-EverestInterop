@@ -23,7 +23,9 @@ on:
 
 jobs:
   cache:
+    name: Cache
     runs-on: ubuntu-latest
+
     outputs:
       windows_cache_key: ${{ steps.compute-key.outputs.windows_key }}
       linux_cache_key: ${{ steps.compute-key.outputs.linux_key }}
@@ -90,6 +92,7 @@ jobs:
           path: CelesteStudio-macos-arm64.zip
 
   build-windows:
+    name: Windows
     runs-on: windows-latest
 
     needs: cache
@@ -142,6 +145,7 @@ jobs:
           path: CelesteStudio-windows-x64.zip
 
   build-linux:
+    name: Linux
     runs-on: ubuntu-latest
 
     needs: cache
@@ -194,6 +198,7 @@ jobs:
           path: CelesteStudio-linux-x64.zip
 
   build-mac:
+    name: macOS
     runs-on: macos-13
 
     needs: cache
