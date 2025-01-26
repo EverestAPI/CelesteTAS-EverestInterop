@@ -22,7 +22,6 @@ public sealed class CommunicationAdapterStudio(
 {
     private readonly EnumDictionary<GameDataType, object?> gameData = new();
     private readonly EnumDictionary<GameDataType, bool> gameDataPending = new();
-    private Type? rawInfoTargetType;
 
     public void ForceReconnect() {
         if (Connected) {
@@ -81,7 +80,9 @@ public sealed class CommunicationAdapterStudio(
                 break;
 
             case MessageID.RecordingFailed:
-                // TODO
+                var reason = (RecordingFailedReason) reader.ReadByte();
+
+                Application.Instance.AsyncInvoke(() => RecordingFailedDialog.Show(reason));
                 break;
 
             case MessageID.GameDataResponse:
@@ -96,10 +97,6 @@ public sealed class CommunicationAdapterStudio(
                     case GameDataType.ModUrl:
                     case GameDataType.CustomInfoTemplate:
                         gameData[gameDataType] = reader.ReadString();
-                        break;
-
-                    case GameDataType.RawInfo:
-                        gameData[gameDataType] = reader.ReadObject(rawInfoTargetType!);
                         break;
 
                     case GameDataType.GameState:
@@ -205,10 +202,6 @@ public sealed class CommunicationAdapterStudio(
 
         // Block other requests of this type until this is done
         gameDataPending[gameDataType] = true;
-
-        if (gameDataType == GameDataType.RawInfo) {
-            rawInfoTargetType = type;
-        }
 
         QueueMessage(MessageID.RequestGameData, writer => {
             writer.Write((byte)gameDataType);

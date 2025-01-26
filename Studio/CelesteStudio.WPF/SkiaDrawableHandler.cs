@@ -11,7 +11,7 @@ using Eto.Wpf;
 
 namespace CelesteStudio.WPF;
 
-public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, SkiaDrawable.ICallback>, SkiaDrawable.IHandler {
+public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, Eto.Forms.Control.ICallback>, SkiaDrawable.IHandler {
     public void Create() {
         Control = new SkiaBorder(Widget);
     }
@@ -33,29 +33,33 @@ public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, SkiaDrawable.I
                 return;
             }
 
-            if (bitmap == null || surface == null || width != bitmap.PixelWidth || height != bitmap.PixelHeight) {
-                const double bitmapDpi = 96.0;
-                bitmap = new WriteableBitmap(width, height, bitmapDpi * dpiX, bitmapDpi * dpiY, PixelFormats.Pbgra32, null);
+            if (drawable.CanDraw) {
+                if (bitmap == null || surface == null || width != bitmap.PixelWidth || height != bitmap.PixelHeight || Settings.Instance.WPFSkiaHack) {
+                    const double bitmapDpi = 96.0;
+                    bitmap = new WriteableBitmap(width, height, bitmapDpi * dpiX, bitmapDpi * dpiY, PixelFormats.Pbgra32, null);
 
-                surface?.Dispose();
-                surface = SKSurface.Create(new SKImageInfo(width, height, SKImageInfo.PlatformColorType, SKAlphaType.Premul), bitmap.BackBuffer, bitmap.BackBufferStride, new SKSurfaceProperties(SKPixelGeometry.Unknown));
-                surface.Canvas.Scale((float)dpiX, (float)dpiY);
-                surface.Canvas.Save();
+                    surface?.Dispose();
+                    surface = SKSurface.Create(new SKImageInfo(width, height, SKImageInfo.PlatformColorType, SKAlphaType.Premul), bitmap.BackBuffer, bitmap.BackBufferStride, new SKSurfaceProperties(SKPixelGeometry.Unknown));
+                    surface.Canvas.Scale((float)dpiX, (float)dpiY);
+                    surface.Canvas.Save();
+                }
+
+                bitmap.Lock();
+
+                var canvas = surface.Canvas;
+                using (new SKAutoCanvasRestore(surface.Canvas, true)) {
+                    canvas.Clear(drawable.BackgroundColor.ToSkia());
+                    canvas.Translate(-drawable.DrawX, -drawable.DrawY);
+                    drawable.Draw(surface);
+                }
+                canvas.Flush();
+
+                bitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
+                drawingContext.DrawImage(bitmap, new Rect(drawable.DrawX, drawable.DrawY, width / dpiX, height / dpiY));
+                bitmap.Unlock();
+            } else {
+                drawable.Invalidate();
             }
-
-            bitmap.Lock();
-
-            var canvas = surface.Canvas;
-            using (new SKAutoCanvasRestore(surface.Canvas, true)) {
-                canvas.Clear(drawable.BackgroundColor.ToSkia());
-                canvas.Translate(-drawable.DrawX, -drawable.DrawY);
-                drawable.Draw(surface);
-            }
-            canvas.Flush();
-
-            bitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
-            drawingContext.DrawImage(bitmap, new Rect(drawable.DrawX, drawable.DrawY, width / dpiX, height / dpiY));
-            bitmap.Unlock();
         }
 
         ~SkiaBorder() {

@@ -1,20 +1,21 @@
 using System.Collections.Generic;
 using Celeste;
 using Celeste.Mod;
+using System;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop;
 
-// ReSharper disable once UnusedType.Global
 public static class RestoreSettings {
-    private static Settings origSettings;
+    private static Settings? origSettings;
     private static Assists? origAssists;
-    private static bool backupAssists;
-    private static Dictionary<EverestModule, object> origModSettings;
+    private static Dictionary<EverestModule, object>? origModSettings;
 
-    // ReSharper disable once UnusedMember.Local
+    internal static readonly HashSet<EverestModule> ignoredModules = new();
+    internal static readonly Dictionary<EverestModule, (Func<object> Backup, Action<object> Restore)> customHandlers = new();
+
     [EnableRun]
     private static void TryBackup() {
         origSettings = null;
@@ -26,26 +27,28 @@ public static class RestoreSettings {
         }
 
         origSettings = Settings.Instance.ShallowClone();
-
-        if (SaveData.Instance != null) {
-            origAssists = SaveData.Instance.Assists;
-        } else {
-            backupAssists = true;
-        }
+        origAssists = SaveData.Instance?.Assists;
 
         origModSettings = new Dictionary<EverestModule, object>();
-        foreach (EverestModule module in Everest.Modules) {
-            if (module._Settings != null && module.SettingsType != null && module._Settings is not CelesteTasSettings) {
-                origModSettings.Add(module, module._Settings.ShallowClone());
+        foreach (var module in Everest.Modules) {
+            if (module._Settings == null || module.SettingsType == null || module._Settings is CelesteTasSettings) {
+                continue;
             }
+
+            if (ignoredModules.Contains(module)) {
+                continue;
+            }
+            if (customHandlers.TryGetValue(module, out var handler)) {
+                origModSettings.Add(module, handler.Backup());
+                continue;
+            }
+
+            origModSettings.Add(module, module._Settings.ShallowClone());
         }
     }
 
-    // ReSharper disable once UnusedMember.Local
     [DisableRun]
     private static void TryRestore() {
-        backupAssists = false;
-
         if (origSettings != null) {
             Settings.Instance.CopyAllFields(origSettings);
             Settings.Instance.ApplyVolumes();
@@ -63,12 +66,23 @@ public static class RestoreSettings {
         if (origModSettings != null) {
             TasSettings.Enabled = true;
             TasSettings.RestoreSettings = true;
-            foreach (EverestModule module in Everest.Modules) {
+
+            foreach (var module in Everest.Modules) {
                 try {
-                    if (module?._Settings != null && origModSettings.TryGetValue(module, out object modSettings) && modSettings != null) {
-                        module._Settings.CopyAllProperties(modSettings, true);
-                        module._Settings.CopyAllFields(modSettings, true);
+                    if (module._Settings == null || !origModSettings.TryGetValue(module, out object? modSettings)) {
+                        continue;
                     }
+
+                    if (ignoredModules.Contains(module)) {
+                        continue;
+                    }
+                    if (customHandlers.TryGetValue(module, out var handler)) {
+                        handler.Restore(modSettings);
+                        continue;
+                    }
+
+                    module._Settings.CopyAllProperties(modSettings, true);
+                    module._Settings.CopyAllFields(modSettings, true);
                 } catch {
                     // ignored
                 }
@@ -90,9 +104,8 @@ public static class RestoreSettings {
 
     private static void SaveDataOnStart(On.Celeste.SaveData.orig_Start orig, SaveData data, int slot) {
         orig(data, slot);
-        if (origAssists == null && backupAssists) {
-            backupAssists = false;
-            origAssists = SaveData.Instance.Assists;
-        }
+
+        // The TAS might've been started outside a save file, so backup save-data now
+        origAssists ??= SaveData.Instance.Assists;
     }
 }

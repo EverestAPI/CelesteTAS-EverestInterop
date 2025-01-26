@@ -169,6 +169,10 @@ public sealed class Settings {
 
     public bool FindMatchCase { get; set; }
 
+    /// In some rare cases, only creating a new WritableBitmap causes an update to the editor
+    /// Since this can cause a significant increase in resources, it's behind a flag
+    public bool WPFSkiaHack { get; set; } = false;
+
     // Zoom is temporary, so not saved
     [TomlNonSerialized]
     public float FontZoom { get; set; } = 1.0f;

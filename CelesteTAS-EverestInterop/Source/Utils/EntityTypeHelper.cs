@@ -221,12 +221,8 @@ internal static class EntityTypeHelper {
             ["birdPathTrigger"] = typeof(BirdPathTrigger),
             ["spawnFacingTrigger"] = typeof(SpawnFacingTrigger),
             ["detachFollowersTrigger"] = typeof(DetachStrawberryTrigger),
+            ["powerSourceNumber"] = typeof(PowerSourceNumber),
         });
-
-        // add from Celeste v1.4
-        if (typeof(Player).Assembly.GetType("Celeste.PowerSourceNumber") is { } powerSourceNumber) {
-            vanillaEntityNameToType["powerSourceNumber"] = powerSourceNumber;
-        }
 
         foreach (Type type in FakeAssembly.GetFakeEntryAssembly().GetTypesSafe()) {
             CheckCustomEntity(type);

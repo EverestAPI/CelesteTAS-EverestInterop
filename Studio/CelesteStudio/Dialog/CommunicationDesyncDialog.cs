@@ -8,7 +8,7 @@ namespace CelesteStudio.Dialog;
 
 public class CommunicationDesyncDialog : Eto.Forms.Dialog {
     private CommunicationDesyncDialog(ushort studioVersion, ushort celesteTasVersion) {
-        Title = "Settings failed to load";
+        Title = "Connection failed";
         Content = new StackLayout {
             Padding = 10,
             Spacing = 10,
@@ -45,6 +45,7 @@ public class CommunicationDesyncDialog : Eto.Forms.Dialog {
                             proc?.WaitForExit(TimeSpan.FromSeconds(10));
                             Environment.Exit(1);
                         }) { Text = "Update CelesteTAS" },
+
                         new Button((_, _) => {
                             var proc = ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop/releases/latest");
                             proc?.WaitForExit(TimeSpan.FromSeconds(10));

@@ -4,6 +4,7 @@ using Celeste.Mod.UI;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Monocle;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -53,7 +54,7 @@ public static class FreeCameraHitbox {
                 spriteEffects |= SpriteEffects.FlipHorizontally;
             }
 
-            if (ExtendedVariantsUtils.UpsideDown) {
+            if (ExtendedVariantsInterop.UpsideDown) {
                 spriteEffects |= SpriteEffects.FlipVertically;
             }
 

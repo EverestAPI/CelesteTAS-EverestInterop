@@ -82,7 +82,7 @@ public static class CommunicationWrapper {
             return;
         }
 
-        Dictionary<int, List<int>> nativeBindings = Hotkeys.KeysInteractWithStudio.ToDictionary(pair => (int) pair.Key, pair => pair.Value.Cast<int>().ToList());
+        Dictionary<int, List<int>> nativeBindings = Hotkeys.StudioHotkeys.ToDictionary(pair => (int) pair.Key, pair => pair.Value.Cast<int>().ToList());
         comm.WriteCurrentBindings(nativeBindings);
     }
     public static void SendRecordingFailed(RecordingFailedReason reason) {

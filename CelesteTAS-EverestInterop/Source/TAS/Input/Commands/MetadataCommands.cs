@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Celeste;
@@ -111,30 +110,31 @@ public static class MetadataCommands {
     }
 
     private static void UpdateAllMetadata(string commandName, Func<Command, string> getMetadata, Func<Command, bool> predicate = null) {
-        InputController inputController = Manager.Controller;
-        string tasFilePath = InputController.TasFilePath;
-        IEnumerable<Command> metadataCommands = inputController.Commands.SelectMany(pair => pair.Value)
-            .Where(command => command.Is(commandName) && command.FilePath == InputController.TasFilePath)
+        string tasFilePath = Manager.Controller.FilePath;
+        var metadataCommands = Manager.Controller.Commands.SelectMany(pair => pair.Value)
+            .Where(command => command.Is(commandName) && command.FilePath == Manager.Controller.FilePath)
             .Where(predicate ?? (_ => true))
             .ToList();
 
-        Dictionary<int, string> updateLines = metadataCommands.Where(command => {
-            string metadata = getMetadata(command);
-            if (metadata.IsNullOrEmpty()) {
-                return false;
-            }
+        var updateLines = metadataCommands
+            .Where(command => {
+                string metadata = getMetadata(command);
+                if (metadata.IsNullOrEmpty()) {
+                    return false;
+                }
 
-            if (command.Args.Length > 0 && command.Args[0] == metadata) {
-                return false;
-            }
+                if (command.Args.Length > 0 && command.Args[0] == metadata) {
+                    return false;
+                }
 
-            // Sync-check reporting
-            if (command.Is("FileTime") || command.Is("ChapterTime") || command.Is("MidwayFileTime") || command.Is("MidwayChapterTime")) {
-                SyncChecker.ReportWrongTime(command.FilePath, command.FileLine, command.Args.Length > 0 ? command.Args[0] : string.Empty, metadata);
-            }
+                // Sync-check reporting
+                if (command.Is("FileTime") || command.Is("ChapterTime") || command.Is("MidwayFileTime") || command.Is("MidwayChapterTime")) {
+                    SyncChecker.ReportWrongTime(command.FilePath, command.FileLine, command.Args.Length > 0 ? command.Args[0] : string.Empty, metadata);
+                }
 
-            return true;
-        }).ToDictionary(command => command.StudioLine, command => $"{command.Attribute.Name}: {getMetadata(command)}");
+                return true;
+            })
+            .ToDictionary(command => command.StudioLine, command => $"{command.Attribute.Name}: {getMetadata(command)}");
 
         if (updateLines.IsEmpty()) {
             return;
@@ -142,15 +142,17 @@ public static class MetadataCommands {
 
         string[] allLines = File.ReadAllLines(tasFilePath);
         int allLinesLength = allLines.Length;
-        foreach (int lineNumber in updateLines.Keys) {
+        foreach ((int lineNumber, string replacement) in updateLines) {
             if (lineNumber >= 0 && lineNumber < allLinesLength) {
-                allLines[lineNumber] = updateLines[lineNumber];
+                allLines[lineNumber] = replacement;
             }
         }
 
+        // Prevent a reload from being triggered by the file-system change
         bool needsReload = Manager.Controller.NeedsReload;
         File.WriteAllLines(tasFilePath, allLines);
         Manager.Controller.NeedsReload = needsReload;
+
         CommunicationWrapper.SendUpdateLines(updateLines);
     }
 }

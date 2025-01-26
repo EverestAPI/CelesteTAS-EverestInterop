@@ -8,7 +8,8 @@ using StudioCommunication;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
-using TAS.EverestInterop.InfoHUD;
+using TAS.Gameplay.Hitboxes;
+using TAS.Utils;
 using YamlDotNet.Serialization;
 
 namespace TAS.Module;
@@ -69,6 +70,10 @@ public class CelesteTasSettings : EverestModuleSettings {
         set {
             StudioShared.SimplifiedHitboxes = value;
             SyncSettings();
+
+            if (value && Engine.Scene != null) {
+                TriggerHitbox.RecacheTriggers(Engine.Scene);
+            }
         }
     }
 
@@ -95,68 +100,68 @@ public class CelesteTasSettings : EverestModuleSettings {
     #region HotKey
 
     [SettingName("TAS_KEY_START_STOP")]
-    [DefaultButtonBinding2(0, Keys.RightControl)]
-    public ButtonBinding KeyStart { get; set; } = new(0, Keys.RightControl);
+    [DefaultButtonBinding([0], [Keys.RightControl])]
+    public ButtonBinding KeyStart { get; set; } = null!;
 
     [SettingName("TAS_KEY_RESTART")]
-    [DefaultButtonBinding2(0, Keys.OemPlus)]
-    public ButtonBinding KeyRestart { get; set; } = new(0, Keys.OemPlus);
+    [DefaultButtonBinding([0], [Keys.OemPlus])]
+    public ButtonBinding KeyRestart { get; set; } = null!;
 
     [SettingName("TAS_KEY_FAST_FORWARD")]
-    [DefaultButtonBinding2(0, Keys.RightShift)]
-    public ButtonBinding KeyFastForward { get; set; } = new(0, Keys.RightShift);
+    [DefaultButtonBinding([0], [Keys.RightShift])]
+    public ButtonBinding KeyFastForward { get; set; } = null!;
 
     [SettingName("TAS_KEY_FAST_FORWARD_COMMENT")]
-    [DefaultButtonBinding2(0, Keys.RightAlt, Keys.RightShift)]
-    public ButtonBinding KeyFastForwardComment { get; set; } = new(0, Keys.RightAlt, Keys.RightShift);
+    [DefaultButtonBinding([0], [Keys.RightAlt, Keys.RightShift])]
+    public ButtonBinding KeyFastForwardComment { get; set; } = null!;
 
     [SettingName("TAS_KEY_SLOW_FORWARD")]
-    [DefaultButtonBinding2(0, Keys.OemPipe)]
-    public ButtonBinding KeySlowForward { get; set; } = new(0, Keys.OemPipe);
+    [DefaultButtonBinding([0], [Keys.OemPipe])]
+    public ButtonBinding KeySlowForward { get; set; } = null!;
 
     [SettingName("TAS_KEY_FRAME_ADVANCE")]
-    [DefaultButtonBinding2(0, Keys.OemOpenBrackets)]
-    public ButtonBinding KeyFrameAdvance { get; set; } = new(0, Keys.OemOpenBrackets);
+    [DefaultButtonBinding([0], [Keys.OemOpenBrackets])]
+    public ButtonBinding KeyFrameAdvance { get; set; } = null!;
 
     [SettingName("TAS_KEY_PAUSE_RESUME")]
-    [DefaultButtonBinding2(0, Keys.OemCloseBrackets)]
-    public ButtonBinding KeyPause { get; set; } = new(0, Keys.OemCloseBrackets);
+    [DefaultButtonBinding([0], [Keys.OemCloseBrackets])]
+    public ButtonBinding KeyPause { get; set; } = null!;
 
     [SettingName("TAS_KEY_HITBOXES")]
-    [DefaultButtonBinding2(0, Keys.LeftControl, Keys.B)]
-    public ButtonBinding KeyHitboxes { get; set; } = new(0, Keys.LeftControl, Keys.B);
+    [DefaultButtonBinding([0], [Keys.LeftControl, Keys.B])]
+    public ButtonBinding KeyHitboxes { get; set; } = null!;
 
     [SettingName("TAS_KEY_TRIGGER_HITBOXES")]
-    [DefaultButtonBinding2(0, Keys.LeftAlt, Keys.T)]
-    public ButtonBinding KeyTriggerHitboxes { get; set; } = new(0, Keys.LeftAlt, Keys.T);
+    [DefaultButtonBinding([0], [Keys.LeftAlt, Keys.T])]
+    public ButtonBinding KeyTriggerHitboxes { get; set; } = null!;
 
     [SettingName("TAS_KEY_SIMPLIFIED_GRAPHICS")]
-    [DefaultButtonBinding2(0, Keys.LeftControl, Keys.N)]
-    public ButtonBinding KeyGraphics { get; set; } = new(0, Keys.LeftControl, Keys.N);
+    [DefaultButtonBinding([0], [Keys.LeftControl, Keys.N])]
+    public ButtonBinding KeyGraphics { get; set; } = null!;
 
     [SettingName("TAS_KEY_CENTER_CAMERA")]
-    [DefaultButtonBinding2(0, Keys.LeftControl, Keys.M)]
-    public ButtonBinding KeyCamera { get; set; } = new(0, Keys.LeftControl, Keys.M);
+    [DefaultButtonBinding([0], [Keys.LeftControl, Keys.M])]
+    public ButtonBinding KeyCamera { get; set; } = null!;
 
     [SettingName("TAS_KEY_LOCK_CAMERA")]
-    [DefaultButtonBinding2(0, Keys.LeftControl, Keys.H)]
-    public ButtonBinding KeyLockCamera { get; set; } = new(0, Keys.LeftControl, Keys.H);
+    [DefaultButtonBinding([0], [Keys.LeftControl, Keys.H])]
+    public ButtonBinding KeyLockCamera { get; set; } = null!;
 
     [SettingName("TAS_KEY_SAVE_STATE")]
-    [DefaultButtonBinding2(0, Keys.RightAlt, Keys.OemMinus)]
-    public ButtonBinding KeySaveState { get; set; } = new(0, Keys.RightAlt, Keys.OemMinus);
+    [DefaultButtonBinding([0], [Keys.RightAlt, Keys.OemMinus])]
+    public ButtonBinding KeySaveState { get; set; } = null!;
 
     [SettingName("TAS_KEY_CLEAR_STATE")]
-    [DefaultButtonBinding2(0, Keys.RightAlt, Keys.Back)]
-    public ButtonBinding KeyClearState { get; set; } = new(0, Keys.RightAlt, Keys.Back);
+    [DefaultButtonBinding([0], [Keys.RightAlt, Keys.Back])]
+    public ButtonBinding KeyClearState { get; set; } = null!;
 
     [SettingName("TAS_KEY_INFO_HUD")]
-    [DefaultButtonBinding2(0, Keys.LeftControl)]
-    public ButtonBinding KeyInfoHud { get; set; } = new(0, Keys.LeftControl);
+    [DefaultButtonBinding([0], [Keys.LeftControl])]
+    public ButtonBinding KeyInfoHud { get; set; } = null!;
 
     [SettingName("TAS_KEY_FREE_CAMERA")]
-    [DefaultButtonBinding2(0, Keys.LeftAlt)]
-    public ButtonBinding KeyFreeCamera { get; set; } = new(0, Keys.LeftAlt);
+    [DefaultButtonBinding([0], [Keys.LeftAlt])]
+    public ButtonBinding KeyFreeCamera { get; set; } = null!;
 
     #endregion
 
@@ -265,14 +270,28 @@ public class CelesteTasSettings : EverestModuleSettings {
             SyncSettings();
         }
     }
-    public HudOptions InfoWatchEntity {
-        get => StudioShared.InfoWatchEntity;
+
+    internal bool WatchEntity => HudWatchEntity || StudioWatchEntity;
+    internal bool HudWatchEntity => InfoWatchEntityHudType != WatchEntityType.None;
+    internal bool StudioWatchEntity => InfoWatchEntityStudioType != WatchEntityType.None;
+
+    public WatchEntityType InfoWatchEntityHudType {
+        get => StudioShared.InfoWatchEntityHudType;
         set {
-            StudioShared.InfoWatchEntity = value;
+            StudioShared.InfoWatchEntityHudType = value;
+            SyncSettings();
+
+        }
+    }
+    public WatchEntityType InfoWatchEntityStudioType {
+        get => StudioShared.InfoWatchEntityStudioType;
+        set {
+            StudioShared.InfoWatchEntityStudioType = value;
             SyncSettings();
         }
     }
-    public WatchEntityType InfoWatchEntityType { get; set; } = WatchEntityType.Position;
+
+    public bool InfoWatchEntityLogToConsole { get; set; } = true;
 
     [SettingIgnore]
     public string InfoCustomTemplate { get; set; } =
@@ -434,6 +453,14 @@ public class CelesteTasSettings : EverestModuleSettings {
     public bool AttemptConnectStudio {
         get => Enabled && _AttemptConnectStudio;
         set => _AttemptConnectStudio = value;
+    }
+
+    [YamlMember(Alias = "BetterInvincible")]
+    public bool _BetterInvincible = true;
+    [YamlIgnore]
+    public bool BetterInvincible {
+        get => Enabled && _BetterInvincible;
+        set => _BetterInvincible = value;
     }
 
     public bool HideFreezeFrames { get; set; } = false;

@@ -1,26 +1,27 @@
 using Celeste.Mod;
+using Celeste.Mod.UI;
 using System;
-using MonoMod.Utils;
 using TAS.Module;
-using TAS.Utils;
+using TAS.SyncCheck;
 
 namespace TAS.EverestInterop;
 
 public static class CriticalErrorHandlerFixer {
-    public static bool Handling => getCurrentHandler?.Invoke(null) != null;
-    private static FastReflectionDelegate getCurrentHandler;
-
     [Load]
     private static void Load() {
-        Type type = ModUtils.VanillaAssembly.GetType("Celeste.Mod.UI.CriticalErrorHandler");
-        if (type != null) {
-            type.GetMethod("Update")?.HookBefore(() => {
-                if (Manager.Running) {
-                    Manager.DisableRun();
-                }
-            });
+        Everest.Events.OnCriticalError += HandleCriticalError;
+    }
 
-            getCurrentHandler = type.GetProperty("CurrentHandler")?.GetGetMethod()?.GetFastDelegate();
+    [Unload]
+    private static void Unload() {
+        Everest.Events.OnCriticalError -= HandleCriticalError;
+    }
+
+    private static void HandleCriticalError(CriticalErrorHandler criticalErrorHandler) {
+        if (!SyncChecker.Active) {
+            SyncChecker.ReportCrash(ex);
         }
+
+        Manager.DisableRun();
     }
 }

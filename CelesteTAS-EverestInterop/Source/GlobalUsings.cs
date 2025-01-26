@@ -1,4 +1,5 @@
 global using static TAS.GlobalVariables;
+global using MonocleCommand = Monocle.Command;
 using TAS.Entities;
 using TAS.Input;
 using TAS.Module;
@@ -10,6 +11,11 @@ public static class GlobalVariables {
     public static bool ParsingCommand  => Command.Parsing;
 
     public static void AbortTas(string message, bool log = false, float duration = 2f) {
+#if DEBUG
+        // Always log in debug builds
+        log = true;
+#endif
+
         if (log) {
             Toast.ShowAndLog(message, duration);
         } else {

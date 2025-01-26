@@ -27,7 +27,8 @@ public partial class GameSettings {
     public bool InfoTasInput = true;
     public bool InfoSubpixelIndicator = true;
     public HudOptions InfoCustom = HudOptions.Off;
-    public HudOptions InfoWatchEntity = HudOptions.Both;
+    public WatchEntityType InfoWatchEntityHudType = WatchEntityType.Position;
+    public WatchEntityType InfoWatchEntityStudioType = WatchEntityType.All;
 
     public int PositionDecimals = 2;
     public int SpeedDecimals = 2;
@@ -55,6 +56,13 @@ public enum HudOptions {
     HudOnly = 1,
     StudioOnly = 2,
     Both = HudOnly | StudioOnly
+}
+
+public enum WatchEntityType {
+    None,
+    Position,
+    DeclaredOnly,
+    All
 }
 
 public enum SpeedUnit {

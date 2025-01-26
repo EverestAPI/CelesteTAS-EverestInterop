@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using StudioCommunication;
 using TAS.Communication;
+using TAS.ModInterop;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -19,7 +20,7 @@ public static class RecordingCommand {
     // workaround the first few frames get skipped when there is a breakpoint after StartRecording command
     public static bool StopFastForward {
         get {
-            if (Manager.Recording) {
+            if (TASRecorderInterop.Recording) {
                 return true;
             }
 
@@ -35,18 +36,18 @@ public static class RecordingCommand {
     private static void StartRecording(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         if (ParsingCommand) {
             if (CommunicationWrapper.Connected && Manager.Running) {
-                if (!TASRecorderUtils.Installed) {
+                if (!TASRecorderInterop.Installed) {
                     CommunicationWrapper.SendRecordingFailed(RecordingFailedReason.TASRecorderNotInstalled);
-                } else if (!TASRecorderUtils.FFmpegInstalled) {
+                } else if (!TASRecorderInterop.FFmpegInstalled) {
                     CommunicationWrapper.SendRecordingFailed(RecordingFailedReason.FFmpegNotInstalled);
                 }
             }
 
-            if (!TASRecorderUtils.Installed) {
+            if (!TASRecorderInterop.Installed) {
                 AbortTas("TAS Recorder isn't installed");
                 return;
             }
-            if (!TASRecorderUtils.FFmpegInstalled) {
+            if (!TASRecorderInterop.FFmpegInstalled) {
                 AbortTas("FFmpeg libraries aren't properly installed");
                 return;
             }
@@ -63,19 +64,18 @@ public static class RecordingCommand {
             RecordingTime time = new() { StartFrame = Manager.Controller.Inputs.Count };
             RecordingTimes[time.StartFrame] = time;
         } else {
-            if (Manager.Recording) {
+            if (TASRecorderInterop.Recording) {
                 AbortTas("Tried to start recording, while already recording");
                 return;
             }
 
-            TASRecorderUtils.StartRecording();
+            TASRecorderInterop.StartRecording();
             if (RecordingTimes.TryGetValue(Manager.Controller.CurrentFrameInTas, out RecordingTime time) &&
                        time.StartFrame != int.MaxValue && time.StopFrame != int.MaxValue) {
-                TASRecorderUtils.SetDurationEstimate(time.Duration);
+                TASRecorderInterop.SetDurationEstimate(time.Duration);
             }
 
-            Manager.States &= ~States.FrameStep;
-            Manager.NextStates &= ~States.FrameStep;
+            Manager.CurrState = Manager.NextState = Manager.State.Running;
         }
     }
 
@@ -100,7 +100,7 @@ public static class RecordingCommand {
 
             last.StopFrame = Manager.Controller.Inputs.Count;
         } else {
-            TASRecorderUtils.StopRecording();
+            TASRecorderInterop.StopRecording();
         }
     }
 
@@ -123,8 +123,8 @@ public static class RecordingCommand {
 
     [DisableRun]
     private static void DisableRun() {
-        if (Manager.Recording) {
-            TASRecorderUtils.StopRecording();
+        if (TASRecorderInterop.Recording) {
+            TASRecorderInterop.StopRecording();
         }
     }
 }

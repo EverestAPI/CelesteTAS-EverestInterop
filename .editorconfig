@@ -118,12 +118,28 @@ csharp_style_prefer_readonly_struct = true
 csharp_style_prefer_readonly_struct_member = true
 
 # Code-block preferences
-csharp_prefer_braces = false:silent
+csharp_prefer_braces = true:suggestion
 csharp_prefer_simple_using_statement = true
 csharp_style_namespace_declarations = file_scoped
 csharp_style_prefer_method_group_conversion = true
 csharp_style_prefer_primary_constructors = true
 csharp_style_prefer_top_level_statements = true
+resharper_braces_for_ifelse = required
+resharper_braces_for_dowhile = required
+resharper_braces_for_fixed = required
+resharper_braces_for_for = required
+resharper_braces_for_foreach = required
+resharper_braces_for_lock = required
+resharper_braces_for_using = required
+resharper_braces_for_while = required
+resharper_enforce_if_statement_braces_highlighting = suggestion
+resharper_enforce_dowhile_statement_braces_highlighting = required
+resharper_enforce_fixed_statement_braces_highlighting = required
+resharper_enforce_for_statement_braces_highlighting = required
+resharper_enforce_foreach_statement_braces_highlighting = required
+resharper_enforce_lock_statement_braces_highlighting = required
+resharper_enforce_using_statement_braces_highlighting = required
+resharper_enforce_while_statement_braces_highlighting = required
 
 # Expression-level preferences
 csharp_prefer_simple_default_expression = true
