@@ -93,6 +93,27 @@ jobs:
           mv CelesteStudio-macos-x64/CelesteStudio-macos-x64.zip .
           mv CelesteStudio-macos-arm64/CelesteStudio-macos-arm64.zip .
 
+      - name: Cache Windows build
+        if: ${{ needs.build-studio.outputs.windows_cache_hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: CelesteStudio-windows-x64.zip
+          key: ${{ needs.build-studio.outputs.windows_cache_key }}
+      - name: Cache Linux build
+        if: ${{ needs.build-studio.outputs.linux_cache_hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: CelesteStudio-linux-x64.zip
+          key: ${{ needs.build-studio.outputs.linux_cache_key }}
+      - name: Cache macOS build
+        if: ${{ needs.build-studio.outputs.macos_cache_hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            CelesteStudio-macos-x64.zip
+            CelesteStudio-macos-arm64.zip
+          key: ${{ needs.build-studio.outputs.macos_cache_key }}
+
       - name: Fill-in download info
         run: |
           sed -i "s\\false; //DOUBLE_ZIP_ARCHIVE\\false;\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
