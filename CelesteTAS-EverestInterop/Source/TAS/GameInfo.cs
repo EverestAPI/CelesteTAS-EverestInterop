@@ -656,12 +656,16 @@ public static class PlayerStates {
     }
 
     public static string GetCurrentStateName(Player player) {
-        StateMachine stateMachine = player.StateMachine;
-        if (States.TryGetValue(stateMachine.state, out string name)) {
-            return name;
-        } else {
-            return GetCurrentStateNameFunc?.Invoke(stateMachine) ?? stateMachine.state.ToString();
+        if (!States.TryGetValue(player.StateMachine.state, out string? name)) {
+            name = player.StateMachine.GetCurrentStateName();
         }
+
+        // Ensure "St" prefix
+        if (!name.StartsWith("St")) {
+            name = $"St{name}";
+        }
+
+        return name;
     }
 
     // ReSharper disable once UnusedMember.Global
