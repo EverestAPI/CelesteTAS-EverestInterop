@@ -18,8 +18,8 @@ public static class CriticalErrorHandlerFixer {
     }
 
     private static void HandleCriticalError(CriticalErrorHandler criticalErrorHandler) {
-        if (!SyncChecker.Active) {
-            SyncChecker.ReportCrash(ex);
+        if (SyncChecker.Active) {
+            SyncChecker.ReportCrash(criticalErrorHandler.errorStackTrace);
         }
 
         Manager.DisableRun();

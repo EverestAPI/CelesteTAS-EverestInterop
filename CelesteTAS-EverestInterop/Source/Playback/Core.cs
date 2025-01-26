@@ -6,6 +6,7 @@ using Monocle;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using TAS.Module;
+using TAS.SyncCheck;
 using TAS.Utils;
 using GameInput = Celeste.Input;
 
@@ -59,6 +60,18 @@ internal static class Core {
         lastMetaUpdate = DateTime.UtcNow;
 
         while (elapsedTime >= Engine.RawDeltaTime) {
+            try {
+                orig(self, gameTime);
+            } catch (Exception ex) {
+                if (!SyncChecker.Active) {
+                    throw; // Let Everest handle this
+                }
+
+                SyncChecker.ReportCrash(ex.ToString());
+                Manager.DisableRun();
+                return;
+            }
+
             orig(self, gameTime);
             elapsedTime -= Engine.RawDeltaTime;
 
@@ -74,9 +87,22 @@ internal static class Core {
             }
         }
 
-        if (TasSettings.HideFreezeFrames) {
-            while (Engine.FreezeTimer > 0.0f && !Manager.Controller.Break) {
+        if (!TasSettings.HideFreezeFrames) {
+            return;
+        }
+
+        // Advance through freeze frames
+        while (Engine.FreezeTimer > 0.0f && !Manager.Controller.Break) {
+            try {
                 orig(self, gameTime);
+            } catch (Exception ex) {
+                if (!SyncChecker.Active) {
+                    throw; // Let Everest handle this
+                }
+
+                SyncChecker.ReportCrash(ex.ToString());
+                Manager.DisableRun();
+                return;
             }
         }
     }

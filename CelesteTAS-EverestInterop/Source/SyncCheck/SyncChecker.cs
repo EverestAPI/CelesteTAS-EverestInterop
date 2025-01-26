@@ -53,7 +53,7 @@ internal static class SyncChecker {
             return;
         }
 
-        Logger.Info("CelesteTAS/SyncCheck", $"Finished check for file: '{InputController.StudioTasFilePath}'");
+        Logger.Info("CelesteTAS/SyncCheck", $"Finished check for file: '{Manager.Controller.FilePath}'");
 
         // Check for desyncs
         if (currentStatus == SyncCheckResult.Status.Success && Engine.Scene is not (Level { Completed: true } or LevelExit or AreaComplete)) {
@@ -63,7 +63,7 @@ internal static class SyncChecker {
         }
 
         GameInfo.Update(updateVel: false);
-        var entry = new SyncCheckResult.Entry(InputController.StudioTasFilePath, currentStatus, GameInfo.ExactStatus, currentAdditionalInformation);
+        var entry = new SyncCheckResult.Entry(Manager.Controller.FilePath, currentStatus, GameInfo.ExactStatus, currentAdditionalInformation);
 
         result.Entries.Add(entry);
         result.WriteToFile(resultFile);
@@ -107,11 +107,11 @@ internal static class SyncChecker {
     }
 
     /// Indicates that a crash happened while sync-checking
-    public static void ReportCrash(Exception ex) {
+    public static void ReportCrash(string ex) {
         Logger.Error("CelesteTAS/SyncCheck", $"Detected a crash: {ex}");
 
         currentStatus = SyncCheckResult.Status.Crash;
-        currentAdditionalInformation.Crash = ex.ToString();
+        currentAdditionalInformation.Crash = ex;
     }
 
     [Initialize]
@@ -149,7 +149,7 @@ internal static class SyncChecker {
 
         Logger.Info("CelesteTAS/SyncCheck", $"Starting check for file: '{file}'");
 
-        InputController.StudioTasFilePath = file;
+        Manager.Controller.FilePath = file;
         // Insert breakpoint at the end
         Manager.Controller.FastForwards.Add(Manager.Controller.Inputs.Count, new FastForward(Manager.Controller.Inputs.Count, "", Manager.Controller.Inputs[^1].Line));
         Manager.EnableRun();
