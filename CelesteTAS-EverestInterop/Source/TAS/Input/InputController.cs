@@ -149,16 +149,27 @@ public class InputController {
     public void AdvanceFrame() {
         RefreshInputs();
 
+        Console.WriteLine($"Advance {Current} -> {Next} ({CurrentFrameInTas} / {CurrentFrameInInput}: {CurrentCommands}({CurrentCommands.Count})");
         foreach (var command in CurrentCommands) {
+            Console.WriteLine($"{command.Attribute.Name}: {command} ({command.CommandLine}) | {command.Attribute.ExecuteTiming.Has(ExecuteTiming.Runtime) &&
+                                                                                               (!EnforceLegalCommand.EnabledWhenRunning || command.Attribute.LegalInFullGame)}");
             if (command.Attribute.ExecuteTiming.Has(ExecuteTiming.Runtime) &&
                 (!EnforceLegalCommand.EnabledWhenRunning || command.Attribute.LegalInFullGame))
             {
                 command.Invoke();
             }
 
-            // SaveAndQuitReenter inserts inputs, so we can't continue executing the commands
-            // It already handles the moving of all following commands
-            if (command.Attribute.Name == "SaveAndQuitReenter") break;
+            // These commands insert new inputs dynamically, so we can't continue executing the commands
+            // Moving following commands down is already handled.
+            // Since the generated inputs might've changed, the current position in the TAS need to be updated appropriately
+            if (command.Attribute.Name is "SaveAndQuitReenter" or "SelectCampaign") {
+                var newCommand = Commands.Values
+                    .SelectMany(cmds => cmds)
+                    .FirstOrDefault(cmd => cmd.FileLine == command.FileLine && cmd.FilePath == command.FilePath);
+
+                CurrentFrameInTas = newCommand.Frame;
+                break;
+            }
         }
 
         if (!CanPlayback) {
