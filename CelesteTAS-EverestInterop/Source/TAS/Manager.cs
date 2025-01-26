@@ -321,7 +321,7 @@ public static class Manager {
         }
         var previous = Controller.Previous;
         var state = new StudioState {
-            CurrentLine = previous?.Line ?? -1,
+            CurrentLine = previous?.StudioLine ?? -1,
             CurrentLineSuffix = $"{Controller.CurrentFrameInInput + (previous?.FrameOffset ?? 0)}{previous?.RepeatString ?? ""}",
             CurrentFrameInTas = Controller.CurrentFrameInTas,
             TotalFrames = Controller.Inputs.Count,

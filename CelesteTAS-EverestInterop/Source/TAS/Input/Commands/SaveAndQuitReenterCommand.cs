@@ -62,32 +62,32 @@ public static class SaveAndQuitReenterCommand {
             }
 
             LibTasHelper.AddInputFrame("58");
-            controller.AddFrames("31", studioLine);
-            controller.AddFrames("14", studioLine);
+            controller.AddFrames("31", filePath, fileLine, studioLine);
+            controller.AddFrames("14", filePath, fileLine, studioLine);
             if (slot == -1) {
                 // Load debug slot
-                controller.AddFrames("1,D", studioLine);
+                controller.AddFrames("1,D", filePath, fileLine, studioLine);
                 // The Randomizer adds a new menu entry between CLIMB and ~DEBUG~
                 if (ModUtils.IsInstalled("Randomizer")) {
-                    controller.AddFrames("1,F,180", studioLine);
-                    controller.AddFrames("1", studioLine);
+                    controller.AddFrames("1,F,180", filePath, fileLine, studioLine);
+                    controller.AddFrames("1", filePath, fileLine, studioLine);
                 }
-                controller.AddFrames("1,O", studioLine);
-                controller.AddFrames("33", studioLine);
+                controller.AddFrames("1,O", filePath, fileLine, studioLine);
+                controller.AddFrames("33", filePath, fileLine, studioLine);
             } else {
                 // Get to the save files screen
-                controller.AddFrames("1,O", studioLine);
-                controller.AddFrames("56", studioLine);
+                controller.AddFrames("1,O", filePath, fileLine, studioLine);
+                controller.AddFrames("56", filePath, fileLine, studioLine);
                 // Alternate 1,D and 1,F,180 to select the slot
                 for (int i = 0; i < slot; i++) {
-                    controller.AddFrames(i % 2 == 0 ? "1,D" : "1,F,180", studioLine);
+                    controller.AddFrames(i % 2 == 0 ? "1,D" : "1,F,180", filePath, fileLine, studioLine);
                 }
 
                 // Load the selected save file
-                controller.AddFrames("1,O", studioLine);
-                controller.AddFrames("14", studioLine);
-                controller.AddFrames("1,O", studioLine);
-                controller.AddFrames("1", studioLine);
+                controller.AddFrames("1,O", filePath, fileLine, studioLine);
+                controller.AddFrames("14", filePath, fileLine, studioLine);
+                controller.AddFrames("1,O", filePath, fileLine, studioLine);
+                controller.AddFrames("1", filePath, fileLine, studioLine);
                 LibTasHelper.AddInputFrame("32");
             }
 

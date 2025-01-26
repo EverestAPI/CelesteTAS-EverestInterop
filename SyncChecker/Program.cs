@@ -9,6 +9,7 @@ using MonoMod.Utils;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using TAS.SyncCheck;
 
 namespace SyncChecker;
@@ -488,9 +489,9 @@ public static class Program {
         if (File.Exists(gameResultPath))
             File.Delete(gameResultPath);
 
-        if (Directory.Exists(gameSavePath))
-            Directory.Delete(gameSavePath, recursive: true);
-        Directory.CreateDirectory(gameSavePath);
+        // if (Directory.Exists(gameSavePath))
+        //     Directory.Delete(gameSavePath, recursive: true);
+        // Directory.CreateDirectory(gameSavePath);
 
         var fullResult = new Result {
             StartTime = DateTime.UtcNow,
@@ -536,8 +537,8 @@ public static class Program {
                 string filePath = filesRemaining[0];
 
                 filesRemaining.Remove(filePath);
-                fullResult.Entries.Add(new SyncCheckResult.Entry(filePath, SyncCheckResult.Status.Crash, string.Empty, new() {
-                    Crash = string.Empty,
+                fullResult.Entries.Add(new SyncCheckResult.Entry(filePath, SyncCheckResult.Status.Crash, GameInfo: string.Empty, new SyncCheckResult.AdditionalInfo {
+                    Crash = new SyncCheckResult.CrashInfo(string.Empty, 0, string.Empty),
                 }));
 
                 continue;
@@ -552,20 +553,38 @@ public static class Program {
 
                 await Console.Out.WriteLineAsync($" - '{entry.File}': {entry.Status}");
                 if (entry.Status != SyncCheckResult.Status.Success) {
-                    await Console.Out.WriteLineAsync("====== Game Info ======");
+                    await Console.Out.WriteLineAsync("======= Game Info =======");
                     await Console.Out.WriteLineAsync(entry.GameInfo);
 
                     switch (entry.Status) {
+                        case SyncCheckResult.Status.NotFinished:
+                        case SyncCheckResult.Status.UnsafeAction:
+                            await Console.Out.WriteLineAsync("====== Aborted TAS ======");
+                            if (entry.AdditionalInfo.Abort.HasValue) {
+                                var abort = entry.AdditionalInfo.Abort.Value;
+                                await Console.Out.WriteLineAsync($"File: '{abort.FilePath}' line {abort.FileLine}");
+                                await Console.Out.WriteLineAsync($"Current Input: {abort.CurrentInput}");
+                            } else {
+                                await Console.Out.WriteLineAsync("<not-available>");
+                            }
+                            break;
+
                         case SyncCheckResult.Status.Crash:
-                            await Console.Out.WriteLineAsync("===== Stack Trace =====");
-                            await Console.Out.WriteLineAsync(entry.AdditionalInfo.Crash ?? "<not-available>");
+                            await Console.Out.WriteLineAsync("===== Game  Crashed =====");
+                            if (entry.AdditionalInfo.Crash.HasValue) {
+                                var crash = entry.AdditionalInfo.Crash.Value;
+                                await Console.Out.WriteLineAsync($"File: '{crash.FilePath}' line {crash.FileLine}");
+                                await Console.Out.WriteLineAsync(crash.Error);
+                            } else {
+                                await Console.Out.WriteLineAsync("<not-available>");
+                            }
                             break;
 
                         case SyncCheckResult.Status.AssertFailed:
-                            await Console.Out.WriteLineAsync("=== Failure  Reason ===");
+                            await Console.Out.WriteLineAsync("=== Assertion Failure ===");
                             if (entry.AdditionalInfo.AssertFailed.HasValue) {
                                 var assertFailed = entry.AdditionalInfo.AssertFailed.Value;
-                                await Console.Out.WriteLineAsync($"File: {assertFailed.FilePath} line {assertFailed.FileLine}");
+                                await Console.Out.WriteLineAsync($"File: '{assertFailed.FilePath}' line {assertFailed.FileLine}");
                                 await Console.Out.WriteLineAsync($"Expected: {assertFailed.Expected}");
                                 await Console.Out.WriteLineAsync($"Actual: {assertFailed.Actual}");
                             } else {
@@ -574,7 +593,7 @@ public static class Program {
                             break;
 
                         case SyncCheckResult.Status.WrongTime:
-                            await Console.Out.WriteLineAsync("===== Wrong Times =====");
+                            await Console.Out.WriteLineAsync("====== Wrong Times ======");
                             if (entry.AdditionalInfo.WrongTime != null) {
                                 for (int i = 0; i < entry.AdditionalInfo.WrongTime.Count; i++) {
                                     var wrongTime = entry.AdditionalInfo.WrongTime[i];
@@ -583,7 +602,7 @@ public static class Program {
                                         await Console.Out.WriteLineAsync("");
                                     }
 
-                                    await Console.Out.WriteLineAsync($"- File: {wrongTime.FilePath} line {wrongTime.FileLine}");
+                                    await Console.Out.WriteLineAsync($"- File: '{wrongTime.FilePath}' line {wrongTime.FileLine}");
                                     await Console.Out.WriteLineAsync($"  Expected: {wrongTime.OldTime}");
                                     await Console.Out.WriteLineAsync($"  Actual: {wrongTime.NewTime}");
                                 }
@@ -591,26 +610,20 @@ public static class Program {
                                 await Console.Out.WriteLineAsync("<not-available>");
                             }
                             break;
-
-                        case SyncCheckResult.Status.NotFinished:
-                        case SyncCheckResult.Status.UnsafeAction:
-                        default:
-                            // No additional info available
-                            break;
                     }
 
-                    await Console.Out.WriteLineAsync("=======================");
+                    await Console.Out.WriteLineAsync("=========================");
                 }
             }
 
             if (!gameResult.Finished) {
-                // The game crashed while trying to run the latest file
-                string filePath = filesRemaining[0];
-
-                filesRemaining.Remove(filePath);
-                fullResult.Entries.Add(new SyncCheckResult.Entry(filePath, SyncCheckResult.Status.Crash, string.Empty, new() {
-                    Crash = string.Empty,
-                }));
+                // The game crashed without completing all TASes
+                foreach (var entry in gameResult.Entries) {
+                    filesRemaining.Remove(entry.File);
+                    fullResult.Entries.Add(new SyncCheckResult.Entry(entry.File, SyncCheckResult.Status.Crash, string.Empty, new() {
+                        Crash = new SyncCheckResult.CrashInfo(string.Empty, 0, string.Empty),
+                    }));
+                }
             }
         }
 
@@ -621,8 +634,8 @@ public static class Program {
         await JsonSerializer.SerializeAsync(resultFile, fullResult, jsonOptions);
 
         // Cleanup
-        if (File.Exists(gameResultPath))
-            File.Delete(gameResultPath);
+        // if (File.Exists(gameResultPath))
+        //     File.Delete(gameResultPath);
 
         return 0;
     }

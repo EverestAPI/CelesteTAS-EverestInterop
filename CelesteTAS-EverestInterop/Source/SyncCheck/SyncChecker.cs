@@ -3,16 +3,12 @@ using Celeste.Mod;
 using Celeste.Mod.Core;
 using Celeste.Mod.UI;
 using Monocle;
-using MonoMod.Cil;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using TAS.Input;
 using TAS.Module;
 using TAS.Utils;
-using BindingFlags = System.Reflection.BindingFlags;
-
-#nullable enable
 
 namespace TAS.SyncCheck;
 
@@ -61,10 +57,14 @@ internal static class SyncChecker {
         Logger.Info("CelesteTAS/SyncCheck", $"Finished check for file: '{Manager.Controller.FilePath}'");
 
         // Check for desyncs
-        if (currentStatus == SyncCheckResult.Status.Success && Engine.Scene is not (Level { Completed: true } or LevelExit or AreaComplete)) {
+        Console.WriteLine($"Curr Scene {Engine.Scene}");
+        if (Engine.Scene is Overworld ow) {
+            Console.WriteLine($"ow: {ow.Current}");
+        }
+        if (currentStatus == SyncCheckResult.Status.Success && Engine.Scene is not (Level { Completed: true } or LevelExit or AreaComplete or Overworld { Current: OuiJournal })) {
             // TAS did not finish
             currentStatus = SyncCheckResult.Status.NotFinished;
-            currentAdditionalInformation.Clear();
+            currentAdditionalInformation.Abort = new SyncCheckResult.AbortInfo(Manager.Controller.Current.FilePath, Manager.Controller.Current.FileLine, Manager.Controller.Current.ToString());
         }
 
         GameInfo.Update(updateVel: false);
@@ -94,7 +94,7 @@ internal static class SyncChecker {
 
         if (currentStatus != SyncCheckResult.Status.WrongTime) {
             currentStatus = SyncCheckResult.Status.WrongTime;
-            currentAdditionalInformation.WrongTime = new List<SyncCheckResult.WrongTimeInfo>();
+            currentAdditionalInformation.WrongTime = [];
         }
         currentAdditionalInformation.WrongTime!.Add(new SyncCheckResult.WrongTimeInfo(filePath, fileLine, oldTime, newTime));
     }
@@ -105,10 +105,10 @@ internal static class SyncChecker {
             return;
         }
 
-        Logger.Error("CelesteTAS/SyncCheck", $"Detected unsafe action");
+        Logger.Error("CelesteTAS/SyncCheck", "Detected unsafe action");
 
         currentStatus = SyncCheckResult.Status.UnsafeAction;
-        currentAdditionalInformation.Clear();
+        currentAdditionalInformation.Abort = new SyncCheckResult.AbortInfo(Manager.Controller.Current.FilePath, Manager.Controller.Current.FileLine, Manager.Controller.Current.ToString());
     }
 
     /// Indicates that an Assert-command failed
@@ -132,59 +132,49 @@ internal static class SyncChecker {
         Logger.Error("CelesteTAS/SyncCheck", $"Detected a crash: {ex}");
 
         currentStatus = SyncCheckResult.Status.Crash;
-        currentAdditionalInformation.Crash = ex;
+        currentAdditionalInformation.Crash = new SyncCheckResult.CrashInfo(Manager.Controller.Current.FilePath, Manager.Controller.Current.FileLine, ex);
     }
 
-    [Load]
-    private static void Load() {
+    [Initialize]
+    private static void Initialize() {
         On.Celeste.Celeste.OnSceneTransition += On_Celeste_OnSceneTransition;
 
         // Apply certain patches already done in headless mode, which are required to properly perform a sync check
-        if (!Everest.Flags.IsHeadless) {
-            // Skip intro animation
-            typeof(GameLoader)
-                .GetMethodInfo(nameof(GameLoader.Begin))
-                .HookAfter((GameLoader loader) => loader.skipped = true);
-
-            // Skip auto updates
-            typeof(GameLoader)
-                .GetMethodInfo("_GetNextScene")
-                .IlHook((cursor, _) => {
-                    cursor.EmitLdarg0();
-                    cursor.EmitLdarg1();
-                    cursor.EmitNewobj(typeof(OverworldLoader).GetConstructor([typeof(Overworld.StartMode), typeof(HiresSnow)])!);
-                    cursor.EmitRet();
-                });
-
-            // Skip OOBE
-            typeof(OuiOOBE)
-                .GetMethodInfo(nameof(OuiOOBE.IsStart))
-                .IlHook((cursor, _) => {
-                    cursor.EmitLdcI4(/* false */ 0);
-                    cursor.EmitRet();
-                });
-            typeof(OuiTitleScreen)
-                .GetMethodInfo(nameof(OuiTitleScreen.IsStart))
-                .IlHook((cursor, _) => {
-                    cursor.EmitLdarg0();
-                    cursor.EmitLdarg1();
-                    cursor.EmitLdarg2();
-                    cursor.EmitCallvirt(typeof(OuiTitleScreen).GetMethodInfo($"orig_{nameof(OuiTitleScreen.IsStart)}"));
-                    cursor.EmitRet();
-                });
-
-            // Disable DiscordSDK
-            typeof(CoreModule)
-                .GetMethodInfo(nameof(CoreModule.LoadSettings))
-                .IlHook((cursor, _) => {
-                    ILLabel? target = null;
-                    cursor.GotoNext(MoveType.After,
-                        instr => instr.MatchCallOrCallvirt<CoreModuleSettings>($"get_{nameof(CoreModuleSettings.DiscordRichPresence)}"),
-                        instr => instr.MatchBrfalse(out target));
-
-                    cursor.EmitBr(target!);
-                });
+        if (!Active || Everest.Flags.IsHeadless) {
+            return;
         }
+
+        // Skip intro animation
+        typeof(GameLoader)
+            .GetMethodInfo(nameof(GameLoader.Begin))
+            .HookAfter((GameLoader loader) => loader.skipped = true);
+
+        // Skip auto updates
+        typeof(GameLoader)
+            .GetMethodInfo("_GetNextScene")
+            .IlHook((cursor, _) => {
+                cursor.EmitLdarg0();
+                cursor.EmitLdarg1();
+                cursor.EmitNewobj(typeof(OverworldLoader).GetConstructor([typeof(Overworld.StartMode), typeof(HiresSnow)])!);
+                cursor.EmitRet();
+            });
+
+        // Skip OOBE
+        typeof(OuiOOBE)
+            .GetMethodInfo(nameof(OuiOOBE.IsStart))
+            .IlHook((cursor, _) => {
+                cursor.EmitLdcI4(/* false */ 0);
+                cursor.EmitRet();
+            });
+        typeof(OuiTitleScreen)
+            .GetMethodInfo(nameof(OuiTitleScreen.IsStart))
+            .IlHook((cursor, _) => {
+                cursor.EmitLdarg0();
+                cursor.EmitLdarg1();
+                cursor.EmitLdarg2();
+                cursor.EmitCallvirt(typeof(OuiTitleScreen).GetMethodInfo($"orig_{nameof(OuiTitleScreen.IsStart)}"));
+                cursor.EmitRet();
+            });
     }
     [Unload]
     private static void Unload() {
@@ -229,7 +219,7 @@ internal static class SyncChecker {
     private static void ParseFileEnd() {
         if (Active) {
             // Insert breakpoint at the end
-            Manager.Controller.FastForwards[Manager.Controller.Inputs.Count] = new FastForward(Manager.Controller.Inputs.Count, "", Manager.Controller.Inputs[^1].Line);
+            Manager.Controller.FastForwards[Manager.Controller.Inputs.Count] = new FastForward(Manager.Controller.Inputs.Count, "", Manager.Controller.Inputs[^1].StudioLine);
         }
     }
 }

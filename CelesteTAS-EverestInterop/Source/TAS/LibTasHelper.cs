@@ -88,7 +88,7 @@ public static class LibTasHelper {
             return;
         }
 
-        if (InputFrame.TryParse(inputText, 0, null, out InputFrame inputFrame)) {
+        if (InputFrame.TryParse(inputText, "", 0, 0, null, out var inputFrame)) {
             bool orig = skipNextInput;
             skipNextInput = false;
             WriteLibTasFrame(inputFrame);

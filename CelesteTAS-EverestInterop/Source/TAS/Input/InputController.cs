@@ -149,10 +149,7 @@ public class InputController {
     public void AdvanceFrame() {
         RefreshInputs();
 
-        Console.WriteLine($"Advance {Current} -> {Next} ({CurrentFrameInTas} / {CurrentFrameInInput}: {CurrentCommands}({CurrentCommands.Count})");
         foreach (var command in CurrentCommands) {
-            Console.WriteLine($"{command.Attribute.Name}: {command} ({command.CommandLine}) | {command.Attribute.ExecuteTiming.Has(ExecuteTiming.Runtime) &&
-                                                                                               (!EnforceLegalCommand.EnabledWhenRunning || command.Attribute.LegalInFullGame)}");
             if (command.Attribute.ExecuteTiming.Has(ExecuteTiming.Runtime) &&
                 (!EnforceLegalCommand.EnabledWhenRunning || command.Attribute.LegalInFullGame))
             {
@@ -181,7 +178,7 @@ public class InputController {
         InputHelper.FeedInputs(Current);
 
         // Increment if it's still the same input
-        if (CurrentFrameInInput == 0 || Current.Line == Previous!.Line && Current.RepeatIndex == Previous.RepeatIndex && Current.FrameOffset == Previous.FrameOffset) {
+        if (CurrentFrameInInput == 0 || Current.StudioLine == Previous!.StudioLine && Current.RepeatIndex == Previous.RepeatIndex && Current.FrameOffset == Previous.FrameOffset) {
             CurrentFrameInInput++;
         } else {
             CurrentFrameInInput = 1;
@@ -264,16 +261,16 @@ public class InputController {
                 Comments[CurrentParsingFrame] = comments = [];
             }
             comments.Add(new Comment(CurrentParsingFrame, path, fileLine, lineText));
-        } else if (!AutoInputCommand.TryInsert(path, lineText, studioLine, repeatIndex, repeatCount)) {
-            AddFrames(lineText, studioLine, repeatIndex, repeatCount);
+        } else if (!AutoInputCommand.TryInsert(path, fileLine, lineText, studioLine, repeatIndex, repeatCount)) {
+            AddFrames(lineText, path, fileLine, studioLine, repeatIndex, repeatCount);
         }
 
         return true;
     }
 
     /// Parses the input line and adds it to the TAS
-    public void AddFrames(string line, int studioLine, int repeatIndex = 0, int repeatCount = 0, int frameOffset = 0) {
-        if (InputFrame.TryParse(line, studioLine, Inputs.LastOrDefault(), out var inputFrame, repeatIndex, repeatCount, frameOffset)) {
+    public void AddFrames(string line, string path, int fileLine, int studioLine, int repeatIndex = 0, int repeatCount = 0, int frameOffset = 0) {
+        if (InputFrame.TryParse(line, path, fileLine, studioLine, Inputs.LastOrDefault(), out var inputFrame, repeatIndex, repeatCount, frameOffset)) {
             AddFrames(inputFrame);
         }
     }

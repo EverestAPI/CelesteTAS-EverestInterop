@@ -46,7 +46,7 @@ public static class PlayCommand {
         }
 
         if (args.Length > 1 && int.TryParse(args[1], out _)) {
-            Manager.Controller.AddFrames(args[1], studioLine);
+            Manager.Controller.AddFrames(args[1], filePath, fileLine, studioLine);
         }
 
         if (startLine <= studioLine + 1) {
