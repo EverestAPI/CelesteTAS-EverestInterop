@@ -130,8 +130,8 @@ TAS_KEY_TRIGGER_HITBOXES=     Trigger Hitboxes
 TAS_KEY_SIMPLIFIED_GRAPHICS=  Simplified Graphics
 TAS_KEY_CENTER_CAMERA=        Center Camera
 TAS_KEY_LOCK_CAMERA=          Lock Camera
-TAS_KEY_SAVE_STATE=           Save State
-TAS_KEY_CLEAR_STATE=          Clear State
+TAS_KEY_SAVE_STATE=           Save State in TAS
+TAS_KEY_CLEAR_STATE=          Clear State in TAS
 TAS_KEY_INFO_HUD=             Info HUD
 TAS_KEY_FREE_CAMERA=          Free Camera
 
