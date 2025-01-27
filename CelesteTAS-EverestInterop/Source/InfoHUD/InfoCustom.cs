@@ -213,7 +213,7 @@ public static class InfoCustom {
 
         // Evaluate Lua code for main line
         yield return LuaRegex.Replace(mainResult, match => {
-            if (TargetQuery.PreventCodeExecution) {
+            if (TargetQuery.PreventCodeExecution && !forceAllowCodeExecution) {
                 return "<Cannot safely evaluate Lua code during EnforceLegal>";
             }
 
