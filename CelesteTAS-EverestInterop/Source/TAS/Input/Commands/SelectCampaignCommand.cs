@@ -93,7 +93,12 @@ internal static class SelectCampaignCommand {
     public static void SelectCampaign(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         var controller = Manager.Controller;
 
-        if (!ParsingCommand) {
+        if (!Command.Parsing) {
+            if (EnforceLegalCommand.EnabledWhenRunning && Engine.Scene is not Overworld { Current: OuiTitleScreen }) {
+                AbortTas("SelectCampaign command must start on title screen");
+                return;
+            }
+
             // Ensure inputs are up-to-date
             controller.RefreshInputs(forceRefresh: true);
             return;
@@ -124,13 +129,9 @@ internal static class SelectCampaignCommand {
             return;
         }
 
-        if (controller.CurrentParsingFrame != 0) {
-            AbortTas("SelectCampaign command must be at beginning of file");
-            return;
-        }
-
         controller.ReadLine("Unsafe", filePath, fileLine, studioLine);
         controller.ReadLine("console overworld", filePath, fileLine, studioLine);
+
         controller.AddFrames("2", studioLine);
         LibTasHelper.AddInputFrame("1,O");
         LibTasHelper.AddInputFrame("89");
