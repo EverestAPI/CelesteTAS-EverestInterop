@@ -2502,7 +2502,18 @@ public sealed class Editor : SkiaDrawable {
 
     private void OnFind() {
         if (!Document.Selection.Empty) {
-            lastFindQuery = Document.GetSelectedText();
+            var min = Document.Selection.Min;
+            var max = Document.Selection.Max;
+
+            // Clamp to current line
+            if (min < new CaretPosition(Document.Caret.Row, 0)) {
+                min = new CaretPosition(Document.Caret.Row, 0);
+            }
+            if (max > new CaretPosition(Document.Caret.Row, Document.Lines[Document.Caret.Row].Length)) {
+                max = new CaretPosition(Document.Caret.Row, Document.Lines[Document.Caret.Row].Length);
+            }
+
+            lastFindQuery = Document.GetTextInRange(min, max);
         }
 
         FindDialog.Show(this, ref lastFindQuery, ref lastFindMatchCase);
