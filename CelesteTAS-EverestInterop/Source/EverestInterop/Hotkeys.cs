@@ -219,10 +219,10 @@ public static class Hotkeys {
                 TasSettings.CenterCamera = !TasSettings.CenterCamera;
                 CelesteTasModule.Instance.SaveSettings();
             }
+        }
 
-            if (OpenConsole.Pressed) {
-                ConsoleEnhancements.OpenConsole();
-            }
+        if (OpenConsole.Pressed) {
+            ConsoleEnhancements.OpenConsole();
         }
 
         Hud.Toggle();
