@@ -107,17 +107,20 @@ public readonly record struct Command(
                 return false;
             }
 
-            if (info.ExecuteTiming.Has(ExecuteTiming.Parse)) {
-                Parsing = true;
-                info.Execute(commandLine, studioLine, filePath, fileLine);
-                Parsing = false;
-            }
-
             command = new Command(commandLine, info, filePath, fileLine, studioLine, frame);
             return true;
         } catch (Exception e) {
             e.LogException(error);
             return false;
+        }
+    }
+
+    /// Invokes the command's target method if it should generate inputs
+    public void Setup() {
+        if (Attribute.ExecuteTiming.Has(ExecuteTiming.Parse)) {
+            Parsing = true;
+            Attribute.Execute(CommandLine, StudioLine, FilePath, FileLine);
+            Parsing = false;
         }
     }
 

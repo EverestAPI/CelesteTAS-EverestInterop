@@ -31,7 +31,7 @@ public static class SaveAndQuitReenterCommand {
 
         // Set justPressedSnQ to true when button is pressed
         typeof(Level)
-            .GetNestedType("<>c__DisplayClass149_0", BindingFlags.NonPublic)
+            .GetNestedType("<>c__DisplayClass149_0", BindingFlags.NonPublic)!
             .GetMethodInfo("<Pause>b__8")
             .IlHook((cursor, _) => cursor
                 .EmitLdcI4(/*true*/ 1)
@@ -39,7 +39,7 @@ public static class SaveAndQuitReenterCommand {
 
         // Reset justPressedSnQ back to false
         typeof(Level)
-            .GetMethod("Update")
+            .GetMethodInfo("Update")
             .IlHook((cursor, _) => cursor
                 .EmitLdcI4(/*false*/ 0)
                 .EmitStsfld(f_justPressedSnQ));
@@ -52,13 +52,19 @@ public static class SaveAndQuitReenterCommand {
 
     [TasCommand("SaveAndQuitReenter", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
     private static void SaveAndQuitReenter(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
-        InputController controller = Manager.Controller;
+        var controller = Manager.Controller;
 
         if (ParsingCommand) {
             int slot = ActiveFileSlot;
+
             bool safe = SafeCommand.DisallowUnsafeInputParsing;
             if (safe) {
                 controller.ReadLine("Unsafe", filePath, fileLine, studioLine);
+            }
+
+            // Ensure ~DEBUG~ button is available
+            if (slot == -1 && Celeste.Celeste.PlayMode != Celeste.Celeste.PlayModes.Debug) {
+                controller.ReadLine("Set,Celeste.PlayMode,Debug", filePath, fileLine, studioLine);
             }
 
             LibTasHelper.AddInputFrame("58");
@@ -91,6 +97,11 @@ public static class SaveAndQuitReenterCommand {
                 LibTasHelper.AddInputFrame("32");
             }
 
+            // Restore settings
+            if (slot == -1 && Celeste.Celeste.PlayMode != Celeste.Celeste.PlayModes.Debug) {
+                controller.ReadLine($"Set,Celeste.PlayMode,{Celeste.Celeste.PlayMode}", filePath, fileLine, studioLine);
+                controller.ReadLine("Set,Engine.Commands.Enabled,false", filePath, fileLine, studioLine);
+            }
             if (safe) {
                 controller.ReadLine("Safe", filePath, fileLine, studioLine);
             }
