@@ -189,7 +189,7 @@ public static class StudioHelper {
             // Keep "Celeste Studio.toml" for the settings to be migrated by Studio v3
 
             // Display migration (Studio v3 was never launched since the v2 .exe still existed)
-            string path = Path.GetTempFileName();
+            string path = Path.Combine(StudioDirectory, "migration_notice.txt");
             string text =
                 """
                 === Celeste TAS Studio v3 - Migration notice ===
