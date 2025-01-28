@@ -34,18 +34,6 @@ public static class HitboxOptimized {
             });
         }
 
-        //remove overdraw issue with show hitboxes that occurs when using Stopwatch from Spirialis Helper.
-        //Adds a branch instruction at the beginning of the function that checks whether or not hitboxes are enabled, then returns immediately if they are.
-        if (ModUtils.GetType("SpirialisHelper", "Celeste.Mod.Spirialis.TimeController")?.GetMethodInfo("DrawTimestopEntities") is { } spirialisDrawMethodInfo) {
-            spirialisDrawMethodInfo.IlHook((cursor, context) => {
-                if (cursor.TryGotoNext(MoveType.After, ins => ins.MatchCall<Entity>("SceneAs"), ins => ins.MatchStloc(0))) {
-                    Instruction cursorNext = cursor.Next;
-                    cursor.EmitDelegate<Func<bool>>(IsShowHitboxes);
-                    cursor.Emit(OpCodes.Brfalse, cursorNext).Emit(OpCodes.Ret);
-                }
-            });
-        }
-
         typeof(Puffer).GetMethodInfo("Explode").HookBefore<Puffer>(self => pufferPushRadius.Add(new Circle(40f, self.X, self.Y)));
         typeof(Puffer).GetMethod("Render").IlHook((cursor, context) => {
             if (cursor.TryGotoNext(i => i.MatchLdloc(out _), i => i.MatchLdcI4(28))) {
