@@ -14,6 +14,8 @@ using StudioCommunication;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
+using TAS.InfoHUD;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -28,7 +30,8 @@ public static class GameInfo {
     public static string ExactStatusWithoutTime = string.Empty;
     public static string LevelName = string.Empty;
     public static string ChapterTime = string.Empty;
-    public static string WatchingInfo = string.Empty;
+    public static string HudWatchingInfo = string.Empty;
+    public static string StudioWatchingInfo = string.Empty;
     public static string CustomInfo = string.Empty;
     public static Vector2Double LastDiff;
     public static Vector2Double LastPos;
@@ -53,8 +56,8 @@ public static class GameInfo {
                 infos.Add(CustomInfo);
             }
 
-            if ((TasSettings.InfoWatchEntity & HudOptions.HudOnly) != 0 && WatchingInfo.IsNotNullOrWhiteSpace()) {
-                infos.Add(WatchingInfo);
+            if (TasSettings.HudWatchEntity && HudWatchingInfo.IsNotNullOrWhiteSpace()) {
+                infos.Add(HudWatchingInfo);
             }
 
             return string.Join("\n\n", infos);
@@ -73,8 +76,8 @@ public static class GameInfo {
                 infos.Add(CustomInfo);
             }
 
-            if ((TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0 && WatchingInfo.IsNotNullOrWhiteSpace()) {
-                infos.Add(WatchingInfo);
+            if (TasSettings.StudioWatchEntity && StudioWatchingInfo.IsNotNullOrWhiteSpace()) {
+                infos.Add(StudioWatchingInfo);
             }
 
             return string.Join("\n\n", infos);
@@ -89,15 +92,38 @@ public static class GameInfo {
                 infos.Add(InfoMouse.MouseInfo);
             }
 
-            WatchingInfo = InfoWatchEntity.GetInfo(alwaysUpdate: true, decimals: GameSettings.MaxDecimals);
+            StudioWatchingInfo = InfoWatchEntity.GetInfo(TasSettings.InfoWatchEntityStudioType, alwaysUpdate: true, decimals: GameSettings.MaxDecimals);
             CustomInfo = InfoCustom.GetInfo(GameSettings.MaxDecimals);
 
             if (CustomInfo.IsNotNullOrWhiteSpace()) {
                 infos.Add(CustomInfo);
             }
 
-            if (WatchingInfo.IsNotNullOrWhiteSpace()) {
-                infos.Add(WatchingInfo);
+            if (StudioWatchingInfo.IsNotNullOrWhiteSpace()) {
+                infos.Add(StudioWatchingInfo);
+            }
+
+            return string.Join("\n\n", infos);
+        }
+    }
+
+    public static string ExactStudioInfoAllowCodeExecution {
+        get {
+            List<string> infos = new() {ExactStatus};
+
+            if (InfoMouse.MouseInfo.IsNotEmpty()) {
+                infos.Add(InfoMouse.MouseInfo);
+            }
+
+            StudioWatchingInfo = InfoWatchEntity.GetInfo(TasSettings.InfoWatchEntityStudioType, alwaysUpdate: true, decimals: GameSettings.MaxDecimals);
+            CustomInfo = InfoCustom.GetInfo(GameSettings.MaxDecimals, forceAllowCodeExecution: true);
+
+            if (CustomInfo.IsNotNullOrWhiteSpace()) {
+                infos.Add(CustomInfo);
+            }
+
+            if (StudioWatchingInfo.IsNotNullOrWhiteSpace()) {
+                infos.Add(StudioWatchingInfo);
             }
 
             return string.Join("\n\n", infos);
@@ -151,9 +177,7 @@ public static class GameInfo {
     private static void SceneOnAfterUpdate(On.Monocle.Scene.orig_AfterUpdate orig, Scene self) {
         orig(self);
 
-        if (Manager.UltraFastForwarding) {
-            return;
-        }
+        // TODO: While fast forwarding, only store required data for frame and compute string later
 
         if (self is Level level) {
             Update(!level.wasPaused);
@@ -197,6 +221,9 @@ public static class GameInfo {
     }
 
     public static void Update(bool updateVel = false) {
+        if (TasHelperInterop.InPrediction) {
+            return;
+        }
         Scene scene = Engine.Scene;
         if (scene is Level level) {
             Player player = level.Tracker.GetEntity<Player>();
@@ -220,8 +247,8 @@ public static class GameInfo {
 
                 string analog = string.Empty;
                 string exactAnalog = string.Empty;
-                if (Manager.Running && Manager.Controller.Previous is { } inputFrame && inputFrame.HasActions(Actions.Feather)) {
-                    analog = GetAdjustedAnalog(inputFrame.AngleVector2, out exactAnalog);
+                if (Manager.Running && Manager.Controller.Previous is { } inputFrame && EnumExtensions.Has(inputFrame.Actions, Actions.Feather)) {
+                    analog = GetAdjustedAnalog(inputFrame.StickPosition, out exactAnalog);
                 }
 
                 string retainedSpeed = GetAdjustedRetainedSpeed(player, out string exactRetainedSpeed);
@@ -277,7 +304,7 @@ public static class GameInfo {
                     timers += $"DashCD({dashCooldown}) ";
                 }
 
-                if ((FramesPerGameSecond != 60 || SaveData.Instance.Assists.SuperDashing || ExtendedVariantsUtils.SuperDashing) &&
+                if ((FramesPerGameSecond != 60 || SaveData.Instance.Assists.SuperDashing || ExtendedVariantsInterop.SuperDashing) &&
                     DashTime.ToCeilingFrames() >= 1 && player.StateMachine.State == Player.StDash) {
                     DashTime = player.StateMachine.currentCoroutine.waitTimer;
                     timers += $"Dash({DashTime.ToCeilingFrames()}) ";
@@ -352,7 +379,8 @@ public static class GameInfo {
         } else {
             LevelName = string.Empty;
             ChapterTime = string.Empty;
-            WatchingInfo = string.Empty;
+            HudWatchingInfo = string.Empty;
+            StudioWatchingInfo = string.Empty;
             CustomInfo = string.Empty;
             if (scene is SummitVignette summit) {
                 Status = ExactStatus = $"SummitVignette {summit.ready}";
@@ -362,7 +390,7 @@ public static class GameInfo {
                     ouiName = $"{oui.GetType().Name} ";
                 }
 
-                Status = ExactStatus = $"Overworld {ouiName}{overworld.ShowInputUI}";
+                Status = ExactStatus = ouiName;
             } else if (scene != null) {
                 Status = ExactStatus = scene.GetType().Name;
             }
@@ -370,12 +398,7 @@ public static class GameInfo {
     }
 
     private static void UpdateAdditionInfo() {
-        if (TasSettings.InfoHud && (TasSettings.InfoWatchEntity & HudOptions.HudOnly) != 0 ||
-            (TasSettings.InfoWatchEntity & HudOptions.StudioOnly) != 0 && CommunicationWrapper.Connected) {
-            WatchingInfo = InfoWatchEntity.GetInfo();
-        } else {
-            WatchingInfo = string.Empty;
-        }
+        InfoWatchEntity.UpdateInfo();
 
         if (TasSettings.InfoHud && (TasSettings.InfoCustom & HudOptions.HudOnly) != 0 ||
             (TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && CommunicationWrapper.Connected) {
@@ -458,7 +481,7 @@ public static class GameInfo {
             || playerSeeker != null
             || SaveData.Instance.Assists.ThreeSixtyDashing
             || SaveData.Instance.Assists.SuperDashing
-            || ExtendedVariantsUtils.SuperDashing) {
+            || ExtendedVariantsInterop.SuperDashing) {
             builder.AppendLine(polarVel);
         }
 
@@ -633,12 +656,16 @@ public static class PlayerStates {
     }
 
     public static string GetCurrentStateName(Player player) {
-        StateMachine stateMachine = player.StateMachine;
-        if (States.TryGetValue(stateMachine.state, out string name)) {
-            return name;
-        } else {
-            return GetCurrentStateNameFunc?.Invoke(stateMachine) ?? stateMachine.state.ToString();
+        if (!States.TryGetValue(player.StateMachine.state, out string? name)) {
+            name = player.StateMachine.GetCurrentStateName();
         }
+
+        // Ensure "St" prefix
+        if (!name.StartsWith("St")) {
+            name = $"St{name}";
+        }
+
+        return name;
     }
 
     // ReSharper disable once UnusedMember.Global

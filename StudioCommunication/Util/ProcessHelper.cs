@@ -6,13 +6,13 @@ namespace StudioCommunication.Util;
 
 public static class ProcessHelper
 {
-    public static void OpenInDefaultApp(string path) {
+    public static Process? OpenInDefaultApp(string path) {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            return Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-            Process.Start("xdg-open", [path]);
+            return Process.Start("xdg-open", [path]);
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-            Process.Start("open", [path]);
+            return Process.Start("open", [path]);
         } else {
             throw new NotImplementedException($"Unsupported platform: {RuntimeInformation.OSDescription} with {RuntimeInformation.OSArchitecture}");
         }
@@ -27,15 +27,13 @@ public static class ProcessHelper
         }
 
         // Windows
-        FreeConsole();
-        AttachConsole((uint)process.Id);
-        GenerateConsoleCtrlEvent(0, 0);
+        if (process.MainWindowHandle != IntPtr.Zero) {
+            PostMessage(process.MainWindowHandle, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+        }
     }
 
-    [DllImport("kernel32.dll")]
-    private static extern bool GenerateConsoleCtrlEvent(uint dwCtrlEvent, uint dwProcessGroupId);
-    [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool AttachConsole(uint dwProcessId);
-    [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
-    private static extern bool FreeConsole();
+    [DllImport("user32.dll")]
+    private static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+    private const uint WM_CLOSE = 0x0010;
 }

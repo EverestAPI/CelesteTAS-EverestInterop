@@ -2,7 +2,7 @@
 using StudioCommunication;
 using System.Collections.Generic;
 using System.IO;
-using TAS.EverestInterop.InfoHUD;
+using TAS.InfoHUD;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -63,7 +63,7 @@ public static class AssertCommand {
             string? failureMessage = args.Length >= 4 ? args[3] : null;
 
             Running = true;
-            string actual = InfoCustom.ParseTemplate(actualTemplate, 0, [], false);
+            string actual = string.Join("\n", InfoCustom.ParseTemplateLine(actualTemplate, 0, forceAllowCodeExecution: true));
             Running = false;
 
             switch (condition) {
@@ -71,7 +71,7 @@ public static class AssertCommand {
                     if (actual != expected) {
                         failureMessage ??= $"""
                                             Expected equal: {expected}
-                                            But was: {actual}"
+                                            But was: {actual}
                                             """;
                         AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
@@ -81,7 +81,7 @@ public static class AssertCommand {
                     if (actual == expected) {
                         failureMessage ??= $"""
                                             Expected not equal: {expected}
-                                            But was: {actual}"
+                                            But was: {actual}
                                             """;
                         AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
@@ -91,7 +91,7 @@ public static class AssertCommand {
                     if (!actual.Contains(expected)) {
                         failureMessage ??= $"""
                                             Expected contain: {expected}
-                                            But was: {actual}"
+                                            But was: {actual}
                                             """;
                         AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
@@ -100,7 +100,7 @@ public static class AssertCommand {
                     if (actual.Contains(expected)) {
                         failureMessage ??= $"""
                                             Expected not contain: {expected}
-                                            But was: {actual}"
+                                            But was: {actual}
                                             """;
                         AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
@@ -109,7 +109,7 @@ public static class AssertCommand {
                     if (!actual.StartsWith(expected)) {
                         failureMessage ??= $"""
                                             Expected starts with: {expected}
-                                            But was: {actual}"
+                                            But was: {actual}
                                             """;
                         AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
@@ -118,7 +118,7 @@ public static class AssertCommand {
                     if (actual.StartsWith(expected)) {
                         failureMessage ??= $"""
                                             Expected not starts with: {expected}
-                                            But was: {actual}"
+                                            But was: {actual}
                                             """;
                         AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
@@ -127,7 +127,7 @@ public static class AssertCommand {
                     if (!actual.EndsWith(expected)) {
                         failureMessage ??= $"""
                                             Expected ends with: {expected}
-                                            But was: {actual}"
+                                            But was: {actual}
                                             """;
                         AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
@@ -136,7 +136,7 @@ public static class AssertCommand {
                     if (actual.EndsWith(expected)) {
                         failureMessage ??= $"""
                                             Expected not ends with: {expected}
-                                            But was: {actual}"
+                                            But was: {actual}
                                             """;
                         AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }

@@ -43,19 +43,6 @@ public static class GameData {
         return ConsoleCommand.CreateConsoleCommand(simple);
     }
 
-    private static uint getGamebananaId(string url) {
-        uint gbid = 0;
-        if (url.StartsWith("http://gamebanana.com/dl/") && uint.TryParse(url.Substring("http://gamebanana.com/dl/".Length), out gbid))
-            return gbid;
-        if (url.StartsWith("https://gamebanana.com/dl/") && uint.TryParse(url.Substring("https://gamebanana.com/dl/".Length), out gbid))
-            return gbid;
-        if (url.StartsWith("http://gamebanana.com/mmdl/") && uint.TryParse(url.Substring("http://gamebanana.com/mmdl/".Length), out gbid))
-            return gbid;
-        if (url.StartsWith("https://gamebanana.com/mmdl/") && uint.TryParse(url.Substring("https://gamebanana.com/mmdl/".Length), out gbid))
-            return gbid;
-        return gbid;
-    }
-
     public static string GetModInfo() {
         if (Engine.Scene is not Level level) {
             return string.Empty;
@@ -114,8 +101,8 @@ public static class GameData {
         modInfo += "\n# Map:\n";
         if (mapMeta != null) {
             modInfo += MetaToString(mapMeta, 2);
-            if (modUpdateInfos?.TryGetValue(mapMeta.Name, out var modUpdateInfo) == true && getGamebananaId(modUpdateInfo.URL) is var gamebananaId and > 0) {
-                modInfo += $"#   https://gamebanana.com/mods/{gamebananaId}\n";
+            if (modUpdateInfos?.TryGetValue(mapMeta.Name, out var modUpdateInfo) == true && modUpdateInfo.GameBananaId > 0) {
+                modInfo += $"#   https://gamebanana.com/mods/{modUpdateInfo.GameBananaId}\n";
             }
         }
 
@@ -170,11 +157,39 @@ public static class GameData {
             return string.Empty;
         }
 
-        if (modUpdateInfos?.TryGetValue(moduleName, out var modUpdateInfo) == true && getGamebananaId(modUpdateInfo.URL) is var gamebananaId and > 0) {
-            return $"# {moduleName}\n# https://gamebanana.com/mods/{gamebananaId}\n\n";
+        if (modUpdateInfos?.TryGetValue(moduleName, out var modUpdateInfo) == true && modUpdateInfo.GameBananaId > 0) {
+            return $"# {moduleName}\n# https://gamebanana.com/mods/{modUpdateInfo.GameBananaId}\n\n";
         }
 
         return string.Empty;
+    }
+
+    public static int? GetWakeupTime() {
+        if (Engine.Scene is not Level level) {
+            return null;
+        }
+
+        AreaData areaData = AreaData.Get(level);
+
+        int? wakeupTime = areaData.IntroType switch {
+            // Player.IntroTypes.Transition => expr,
+            Player.IntroTypes.Respawn => 36,
+            // Player.IntroTypes.WalkInRight => expr,
+            // Player.IntroTypes.WalkInLeft => expr,
+            // Player.IntroTypes.Jump => expr,
+            Player.IntroTypes.WakeUp => 190,
+            // Player.IntroTypes.Fall => expr,
+            // Player.IntroTypes.TempleMirrorVoid => expr,
+            Player.IntroTypes.None => null,
+            // Player.IntroTypes.ThinkForABit => expr,
+            _ => null,
+        };
+
+        if (wakeupTime == null) {
+            $"Couldn't determine wakeup time for intro type '{areaData.IntroType}'".Log(LogLevel.Warn);
+        }
+
+        return wakeupTime;
     }
 
     public static GameState? GetGameState() {

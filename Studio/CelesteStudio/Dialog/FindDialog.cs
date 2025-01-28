@@ -12,15 +12,15 @@ public class FindDialog : Eto.Forms.Dialog {
     private bool needsSearch = true;
     private readonly List<CaretPosition> matches = [];
 
-    private readonly TextBox textBox;
+    private readonly TextBox searchQuery;
     private readonly CheckBox matchCase;
 
     private FindDialog(Editor editor, string initialText) {
         this.editor = editor;
 
-        textBox = new TextBox { Text = initialText, PlaceholderText = "Search", Width = 200 };
+        searchQuery = new TextBox { Text = initialText, PlaceholderText = "Search", Width = 200 };
         matchCase = new CheckBox { Text = "Match Case", Checked = Settings.Instance.FindMatchCase };
-        textBox.TextChanging += (_, _) => needsSearch = true;
+        searchQuery.TextChanging += (_, _) => needsSearch = true;
         matchCase.CheckedChanged += (_, _) => needsSearch = true;
 
         var nextButton = new Button { Text = "Next", Width = 95};
@@ -33,7 +33,7 @@ public class FindDialog : Eto.Forms.Dialog {
             Padding = 10,
             Spacing = 10,
             Items = {
-                textBox,
+                searchQuery,
                 matchCase,
                 new StackLayout {
                     Spacing = 10,
@@ -44,14 +44,11 @@ public class FindDialog : Eto.Forms.Dialog {
                 }
             },
         };
-        Icon = Assets.AppIcon;
-        Studio.RegisterDialog(this);
 
         KeyDown += HandleKeyDown;
-        textBox.KeyDown += HandleKeyDown;
+        searchQuery.KeyDown += HandleKeyDown;
 
-        Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
-        Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
+        Studio.RegisterDialog(this);
 
         return;
 
@@ -99,7 +96,7 @@ public class FindDialog : Eto.Forms.Dialog {
         // Check against end of selection
         for (int i = matches.Count - 1; i >= 0; i--) {
             var match = matches[i];
-            var end = new CaretPosition(match.Row, match.Col + textBox.Text.Length);
+            var end = new CaretPosition(match.Row, match.Col + searchQuery.Text.Length);
 
             if (end < editor.Document.Caret) {
                 SelectMatch(match);
@@ -113,7 +110,7 @@ public class FindDialog : Eto.Forms.Dialog {
     private void SelectMatch(CaretPosition match) {
         editor.Document.Caret = match;
         editor.Document.Selection.Start = match;
-        editor.Document.Selection.End = match with { Col = match.Col + textBox.Text.Length };
+        editor.Document.Selection.End = match with { Col = match.Col + searchQuery.Text.Length };
         editor.ScrollCaretIntoView(center: true);
         editor.Invalidate();
     }
@@ -123,23 +120,23 @@ public class FindDialog : Eto.Forms.Dialog {
         var compare = (matchCase.Checked ?? false) ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase;
 
         matches.Clear();
-        var search = textBox.Text;
+        string search = searchQuery.Text;
         if (search.Length == 0) {
             return;
         }
 
         for (int row = 0; row < editor.Document.Lines.Count; row++) {
-            var line = editor.Document.Lines[row];
+            string line = editor.Document.Lines[row];
             int col = 0;
 
             while (true) {
-                int idx = line.IndexOf(textBox.Text, col, compare);
-                if (idx < 0) {
+                col = line.IndexOf(searchQuery.Text, col, compare);
+                if (col < 0) {
                     break;
                 }
 
-                matches.Add(new CaretPosition(row, col + idx));
-                col = idx + textBox.Text.Length;
+                matches.Add(new CaretPosition(row, col));
+                col += searchQuery.Text.Length;
             }
         }
 
@@ -148,5 +145,11 @@ public class FindDialog : Eto.Forms.Dialog {
         }
     }
 
-    public static void Show(Editor editor, string initialText) => new FindDialog(editor, initialText).ShowModal();
+    public static void Show(Editor editor, ref string searchQuery, ref bool matchCase) {
+        var dialog = new FindDialog(editor, searchQuery);
+        dialog.ShowModal();
+
+        searchQuery = dialog.searchQuery.Text;
+        matchCase = dialog.matchCase.Checked == true;
+    }
 }

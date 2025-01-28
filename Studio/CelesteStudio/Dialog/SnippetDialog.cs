@@ -51,7 +51,6 @@ public class SnippetDialog : Dialog<bool> {
                 }.FixBorder()
             }
         };
-        Icon = Assets.AppIcon;
 
         DefaultButton = new Button((_, _) => Close(true)) { Text = "&OK" };
         AbortButton = new Button((_, _) => Close(false)) { Text = "&Cancel" };
@@ -59,8 +58,7 @@ public class SnippetDialog : Dialog<bool> {
         PositiveButtons.Add(DefaultButton);
         NegativeButtons.Add(AbortButton);
 
-        Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
-        Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
+        Studio.RegisterDialog(this);
     }
 
     private void GenerateListEntries(ICollection<StackLayoutItem> items) {
@@ -81,7 +79,7 @@ public class SnippetDialog : Dialog<bool> {
             var shortcutTextBox = new TextBox { Text = snippet.Shortcut };
             shortcutTextBox.TextChanged += (_, _) => snippet.Shortcut = shortcutTextBox.Text.ReplaceLineEndings(Document.NewLine.ToString());
 
-            var textArea = new TextArea {Text = snippet.Insert, Font = FontManager.EditorFontRegular, Width = 500 };
+            var textArea = new TextArea {Text = snippet.Insert, Font = FontManager.EditorFont, Width = 500 };
             textArea.TextChanged += (_, _) => snippet.Insert = textArea.Text.ReplaceLineEndings(Document.NewLine.ToString());
 
             int idx = i;

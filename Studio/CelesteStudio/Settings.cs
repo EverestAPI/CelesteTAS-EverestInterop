@@ -13,7 +13,6 @@ using Eto.Drawing;
 using Eto.Forms;
 using StudioCommunication.Util;
 using System.Diagnostics;
-using System.Net;
 using Tomlet;
 using Tomlet.Attributes;
 using Tomlet.Exceptions;
@@ -21,6 +20,7 @@ using Tomlet.Models;
 
 namespace CelesteStudio;
 
+public enum AutoRoomIndexing { Disabled, CurrentFile, IncludeReads }
 public enum InsertDirection { Above, Below }
 public enum CaretInsertPosition { AfterInsert, PreviousPosition }
 public enum CommandSeparator { Space, Comma, CommaSpace }
@@ -46,8 +46,8 @@ public sealed class Settings {
     public static event Action? Changed;
     public static void OnChanged() => Changed?.Invoke();
 
-    public static event Action? ThemeChanged;
-    public static void OnThemeChanged() => ThemeChanged?.Invoke();
+    public static event Action ThemeChanged = () => Instance.Theme.InvalidateCache();
+    public static void OnThemeChanged() => ThemeChanged.Invoke();
 
     public static event Action FontChanged = FontManager.OnFontChanged;
     public static void OnFontChanged() => FontChanged.Invoke();
@@ -64,10 +64,10 @@ public sealed class Settings {
     [TomlNonSerialized]
     public Theme Theme {
         get {
-            if (Theme.BuiltinThemes.TryGetValue(ThemeName, out Theme builtinTheme)) {
+            if (Theme.BuiltinThemes.TryGetValue(ThemeName, out var builtinTheme)) {
                 return builtinTheme;
             }
-            if (CustomThemes.TryGetValue(ThemeName, out Theme customTheme)) {
+            if (CustomThemes.TryGetValue(ThemeName, out var customTheme)) {
                 return customTheme;
             }
             // Fall back to light theme
@@ -112,13 +112,17 @@ public sealed class Settings {
 
     public bool AutoSave { get; set; } = true;
     public bool AutoRemoveMutuallyExclusiveActions { get; set; } = true;
-    public bool AutoIndexRoomLabels { get; set; } = true;
+    public AutoRoomIndexing AutoIndexRoomLabels { get; set; } = AutoRoomIndexing.CurrentFile;
+    public bool AutoSelectFullActionLine { get; set; } = true;
     public bool SyncCaretWithPlayback { get; set; } = true;
+    public bool AutoMultilineComments { get; set; } = true;
 
     public bool SendInputsToCeleste { get; set; } = true;
     public bool SendInputsOnActionLines { get; set; } = true;
     public bool SendInputsOnCommands { get; set; } = true;
     public bool SendInputsOnComments { get; set; } = false;
+    public bool SendInputsDisableWhileRunning { get; set; } = true;
+    public bool SendInputsNonWritable { get; set; } = true;
     public float SendInputsTypingTimeout { get; set; } = 0.3f;
 
     public float ScrollSpeed { get; set; } = 0.0f; // A value <= 0.0f means to use the native scrollable
@@ -165,6 +169,10 @@ public sealed class Settings {
 
     public bool FindMatchCase { get; set; }
 
+    /// In some rare cases, only creating a new WritableBitmap causes an update to the editor
+    /// Since this can cause a significant increase in resources, it's behind a flag
+    public bool WPFSkiaHack { get; set; } = false;
+
     // Zoom is temporary, so not saved
     [TomlNonSerialized]
     public float FontZoom { get; set; } = 1.0f;
@@ -194,7 +202,127 @@ public sealed class Settings {
     #endregion
 
     public static void Load() {
-        // Register mappings
+        RegisterMappings();
+
+        // Apply default settings, so that nothing is in an invalid state before loading
+        OnChanged();
+        OnThemeChanged();
+        OnFontChanged();
+
+        TryAgain:
+        if (File.Exists(SettingsPath)) {
+            try {
+                var toml = TomlParser.ParseFile(SettingsPath);
+                Instance = TomletMain.To<Settings>(toml, new TomlSerializerOptions());
+                Instance.KeyBindings = Instance._keyBindings.ToDictionary(pair => Enum.Parse<MenuEntry>(pair.Key), pair => pair.Value);
+
+                // Apply default values if fields are missing in a theme
+                if (toml.TryGetValue(nameof(CustomThemes), out var customThemesValue) && customThemesValue is TomlTable customThemes) {
+                    foreach ((string themeName, var themeFields) in customThemes.Entries) {
+                        if (themeFields is not TomlTable themeTable) {
+                            continue;
+                        }
+
+                        var currentTheme = Instance.CustomThemes[themeName];
+                        var fallbackTheme = currentTheme.DarkMode
+                            ? Theme.BuiltinThemes[Theme.BuiltinDark]
+                            : Theme.BuiltinThemes[Theme.BuiltinLight];
+
+                        foreach (var field in typeof(Theme).GetFields(BindingFlags.Public | BindingFlags.Instance)) {
+                            if (!themeTable.ContainsKey(field.Name)) {
+                                var fallbackValue = field.GetValue(fallbackTheme);
+                                field.SetValue(currentTheme, fallbackValue);
+
+                                Console.WriteLine($"Warning: Custom theme '{themeName}' is missing field '{field.Name}'! Defaulting to {fallbackValue}");
+                            }
+                        }
+                    }
+                }
+
+                OnChanged();
+                OnThemeChanged();
+                OnFontChanged();
+
+                allowSaving = true;
+            } catch (Exception ex) {
+                Console.Error.WriteLine($"Failed to read settings file from path '{SettingsPath}'");
+                Console.Error.WriteLine(ex);
+
+                switch (SettingsErrorDialog.Show(ex)) {
+                    case SettingsErrorAction.TryAgain:
+                        goto TryAgain;
+                    case SettingsErrorAction.Reset:
+                        Instance = new();
+                        OnChanged();
+                        OnThemeChanged();
+                        OnFontChanged();
+
+                        allowSaving = true;
+                        break;
+                    case SettingsErrorAction.Edit:
+                        ProcessHelper.OpenInDefaultApp(SettingsPath);
+                        MessageBox.Show(
+                            $"""
+                            The settings file should've opened itself.
+                            If not, you can find it under the following path: {SettingsPath}
+                            Once you're done, press OK.
+                            """);
+
+                        goto TryAgain;
+                    case SettingsErrorAction.Exit:
+                        Environment.Exit(1);
+                        return;
+
+                    case SettingsErrorAction.None:
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+        } else {
+            allowSaving = true;
+
+            Save();
+        }
+
+        FeatherlineSettings.Load();
+    }
+
+    public static void Save() {
+        if (!allowSaving) {
+            return;
+        }
+
+        try {
+            var dir = Path.GetDirectoryName(SettingsPath)!;
+            if (!Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+
+            Instance._keyBindings = Instance.KeyBindings.ToDictionary(pair => pair.Key.ToString(), pair => pair.Value);
+
+            // Write to another file and then move that over, to avoid getting interrupted while writing and corrupting the settings
+            var tmpFile = SettingsPath + ".tmp";
+            File.WriteAllText(tmpFile, TomletMain.DocumentFrom(Instance).SerializedValue);
+            File.Move(tmpFile, SettingsPath, overwrite: true);
+        } catch (Exception ex) {
+            Console.Error.WriteLine($"Failed to write settings file to path '{SettingsPath}'");
+            Console.Error.WriteLine(ex);
+        }
+        FeatherlineSettings.Save();
+    }
+
+    public static void Reset() {
+        Instance = new();
+
+        allowSaving = true;
+        RegisterMappings();
+        Save();
+
+        OnChanged();
+        OnThemeChanged();
+        OnFontChanged();
+    }
+
+    private static void RegisterMappings() {
         TomletMain.RegisterMapper(
             point => new TomlTable { Entries = { { "X", new TomlLong(point.X) }, { "Y", new TomlLong(point.Y) } } },
             tomlValue => {
@@ -272,111 +400,6 @@ public sealed class Settings {
                     throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(Keys));
                 return hotkey.Value.HotkeyFromString("+");
             });
-
-        // Apply default settings, so that nothing is in an invalid state before loading
-        OnChanged();
-        OnThemeChanged();
-        OnFontChanged();
-
-        TryAgain:
-        if (File.Exists(SettingsPath)) {
-            try {
-                var toml = TomlParser.ParseFile(SettingsPath);
-                Instance = TomletMain.To<Settings>(toml, new TomlSerializerOptions());
-                Instance.KeyBindings = Instance._keyBindings.ToDictionary(pair => Enum.Parse<MenuEntry>(pair.Key), pair => pair.Value);
-
-                // Apply default values if fields are missing in a theme
-                var customThemes = toml.GetSubTable(nameof(CustomThemes));
-                foreach (var (themeName, themeFields) in customThemes.Entries) {
-                    if (themeFields is not TomlTable themeTable) {
-                        continue;
-                    }
-
-                    var currentTheme = Instance.CustomThemes[themeName];
-                    var fallbackTheme = currentTheme.DarkMode
-                        ? Theme.BuiltinThemes[Theme.BuiltinDark]
-                        : Theme.BuiltinThemes[Theme.BuiltinLight];
-
-                    // Need to box the theme, since it's a struct
-                    var currentThemeBox = (object)currentTheme;
-
-                    foreach (var field in typeof(Theme).GetFields(BindingFlags.Public | BindingFlags.Instance)) {
-                        if (!themeTable.ContainsKey(field.Name)) {
-                            var fallbackValue = field.GetValue(fallbackTheme);
-                            field.SetValue(currentThemeBox, fallbackValue);
-
-                            Console.WriteLine($"Warning: Custom theme '{themeName}' is missing field '{field.Name}'! Defaulting to {fallbackValue}");
-                        }
-                    }
-
-                    Instance.CustomThemes[themeName] = (Theme)currentThemeBox;
-                }
-
-                OnChanged();
-                OnThemeChanged();
-                OnFontChanged();
-
-                allowSaving = true;
-            } catch (Exception ex) {
-                Console.Error.WriteLine($"Failed to read settings file from path '{SettingsPath}'");
-                Console.Error.WriteLine(ex);
-
-                switch (SettingsErrorDialog.Show(ex)) {
-                    case SettingsErrorAction.TryAgain:
-                        goto TryAgain;
-                    case SettingsErrorAction.Reset:
-                        Instance = new();
-                        OnChanged();
-                        OnThemeChanged();
-                        OnFontChanged();
-
-                        allowSaving = true;
-                        break;
-                    case SettingsErrorAction.Edit:
-                        ProcessHelper.OpenInDefaultApp(SettingsPath);
-                        MessageBox.Show(
-                            $"""
-                            The settings file should've opened itself.
-                            If not, you can find it under the following path: {SettingsPath}
-                            Once you're done, press OK.
-                            """);
-
-                        goto TryAgain;
-                    case SettingsErrorAction.None:
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-            }
-        } else {
-            allowSaving = true;
-
-            Save();
-        }
-
-        FeatherlineSettings.Load();
-    }
-
-    public static void Save() {
-        if (!allowSaving) {
-            return;
-        }
-
-        try {
-            var dir = Path.GetDirectoryName(SettingsPath)!;
-            if (!Directory.Exists(dir))
-                Directory.CreateDirectory(dir);
-
-            Instance._keyBindings = Instance.KeyBindings.ToDictionary(pair => pair.Key.ToString(), pair => pair.Value);
-
-            // Write to another file and then move that over, to avoid getting interrupted while writing and corrupting the settings
-            var tmpFile = SettingsPath + ".tmp";
-            File.WriteAllText(tmpFile, TomletMain.DocumentFrom(Instance).SerializedValue);
-            File.Move(tmpFile, SettingsPath, overwrite: true);
-        } catch (Exception ex) {
-            Console.Error.WriteLine($"Failed to write settings file to path '{SettingsPath}'");
-            Console.Error.WriteLine(ex);
-        }
-        FeatherlineSettings.Save();
     }
 }
 

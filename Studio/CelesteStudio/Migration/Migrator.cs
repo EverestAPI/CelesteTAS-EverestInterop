@@ -1,4 +1,6 @@
 using CelesteStudio.Dialog;
+using Eto.Forms;
+using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -40,8 +42,11 @@ public static class Migrator {
         bool studioV2Present = File.Exists(Path.Combine(Studio.CelesteDirectory ?? string.Empty, "Celeste Studio.toml"));
 
 #if DEBUG
-        // Always apply the latest migration in debug builds
-        newVersion = migrations[^1].Version;
+        // Update to the next migration in debug builds
+        var asmVersion = Assembly.GetExecutingAssembly().GetName().Version!;
+        newVersion = migrations[^1].Version > asmVersion
+            ? migrations[^1].Version
+            : asmVersion;
 #else
         newVersion = Assembly.GetExecutingAssembly().GetName().Version!;
 #endif
@@ -55,6 +60,12 @@ public static class Migrator {
         } else {
             oldVersion = Version.TryParse(File.ReadAllText(LatestVersionPath), out var version) ? version : newVersion;
         }
+#if DEBUG
+        // Always apply the next migration in debug builds
+        if (migrations[^2].Version < oldVersion && newVersion == migrations[^1].Version) {
+            oldVersion = migrations[^2].Version;
+        }
+#endif
 
         File.WriteAllText(LatestVersionPath, newVersion.ToString(3));
 
@@ -71,20 +82,43 @@ public static class Migrator {
 
         foreach (var (version, preLoad, _) in migrations) {
             if (version > oldVersion && version <= newVersion) {
-                preLoad?.Invoke();
+                TryAgain:
+                try {
+                    preLoad?.Invoke();
+                } catch (Exception ex) {
+                    Console.Error.WriteLine($"Failed to apply migration to v{version}");
+                    Console.Error.WriteLine(ex);
 
-                string versionName = version.ToString(3);
-                if (asm.GetManifestResourceStream($"Changelogs/v{versionName}.md") is { } stream) {
-                    changelogs.Add((versionName, stream));
+                    switch (SettingsErrorDialog.Show(ex)) {
+                        case SettingsErrorAction.TryAgain:
+                            goto TryAgain;
+                        case SettingsErrorAction.Reset:
+                            Settings.Reset();
+                            break;
+                        case SettingsErrorAction.Edit:
+                            ProcessHelper.OpenInDefaultApp(Settings.SettingsPath);
+                            MessageBox.Show(
+                                $"""
+                                The settings file should've opened itself.
+                                If not, you can find it under the following path: {Settings.SettingsPath}
+                                Once you're done, press OK.
+                                """);
+
+                            goto TryAgain;
+                        case SettingsErrorAction.Exit:
+                            Environment.Exit(1);
+                            return;
+
+                        case SettingsErrorAction.None:
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
                 }
             }
         }
 
         Studio.Instance.Shown += (_, _) => {
-            foreach ((string? versionName, var stream) in changelogs) {
-                WhatsNewDialog.Show($"Whats new in Studio v{versionName}?", new StreamReader(stream).ReadToEnd());
-                stream.Dispose();
-            }
+            ChangelogDialog.Show();
         };
     }
 

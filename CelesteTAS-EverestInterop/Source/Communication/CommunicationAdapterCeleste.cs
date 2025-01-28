@@ -10,12 +10,12 @@ using StudioCommunication;
 using StudioCommunication.Util;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
+using TAS.InfoHUD;
 using TAS.Input;
 using TAS.Input.Commands;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
-
-#nullable enable
 
 namespace TAS.Communication;
 
@@ -28,7 +28,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
     protected override void OnConnectionChanged() {
         if (Connected) {
             // Stall until input initialized to avoid sending invalid hotkey data
-            while (Hotkeys.KeysDict == null) {
+            while (Hotkeys.AllHotkeys == null) {
                 Thread.Sleep(UpdateRate);
             }
 
@@ -44,7 +44,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 string path = reader.ReadString();
                 LogVerbose($"Received message FilePath: '{path}'");
 
-                InputController.StudioTasFilePath = path;
+                Manager.AddMainThreadAction(() => Manager.Controller.FilePath = path);
                 break;
 
             case MessageID.Hotkey:
@@ -52,7 +52,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 bool released = reader.ReadBoolean();
                 LogVerbose($"Received message Hotkey: {hotkey} ({(released ? "released" : "pressed")})");
 
-                Hotkeys.KeysDict[hotkey].OverrideCheck = !released;
+                Hotkeys.AllHotkeys[hotkey].OverrideCheck = !released;
                 break;
 
             case MessageID.SetCustomInfoTemplate:
@@ -82,7 +82,6 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 object? arg = gameDataType switch {
                     GameDataType.ConsoleCommand => reader.ReadBoolean(),
                     GameDataType.SettingValue => reader.ReadString(),
-                    GameDataType.RawInfo => reader.ReadObject<(string, bool)>(),
                     GameDataType.CommandHash => reader.ReadObject<(string, string[], string, int)>(),
                     _ => null,
                 };
@@ -114,9 +113,6 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                             case GameDataType.CustomInfoTemplate:
                                 gameData = !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty;
                                 break;
-                            case GameDataType.RawInfo:
-                                gameData = InfoCustom.GetRawInfo(((string, bool))arg!);
-                                break;
                             case GameDataType.GameState:
                                 gameData = GameData.GetGameState();
                                 break;
@@ -131,6 +127,12 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                 }
 
                                 gameData = meta.GetHash(commandArgs, filePath, fileLine);
+                                break;
+                            case GameDataType.LevelInfo:
+                                gameData = new LevelInfo {
+                                    ModUrl = GameData.GetModUrl(),
+                                    WakeupTime = GameData.GetWakeupTime(),
+                                };
                                 break;
 
                             default:
@@ -152,16 +154,16 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                     writer.Write((string?)gameData ?? string.Empty);
                                     break;
 
-                                case GameDataType.RawInfo:
-                                    writer.WriteObject(gameData);
-                                    break;
-
                                 case GameDataType.GameState:
                                     writer.WriteObject((GameState?)gameData);
                                     break;
 
                                 case GameDataType.CommandHash:
                                     writer.Write((int)gameData!);
+                                    break;
+
+                                case GameDataType.LevelInfo:
+                                    writer.WriteObject((LevelInfo)gameData!);
                                     break;
                             }
                             LogVerbose($"Sent message GameDataResponse: {gameDataType} = '{gameData}'");
@@ -307,42 +309,45 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
     }
 
     private void ProcessRecordTAS(string fileName) {
-        if (!TASRecorderUtils.Installed) {
+        if (!TASRecorderInterop.Installed) {
             WriteRecordingFailed(RecordingFailedReason.TASRecorderNotInstalled);
             return;
         }
-        if (!TASRecorderUtils.FFmpegInstalled) {
+        if (!TASRecorderInterop.FFmpegInstalled) {
             WriteRecordingFailed(RecordingFailedReason.FFmpegNotInstalled);
             return;
         }
 
-        Manager.Controller.RefreshInputs(enableRun: true);
-        if (RecordingCommand.RecordingTimes.IsNotEmpty()) {
-            AbortTas("Can't use StartRecording/StopRecording with \"Record TAS\"");
-            return;
-        }
-        Manager.NextStates |= States.Enable;
+        Manager.AddMainThreadAction(() => {
+            Manager.Controller.RefreshInputs();
+            if (RecordingCommand.RecordingTimes.IsNotEmpty()) {
+                AbortTas("Can't use StartRecording/StopRecording with \"Record TAS\"");
+                return;
+            }
+            Manager.EnableRun();
 
-        int totalFrames = Manager.Controller.Inputs.Count;
-        if (totalFrames <= 0) return;
+            int totalFrames = Manager.Controller.Inputs.Count;
+            if (totalFrames <= 0) return;
 
-        TASRecorderUtils.StartRecording(fileName);
-        TASRecorderUtils.SetDurationEstimate(totalFrames);
+            TASRecorderInterop.StartRecording(fileName);
+            TASRecorderInterop.SetDurationEstimate(totalFrames);
 
-        if (!Manager.Controller.Commands.TryGetValue(0, out var commands)) {
-            return;
-        }
-        bool startsWithConsoleLoad = commands.Any(c =>
-            c.Is("Console") &&
-            c.Args.Length >= 1 &&
-            ConsoleCommand.LoadCommandRegex.Match(c.Args[0].ToLower()) is { Success: true });
+            if (!Manager.Controller.Commands.TryGetValue(0, out var commands)) {
+                return;
+            }
 
-        if (startsWithConsoleLoad) {
-            // Restart the music when we enter the level
-            Audio.SetMusic(null, startPlaying: false, allowFadeOut: false);
-            Audio.SetAmbience(null, startPlaying: false);
-            Audio.BusStopAll(Buses.GAMEPLAY, immediate: true);
-        }
+            bool startsWithConsoleLoad = commands.Any(c =>
+                c.Attribute.Name.Equals("Console", StringComparison.OrdinalIgnoreCase) &&
+                c.Args.Length >= 1 &&
+                ConsoleCommand.LoadCommandRegex.Match(c.Args[0].ToLower()) is {Success: true});
+
+            if (startsWithConsoleLoad) {
+                // Restart the music when we enter the level
+                Audio.SetMusic(null, startPlaying: false, allowFadeOut: false);
+                Audio.SetAmbience(null, startPlaying: false);
+                Audio.BusStopAll(Buses.GAMEPLAY, immediate: true);
+            }
+        });
     }
 
     protected override void LogInfo(string message) => Logger.Log(LogLevel.Info, "CelesteTAS/StudioCom", message);

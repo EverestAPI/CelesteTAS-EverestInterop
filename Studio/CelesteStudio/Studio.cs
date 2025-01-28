@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using CelesteStudio.Communication;
+using CelesteStudio.Controls;
 using CelesteStudio.Data;
 using CelesteStudio.Dialog;
 using CelesteStudio.Editing;
@@ -43,6 +44,11 @@ public sealed class Studio : Form {
     /// Path to the Celeste install or null if it couldn't be found
     public static string? CelesteDirectory { get; private set; }
 
+    /// For some **UNHOLY** reasons, not calling Content.UpdateLayout() in RecalculateLayout() places during startup causes themeing to crash.
+    /// _However_, while this hack is active, you can't resize the window, so this has to be disabled again as soon as possible...
+    /// I would personally like to burn WPF to the ground ._.
+    public bool WPFHackEnabled = true;
+
     public readonly Editor Editor;
     public readonly GameInfo GameInfo;
 
@@ -54,9 +60,9 @@ public sealed class Studio : Form {
     private ThemeEditor? themeEditorForm;
 
     private string TitleBarText => Editor.Document.FilePath == Document.ScratchFile
-        ? $"<Scratch> - Studio {Version}"
+        ? $"Studio {Version} - <Scratch>"
         // Hide username inside title bar
-        : $"{Editor.Document.FileName}{(Editor.Document.Dirty ? "*" : string.Empty)} - Studio {Version}   {Editor.Document.FilePath.Replace(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "~")}";
+        : $"Studio {Version} - {(Editor.Document.Dirty ? "*" : string.Empty)}{Editor.Document.FileName}    {Editor.Document.FilePath.Replace(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "~")}";
 
     /// Size of scroll bars, depending on the current platform
     public static int ScrollBarSize {
@@ -78,7 +84,6 @@ public sealed class Studio : Form {
         Instance = this;
         Icon = Assets.AppIcon;
         MinimumSize = new Size(250, 250);
-        AllowDrop = true;
 
         WindowCreationCallback = windowCreationCallback;
 
@@ -96,13 +101,17 @@ public sealed class Studio : Form {
 
         // Close other Studio instances to avoid conflicts
         foreach (var process in Process.GetProcesses().Where(process => process.ProcessName is "CelesteStudio" or "CelesteStudio.WPF" or "CelesteStudio.GTK" or "CelesteStudio.Mac" or "Celeste Studio")) {
-            if (process.Id == Process.GetCurrentProcess().Id) {
+            if (process.Id == Environment.ProcessId) {
                 continue;
             }
 
             Console.WriteLine($"Closing process {process.ProcessName} ({process.Id})...");
             process.Terminate();
             process.WaitForExit(TimeSpan.FromSeconds(10.0f));
+
+            // Make sure it's _really_ closed
+            process.Kill();
+            process.WaitForExit(TimeSpan.FromSeconds(5.0f));
         }
 
         // Ensure config directory exists
@@ -170,6 +179,17 @@ public sealed class Studio : Form {
             Editor = new Editor(Document.Dummy, editorScrollable);
             editorScrollable.Content = Editor;
 
+            // WPF requires a control for drag n' drop support
+            Editor.AllowDrop = true;
+            Editor.DragDrop += (_, e) => {
+                if (e.Data.ContainsUris && e.Data.Uris.Length > 0) {
+                    OpenFile(Uri.UnescapeDataString(e.Data.Uris[0].AbsolutePath));
+                }
+            };
+            Editor.DragEnter += (_, e) => {
+                e.Effects = DragEffects.Copy;
+            };
+
             // On GTK, prevent the scrollable from reacting to Home/End
             if (Eto.Platform.Instance.IsGtk) {
                 editorScrollable.KeyDown += (_, e) => e.Handled = true;
@@ -223,8 +243,46 @@ public sealed class Studio : Form {
         CommunicationWrapper.Start();
     }
 
-    // Dialogs should always be focused over the editor / tools, but not other OS windows
-    public static void RegisterDialog(Eto.Forms.Dialog dialog) {
+    /// Properly registers a window
+    public static void RegisterWindow(Window window, Window? parent = null, bool centerWindow = true) {
+        parent ??= Studio.Instance;
+
+        window.Icon = Assets.AppIcon;
+        window.ShowInTaskbar = true;
+
+        // Apply theming on WPF
+        window.Load += (_, _) => Instance.WindowCreationCallback(window);
+
+        if (centerWindow) {
+            window.Shown += (_, _) => {
+                // Center on parent
+                var location = parent.Location + new Point((parent.Width - window.Width) / 2, (parent.Height - window.Height) / 2);
+
+                // Clamp to screen
+                var screen = Screen.FromRectangle(new RectangleF(location, window.Size));
+                //System.Console.WriteLine($"Screen: {screen.Bounds} | {screen.WorkingArea} / Window @ {window.Location} with {window.Size} ({window.Width},{window.Height}) | Center {location} Parent {parent.Location}");
+                if (location.X < screen.WorkingArea.Left) {
+                    location = location with { X = (int)screen.WorkingArea.Left };
+                } else if (location.X + window.Width > screen.WorkingArea.Right) {
+                    location = location with { X = (int)screen.WorkingArea.Right - window.Width };
+                }
+                if (location.Y < screen.WorkingArea.Top) {
+                    location = location with { Y = (int)screen.WorkingArea.Top };
+                } else if (location.Y + window.Height > screen.WorkingArea.Bottom) {
+                    location = location with { Y = (int)screen.WorkingArea.Bottom - window.Height };
+                }
+
+                window.Location = location;
+            };
+        }
+    }
+
+    /// Properly registers a dialog window
+    public static void RegisterDialog(Eto.Forms.Dialog dialog, Window? parent = null, bool centerWindow = true) {
+        RegisterWindow(dialog, parent, centerWindow);
+
+        // Dialogs should always be focused over the editor / tools, but not other OS windows
+
         // For some reason macOS can just revive dialogs from the dead
         // Thankfully Topmost already behaves how we want on macOS
         if (Eto.Platform.Instance.IsMac) {
@@ -288,23 +346,20 @@ public sealed class Studio : Form {
             Math.Max(0, ClientSize.Width),
             Math.Max(0, ClientSize.Height - Math.Max(0, gameInfoPanel.Height)));
 
-        gameInfoPanel.UpdateLayout();
-        editorScrollable.UpdateLayout();
-        Content.UpdateLayout();
+        // Calling UpdateLayout() seems to be required on GTK but causes issues on WPF
+        // TODO: Figure out how macOS handles this
+        if (Eto.Platform.Instance.IsGtk) {
+            gameInfoPanel.UpdateLayout();
+            editorScrollable.UpdateLayout();
+            Content.UpdateLayout();
+        } else if (Eto.Platform.Instance.IsWpf && WPFHackEnabled) {
+            Content.UpdateLayout();
+        }
     }
 
     private void ApplySettings() {
         Topmost = Settings.Instance.AlwaysOnTop;
         Menu = CreateMenu(); // Recreate menu to reflect changes
-    }
-
-    protected override void OnDragDrop(DragEventArgs e) {
-        if (e.Data.ContainsUris && e.Data.Uris.Length > 0) {
-            OpenFile(Uri.UnescapeDataString(e.Data.Uris[0].AbsolutePath));
-        }
-    }
-    protected override void OnDragEnter(DragEventArgs e) {
-        e.Effects = DragEffects.Copy;
     }
 
     protected override void OnClosing(CancelEventArgs e) {
@@ -374,23 +429,28 @@ public sealed class Studio : Form {
             Directory.CreateDirectory(dir);
         }
 
-        return dir;
+        // URIs don't support relative paths on their own
+        return Path.GetFullPath(dir);
     }
 
     private void OnNewFile() {
         if (!ShouldDiscardChanges())
             return;
 
+        string simpleConsoleCommand = CommunicationWrapper.GetConsoleCommand(simple: true);
+        LevelInfo? levelInfo = CommunicationWrapper.GetLevelInfo();
+
         string initText = $"RecordCount: 1{Document.NewLine}";
-        if (CommunicationWrapper.Connected) {
-            if (CommunicationWrapper.GetConsoleCommand(simple: true) is var simpleConsoleCommand && !string.IsNullOrWhiteSpace(simpleConsoleCommand)) {
-                initText += $"{Document.NewLine}{simpleConsoleCommand}{Document.NewLine}   1{Document.NewLine}";
-                if (CommunicationWrapper.GetModURL() is var modUrl && !string.IsNullOrWhiteSpace(modUrl)) {
-                    initText = modUrl + initText;
-                }
-            }
+        if (levelInfo != null && !string.IsNullOrWhiteSpace(levelInfo?.ModUrl)) {
+            initText = levelInfo?.ModUrl + initText;
+        }
+        if (!string.IsNullOrWhiteSpace(simpleConsoleCommand)) {
+            initText += $"{Document.NewLine}{simpleConsoleCommand}{Document.NewLine}   1{Document.NewLine}";
         }
         initText += $"{Document.NewLine}#Start{Document.NewLine}";
+        if (levelInfo?.WakeupTime is { } wakeupTime) {
+            initText += wakeupTime.ToString().PadLeft(ActionLine.MaxFramesDigits) + Document.NewLine;
+        }
 
         File.WriteAllText(Document.ScratchFile, initText);
         OpenFile(Document.ScratchFile);
@@ -475,6 +535,28 @@ public sealed class Studio : Form {
         OpenFile(filePath);
     }
 
+    private void OnIntegrateReadFiles() {
+        var dialog = new SaveFileDialog {
+            Filters = { new FileFilter("TAS", ".tas") },
+            Directory = new Uri(GetFilePickerDirectory()),
+            FileName = Path.GetDirectoryName(Editor.Document.FilePath) + "/" + Path.GetFileNameWithoutExtension(Editor.Document.FilePath) + "_Integrated.tas"
+        };
+        Console.WriteLine($"f {Editor.Document.FilePath} & {Path.GetDirectoryName(Editor.Document.FilePath) + Path.GetFileNameWithoutExtension(Editor.Document.FilePath) + "_Integrated.tas"}");
+
+        if (dialog.ShowDialog(this) != DialogResult.Ok) {
+            return;
+        }
+
+        string filePath = dialog.FileName;
+        if (Path.GetExtension(filePath) != ".tas") {
+            filePath += ".tas";
+        }
+
+        IntegrateReadFiles.Generate(Editor.Document.FilePath, filePath);
+
+        OpenFile(filePath);
+    }
+
     private MenuBar CreateMenu() {
         const int minDecimals = 2;
         const int maxDecimals = 12;
@@ -547,6 +629,25 @@ public sealed class Studio : Form {
         }) { MenuText = "Delete All Files" });
         backupsMenu.Enabled = backupFiles.Length != 0;
 
+        // Don't display Settings.SendInputsNonWritable on WPF, since it's not supported there
+        var inputSendingMenu = new SubMenuItem { Text = "&Input Sending", Items = {
+                MenuUtils.CreateSettingToggle("On Inputs", nameof(Settings.SendInputsOnActionLines)),
+                MenuUtils.CreateSettingToggle("On Comments", nameof(Settings.SendInputsOnComments)),
+                MenuUtils.CreateSettingToggle("On Commands", nameof(Settings.SendInputsOnCommands)),
+                MenuUtils.CreateSettingToggle("Disable while Running", nameof(Settings.SendInputsDisableWhileRunning)),
+        }};
+        if (!Platform.IsWpf) {
+            inputSendingMenu.Items.Add(MenuUtils.CreateSettingToggle("Always send non-writable Inputs", nameof(Settings.SendInputsNonWritable)));
+        }
+        inputSendingMenu.Items.Add(new SeparatorMenuItem());
+        inputSendingMenu.Items.Add(MenuUtils.CreateSettingNumberInput("Typing Timeout", nameof(Settings.SendInputsTypingTimeout), 0.0f, 5.0f, 0.1f));
+
+        var autoIndexRoomLabels = MenuUtils.CreateSettingEnum<AutoRoomIndexing>("Auto-Index Room Labels", nameof(Settings.AutoIndexRoomLabels), ["Disabled", "Current File", "Include Read-commands"]);
+        var commandSeparator = MenuUtils.CreateSettingEnum<CommandSeparator>("Command Separator", nameof(Settings.CommandSeparator), ["Space (\" \")", "Comma (\",\")", "Space + Comma (\", \")"]);
+
+        autoIndexRoomLabels.Enabled = StyleConfig.Current.RoomLabelIndexing == null;
+        commandSeparator.Enabled = StyleConfig.Current.CommandArgumentSeparator == null;
+
         MenuItem[] items = [
             new SubMenuItem { Text = "&File", Items = {
                 MenuEntry.File_New.ToAction(OnNewFile),
@@ -559,7 +660,6 @@ public sealed class Studio : Form {
                 MenuEntry.File_Save.ToAction(OnSaveFile),
                 MenuEntry.File_SaveAs.ToAction(OnSaveFileAs),
                 new SeparatorMenuItem(),
-                MenuUtils.CreateAction("&Integrate Read Files"),
                 MenuUtils.CreateAction("&Convert to LibTAS Movie..."),
                 new SeparatorMenuItem(),
                 recordTasButton,
@@ -579,23 +679,19 @@ public sealed class Studio : Form {
             new SubMenuItem { Text = "&Preferences", Items = {
                 MenuUtils.CreateSettingToggle("&Auto Save File", nameof(Settings.AutoSave)),
                 MenuUtils.CreateSettingToggle("Auto Remove Mutually Exclusive Actions", nameof(Settings.AutoRemoveMutuallyExclusiveActions)),
-                MenuUtils.CreateSettingToggle("Auto-Index Room Labels", nameof(Settings.AutoIndexRoomLabels)),
+                autoIndexRoomLabels,
+                MenuUtils.CreateSettingToggle("Auto-Select Full Input line", nameof(Settings.AutoSelectFullActionLine)),
+                MenuUtils.CreateSettingToggle("Auto-Multiline Comments", nameof(Settings.AutoMultilineComments)),
                 MenuUtils.CreateSettingToggle("Sync &Caret with Playback", nameof(Settings.SyncCaretWithPlayback)),
                 MenuEntry.Settings_SendInputs.ToSettingToggle(nameof(Settings.SendInputsToCeleste), enabled => {
                     Editor.ShowToastMessage($"{(enabled ? "Enabled" : "Disabled")} Sending Inputs to Celeste", Editor.DefaultToastTime);
                 }),
-                new SubMenuItem { Text = "&Input Sending", Items = {
-                    MenuUtils.CreateSettingToggle("On Inputs", nameof(Settings.SendInputsOnActionLines)),
-                    MenuUtils.CreateSettingToggle("On Comments", nameof(Settings.SendInputsOnComments)),
-                    MenuUtils.CreateSettingToggle("On Commands", nameof(Settings.SendInputsOnCommands)),
-                    new SeparatorMenuItem(),
-                    MenuUtils.CreateSettingNumberInput("Typing Timeout", nameof(Settings.SendInputsTypingTimeout), 0.0f, 5.0f, 0.1f),
-                }},
+                inputSendingMenu,
                 MenuUtils.CreateSettingNumberInput("Scroll Speed", nameof(Settings.ScrollSpeed), 0.0f, 30.0f, 1),
                 MenuUtils.CreateSettingNumberInput("Max Unfolded Lines", nameof(Settings.MaxUnfoldedLines), 0, int.MaxValue, 1),
                 MenuUtils.CreateSettingEnum<InsertDirection>("Insert Direction", nameof(Settings.InsertDirection), ["Above Current Line", "Below Current Line"]),
                 MenuUtils.CreateSettingEnum<CaretInsertPosition>("Caret Insert Position", nameof(Settings.CaretInsertPosition), ["After Inserted Text", "Keep at Previous Position"]),
-                MenuUtils.CreateSettingEnum<CommandSeparator>("Command Separator", nameof(Settings.CommandSeparator), ["Space (\" \")", "Comma (\",\")", "Space + Comma (\", \")"]),
+                commandSeparator,
             }},
             new SubMenuItem { Text = "&View", Items = {
                 // TODO: Use MenuEntry.View_ShowGameInfo again
@@ -618,7 +714,7 @@ public sealed class Studio : Form {
                 MenuUtils.CreateGameSettingToggle("&Simplified Hitboxes", nameof(GameSettings.SimplifiedHitboxes)),
                 MenuUtils.CreateGameSettingEnum<ActualCollideHitboxType>("&Actual Collide Hitboxes", nameof(GameSettings.ActualCollideHitboxes), ["Off", "Override", "Append"]),
                 new SeparatorMenuItem(),
-                MenuUtils.CreateGameSettingToggle("&Simplified &Graphics", nameof(GameSettings.SimplifiedGraphics)),
+                MenuUtils.CreateGameSettingToggle("Simplified &Graphics", nameof(GameSettings.SimplifiedGraphics)),
                 MenuUtils.CreateGameSettingToggle("Game&play", nameof(GameSettings.Gameplay)),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateGameSettingToggle("&Center Camera", nameof(GameSettings.CenterCamera)),
@@ -629,7 +725,8 @@ public sealed class Studio : Form {
                 MenuUtils.CreateGameSettingToggle("Game Info", nameof(GameSettings.InfoGame)),
                 MenuUtils.CreateGameSettingToggle("Subpixel Indicator", nameof(GameSettings.InfoSubpixelIndicator)),
                 MenuUtils.CreateGameSettingEnum<HudOptions>("Custom Info", nameof(GameSettings.InfoCustom), ["Off", "HUD Only", "Studio Only", "Both"]),
-                MenuUtils.CreateGameSettingEnum<HudOptions>("Watch Entity Info", nameof(GameSettings.InfoWatchEntity), ["Off", "HUD Only", "Studio Only", "Both"]),
+                MenuUtils.CreateGameSettingEnum<WatchEntityType>("Watch Entity Info (HUD)", nameof(GameSettings.InfoWatchEntityHudType), ["None", "Position", "Declared Only", "All"]),
+                MenuUtils.CreateGameSettingEnum<WatchEntityType>("Watch Entity Info (Studio)", nameof(GameSettings.InfoWatchEntityStudioType), ["None", "Position", "Declared Only", "All"]),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateGameSettingNumberInput("Position Decimals", nameof(GameSettings.PositionDecimals), minDecimals, maxDecimals, 1),
                 MenuUtils.CreateGameSettingNumberInput("Speed Decimals", nameof(GameSettings.SpeedDecimals), minDecimals, maxDecimals, 1),
@@ -644,12 +741,15 @@ public sealed class Studio : Form {
                 MenuUtils.CreateGameSettingNumberInput("Slow Forward Speed", nameof(GameSettings.SlowForwardSpeed), minSlowForwardSpeed, maxSlowForwardSpeed, 0.1f),
             }},
             new SubMenuItem { Text = "&Tools", Items = {
-                MenuUtils.CreateAction("Jadderline", Keys.None, () => {
+                MenuUtils.CreateAction("&Project File Formatter", Keys.None, ProjectFileFormatterDialog.Show),
+                MenuUtils.CreateAction("&Integrate Read Files", Keys.None, OnIntegrateReadFiles),
+                new SeparatorMenuItem(),
+                MenuUtils.CreateAction("&Jadderline", Keys.None, () => {
                     jadderlineForm ??= new();
                     jadderlineForm.Show();
                     jadderlineForm.Closed += (_, _) => jadderlineForm = null;
                 }),
-                MenuUtils.CreateAction("Featherline", Keys.None, () => {
+                MenuUtils.CreateAction("&Featherline", Keys.None, () => {
                     featherlineForm ??= new();
                     featherlineForm.Show();
                     featherlineForm.Closed += (_, _) => featherlineForm = null;
@@ -660,13 +760,8 @@ public sealed class Studio : Form {
         var quitItem = MenuEntry.File_Quit.ToAction(Application.Instance.Quit);
         var homeItem = MenuUtils.CreateAction("Open README...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop"));
         var wikiItem = MenuUtils.CreateAction("Open wiki...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki"));
-        var whatsNewItem = MenuUtils.CreateAction("What's new?", Keys.None, () => {
-            var asm = Assembly.GetExecutingAssembly();
-            // TODO: Don't hardcode the current changelog
-            if (asm.GetManifestResourceStream($"Changelogs/v3.0.0.md") is { } stream) {
-                WhatsNewDialog.Show($"What's new in Studio v3.0.0?", new StreamReader(stream).ReadToEnd());
-            }
-        });
+        var whatsNewItem = MenuUtils.CreateAction("What's new?", Keys.None, ChangelogDialog.Show);
+        whatsNewItem.Enabled = Assembly.GetExecutingAssembly().GetManifestResourceInfo("Changelog.md") != null;
         var aboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
             ShowAboutDialog(new AboutDialog {
                 ProgramName = "Celeste Studio",

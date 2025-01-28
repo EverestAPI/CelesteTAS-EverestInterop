@@ -5,6 +5,46 @@ using System.Numerics;
 
 namespace StudioCommunication.Util;
 
+/// Splits each line into its own slice, accounting for LF, CRLF and CR line endings
+public ref struct LineIterator(ReadOnlySpan<char> text) {
+    private ReadOnlySpan<char> text = text;
+    private int startIdx = 0;
+
+    public ReadOnlySpan<char> Current { get; private set; }
+    public LineIterator GetEnumerator() => this;
+
+    public bool MoveNext() {
+        for (int i = startIdx; i < text.Length; i++) {
+            // \n is always a newline
+            if (text[i] == '\n') {
+                Current = text[startIdx..i];
+                startIdx = i + 1;
+                return true;
+            }
+
+            // \r is either alone or a \r\n
+            if (text[i] == '\r') {
+                Current = text[startIdx..i];
+
+                if (i + 1 < text.Length && text[i + 1] == '\n') {
+                    i++;
+                }
+
+                startIdx = i + 1;
+                return true;
+            }
+        }
+
+        if (startIdx != text.Length) {
+            Current =  text[startIdx..];
+            startIdx = text.Length;
+            return true;
+        }
+
+        return false;
+    }
+}
+
 public static class NumberExtensions {
     public static T Mod<T>(this T x, T m) where T : INumber<T> => (x % m + m) % m;
 }
@@ -89,9 +129,9 @@ public static class StringExtensions {
                 lines++;
                 continue;
             }
+
             // \r is either alone or a \r\n
-            if (str[i] == '\r')
-            {
+            if (str[i] == '\r') {
                 lines++;
                 if (i + 1 < str.Length && str[i + 1] == '\n') {
                     i++;
@@ -99,12 +139,35 @@ public static class StringExtensions {
             }
         }
 
-        // Ignore newline at the end
-        if (str.Length > 0 && str[^1] is not ('\n' or '\r')) {
-            lines--;
+        return lines;
+    }
+
+    /// Splits each line into its own string, accounting for LF, CRLF and CR line endings
+    public static IEnumerable<string> SplitLines(this string str) {
+        int startIdx = 0;
+        for (int i = 0; i < str.Length; i++) {
+            // \n is always a newline
+            if (str[i] == '\n') {
+                yield return str[startIdx..i];
+                startIdx = i + 1;
+                continue;
+            }
+
+            // \r is either alone or a \r\n
+            if (str[i] == '\r') {
+                yield return str[startIdx..i];
+
+                if (i + 1 < str.Length && str[i + 1] == '\n') {
+                    i++;
+                }
+
+                startIdx = i + 1;
+            }
         }
 
-        return lines;
+        if (startIdx != str.Length) {
+            yield return str[startIdx..];
+        }
     }
 }
 

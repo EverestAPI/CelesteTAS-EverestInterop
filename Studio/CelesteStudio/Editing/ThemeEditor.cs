@@ -334,83 +334,6 @@ public sealed class ThemeEditor : Form {
 
                 styleLayout.EndHorizontal();
                 styleLayout.EndVertical();
-
-                /*
-                colorsLayout.Add(new Label { Text = field.Name });
-                colorsLayout.BeginVertical();
-
-                colorsLayout.BeginHorizontal();
-                colorsLayout.Add(new Label { Text = "Foreground" });
-                var fgPicker = new ColorPicker { Value = style.ForegroundColor, AllowAlpha = true };
-                fgPicker.ValueChanged += (_, _) => {
-                    style.ForegroundColor = fgPicker.Value;
-                    UpdateField(field, style);
-                };
-                colorsLayout.Add(fgPicker);
-                pickers.Add(fgPicker);
-
-                colorsLayout.EndBeginHorizontal();
-
-                if (style.BackgroundColor is Color bgColor) {
-                    colorsLayout.Add(new Label { Text = "Background" });
-                    // var enable = new CheckBox { Checked = true };
-                    // enable.CheckedChanged += (_, _) => {
-                    //     style.BackgroundColor = null;
-                    //     UpdateField(field, style);
-                    // };
-                    // colorsLayout.Add(enable);
-                    var bgPicker = new ColorPicker { Value = bgColor, AllowAlpha = true };
-                    bgPicker.ValueChanged += (_, _) => {
-                        style.BackgroundColor = bgPicker.Value;
-                        UpdateField(field, style);
-                    };
-                    colorsLayout.Add(bgPicker);
-                    pickers.Add(bgPicker);
-                } else {
-                    // colorsLayout.Add(new Label { Text = "Background" });
-                    // var enable = new CheckBox { Checked = false };
-                    // enable.CheckedChanged += (_, _) => {
-                    //     style.BackgroundColor = Color.FromRgb(0);
-                    //     UpdateField(field, style);
-                    // };
-                    // colorsLayout.Add(enable);
-                }
-
-                colorsLayout.EndBeginHorizontal();
-
-                colorsLayout.Add(new Label { Text = "Italic" });
-                var italic = new CheckBox { Checked = (style.FontStyle & FontStyle.Italic) != 0 };
-                italic.CheckedChanged += (_, _) => {
-                    if (italic.Checked is bool it) {
-                        if (it) {
-                            style.FontStyle |= FontStyle.Italic;
-                        } else {
-                            style.FontStyle &= ~FontStyle.Italic;
-                        }
-                    }
-                    UpdateField(field, style);
-                };
-                colorsLayout.Add(italic);
-
-                colorsLayout.EndBeginHorizontal();
-
-                colorsLayout.Add(new Label { Text = "Bold" });
-                var bold = new CheckBox { Checked = (style.FontStyle & FontStyle.Bold) != 0 };
-                bold.CheckedChanged += (_, _) => {
-                    if (bold.Checked is bool b) {
-                        if (b) {
-                            style.FontStyle |= FontStyle.Bold;
-                        } else {
-                            style.FontStyle &= ~FontStyle.Bold;
-                        }
-                    }
-                    UpdateField(field, style);
-                };
-                colorsLayout.Add(bold);
-
-                colorsLayout.EndHorizontal();
-                colorsLayout.EndVertical();
-                */
             }
 
             fieldsLayout.EndHorizontal();
@@ -422,9 +345,8 @@ public sealed class ThemeEditor : Form {
         if (IsBuiltin()) {
             return;
         }
-        object theme = Settings.Instance.Theme;
-        field.SetValue(theme, value);
-        Settings.Instance.CustomThemes[Settings.Instance.ThemeName] = (Theme) theme;
+
+        field.SetValue(Settings.Instance.Theme, value);
         Settings.OnThemeChanged();
         Settings.Save();
     }

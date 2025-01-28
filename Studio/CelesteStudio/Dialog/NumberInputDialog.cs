@@ -26,8 +26,6 @@ public class NumberInputDialog<T> : Dialog<T> where T : INumber<T> {
             Padding = 10,
             Items = { stepper },
         };
-        Icon = Assets.AppIcon;
-        Studio.RegisterDialog(this);
 
         DefaultButton = new Button((_, _) => Close(T.CreateChecked(stepper.Value))) { Text = "&OK" };
         AbortButton = new Button((_, _) => Close(input)) { Text = "&Cancel" };
@@ -35,8 +33,7 @@ public class NumberInputDialog<T> : Dialog<T> where T : INumber<T> {
         PositiveButtons.Add(DefaultButton);
         NegativeButtons.Add(AbortButton);
 
-        Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
-        Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
+        Studio.RegisterDialog(this);
     }
 
     public static T Show(string title, T input, T minValue, T maxValue, T step) {

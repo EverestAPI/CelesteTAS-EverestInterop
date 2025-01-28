@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -26,6 +27,12 @@ public readonly record struct CommandLine(
 
     public static CommandLine? Parse(string line) => TryParse(line, out var commandLine) ? commandLine : null;
     public static bool TryParse(string line, out CommandLine commandLine) {
+        string lineTrimmed = line.TrimStart();
+        if (string.IsNullOrEmpty(lineTrimmed) || !char.IsLetter(lineTrimmed[0])) {
+            commandLine = default;
+            return false;
+        }
+
         var separatorMatch = SeparatorRegex.Match(line);
         if (!separatorMatch.Success || separatorMatch.Length == 0) {
             // No arguments
@@ -66,7 +73,7 @@ public readonly record struct CommandLine(
 
             char curr = line[i];
             switch (curr) {
-                case '"':
+                case '"' when groupStack.Count == 0 || groupStack.Peek() == '"':
                     if (groupStack.Count > 0 && groupStack.Peek() == '"') {
                         groupStack.Pop();
                     } else {
@@ -138,5 +145,55 @@ public readonly record struct CommandLine(
             ArgumentSeparator = separator,
         };
         return true;
+    }
+
+    public string Format(IEnumerable<CommandInfo> gameCommands, bool forceCasing, string? overrideSeparator) {
+        string commandName;
+
+        if (forceCasing) {
+            var commandLine = this;
+
+            if (gameCommands.FirstOrDefault(cmd => string.Equals(cmd.Name, commandLine.Command, StringComparison.OrdinalIgnoreCase)) is var command
+                && !string.IsNullOrEmpty(command.Name)
+            ) {
+                commandName = command.Name;
+            } else if (CommandInfo.CommandOrder.FirstOrDefault(cmdName => string.Equals(cmdName, commandLine.Command, StringComparison.OrdinalIgnoreCase)) is var name
+                       && !string.IsNullOrEmpty(name)
+            ) {
+                commandName = name;
+            } else {
+                commandName = Command;
+            }
+        } else {
+            commandName = Command;
+        }
+
+        // Special-cases for:
+        // - console commands to use spaces, like in-game console commands
+        // - Timing commands to use spaces, since they use "A: B"
+        if (IsCommand("console")
+            || Command.Contains("FileTime", StringComparison.OrdinalIgnoreCase)
+            || Command.Contains("ChapterTime", StringComparison.OrdinalIgnoreCase)
+        ) {
+            overrideSeparator = " ";
+        }
+
+        string separator = overrideSeparator ?? ArgumentSeparator;
+
+        // Wrap arguments in "" if necessary
+        return string.Join(separator, [commandName, ..Arguments.Select(arg => {
+            if (!arg.Contains(separator)
+                || arg.StartsWith('[') && arg.EndsWith(']')
+                || arg.StartsWith('{') && arg.EndsWith('}')
+            ) {
+                return arg;
+            }
+
+            return $"\"{arg}\"";
+        })]);
+    }
+
+    public override string ToString() {
+        return string.Join(ArgumentSeparator, [Command, ..Arguments]);
     }
 }

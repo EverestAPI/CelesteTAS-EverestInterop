@@ -157,12 +157,16 @@ public static class CommunicationWrapper {
     public static int CurrentFrameInInput => Connected ? State.CurrentFrameInInput : -1;
     public static int TotalFrames => Connected ? State.TotalFrames : -1;
     public static int SaveStateLine => Connected ? State.SaveStateLine : -1;
+
     public static States TasStates => Connected ? State.tasStates : States.None;
     public static string GameInfo => Connected ? State.GameInfo : string.Empty;
     public static string LevelName => Connected ? State.LevelName : string.Empty;
     public static string ChapterTime => Connected ? State.ChapterTime : string.Empty;
+
+    public static (float X, float Y) PlayerPosition => Connected ? State.PlayerPosition : (0.0f, 0.0f);
+    public static (float X, float Y) PlayerPositionRemainder => Connected ? State.PlayerPositionRemainder : (0.0f, 0.0f);
+    public static (float X, float Y) PlayerSpeed => Connected ? State.PlayerSpeed : (0.0f, 0.0f);
     public static bool ShowSubpixelIndicator => Connected && State.ShowSubpixelIndicator;
-    public static (float X, float Y) SubpixelRemainder => Connected ? State.SubpixelRemainder : (0.0f, 0.0f);
 
     public static string GetConsoleCommand(bool simple) {
         if (!Connected) {
@@ -191,6 +195,13 @@ public static class CommunicationWrapper {
         }
 
         return (string?)comm!.RequestGameData(GameDataType.ExactGameInfo).Result ?? string.Empty;
+    }
+    public static LevelInfo? GetLevelInfo() {
+        if (!Connected) {
+            return null;
+        }
+
+        return (LevelInfo?)comm!.RequestGameData(GameDataType.LevelInfo).Result;
     }
 
     // The hashcode is stored instead of the actual key, since it is used as an identifier in responses from Celeste
@@ -222,14 +233,6 @@ public static class CommunicationWrapper {
         result.Entries.AddRange(entries);
         result.Done = result.Done || done;
         autoCompleteEntryCache[hash] = result;
-    }
-
-    public static T? GetRawData<T>(string template, bool alwaysList = false) {
-        if (!Connected) {
-            return default;
-        }
-
-        return (T?)comm!.RequestGameData(GameDataType.RawInfo, (template, alwaysList), TimeSpan.FromSeconds(15), typeof(T)).Result ?? default;
     }
 
     public static async Task<GameState?> GetGameState() {

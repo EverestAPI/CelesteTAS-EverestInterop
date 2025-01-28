@@ -5,6 +5,7 @@ using System.Numerics;
 using CelesteStudio.Editing;
 using Eto.Drawing;
 using Eto.Forms;
+using SkiaSharp;
 using System.Reflection;
 using Range = System.Range;
 
@@ -16,10 +17,19 @@ public static class Extensions
 
     public static int Digits(this int self) => Math.Abs(self).ToString().Length;
 
-    public static T[] GetArrayRange<T>(this List<T> list, Range range) {
+    public static T[] GetArrayRange<T>(this IReadOnlyList<T> list, Range range) {
         var (start, length) = range.GetOffsetAndLength(list.Count);
         var result = new T[length];
-        list.CopyTo(start, result, 0, length);
+
+        if (list is List<T> listImpl) {
+            // Fast-path for regular lists
+            listImpl.CopyTo(start, result, 0, length);
+        } else {
+            for (int i = 0; i < length; i++) {
+                result[i] = list[start + i];
+            }
+        }
+
         return result;
     }
 
@@ -92,6 +102,9 @@ public static class Extensions
 
         return -1;
     }
+
+    public static SKColorF ToSkia(this Color color) => new(color.R, color.G, color.B, color.A);
+    public static Color ToEto(this SKColorF color) => new(color.Red, color.Green, color.Blue, color.Alpha);
 
     private static readonly MethodInfo? m_FixScrollable = Assembly.GetEntryAssembly()?.GetType("CelesteStudio.WPF.Program")?.GetMethod("FixScrollable", BindingFlags.Public | BindingFlags.Static);
     public static Scrollable FixBorder(this Scrollable scrollable) {

@@ -119,7 +119,7 @@ public class CombineConsecutiveSameInputs : ContextAction {
 
             if (!sameActions) {
                 // The algorithm goes backwards, but the target actions are the first valid line forwards
-                for (int row = minRow; row >= maxRow; row++) {
+                for (int row = minRow; row <= maxRow; row++) {
                     if (ActionLine.TryParse(Document.Lines[row], out var nextActionLine)) {
                         forceMergeTarget = nextActionLine;
                         break;

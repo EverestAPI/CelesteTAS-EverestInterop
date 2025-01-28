@@ -1,9 +1,11 @@
+using CelesteStudio.Dialog;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CelesteStudio.Util;
+using Eto.Forms;
 using StudioCommunication;
 using StudioCommunication.Util;
 
@@ -20,7 +22,6 @@ public sealed class CommunicationAdapterStudio(
 {
     private readonly EnumDictionary<GameDataType, object?> gameData = new();
     private readonly EnumDictionary<GameDataType, bool> gameDataPending = new();
-    private Type? rawInfoTargetType;
 
     public void ForceReconnect() {
         if (Connected) {
@@ -33,6 +34,11 @@ public sealed class CommunicationAdapterStudio(
     protected override void FullReset() {
         CommunicationWrapper.Stop();
         CommunicationWrapper.Start();
+    }
+
+    protected override void OnProtocolVersionMismatch(ushort otherVersion) {
+        Application.Instance.AsyncInvoke(() => CommunicationDesyncDialog.Show(ProtocolVersion, otherVersion));
+        CommunicationWrapper.Stop();
     }
 
     protected override void OnConnectionChanged() {
@@ -74,7 +80,9 @@ public sealed class CommunicationAdapterStudio(
                 break;
 
             case MessageID.RecordingFailed:
-                // TODO
+                var reason = (RecordingFailedReason) reader.ReadByte();
+
+                Application.Instance.AsyncInvoke(() => RecordingFailedDialog.Show(reason));
                 break;
 
             case MessageID.GameDataResponse:
@@ -91,16 +99,16 @@ public sealed class CommunicationAdapterStudio(
                         gameData[gameDataType] = reader.ReadString();
                         break;
 
-                    case GameDataType.RawInfo:
-                        gameData[gameDataType] = reader.ReadObject(rawInfoTargetType!);
-                        break;
-
                     case GameDataType.GameState:
                         gameData[gameDataType] = reader.ReadObject<GameState?>();
                         break;
 
                     case GameDataType.CommandHash:
                         gameData[gameDataType] = reader.ReadInt32();
+                        break;
+
+                    case GameDataType.LevelInfo:
+                        gameData[gameDataType] = reader.ReadObject<LevelInfo>();
                         break;
                 }
                 gameDataPending[gameDataType] = false;
@@ -194,10 +202,6 @@ public sealed class CommunicationAdapterStudio(
 
         // Block other requests of this type until this is done
         gameDataPending[gameDataType] = true;
-
-        if (gameDataType == GameDataType.RawInfo) {
-            rawInfoTargetType = type;
-        }
 
         QueueMessage(MessageID.RequestGameData, writer => {
             writer.Write((byte)gameDataType);

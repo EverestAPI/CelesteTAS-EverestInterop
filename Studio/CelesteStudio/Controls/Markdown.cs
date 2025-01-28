@@ -53,7 +53,7 @@ public class Markdown : Drawable {
             var sysFont = SystemFonts.Default();
 
             if (Code) {
-                var codeFont = FontManager.EditorFontRegular;
+                var codeFont = FontManager.EditorFont;
                 return new Font(codeFont.Family, sysFont.Size, fontStyle, fontDecoration);
             }
 

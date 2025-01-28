@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System.Windows.Media;
 using CelesteStudio.Communication;
+using CelesteStudio.Controls;
 using Dark.Net;
 using Dark.Net.Wpf;
 using Eto.Forms;
@@ -20,7 +21,10 @@ public static class Program {
         try {
             Settings.ThemeChanged += () => UpdateTheme(Settings.Instance.Theme.DarkMode);
 
-            var app = new Application(Eto.Platforms.Wpf);
+            var platform = new Eto.Wpf.Platform();
+            platform.Add<SkiaDrawable.IHandler>(() => new SkiaDrawableHandler());
+
+            var app = new Application(platform);
             var studio = new Studio(args, windowCreationCallback: window => {
                 ApplyTheme(window, Settings.Instance.Theme.DarkMode);
                 Settings.ThemeChanged += () => ApplyTheme(window, Settings.Instance.Theme.DarkMode);
@@ -28,7 +32,12 @@ public static class Program {
 
             UpdateTheme(Settings.Instance.Theme.DarkMode);
             
-            studio.PreLoad += (_, _) => ApplyTheme(studio, Settings.Instance.Theme.DarkMode);
+            var nativeWindow = ((IWpfWindow)studio.Handler).Control;
+            nativeWindow.SourceInitialized += (_, _) => {
+                ApplyTheme(studio, Settings.Instance.Theme.DarkMode);
+                studio.WPFHackEnabled = false;
+            };
+            
             Settings.ThemeChanged += () => ApplyTheme(studio, Settings.Instance.Theme.DarkMode);
 
             app.Run(studio);
