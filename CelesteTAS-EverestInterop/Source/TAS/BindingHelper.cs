@@ -135,7 +135,7 @@ public static class BindingHelper {
     private static void ClearModsBindings() {
         foreach (EverestModule module in Everest.Modules) {
             if (module.SettingsType is { } settingsType && module._Settings is { } settings and not CelesteTasSettings) {
-                foreach (PropertyInfo propertyInfo in settingsType.GetAllProperties()) {
+                foreach (PropertyInfo propertyInfo in settingsType.GetAllPropertyInfos()) {
                     if (propertyInfo.GetGetMethod(true) != null && propertyInfo.GetSetMethod(true) != null &&
                         propertyInfo.PropertyType == typeof(ButtonBinding) && propertyInfo.GetValue(settings) is ButtonBinding {Button: { } button}) {
                         button.Binding = new Binding();

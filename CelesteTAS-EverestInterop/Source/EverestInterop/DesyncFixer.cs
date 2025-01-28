@@ -25,16 +25,24 @@ public static class DesyncFixer {
     [Initialize]
     private static void Initialize() {
         Dictionary<MethodInfo, int> methods = new() {
-            {typeof(Debris).GetMethod(nameof(Debris.orig_Init)), 1},
-            {typeof(Debris).GetMethod(nameof(Debris.Init), new[] {typeof(Vector2), typeof(char), typeof(bool)}), 1},
-            {typeof(Debris).GetMethod(nameof(Debris.BlastFrom)), 1},
+            {typeof(Debris).GetMethodInfo(nameof(Debris.orig_Init))!, 1},
+            {typeof(Debris).GetMethodInfo(nameof(Debris.Init), [typeof(Vector2), typeof(char), typeof(bool)])!, 1},
+            {typeof(Debris).GetMethodInfo(nameof(Debris.BlastFrom))!, 1},
         };
 
-        foreach (Type type in ModUtils.GetTypes()) {
-            if (type.Name.EndsWith("Debris") && type.GetMethodInfo("Init") is {IsStatic: false} method) {
+        foreach (var type in ModUtils.GetTypes()) {
+            if (!type.Name.EndsWith("Debris")) {
+                continue;
+            }
+
+            foreach (var method in type.GetAllMethodInfos()) {
+                if (method.Name != "Init" || method.IsStatic) {
+                    continue;
+                }
+
                 int index = 1;
-                foreach (ParameterInfo parameterInfo in method.GetParameters()) {
-                    if (parameterInfo.ParameterType == typeof(Vector2)) {
+                foreach (var param in method.GetParameters()) {
+                    if (param.ParameterType == typeof(Vector2)) {
                         methods[method] = index;
                         break;
                     }

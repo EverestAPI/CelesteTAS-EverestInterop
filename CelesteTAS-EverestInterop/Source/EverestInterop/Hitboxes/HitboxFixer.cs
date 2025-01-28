@@ -6,7 +6,8 @@ using TAS.Module;
 
 namespace TAS.EverestInterop.Hitboxes;
 
-public static class HitboxFixer {
+/// Fixes incorrect hitbox shapes
+internal static class HitboxFixer {
     public static bool DrawingHitboxes { get; set; }
 
     [Load]

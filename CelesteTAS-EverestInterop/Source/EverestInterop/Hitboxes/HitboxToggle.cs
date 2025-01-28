@@ -7,6 +7,7 @@ using TAS.Module;
 
 namespace TAS.EverestInterop.Hitboxes;
 
+/// Manages showing improve
 public static class HitboxToggle {
     private static bool origDrawHitboxes = false;
     public static bool DrawHitboxes => origDrawHitboxes || TasSettings.ShowHitboxes || !TasSettings.ShowGameplay;

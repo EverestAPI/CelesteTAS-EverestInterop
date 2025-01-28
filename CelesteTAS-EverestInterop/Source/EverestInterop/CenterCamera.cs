@@ -3,6 +3,7 @@ using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.EverestInterop.InfoHUD;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -271,7 +272,7 @@ public static class CenterCamera {
             moveX += 1;
         }
 
-        if (ExtendedVariantsUtils.UpsideDown) {
+        if (ExtendedVariantsInterop.UpsideDown) {
             moveY *= -1;
         }
 
@@ -298,7 +299,7 @@ public static class CenterCamera {
             if (Hotkeys.FreeCamera.Check && LevelZoomOut) {
                 Vector2 screenOffsetDelta = (MouseButtons.Position - MouseButtons.LastPosition) / scale;
 
-                if (ExtendedVariantsUtils.UpsideDown) {
+                if (ExtendedVariantsInterop.UpsideDown) {
                     screenOffset -= Vector2.Reflect(screenOffsetDelta, Vector2.UnitY);
                 } else {
                     screenOffset -= screenOffsetDelta;
@@ -307,7 +308,7 @@ public static class CenterCamera {
             } else {
                 Vector2 moveOffsetDelta = (MouseButtons.Position - MouseButtons.LastPosition) / scale;
 
-                if (ExtendedVariantsUtils.UpsideDown) {
+                if (ExtendedVariantsInterop.UpsideDown) {
                     moveOffset -= Vector2.Reflect(moveOffsetDelta, Vector2.UnitY);
                 } else {
                     moveOffset -= moveOffsetDelta;

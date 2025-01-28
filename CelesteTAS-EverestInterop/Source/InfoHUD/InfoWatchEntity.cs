@@ -363,7 +363,7 @@ public static class InfoWatchEntity {
             properties = type.GetProperties(bindingFlags);
         } else {
             fields = type.GetAllFieldInfos().ToArray();
-            properties = type.GetAllProperties().ToArray();
+            properties = type.GetAllPropertyInfos().ToArray();
         }
 
         List<MemberInfo> memberInfos = [];
