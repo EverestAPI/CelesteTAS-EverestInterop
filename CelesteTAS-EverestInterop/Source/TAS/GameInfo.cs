@@ -139,7 +139,10 @@ public static class GameInfo {
         On.Monocle.Scene.AfterUpdate += SceneOnAfterUpdate;
         Everest.Events.Level.OnTransitionTo += LevelOnOnTransitionTo;
         On.Celeste.Level.Update += LevelOnUpdate;
-        typeof(Player).GetMethodInfo("DashCoroutine").GetStateMachineTarget().IlHook(PlayerOnDashCoroutine);
+        typeof(Player)
+            .GetMethodInfo(nameof(Player.DashCoroutine))!
+            .GetStateMachineTarget()!
+            .IlHook(PlayerOnDashCoroutine);
     }
 
     [Unload]

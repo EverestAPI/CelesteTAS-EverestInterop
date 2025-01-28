@@ -36,6 +36,9 @@ internal static class HookHelper {
     }
 
     /// Creates an On-hook to the specified method, which will automatically be unregistered
+    public static void OnHook(this MethodBase from, MethodInfo to) => onHooks.Add(new Hook(from, to));
+
+    /// Creates an On-hook to the specified method, which will automatically be unregistered
     public static void OnHook(this MethodBase from, Delegate to) => onHooks.Add(new Hook(from, to));
 
     /// Creates an IL-hook to the specified method, which will automatically be unregistered

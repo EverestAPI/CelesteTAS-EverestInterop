@@ -7,6 +7,7 @@ using Celeste.Pico8;
 using JetBrains.Annotations;
 using Monocle;
 using StudioCommunication;
+using System.Threading.Tasks;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Input;
@@ -62,7 +63,7 @@ public static class Manager {
 
         // Stop TAS to avoid blocking reload
         typeof(AssetReloadHelper)
-            .GetMethodInfo(nameof(AssetReloadHelper.Do))
+            .GetMethodInfo(nameof(AssetReloadHelper.Do), [typeof(string), typeof(Func<bool, Task>), typeof(bool), typeof(bool)])!
             .HookBefore(DisableRun);
     }
 

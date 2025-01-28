@@ -92,7 +92,7 @@ public static class SetCommand {
                 // Mod settings
                 foreach (var mod in Everest.Modules) {
                     if (mod.SettingsType != null && (mod.SettingsType.GetAllFieldInfos().Any() ||
-                                                     mod.SettingsType.GetAllProperties().Any(p => p.SetMethod != null)))
+                                                     mod.SettingsType.GetAllPropertyInfos().Any(p => p.SetMethod != null)))
                     {
                         yield return new CommandAutoCompleteEntry { Name = $"{mod.Metadata.Name}.", Extra = "Mod Setting", IsDone = false };
                     }
