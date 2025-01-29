@@ -50,7 +50,7 @@ public static class HitboxOptimized {
             // but i have no good idea, so i put it aside
         }
 
-        using (new DetourConfigContext(new DetourConfig("CelesteTAS", before: ["*"])).Use()) {
+        using (new DetourConfigContext(new DetourConfig("CelesteTAS", priority: int.MaxValue)).Use()) {
             On.Monocle.Entity.DebugRender += ModDebugRender;
         }
     }

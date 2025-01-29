@@ -15,7 +15,7 @@ namespace TAS.Playback;
 internal static class Core {
     [Load]
     private static void Load() {
-        using (new DetourConfigContext(new DetourConfig("CelesteTAS", before: ["*"])).Use()) {
+        using (new DetourConfigContext(new DetourConfig("CelesteTAS", priority: int.MaxValue)).Use()) {
             On.Celeste.Celeste.Update += On_Celeste_Update;
             IL.Monocle.Engine.Update += IL_Engine_Update;
 
