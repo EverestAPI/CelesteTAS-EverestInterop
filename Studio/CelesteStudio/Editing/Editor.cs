@@ -129,7 +129,18 @@ public sealed class Editor : SkiaDrawable {
     private Point scrollablePosition;
     private Size scrollableSize;
 
-    private int previousMaxDigits = -1;
+    private const int offscreenLinePadding = 3;
+    
+    // Only expand width of line numbers for actually visible digits
+    private int lastVisibleLineNumberDigits = -1;
+    private int VisibleLineNumberDigits {
+        get {
+            int bottomVisualRow = (int)((scrollablePosition.Y + scrollableSize.Height) / Font.LineHeight()) + offscreenLinePadding;
+            int bottomRow = Math.Min(Document.Lines.Count - 1, GetActualRow(bottomVisualRow));
+
+            return bottomRow.Digits();
+        }
+    }
 
     private readonly PixelLayout pixelLayout = new();
     private readonly PopupMenu autoCompleteMenu = new();
@@ -225,8 +236,6 @@ public sealed class Editor : SkiaDrawable {
     private static readonly Regex AllBreakpointRegex = new(@"^\s*#*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex TimestampRegex = new(@"^\s*#+\s*(\d+:)?\d{1,2}:\d{2}\.\d{3}\(\d+\)", RegexOptions.Compiled);
 
-    private const int offscreenLinePadding = 3;
-
     public Editor(Document document, Scrollable scrollable) {
         this.document = document;
         this.scrollable = scrollable;
@@ -261,14 +270,12 @@ public sealed class Editor : SkiaDrawable {
         scrollable.Scroll += (_, _) => {
             scrollablePosition = scrollable.ScrollPosition;
 
-            int bottomVisualRow = (int)((scrollablePosition.Y + scrollableSize.Height) / Font.LineHeight()) + offscreenLinePadding;
-            int bottomRow = Math.Min(Document.Lines.Count - 1, GetActualRow(bottomVisualRow));
-
-            int maxDigits = bottomRow.Digits();
-            if (previousMaxDigits != maxDigits) {
+            // Only update if required
+            int newVisibleDigits = VisibleLineNumberDigits;
+            if (lastVisibleLineNumberDigits != newVisibleDigits) {
+                lastVisibleLineNumberDigits = newVisibleDigits;
                 Recalc();
             }
-            previousMaxDigits = maxDigits;
 
             Invalidate();
         };
@@ -646,19 +653,19 @@ public sealed class Editor : SkiaDrawable {
         // Clear invalid foldings
         Document.RemoveAnchorsIf(anchor => anchor.UserData is CollapseAnchorData && foldings.All(fold => fold.MinRow != anchor.Row));
 
-        int bottomVisualRow = (int)((scrollablePosition.Y + scrollableSize.Height) / Font.LineHeight()) + offscreenLinePadding;
-        int bottomRow = Math.Min(Document.Lines.Count - 1, GetActualRow(bottomVisualRow));
 
         // Calculate line numbers width
         const float foldButtonPadding = 5.0f;
         bool hasFoldings = Settings.Instance.ShowFoldIndicators && foldings.Count != 0;
+        int visibleDigits = VisibleLineNumberDigits;
+
         // Only when the alignment is to the left, the folding indicator can fit into the existing space
         float foldingWidth = !hasFoldings ? 0.0f : Settings.Instance.LineNumberAlignment switch {
              LineNumberAlignment.Left => Font.CharWidth() * (foldings[^1].MinRow.Digits() + 1) + foldButtonPadding,
-             LineNumberAlignment.Right => Font.CharWidth() * (bottomRow.Digits() + 1) + foldButtonPadding,
+             LineNumberAlignment.Right => Font.CharWidth() * (visibleDigits + 1) + foldButtonPadding,
              _ => throw new UnreachableException(),
         };
-        textOffsetX = Math.Max(foldingWidth, Font.CharWidth() * bottomRow.Digits()) + LineNumberPadding * 3.0f;
+        textOffsetX = Math.Max(foldingWidth, Font.CharWidth() * visibleDigits) + LineNumberPadding * 3.0f;
 
         const float paddingRight = 50.0f;
         const float paddingBottom = 100.0f;
