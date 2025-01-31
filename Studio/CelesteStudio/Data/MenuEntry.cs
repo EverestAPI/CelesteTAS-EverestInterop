@@ -8,7 +8,7 @@ using Eto.Forms;
 namespace CelesteStudio.Data;
 
 public enum MenuEntry {
-    File_New, File_Open, File_OpenPrevious, File_Save, File_SaveAs, File_RecordTAS, File_Quit,
+    File_New, File_Open, File_OpenPrevious, File_Save, File_SaveAs, File_Show, File_RecordTAS, File_Quit,
     Settings_SendInputs,
     View_ShowGameInfo, View_ShowSubpixelIndicator, View_AlwaysOnTop, View_WrapComments, View_ShowFoldingIndicator,
 
@@ -42,6 +42,7 @@ public static class MenuEntryExtensions {
         { MenuEntry.File_OpenPrevious, Application.Instance.AlternateModifier | Keys.Left },
         { MenuEntry.File_Save, Application.Instance.CommonModifier | Keys.S },
         { MenuEntry.File_SaveAs, Application.Instance.CommonModifier | Keys.Shift | Keys.S },
+        { MenuEntry.File_Show, Keys.None },
         { MenuEntry.File_RecordTAS, Keys.None },
         { MenuEntry.File_Quit, Keys.None },
 
@@ -120,6 +121,7 @@ public static class MenuEntryExtensions {
         { MenuEntry.File_OpenPrevious, "Open &Previous File" },
         { MenuEntry.File_Save, "Save" },
         { MenuEntry.File_SaveAs, "&Save As..." },
+        { MenuEntry.File_Show, "Show in &File Explorer..." },
         { MenuEntry.File_RecordTAS, "&Record TAS..." },
         { MenuEntry.File_Quit, "Quit" },
 
@@ -194,7 +196,7 @@ public static class MenuEntryExtensions {
     };
     private static readonly Dictionary<MenuEntryCategory, MenuEntry[]> Categories = new() {
         { MenuEntryCategory.File, [
-            MenuEntry.File_New, MenuEntry.File_Open, MenuEntry.File_OpenPrevious, MenuEntry.File_Save, MenuEntry.File_SaveAs, MenuEntry.File_RecordTAS, MenuEntry.File_Quit] },
+            MenuEntry.File_New, MenuEntry.File_Open, MenuEntry.File_OpenPrevious, MenuEntry.File_Save, MenuEntry.File_SaveAs, MenuEntry.File_Show, MenuEntry.File_RecordTAS, MenuEntry.File_Quit] },
 
         { MenuEntryCategory.Settings, [
             MenuEntry.Settings_SendInputs] },

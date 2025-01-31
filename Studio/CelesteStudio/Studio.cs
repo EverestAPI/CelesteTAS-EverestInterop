@@ -629,6 +629,15 @@ public sealed class Studio : Form {
         }) { MenuText = "Delete All Files" });
         backupsMenu.Enabled = backupFiles.Length != 0;
 
+        var showFile = MenuEntry.File_Show.ToAction(() => {
+            if (string.IsNullOrEmpty(Editor.Document.FilePath)) {
+                return;
+            }
+
+            ProcessHelper.OpenInDefaultApp(Path.GetDirectoryName(Editor.Document.FilePath)!);
+        });
+        showFile.Enabled = !string.IsNullOrEmpty(Editor.Document.FilePath) && Editor.Document.FilePath != Document.ScratchFile;
+
         // Don't display Settings.SendInputsNonWritable on WPF, since it's not supported there
         var inputSendingMenu = new SubMenuItem { Text = "&Input Sending", Items = {
                 MenuUtils.CreateSettingToggle("On Inputs", nameof(Settings.SendInputsOnActionLines)),
@@ -656,6 +665,7 @@ public sealed class Studio : Form {
                 openPreviousFile,
                 recentFilesMenu,
                 backupsMenu,
+                showFile,
                 new SeparatorMenuItem(),
                 MenuEntry.File_Save.ToAction(OnSaveFile),
                 MenuEntry.File_SaveAs.ToAction(OnSaveFileAs),
