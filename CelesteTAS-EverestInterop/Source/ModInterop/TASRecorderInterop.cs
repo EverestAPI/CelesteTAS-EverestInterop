@@ -2,9 +2,9 @@ using System;
 using System.Runtime.CompilerServices;
 using Celeste.Mod.TASRecorder;
 
-namespace TAS.Utils;
+namespace TAS.ModInterop;
 
-internal static class TASRecorderUtils {
+public static class TASRecorderInterop {
     public static bool Installed => installed.Value;
     private static readonly Lazy<bool> installed = new(() => ModUtils.IsInstalled("TASRecorder"));
 
@@ -17,7 +17,7 @@ internal static class TASRecorderUtils {
     public static void SetDurationEstimate(int frames) {
         if (installed.Value) setDurationEstimate(frames);
     }
-    
+
     public static bool Recording => installed.Value && isRecording();
     public static bool FFmpegInstalled => installed.Value && isFFmpegInstalled();
 

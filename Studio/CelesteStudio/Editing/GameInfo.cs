@@ -7,15 +7,46 @@ using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
 using SkiaSharp;
+using StudioCommunication;
 using StudioCommunication.Util;
 using System.ComponentModel;
 
 namespace CelesteStudio.Editing;
 
 public sealed class GameInfo : Panel {
+    /// Label specifically optimized for displaying monospaced text in the game-info
+    private sealed class InfoLabel(Func<string> textProvider) : SkiaDrawable {
+        public override unsafe void Draw(SKSurface surface) {
+            var text = textProvider().AsSpan();
+
+            var canvas = surface.Canvas;
+            var font = FontManager.SKStatusFont;
+
+            float maxWidth = 0.0f;
+            float height = 0.0f;
+
+            foreach (var line in new LineIterator(text)) {
+                fixed (char* pLine = &line.GetPinnableReference()) {
+                    // TODO: Avoid allocating a SKTextBlob object
+                    using var blob = SKTextBlob.Create((IntPtr) pLine, line.Length * sizeof(char), SKTextEncoding.Utf16, font); // C# strings are UTF16
+
+                    if (blob != null) {
+                        canvas.DrawText(blob, 0.0f, height + font.Offset(), Settings.Instance.Theme.StatusFgPaint);
+                    }
+                }
+
+                maxWidth = Math.Max(font.CharWidth() * line.Length, maxWidth);
+                height += font.LineHeight();
+            }
+
+            Width = (int) maxWidth;
+            Height = (int) height;
+        }
+    }
+
     private sealed class SubpixelIndicator : SkiaDrawable {
         public override void Draw(SKSurface surface) {
-            surface.Canvas.Clear();
+            var canvas = surface.Canvas;
 
             var remainder = CommunicationWrapper.PlayerPositionRemainder;
 
@@ -49,11 +80,11 @@ public sealed class GameInfo : Panel {
             string top = subpixelTop.ToFormattedString(vDecimals);
             string bottom = subpixelBottom.ToFormattedString(vDecimals);
 
-            surface.Canvas.DrawText(left, x - rectPadding - font.MeasureWidth(left), y + (rectSize - textHeight) / 2.0f + font.Offset(), font, Settings.Instance.Theme.StatusFgPaint);
-            surface.Canvas.DrawText(right, x + rectPadding + rectSize, y + (rectSize - textHeight) / 2.0f + font.Offset(), font, Settings.Instance.Theme.StatusFgPaint);
+            canvas.DrawText(left, x - rectPadding - font.MeasureWidth(left), y + (rectSize - textHeight) / 2.0f + font.Offset(), font, Settings.Instance.Theme.StatusFgPaint);
+            canvas.DrawText(right, x + rectPadding + rectSize, y + (rectSize - textHeight) / 2.0f + font.Offset(), font, Settings.Instance.Theme.StatusFgPaint);
 
-            surface.Canvas.DrawText(top, MathF.Round(x + (rectSize - font.MeasureWidth(top)) / 2.0f), MathF.Round(y - rectPadding - textHeight + font.Offset()), font, Settings.Instance.Theme.StatusFgPaint);
-            surface.Canvas.DrawText(bottom, x + (rectSize - font.MeasureWidth(bottom)) / 2.0f, y + rectPadding + rectSize + font.Offset(), font, Settings.Instance.Theme.StatusFgPaint);
+            canvas.DrawText(top, MathF.Round(x + (rectSize - font.MeasureWidth(top)) / 2.0f), MathF.Round(y - rectPadding - textHeight + font.Offset()), font, Settings.Instance.Theme.StatusFgPaint);
+            canvas.DrawText(bottom, x + (rectSize - font.MeasureWidth(bottom)) / 2.0f, y + rectPadding + rectSize + font.Offset(), font, Settings.Instance.Theme.StatusFgPaint);
 
             int boxThickness = Math.Max(1, (int)Math.Round(rectSize / 20.0f));
             float dotThickness = boxThickness * 1.25f;
@@ -63,8 +94,8 @@ public sealed class GameInfo : Panel {
             boxPaint.Style = SKPaintStyle.Stroke;
             boxPaint.StrokeWidth = boxThickness;
 
-            surface.Canvas.DrawRect(x, y, rectSize, rectSize, boxPaint);
-            surface.Canvas.DrawRect(x + (rectSize - dotThickness) * subpixelLeft, y + (rectSize - dotThickness) * subpixelTop, dotThickness, dotThickness, Settings.Instance.Theme.SubpixelIndicatorDotPaint);
+            canvas.DrawRect(x, y, rectSize, rectSize, boxPaint);
+            canvas.DrawRect(x + (rectSize - dotThickness) * subpixelLeft, y + (rectSize - dotThickness) * subpixelTop, dotThickness, dotThickness, Settings.Instance.Theme.SubpixelIndicatorDotPaint);
 
             Width = (int)((textWidth + rectPadding + indicatorPadding) * 2.0f + rectSize);
             Height = (int)((textHeight + rectPadding + indicatorPadding) * 2.0f + rectSize);
@@ -87,8 +118,8 @@ public sealed class GameInfo : Panel {
         set => infoTemplateArea.Width = Math.Max(0, value);
     }
 
-    private readonly Label frameInfo;
-    private readonly Label gameStatus;
+    private readonly InfoLabel frameInfo;
+    private readonly InfoLabel gameStatus;
     private readonly SubpixelIndicator subpixelIndicator;
 
     private readonly TextArea infoTemplateArea;
@@ -103,20 +134,10 @@ public sealed class GameInfo : Panel {
     public GameInfo() {
         Padding = 0;
 
-        frameInfo = new Label {
-            Text = string.Empty,
-            TextColor = Settings.Instance.Theme.StatusFg,
-            Font = FontManager.StatusFont,
-            Wrap = WrapMode.None,
-        };
+        frameInfo = new InfoLabel(() => frameInfoBuilder.ToString());
+        gameStatus = new InfoLabel(() => CommunicationWrapper.GameInfo is { } gameInfo && !string.IsNullOrEmpty(gameInfo) ? gameInfo : DisconnectedText);
         RecalcFrameInfo();
-        gameStatus = new Label {
-            Text = string.Empty,
-            TextColor = Settings.Instance.Theme.StatusFg,
-            Font = FontManager.StatusFont,
-            Wrap = WrapMode.None,
-        };
-        RecalcGameStatus();
+
         subpixelIndicator = new SubpixelIndicator { Width = 100, Height = 100 };
         subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
         subpixelIndicator.Invalidate();
@@ -166,13 +187,13 @@ public sealed class GameInfo : Panel {
         };
         CommunicationWrapper.ConnectionChanged += () => {
             RecalcFrameInfo();
-            RecalcGameStatus();
+            gameStatus.Invalidate();
             subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
             subpixelIndicator.Invalidate();
         };
         CommunicationWrapper.StateUpdated += (_, _) => {
             RecalcFrameInfo();
-            RecalcGameStatus();
+            gameStatus.Invalidate();
             subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
             subpixelIndicator.Invalidate();
         };
@@ -193,14 +214,14 @@ public sealed class GameInfo : Panel {
 
         // React to settings changes
         Settings.ThemeChanged += () => {
-            frameInfo.TextColor = Settings.Instance.Theme.StatusFg;
-            gameStatus.TextColor = Settings.Instance.Theme.StatusFg;
+            frameInfo.Invalidate();
+            gameStatus.Invalidate();
             infoTemplateArea.TextColor = Settings.Instance.Theme.StatusFg;
             subpixelIndicator.Invalidate();
         };
         Settings.FontChanged += () => {
-            frameInfo.Font = FontManager.StatusFont;
-            gameStatus.Font = FontManager.StatusFont;
+            frameInfo.Invalidate();
+            gameStatus.Invalidate();
             infoTemplateArea.Font = FontManager.StatusFont;
             subpixelIndicator.Invalidate();
         };
@@ -255,6 +276,11 @@ public sealed class GameInfo : Panel {
     }
 
     private void RecalcFrameInfo() {
+        var document = Studio.Instance.Editor.Document;
+        if (document.UpdateInProgress) {
+            return;
+        }
+
         frameInfoBuilder.Clear();
 
         if (CommunicationWrapper.Connected && CommunicationWrapper.CurrentFrameInTas > 0) {
@@ -263,7 +289,6 @@ public sealed class GameInfo : Panel {
         }
         frameInfoBuilder.Append(Studio.Instance.Editor.TotalFrameCount);
 
-        var document = Studio.Instance.Editor.Document;
         if (!document.Selection.Empty) {
             int minRow = document.Selection.Min.Row;
             int maxRow = document.Selection.Max.Row;
@@ -280,13 +305,7 @@ public sealed class GameInfo : Panel {
             frameInfoBuilder.Append(selectedFrames);
         }
 
-        frameInfo.Text = frameInfoBuilder.ToString();
-    }
-
-    private void RecalcGameStatus() {
-        gameStatus.Text = CommunicationWrapper.Connected && CommunicationWrapper.GameInfo is { } gameInfo && !string.IsNullOrEmpty(gameInfo)
-            ? gameInfo
-            : DisconnectedText;
+        frameInfo.Invalidate();
     }
 }
 
@@ -382,17 +401,11 @@ public sealed class GameInfoPanel : Panel {
         Padding = 10;
         Content = layout;
 
-        Load += (_, _) => {
-            UpdateGameInfoStatus();
-        };
+        Load += (_, _) => UpdateGameInfoStatus();
+        Settings.Changed += UpdateGameInfoStatus;
 
         BackgroundColor = Settings.Instance.Theme.StatusBg;
-        Settings.Changed += () => {
-            UpdateGameInfoStatus();
-        };
-        Settings.ThemeChanged += () => {
-            BackgroundColor = Settings.Instance.Theme.StatusBg;
-        };
+        Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.StatusBg;
 
         return;
 
@@ -404,17 +417,19 @@ public sealed class GameInfoPanel : Panel {
             // Causes the game-info to fit to the scrollable again
             scrollable.Content = gameInfo;
 
+
             // Limit height to certain percentage of entire the window
+            bool horizontalScrollVisible = gameInfo.Width - 1 > scrollable.ClientSize.Width;
             scrollable.Size = new Size(
                 Math.Max(0, ClientSize.Width - Padding.Left - Padding.Right),
-                Math.Max(0, Math.Min(gameInfo.ActualHeight + Padding.Top + Padding.Bottom, (int)(Studio.Instance.Height * Settings.Instance.MaxGameInfoHeight)) - Padding.Top - Padding.Bottom));
+                Math.Max(0, Math.Min(gameInfo.ActualHeight + Padding.Top + Padding.Bottom + (horizontalScrollVisible ? Studio.ScrollBarSize : 0), (int)(Studio.Instance.Height * Settings.Instance.MaxGameInfoHeight)) - Padding.Top - Padding.Bottom));
 
             // Don't show while editing template (cause overlap)
             popoutButton.Visible = !gameInfo.EditingTemplate;
 
             // Account for scroll bar
-            bool scrollBarVisible = gameInfo.Height > scrollable.Height;
-            layout.Move(popoutButton, ClientSize.Width - Padding.Left - Padding.Right - PopoutButton.ButtonSize - (scrollBarVisible ? Studio.ScrollBarSize : 0), 0);
+            bool verticalScrollVisible = gameInfo.Height - 1 > scrollable.ClientSize.Height;
+            layout.Move(popoutButton, ClientSize.Width - Padding.Left - Padding.Right - PopoutButton.ButtonSize - (verticalScrollVisible ? Studio.ScrollBarSize : 0), 0);
         }
 
         void UpdateGameInfoStatus() {

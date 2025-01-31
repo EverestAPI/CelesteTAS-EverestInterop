@@ -5,6 +5,7 @@ using System.Linq;
 using CelesteStudio.Communication;
 using CelesteStudio.Util;
 using Eto.Forms;
+using StudioCommunication;
 using StudioCommunication.Util;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -109,8 +110,8 @@ public class Document : IDisposable {
 
     private readonly UndoStack undoStack = new();
 
-    private List<string> CurrentLines;
-    public List<string> Lines => CurrentLines;
+    private readonly List<string> CurrentLines;
+    public IReadOnlyList<string> Lines => CurrentLines;
 
     /// An anchor is a part of the document, which will move with the text its placed on.
     /// They can hold arbitrary user data.
@@ -130,6 +131,9 @@ public class Document : IDisposable {
 
     private readonly Stack<QueuedUpdate> updateStack = [];
 
+    /// Whether the document is currently being updated and might not be in a valid state
+    public bool UpdateInProgress => updateStack.Count != 0;
+
     /// Reports insertions and deletions of the document
     public event Action<Document, Dictionary<int, string>, Dictionary<int, string>>? TextChanged;
     private void OnTextChanged(Dictionary<int, string> insertions, Dictionary<int, string> deletions)
@@ -137,12 +141,19 @@ public class Document : IDisposable {
 
     /// Formats lines of a file into a single string, using consistent formatting rules
     public static string FormatLinesToText(IEnumerable<string> lines) {
-        string text = string.Join(NewLine, lines);
+        return string.Join("", lines
+            // Trim leading empty lines
+            .SkipWhile(string.IsNullOrWhiteSpace)
+            // Trim trailing empty lines
+            .Reverse().SkipWhile(string.IsNullOrWhiteSpace).Reverse()
+            .Select(line => {
+                if (ActionLine.TryParse(line, out var actionLine)) {
+                    return $"{actionLine}{NewLine}";
+                }
 
-        // Require exactly 1 empty line at end of file
-        text = text.TrimEnd(NewLine) + $"{NewLine}";
-
-        return text;
+                // Trim whitespace and remove invalid characters
+                return new string(line.Trim().Where(c => !char.IsControl(c) && c != char.MaxValue).ToArray()) + $"{NewLine}";
+            }));
     }
 
     private Document(string? filePath) {
@@ -239,8 +250,6 @@ public class Document : IDisposable {
             return;
         }
         Console.WriteLine($"Change: {e.FullPath} - {e.ChangeType}");
-
-        Editor.FileCache.Clear(); // Clear everything, just to be save
 
         // Need to try multiple times, since the file might still be used by other processes
         // The file might also just be temporarily be deleted and re-created by an external tool
@@ -565,13 +574,24 @@ public class Document : IDisposable {
 
         /// Merges the patches A and B, where A is based on the initial state and B is based on after A is applied
         public static Patch Merge(Patch a, Patch b) {
+            List<int> rowsToShift = [];
+
             // Cancel out deletions / insertions
-            foreach (var row in a.Insertions.Keys.Intersect(b.Deletions.Keys)) {
+            int[] intersections = a.Insertions.Keys.Intersect(b.Deletions.Keys).ToArray();
+            foreach (int row in intersections.OrderBy(row => row)) {
                 a.Insertions.Remove(row);
                 b.Deletions.Remove(row);
-            }
 
-            List<int> rowsToShift = [];
+                // Shift up insertions in A
+                rowsToShift.Clear();
+                rowsToShift.AddRange(a.Insertions.Keys.Where(aRow => aRow > row));
+
+                foreach (int aRow in rowsToShift.OrderBy(aRow => aRow)) {
+                    string value = a.Insertions[aRow];
+                    a.Insertions[aRow - 1] = value;
+                    a.Insertions.Remove(aRow);
+                }
+            }
 
             // Shift down deletions in B
             foreach ((int aRow, _) in a.Deletions.OrderBy(entry => entry.Key)) {
@@ -844,8 +864,8 @@ public class Document : IDisposable {
                 break;
         }
 
+        int newLineCount = newLines.Length > 0 ? newLines.Length - 1 : 0;
         if (Caret.Row >= row) {
-            int newLineCount = newLines.Length > 0 ? newLines.Length-1 : 0;
             Caret.Row += newLineCount;
         }
 
@@ -856,12 +876,16 @@ public class Document : IDisposable {
                 anchor.OnRemoved?.Invoke();
             }
         }
+
         // Move anchors below down
+        if (newLineCount == 0) {
+            return;
+        }
         for (int currRow = CurrentLines.Count - 1; currRow > row + 1 ; currRow--) {
             if (CurrentAnchors.Remove(currRow, out var belowAnchors)) {
-                CurrentAnchors[currRow + newLines.Length - 2] = belowAnchors;
+                CurrentAnchors[currRow + newLineCount] = belowAnchors;
                 foreach (var anchor in belowAnchors) {
-                    anchor.Row += newLines.Length - 2;
+                    anchor.Row += newLineCount;
                 }
             }
         }
@@ -876,7 +900,7 @@ public class Document : IDisposable {
         // Swap anchors
         var aAnchors = CurrentAnchors.TryGetValue(rowA, out var anchors) ? anchors : [];
         var bAnchors = CurrentAnchors.TryGetValue(rowA, out anchors) ? anchors : [];
-        
+
         CurrentAnchors[rowA] = bAnchors;
         CurrentAnchors[rowB] = aAnchors;
     }

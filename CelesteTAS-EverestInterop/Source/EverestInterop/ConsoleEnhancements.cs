@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using Celeste;
 using Celeste.Mod;
+using Microsoft.Xna.Framework.Input;
 using Monocle;
 using MonoMod.Cil;
-using TAS.EverestInterop.InfoHUD;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
+using TAS.InfoHUD;
 
 namespace TAS.EverestInterop;
 
@@ -31,20 +33,67 @@ public static class ConsoleEnhancements {
 
     [Load]
     private static void Load() {
-        IL.Monocle.Commands.Render += Commands_Render;
+        IL.Monocle.Commands.Render += IL_Commands_Render;
     }
 
     [Unload]
     private static void Unload() {
-        IL.Monocle.Commands.Render -= Commands_Render;
+        IL.Monocle.Commands.Render -= IL_Commands_Render;
     }
 
     [EnableRun]
-    private static void CloseCommand() {
+    private static void EnableRun() {
+        // Auto-close at start. Can be opened manually again
         Engine.Commands.Open = false;
     }
 
-    private static void Commands_Render(ILContext il) {
+    internal static void UpdateMeta() {
+        if (!Manager.Running) {
+            return;
+        }
+
+        justClosed = false;
+        if (Engine.Commands.Open) {
+            Engine.Commands.UpdateOpen();
+            if (!Engine.Commands.Open) {
+                justClosed = true;
+            }
+        } else if (Engine.Commands.Enabled) {
+            Engine.Commands.UpdateClosed();
+        }
+    }
+
+    private static bool justClosed = false;
+    internal static void OpenConsole() {
+        if (!Manager.Running) {
+            return; // Only allow inside a TAS, since outside it's already handled
+        }
+        if (!Engine.Commands.Enabled || Engine.Commands.Open) {
+            return;
+        }
+        if (justClosed) {
+            // While the console is open, hotkeys are not updated (in Hotkeys.UpdateMeta(), updateKey = false)
+            // so if without this extra check:
+            // Update() 1: Console is open
+            // Update() 2: CoreModule.ToggleDebugConsole gets pressed (note this is not our OpenConsole hotkey), and the console gets closed
+            // Update() 3: Hotkeys find that the console is closed and decides to update. It finds that OpenConsole was pressed, so it opens the console again!
+            return;
+        }
+
+        // Copied from Commands.UpdateClosed
+        Engine.Commands.Open = true;
+        Engine.Commands.currentState = Keyboard.GetState();
+        if (!Engine.Commands.installedListener) {
+            Engine.Commands.installedListener = true;
+            TextInput.OnInput += Engine.Commands.HandleChar;
+        }
+        if (!Engine.Commands.printedInfoMessage) {
+            Engine.Commands.Log("Use the 'help' command for a list of debug commands. Press Esc or use the 'q' command to close the console.");
+            Engine.Commands.printedInfoMessage = true;
+        }
+    }
+
+    private static void IL_Commands_Render(ILContext il) {
         // Hijack string.Format("\n level:       {0}, {1}", xObj, yObj)
         new ILCursor(il).FindNext(out ILCursor[] found,
             i => i.MatchLdstr("\n level:       {0}, {1}"),

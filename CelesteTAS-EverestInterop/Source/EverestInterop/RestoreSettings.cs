@@ -1,55 +1,72 @@
 using System.Collections.Generic;
 using Celeste;
 using Celeste.Mod;
+using StudioCommunication;
+using StudioCommunication.Util;
+using System;
 using TAS.Input.Commands;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop;
 
-// ReSharper disable once UnusedType.Global
-public static class RestoreSettings {
-    private static Settings origSettings;
+/// Restores settings which were changed during
+internal static class RestoreSettings {
+    private static Settings? origSettings;
     private static Assists? origAssists;
-    private static bool backupAssists;
-    private static Dictionary<EverestModule, object> origModSettings;
+    private static readonly Dictionary<EverestModule, object> origModSettings = new();
+    private static readonly Dictionary<object, object?> origExtendedVariants = new();
 
-    // ReSharper disable once UnusedMember.Local
+    internal static readonly HashSet<EverestModule> ignoredModules = new();
+    internal static readonly Dictionary<EverestModule, (Func<object> Backup, Action<object> Restore)> customHandlers = new();
+
     [EnableRun]
     private static void TryBackup() {
         origSettings = null;
         origAssists = null;
-        origModSettings = null;
 
         if (!TasSettings.RestoreSettings) {
             return;
         }
 
         origSettings = Settings.Instance.ShallowClone();
+        origAssists = SaveData.Instance?.Assists;
 
-        if (SaveData.Instance != null) {
-            origAssists = SaveData.Instance.Assists;
-        } else {
-            backupAssists = true;
+        origModSettings.Clear();
+        foreach (var module in Everest.Modules) {
+            if (module._Settings == null || module.SettingsType == null || module._Settings is CelesteTasSettings) {
+                continue;
+            }
+
+            if (ignoredModules.Contains(module)) {
+                continue;
+            }
+            if (customHandlers.TryGetValue(module, out var handler)) {
+                origModSettings.Add(module, handler.Backup());
+                continue;
+            }
+
+            origModSettings.Add(module, module._Settings.ShallowClone());
         }
 
-        origModSettings = new Dictionary<EverestModule, object>();
-        foreach (EverestModule module in Everest.Modules) {
-            if (module._Settings != null && module.SettingsType != null && module._Settings is not CelesteTasSettings) {
-                origModSettings.Add(module, module._Settings.ShallowClone());
+        origExtendedVariants.Clear();
+        if (ExtendedVariantsInterop.GetVariantsEnum() is { } variantsEnum) {
+            foreach (object variant in Enum.GetValues(variantsEnum)) {
+                try {
+                    origExtendedVariants[variant] = ExtendedVariantsInterop.GetCurrentVariantValue(new Lazy<object?>(variant));;
+                } catch {
+                    // ignore
+                }
             }
         }
     }
 
-    // ReSharper disable once UnusedMember.Local
     [DisableRun]
     private static void TryRestore() {
-        backupAssists = false;
-
         if (origSettings != null) {
             Settings.Instance.CopyAllFields(origSettings);
             Settings.Instance.ApplyVolumes();
-            Settings.Instance.ApplyScreen();
             Settings.Instance.ApplyLanguage();
             origSettings = null;
         }
@@ -60,21 +77,49 @@ public static class RestoreSettings {
             origAssists = null;
         }
 
-        if (origModSettings != null) {
+        if (origModSettings.IsNotEmpty()) {
             TasSettings.Enabled = true;
             TasSettings.RestoreSettings = true;
-            foreach (EverestModule module in Everest.Modules) {
+
+            foreach (var module in Everest.Modules) {
                 try {
-                    if (module?._Settings != null && origModSettings.TryGetValue(module, out object modSettings) && modSettings != null) {
-                        module._Settings.CopyAllProperties(modSettings, true);
-                        module._Settings.CopyAllFields(modSettings, true);
+                    if (module._Settings == null || !origModSettings.TryGetValue(module, out object? modSettings)) {
+                        continue;
                     }
-                } catch {
-                    // ignored
+
+                    if (ignoredModules.Contains(module)) {
+                        continue;
+                    }
+                    if (customHandlers.TryGetValue(module, out var handler)) {
+                        handler.Restore(modSettings);
+                        continue;
+                    }
+
+                    module._Settings.CopyAllProperties(modSettings, true);
+                    module._Settings.CopyAllFields(modSettings, true);
+                } catch (Exception ex) {
+                    $"Failed to restore settings for mod '{module.Metadata.Name}'".Log(LogLevel.Warn);
+                    ex.Log(LogLevel.Warn);
                 }
             }
 
-            origModSettings = null;
+            origModSettings.Clear();
+        }
+
+        if (origExtendedVariants.IsNotEmpty()) {
+            var variantsEnum = ExtendedVariantsInterop.GetVariantsEnum()!;
+            foreach (object variant in Enum.GetValues(variantsEnum)) {
+                try {
+                    if (origExtendedVariants.TryGetValue(variant, out var value)) {
+                        ExtendedVariantsInterop.SetVariantValue(new Lazy<object?>(variant), value);
+                    }
+                } catch (Exception ex) {
+                    $"Failed to restore value for Extended Variant '{variant}'".Log(LogLevel.Warn);
+                    ex.Log(LogLevel.Warn);
+                }
+            }
+
+            origExtendedVariants.Clear();
         }
     }
 
@@ -90,9 +135,8 @@ public static class RestoreSettings {
 
     private static void SaveDataOnStart(On.Celeste.SaveData.orig_Start orig, SaveData data, int slot) {
         orig(data, slot);
-        if (origAssists == null && backupAssists) {
-            backupAssists = false;
-            origAssists = SaveData.Instance.Assists;
-        }
+
+        // The TAS might've been started outside a save file, so backup save-data now
+        origAssists ??= SaveData.Instance.Assists;
     }
 }

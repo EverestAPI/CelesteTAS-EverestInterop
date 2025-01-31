@@ -13,7 +13,6 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD;
 
-// TODO show info hud on overworld
 public static class InfoHud {
     private static EaseInSubMenu subMenuItem;
     public static Vector2 Size { get; private set; }
@@ -22,13 +21,16 @@ public static class InfoHud {
     private static void Load() {
         On.Celeste.Level.Render += LevelOnRender;
         On.Celeste.Pico8.Emulator.Render += EmulatorOnRender;
+        On.Monocle.Scene.Render += SceneOnRender;
     }
 
     [Unload]
     private static void Unload() {
         On.Celeste.Level.Render -= LevelOnRender;
         On.Celeste.Pico8.Emulator.Render -= EmulatorOnRender;
+        On.Monocle.Scene.Render -= SceneOnRender;
     }
+
 
     private static void LevelOnRender(On.Celeste.Level.orig_Render orig, Level self) {
         orig(self);
@@ -44,6 +46,14 @@ public static class InfoHud {
         InfoMouse.DragAndDropHud();
     }
 
+    private static void SceneOnRender(On.Monocle.Scene.orig_Render orig, Scene self) {
+        orig(self);
+
+        if (self is Overworld) {
+            DrawInfo(self, drawSubpixelIndicator: false);
+            InfoMouse.DragAndDropHud();
+        }
+    }
     public static void Toggle() {
         if (Hotkeys.InfoHud.DoublePressed) {
             TasSettings.InfoHud = !TasSettings.InfoHud;
@@ -57,7 +67,7 @@ public static class InfoHud {
         }
     }
 
-    private static void DrawInfo(Scene scene) {
+    private static void DrawInfo(Scene scene, bool drawSubpixelIndicator = true) {
         if (!TasSettings.Enabled || !TasSettings.InfoHud) {
             return;
         }
@@ -93,7 +103,9 @@ public static class InfoHud {
         float infoAlpha = 1f;
 
         Size = JetBrainsMonoFont.Measure(text) * fontSize;
-        Size = InfoSubPixelIndicator.TryExpandSize(Size, padding);
+        if (drawSubpixelIndicator) {
+            Size = InfoSubPixelIndicator.TryExpandSize(Size, padding);
+        }
 
         float maxX = viewWidth - Size.X - margin - padding * 2;
         float maxY = viewHeight - Size.Y - margin - padding * 2;
@@ -115,7 +127,9 @@ public static class InfoHud {
 
         Draw.Rect(bgRect, Color.Black * alpha);
 
-        InfoSubPixelIndicator.DrawIndicator(bgRect.Bottom, padding, infoAlpha);
+        if (drawSubpixelIndicator) {
+            InfoSubPixelIndicator.DrawIndicator(bgRect.Bottom, padding, infoAlpha);
+        }
 
         Vector2 textPosition = new(x + padding, y + padding);
         Vector2 scale = new(fontSize);
@@ -142,44 +156,47 @@ public static class InfoHud {
         return playerRect.Intersects(bgRect);
     }
 
-    // TODO add a setting 'InfoTasInputLines'
+    // TODO add a setting 'Info TasInputLines'
     private static void WriteTasInput(StringBuilder stringBuilder) {
-        InputController controller = Manager.Controller;
-        List<InputFrame> inputs = controller.Inputs;
-        if (Manager.Running && controller.CurrentFrameInTas >= 0 && controller.CurrentFrameInTas < inputs.Count) {
-            InputFrame current = controller.Current;
-            if (controller.CurrentFrameInTas >= 1 && current != controller.Previous) {
-                current = controller.Previous;
-            }
+        var controller = Manager.Controller;
+        var inputs = controller.Inputs;
 
-            InputFrame previous = current.Previous;
-            InputFrame next = current.Next;
+        if (!Manager.Running || controller.CurrentFrameInTas < 0 || controller.CurrentFrameInTas >= inputs.Count) {
+            return;
+        }
 
-            int maxLine = Math.Max(current.Line, Math.Max(previous?.Line ?? 0, next?.Line ?? 0)) + 1;
-            int linePadLeft = maxLine.ToString().Length;
+        var current = controller.Current;
+        if (controller.CurrentFrameInTas >= 1 && current != controller.Previous) {
+            current = controller.Previous!;
+        }
 
-            int maxFrames = Math.Max(current.Frames, Math.Max(previous?.Frames ?? 0, next?.Frames ?? 0));
-            int framesPadLeft = maxFrames.ToString().Length;
+        var previous = current.Previous;
+        var next = current.Next;
 
-            string FormatInputFrame(InputFrame inputFrame) {
-                return
-                    $"{(inputFrame.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - inputFrame.Frames.ToString().Length)}{inputFrame}";
-            }
+        int maxLine = Math.Max(current.Line, Math.Max(previous?.Line ?? 0, next?.Line ?? 0)) + 1;
+        int linePadLeft = maxLine.ToString().Length;
 
-            if (previous != null) {
-                stringBuilder.AppendLine(FormatInputFrame(previous));
-            }
+        int maxFrames = Math.Max(current.Frames, Math.Max(previous?.Frames ?? 0, next?.Frames ?? 0));
+        int framesPadLeft = maxFrames.ToString().Length;
 
-            string currentStr = FormatInputFrame(current);
-            int currentFrameLength = controller.CurrentFrameInInput.ToString().Length;
-            int inputWidth = currentStr.Length + currentFrameLength + 2;
-            inputWidth = Math.Max(inputWidth, 20);
-            stringBuilder.AppendLine(
-                $"{currentStr.PadRight(inputWidth - currentFrameLength)}{controller.CurrentFrameInInputForHud}{current.RepeatString}");
+        string FormatInputFrame(InputFrame inputFrame) {
+            return
+                $"{(inputFrame.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - inputFrame.Frames.ToString().Length)}{inputFrame}";
+        }
 
-            if (next != null) {
-                stringBuilder.AppendLine(FormatInputFrame(next));
-            }
+        if (previous != null) {
+            stringBuilder.AppendLine(FormatInputFrame(previous));
+        }
+
+        string currentStr = FormatInputFrame(current);
+        int currentFrameLength = controller.CurrentFrameInInput.ToString().Length;
+        int inputWidth = currentStr.Length + currentFrameLength + 2;
+        inputWidth = Math.Max(inputWidth, 20);
+        stringBuilder.AppendLine(
+            $"{currentStr.PadRight(inputWidth - currentFrameLength)}{controller.CurrentFrameInInput}{current.RepeatString}");
+
+        if (next != null) {
+            stringBuilder.AppendLine(FormatInputFrame(next));
         }
     }
 
@@ -199,13 +216,21 @@ public static class InfoHud {
                 TasSettings.InfoCustomTemplate = TextInput.GetClipboardText() ?? string.Empty;
                 CelesteTasModule.Instance.SaveSettings();
             }));
-            subMenu.Add(new TextMenuExt.EnumerableSlider<HudOptions>("Info Watch Entity".ToDialogText(), CreateHudOptions(),
-                TasSettings.InfoWatchEntity).Change(value => TasSettings.InfoWatchEntity = value));
-            subMenu.Add(new TextMenuExt.EnumerableSlider<WatchEntityType>("Info Watch Entity Type".ToDialogText(), new[] {
+
+            subMenu.Add(new TextMenuExt.EnumerableSlider<WatchEntityType>("Info Watch Entity HUD Type".ToDialogText(), [
+                new KeyValuePair<WatchEntityType, string>(WatchEntityType.None, "Info Watch Entity None".ToDialogText()),
                 new KeyValuePair<WatchEntityType, string>(WatchEntityType.Position, "Info Watch Entity Position".ToDialogText()),
                 new KeyValuePair<WatchEntityType, string>(WatchEntityType.DeclaredOnly, "Info Watch Entity Declared Only".ToDialogText()),
-                new KeyValuePair<WatchEntityType, string>(WatchEntityType.All, "Info Watch Entity All".ToDialogText()),
-            }, TasSettings.InfoWatchEntityType).Change(value => TasSettings.InfoWatchEntityType = value));
+                new KeyValuePair<WatchEntityType, string>(WatchEntityType.All, "Info Watch Entity All".ToDialogText())
+            ], TasSettings.InfoWatchEntityHudType).Change(value => TasSettings.InfoWatchEntityHudType = value));
+            subMenu.Add(new TextMenuExt.EnumerableSlider<WatchEntityType>("Info Watch Entity Studio Type".ToDialogText(), [
+                new KeyValuePair<WatchEntityType, string>(WatchEntityType.None, "Info Watch Entity None".ToDialogText()),
+                new KeyValuePair<WatchEntityType, string>(WatchEntityType.Position, "Info Watch Entity Position".ToDialogText()),
+                new KeyValuePair<WatchEntityType, string>(WatchEntityType.DeclaredOnly, "Info Watch Entity Declared Only".ToDialogText()),
+                new KeyValuePair<WatchEntityType, string>(WatchEntityType.All, "Info Watch Entity All".ToDialogText())
+            ], TasSettings.InfoWatchEntityStudioType).Change(value => TasSettings.InfoWatchEntityStudioType = value));
+            subMenu.Add(new TextMenu.OnOff("Info Watch Entity Log To Console".ToDialogText(), TasSettings.InfoWatchEntityLogToConsole)
+                .Change(value => TasSettings.InfoWatchEntityLogToConsole = value));
             subMenu.Add(new TextMenuExt.IntSlider("Info Text Size".ToDialogText(), 5, 20, TasSettings.InfoTextSize).Change(value =>
                 TasSettings.InfoTextSize = value));
             subMenu.Add(new TextMenuExt.IntSlider("Info Subpixel Indicator Size".ToDialogText(), 5, 20, TasSettings.InfoSubpixelIndicatorSize)

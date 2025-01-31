@@ -20,7 +20,7 @@ public class ChangelogDialog : Eto.Forms.Dialog {
             : SystemColors.ControlText.ToSkia();
 
         public override void Draw(SKSurface surface) {
-            surface.Canvas.Clear();
+            var canvas = surface.Canvas;
 
             var textColor = TextColor;
 
@@ -29,41 +29,44 @@ public class ChangelogDialog : Eto.Forms.Dialog {
             titlePaint.ColorF = textColor;
             titlePaint.IsAntialias = true;
             titlePaint.TextAlign = SKTextAlign.Center;
+            titlePaint.SubpixelText = true;
 
             using var headingFont = new SKFont(SKTypeface.Default, 24.0f);
             using var headingPaint = new SKPaint(headingFont);
             headingPaint.ColorF = textColor;
             headingPaint.IsAntialias = true;
+            headingPaint.SubpixelText = true;
 
             using var entryFont = new SKFont(SKTypeface.Default, 13.0f);
             using var entryPaint = new SKPaint(entryFont);
             entryPaint.ColorF = textColor;
             entryPaint.IsAntialias = true;
+            entryPaint.SubpixelText = true;
 
             float yOffset = 0.0f;
             // Title
             foreach (string line in WrapLines(title, Width, titlePaint)) {
-                surface.Canvas.DrawText(line, Width / 2.0f, yOffset + titleFont.Offset(), titlePaint);
+                canvas.DrawText(line, Width / 2.0f, yOffset + titleFont.Offset(), titlePaint);
                 yOffset += titleFont.LineHeight();
             }
             yOffset += titleFont.LineHeight() * 0.25f;
-            surface.Canvas.DrawLine(0.0f, yOffset, Width, yOffset, titlePaint);
+            canvas.DrawLine(0.0f, yOffset, Width, yOffset, titlePaint);
             yOffset += titleFont.LineHeight() * 0.5f;
 
             foreach ((string categoryName, var entries) in categories) {
                 // Heading
                 foreach (string line in WrapLines(categoryName, Width, headingPaint)) {
-                    surface.Canvas.DrawText(line, 0.0f, yOffset + headingFont.Offset(), headingPaint);
+                    canvas.DrawText(line, 0.0f, yOffset + headingFont.Offset(), headingPaint);
                     yOffset += headingFont.LineHeight();
                 }
                 yOffset += headingFont.LineHeight() * 0.5f;
 
                 // Entries
                 foreach (string entry in entries) {
-                    surface.Canvas.DrawCircle(10.0f, yOffset + entryFont.LineHeight() / 2.0f, 2.5f, entryPaint);
+                    canvas.DrawCircle(10.0f, yOffset + entryFont.LineHeight() / 2.0f, 2.5f, entryPaint);
 
                     foreach (string line in WrapLines(entry, Width, entryPaint)) {
-                        surface.Canvas.DrawText(line, 20.0f, yOffset + entryFont.Offset(), entryPaint);
+                        canvas.DrawText(line, 20.0f, yOffset + entryFont.Offset(), entryPaint);
                         yOffset += entryFont.LineHeight();
                     }
                 }

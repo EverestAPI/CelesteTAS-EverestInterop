@@ -32,7 +32,7 @@ public class FontDialog : Dialog<bool> {
         }
 
         public override void Draw(SKSurface surface) {
-            surface.Canvas.Clear();
+            var canvas = surface.Canvas;
 
             if (highlighter == null)
                 return;
@@ -50,7 +50,7 @@ public class FontDialog : Dialog<bool> {
             float yPos = 0.0f;
             float maxWidth = 0.0f;
             foreach (var line in previewText) {
-                highlighter.DrawLine(surface.Canvas, 0.0f, yPos, line);
+                highlighter.DrawLine(canvas, 0.0f, yPos, line);
                 maxWidth = Math.Max(maxWidth, font.MeasureWidth(line));
                 yPos += font.LineHeight();
             }

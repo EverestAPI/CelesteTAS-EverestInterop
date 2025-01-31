@@ -8,6 +8,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using MonoMod.Utils;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -24,16 +25,24 @@ public static class DesyncFixer {
     [Initialize]
     private static void Initialize() {
         Dictionary<MethodInfo, int> methods = new() {
-            {typeof(Debris).GetMethod(nameof(Debris.orig_Init)), 1},
-            {typeof(Debris).GetMethod(nameof(Debris.Init), new[] {typeof(Vector2), typeof(char), typeof(bool)}), 1},
-            {typeof(Debris).GetMethod(nameof(Debris.BlastFrom)), 1},
+            {typeof(Debris).GetMethodInfo(nameof(Debris.orig_Init))!, 1},
+            {typeof(Debris).GetMethodInfo(nameof(Debris.Init), [typeof(Vector2), typeof(char), typeof(bool)])!, 1},
+            {typeof(Debris).GetMethodInfo(nameof(Debris.BlastFrom))!, 1},
         };
 
-        foreach (Type type in ModUtils.GetTypes()) {
-            if (type.Name.EndsWith("Debris") && type.GetMethodInfo("Init") is {IsStatic: false} method) {
+        foreach (var type in ModUtils.GetTypes()) {
+            if (!type.Name.EndsWith("Debris")) {
+                continue;
+            }
+
+            foreach (var method in type.GetAllMethodInfos()) {
+                if (method.Name != "Init" || method.IsStatic) {
+                    continue;
+                }
+
                 int index = 1;
-                foreach (ParameterInfo parameterInfo in method.GetParameters()) {
-                    if (parameterInfo.ParameterType == typeof(Vector2)) {
+                foreach (var param in method.GetParameters()) {
+                    if (param.ParameterType == typeof(Vector2)) {
                         methods[method] = index;
                         break;
                     }
@@ -48,7 +57,7 @@ public static class DesyncFixer {
         }
 
         if (ModUtils.GetModule("DeadzoneConfig")?.GetType() is { } deadzoneConfigModuleType) {
-            HookHelper.SkipMethod(typeof(DesyncFixer), nameof(SkipDeadzoneConfig), deadzoneConfigModuleType.GetMethod("OnInputInitialize"));
+            deadzoneConfigModuleType.GetMethod("OnInputInitialize").SkipMethod(SkipDeadzoneConfig);
         }
 
         if (ModUtils.GetType("StrawberryJam2021", "Celeste.Mod.StrawberryJam2021.Entities.CustomAscendManager") is { } ascendManagerType) {
@@ -74,12 +83,6 @@ public static class DesyncFixer {
         typeof(FinalBoss).GetMethod("Added").HookAfter<FinalBoss>(FixFinalBossDesync);
         typeof(Entity).GetMethod("Update").HookAfter(AfterEntityUpdate);
         typeof(AscendManager).GetMethodInfo("Routine").GetStateMachineTarget().IlHook(MakeRngConsistent);
-
-        // https://github.com/EverestAPI/Everest/commit/b2a6f8e7c41ddafac4e6fde0e43a09ce1ac4f17e
-        // Autosaving prevents opening the menu to skip cutscenes during fast forward before Everest v2865.
-        if (Everest.Version < new Version(1, 2865)) {
-            typeof(Level).GetProperty("CanPause").GetGetMethod().IlHook(AllowPauseDuringSaving);
-        }
 
         // System.IndexOutOfRangeException: Index was outside the bounds of the array.
         // https://discord.com/channels/403698615446536203/1148931167983251466/1148931167983251466
@@ -186,16 +189,6 @@ public static class DesyncFixer {
 
     private static bool SkipDeadzoneConfig() {
         return Manager.Running;
-    }
-
-    private static void AllowPauseDuringSaving(ILCursor ilCursor, ILContext ilContext) {
-        if (ilCursor.TryGotoNext(MoveType.After, ins => ins.MatchCall(typeof(UserIO), "get_Saving"))) {
-            ilCursor.EmitDelegate(IsSaving);
-        }
-    }
-
-    private static bool IsSaving(bool saving) {
-        return !Manager.Running && saving;
     }
 
     private static void IgnoreSetOccluderCrash(On.Celeste.LightingRenderer.orig_SetOccluder orig, LightingRenderer self, Vector3 center, Color mask, Vector2 light, Vector2 edgeA, Vector2 edgeB) {

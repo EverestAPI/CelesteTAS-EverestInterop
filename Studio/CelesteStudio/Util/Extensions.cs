@@ -17,10 +17,19 @@ public static class Extensions
 
     public static int Digits(this int self) => Math.Abs(self).ToString().Length;
 
-    public static T[] GetArrayRange<T>(this List<T> list, Range range) {
+    public static T[] GetArrayRange<T>(this IReadOnlyList<T> list, Range range) {
         var (start, length) = range.GetOffsetAndLength(list.Count);
         var result = new T[length];
-        list.CopyTo(start, result, 0, length);
+
+        if (list is List<T> listImpl) {
+            // Fast-path for regular lists
+            listImpl.CopyTo(start, result, 0, length);
+        } else {
+            for (int i = 0; i < length; i++) {
+                result[i] = list[start + i];
+            }
+        }
+
         return result;
     }
 

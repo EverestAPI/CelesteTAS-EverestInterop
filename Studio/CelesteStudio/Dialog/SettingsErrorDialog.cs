@@ -72,7 +72,7 @@ public class SettingsErrorDialog : Dialog<SettingsErrorAction> {
         Result = SettingsErrorAction.None;
 
         Load += (_, _) => {
-            // Need to make theme is applied
+            // Need to make sure, the theme is applied
             Settings.OnThemeChanged();
         };
         Studio.RegisterDialog(this);

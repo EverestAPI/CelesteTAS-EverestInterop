@@ -2,7 +2,7 @@ using Monocle;
 using TAS.Module;
 using Emulator = Celeste.Pico8.Emulator;
 
-namespace TAS.EverestInterop; 
+namespace TAS.EverestInterop;
 
 public static class Pico8Fixer {
     // Set Pico8Fixer.Seed when need

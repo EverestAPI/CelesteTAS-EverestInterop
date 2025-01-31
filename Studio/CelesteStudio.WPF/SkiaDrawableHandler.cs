@@ -1,4 +1,5 @@
 using CelesteStudio.Controls;
+using CelesteStudio.Util;
 using System;
 using System.Windows;
 using System.Windows.Media;
@@ -10,12 +11,12 @@ using Eto.Wpf;
 
 namespace CelesteStudio.WPF;
 
-public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, SkiaDrawable.ICallback>, SkiaDrawable.IHandler {
-    public void Create() { 
+public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, Eto.Forms.Control.ICallback>, SkiaDrawable.IHandler {
+    public void Create() {
         Control = new SkiaBorder(Widget);
     }
 
-    private class SkiaBorder(SkiaDrawable drawable) : Border {
+    private class SkiaBorder(SkiaDrawable drawable) : Border, IDisposable {
         private SKSurface? surface;
         private WriteableBitmap? bitmap;
 
@@ -28,27 +29,54 @@ public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, SkiaDrawable.I
             int width = (int)(drawable.DrawWidth * dpiX);
             int height = (int)(drawable.DrawHeight * dpiY);
 
-            if (width == 0 || height == 0) {
-                return;
+            if (drawable.CanDraw) {
+                if (bitmap == null || surface == null || width != bitmap.PixelWidth || height != bitmap.PixelHeight || Settings.Instance.WPFSkiaHack) {
+                    if (width == 0 || height == 0) {
+                        // A zero sized surface causes issues, so use a null 1x1
+                        // drawable.Draw() still needs to be called, so simply skipping render is not an option
+                        bitmap = null;
+
+                        surface?.Dispose();
+                        surface = SKSurface.CreateNull(1, 1);
+                    } else {
+                        const double bitmapDpi = 96.0;
+                        bitmap = new WriteableBitmap(width, height, bitmapDpi * dpiX, bitmapDpi * dpiY, PixelFormats.Pbgra32, null);
+
+                        surface?.Dispose();
+                        surface = SKSurface.Create(new SKImageInfo(width, height, SKImageInfo.PlatformColorType, SKAlphaType.Premul), bitmap.BackBuffer, bitmap.BackBufferStride, new SKSurfaceProperties(SKPixelGeometry.Unknown));
+                        surface.Canvas.Scale((float)dpiX, (float)dpiY);
+                        surface.Canvas.Save();
+                    }
+                }
+
+                bitmap?.Lock();
+
+                var canvas = surface.Canvas;
+                using (new SKAutoCanvasRestore(surface.Canvas, true)) {
+                    canvas.Clear(drawable.BackgroundColor.ToSkia());
+                    canvas.Translate(-drawable.DrawX, -drawable.DrawY);
+                    drawable.Draw(surface);
+                }
+                canvas.Flush();
+
+                if (bitmap != null) {
+                    bitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
+                    drawingContext.DrawImage(bitmap, new Rect(drawable.DrawX, drawable.DrawY, width / dpiX, height / dpiY));
+                    bitmap.Unlock();
+                }
+            } else {
+                drawable.Invalidate();
             }
+        }
 
-            if (width != bitmap?.PixelWidth || height != bitmap?.PixelHeight) {
-                bitmap = new WriteableBitmap(width, height, dpiX, dpiY, PixelFormats.Pbgra32, null);
+        ~SkiaBorder() {
+            Dispose();
+        }
+        public void Dispose() {
+            surface?.Dispose();
+            surface = null;
 
-                surface?.Dispose();
-                surface = SKSurface.Create(new SKImageInfo(width, height, SKImageInfo.PlatformColorType, SKAlphaType.Premul), bitmap.BackBuffer, bitmap.BackBufferStride);
-            }
-
-            bitmap.Lock();
-
-            using (new SKAutoCanvasRestore(surface!.Canvas, true)) {
-                drawable.Draw(surface);
-            }
-            surface.Canvas.Flush();
-
-            bitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
-            drawingContext.DrawImage(bitmap, new Rect(drawable.DrawX, drawable.DrawY, width, height));
-            bitmap.Unlock();
+            GC.SuppressFinalize(this);
         }
     }
 

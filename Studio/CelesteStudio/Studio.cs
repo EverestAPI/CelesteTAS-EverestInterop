@@ -60,9 +60,9 @@ public sealed class Studio : Form {
     private ThemeEditor? themeEditorForm;
 
     private string TitleBarText => Editor.Document.FilePath == Document.ScratchFile
-        ? $"<Scratch> - Studio {Version}"
+        ? $"Studio {Version} - <Scratch>"
         // Hide username inside title bar
-        : $"{Editor.Document.FileName}{(Editor.Document.Dirty ? "*" : string.Empty)} - Studio {Version}   {Editor.Document.FilePath.Replace(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "~")}";
+        : $"Studio {Version} - {(Editor.Document.Dirty ? "*" : string.Empty)}{Editor.Document.FileName}    {Editor.Document.FilePath.Replace(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "~")}";
 
     /// Size of scroll bars, depending on the current platform
     public static int ScrollBarSize {
@@ -84,7 +84,6 @@ public sealed class Studio : Form {
         Instance = this;
         Icon = Assets.AppIcon;
         MinimumSize = new Size(250, 250);
-        AllowDrop = true;
 
         WindowCreationCallback = windowCreationCallback;
 
@@ -102,7 +101,7 @@ public sealed class Studio : Form {
 
         // Close other Studio instances to avoid conflicts
         foreach (var process in Process.GetProcesses().Where(process => process.ProcessName is "CelesteStudio" or "CelesteStudio.WPF" or "CelesteStudio.GTK" or "CelesteStudio.Mac" or "Celeste Studio")) {
-            if (process.Id == Process.GetCurrentProcess().Id) {
+            if (process.Id == Environment.ProcessId) {
                 continue;
             }
 
@@ -179,6 +178,17 @@ public sealed class Studio : Form {
             }.FixBorder();
             Editor = new Editor(Document.Dummy, editorScrollable);
             editorScrollable.Content = Editor;
+
+            // WPF requires a control for drag n' drop support
+            Editor.AllowDrop = true;
+            Editor.DragDrop += (_, e) => {
+                if (e.Data.ContainsUris && e.Data.Uris.Length > 0) {
+                    OpenFile(Uri.UnescapeDataString(e.Data.Uris[0].AbsolutePath));
+                }
+            };
+            Editor.DragEnter += (_, e) => {
+                e.Effects = DragEffects.Copy;
+            };
 
             // On GTK, prevent the scrollable from reacting to Home/End
             if (Eto.Platform.Instance.IsGtk) {
@@ -350,15 +360,6 @@ public sealed class Studio : Form {
     private void ApplySettings() {
         Topmost = Settings.Instance.AlwaysOnTop;
         Menu = CreateMenu(); // Recreate menu to reflect changes
-    }
-
-    protected override void OnDragDrop(DragEventArgs e) {
-        if (e.Data.ContainsUris && e.Data.Uris.Length > 0) {
-            OpenFile(Uri.UnescapeDataString(e.Data.Uris[0].AbsolutePath));
-        }
-    }
-    protected override void OnDragEnter(DragEventArgs e) {
-        e.Effects = DragEffects.Copy;
     }
 
     protected override void OnClosing(CancelEventArgs e) {
@@ -628,17 +629,33 @@ public sealed class Studio : Form {
         }) { MenuText = "Delete All Files" });
         backupsMenu.Enabled = backupFiles.Length != 0;
 
+        var showFile = MenuEntry.File_Show.ToAction(() => {
+            if (string.IsNullOrEmpty(Editor.Document.FilePath)) {
+                return;
+            }
+
+            ProcessHelper.OpenInDefaultApp(Path.GetDirectoryName(Editor.Document.FilePath)!);
+        });
+        showFile.Enabled = !string.IsNullOrEmpty(Editor.Document.FilePath) && Editor.Document.FilePath != Document.ScratchFile;
+
         // Don't display Settings.SendInputsNonWritable on WPF, since it's not supported there
         var inputSendingMenu = new SubMenuItem { Text = "&Input Sending", Items = {
                 MenuUtils.CreateSettingToggle("On Inputs", nameof(Settings.SendInputsOnActionLines)),
                 MenuUtils.CreateSettingToggle("On Comments", nameof(Settings.SendInputsOnComments)),
                 MenuUtils.CreateSettingToggle("On Commands", nameof(Settings.SendInputsOnCommands)),
+                MenuUtils.CreateSettingToggle("Disable while Running", nameof(Settings.SendInputsDisableWhileRunning)),
         }};
         if (!Platform.IsWpf) {
             inputSendingMenu.Items.Add(MenuUtils.CreateSettingToggle("Always send non-writable Inputs", nameof(Settings.SendInputsNonWritable)));
         }
         inputSendingMenu.Items.Add(new SeparatorMenuItem());
         inputSendingMenu.Items.Add(MenuUtils.CreateSettingNumberInput("Typing Timeout", nameof(Settings.SendInputsTypingTimeout), 0.0f, 5.0f, 0.1f));
+
+        var autoIndexRoomLabels = MenuUtils.CreateSettingEnum<AutoRoomIndexing>("Auto-Index Room Labels", nameof(Settings.AutoIndexRoomLabels), ["Disabled", "Current File", "Include Read-commands"]);
+        var commandSeparator = MenuUtils.CreateSettingEnum<CommandSeparator>("Command Separator", nameof(Settings.CommandSeparator), ["Space (\" \")", "Comma (\",\")", "Space + Comma (\", \")"]);
+
+        autoIndexRoomLabels.Enabled = StyleConfig.Current.RoomLabelIndexing == null;
+        commandSeparator.Enabled = StyleConfig.Current.CommandArgumentSeparator == null;
 
         MenuItem[] items = [
             new SubMenuItem { Text = "&File", Items = {
@@ -648,6 +665,7 @@ public sealed class Studio : Form {
                 openPreviousFile,
                 recentFilesMenu,
                 backupsMenu,
+                showFile,
                 new SeparatorMenuItem(),
                 MenuEntry.File_Save.ToAction(OnSaveFile),
                 MenuEntry.File_SaveAs.ToAction(OnSaveFileAs),
@@ -671,8 +689,9 @@ public sealed class Studio : Form {
             new SubMenuItem { Text = "&Preferences", Items = {
                 MenuUtils.CreateSettingToggle("&Auto Save File", nameof(Settings.AutoSave)),
                 MenuUtils.CreateSettingToggle("Auto Remove Mutually Exclusive Actions", nameof(Settings.AutoRemoveMutuallyExclusiveActions)),
-                MenuUtils.CreateSettingEnum<AutoRoomIndexing>("Auto-Index Room Labels", nameof(Settings.AutoIndexRoomLabels), ["Disabled", "Current File", "Include Read-commands"]),
+                autoIndexRoomLabels,
                 MenuUtils.CreateSettingToggle("Auto-Select Full Input line", nameof(Settings.AutoSelectFullActionLine)),
+                MenuUtils.CreateSettingToggle("Auto-Multiline Comments", nameof(Settings.AutoMultilineComments)),
                 MenuUtils.CreateSettingToggle("Sync &Caret with Playback", nameof(Settings.SyncCaretWithPlayback)),
                 MenuEntry.Settings_SendInputs.ToSettingToggle(nameof(Settings.SendInputsToCeleste), enabled => {
                     Editor.ShowToastMessage($"{(enabled ? "Enabled" : "Disabled")} Sending Inputs to Celeste", Editor.DefaultToastTime);
@@ -682,7 +701,7 @@ public sealed class Studio : Form {
                 MenuUtils.CreateSettingNumberInput("Max Unfolded Lines", nameof(Settings.MaxUnfoldedLines), 0, int.MaxValue, 1),
                 MenuUtils.CreateSettingEnum<InsertDirection>("Insert Direction", nameof(Settings.InsertDirection), ["Above Current Line", "Below Current Line"]),
                 MenuUtils.CreateSettingEnum<CaretInsertPosition>("Caret Insert Position", nameof(Settings.CaretInsertPosition), ["After Inserted Text", "Keep at Previous Position"]),
-                MenuUtils.CreateSettingEnum<CommandSeparator>("Command Separator", nameof(Settings.CommandSeparator), ["Space (\" \")", "Comma (\",\")", "Space + Comma (\", \")"]),
+                commandSeparator,
             }},
             new SubMenuItem { Text = "&View", Items = {
                 // TODO: Use MenuEntry.View_ShowGameInfo again
@@ -705,7 +724,7 @@ public sealed class Studio : Form {
                 MenuUtils.CreateGameSettingToggle("&Simplified Hitboxes", nameof(GameSettings.SimplifiedHitboxes)),
                 MenuUtils.CreateGameSettingEnum<ActualCollideHitboxType>("&Actual Collide Hitboxes", nameof(GameSettings.ActualCollideHitboxes), ["Off", "Override", "Append"]),
                 new SeparatorMenuItem(),
-                MenuUtils.CreateGameSettingToggle("&Simplified &Graphics", nameof(GameSettings.SimplifiedGraphics)),
+                MenuUtils.CreateGameSettingToggle("Simplified &Graphics", nameof(GameSettings.SimplifiedGraphics)),
                 MenuUtils.CreateGameSettingToggle("Game&play", nameof(GameSettings.Gameplay)),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateGameSettingToggle("&Center Camera", nameof(GameSettings.CenterCamera)),
@@ -716,7 +735,8 @@ public sealed class Studio : Form {
                 MenuUtils.CreateGameSettingToggle("Game Info", nameof(GameSettings.InfoGame)),
                 MenuUtils.CreateGameSettingToggle("Subpixel Indicator", nameof(GameSettings.InfoSubpixelIndicator)),
                 MenuUtils.CreateGameSettingEnum<HudOptions>("Custom Info", nameof(GameSettings.InfoCustom), ["Off", "HUD Only", "Studio Only", "Both"]),
-                MenuUtils.CreateGameSettingEnum<HudOptions>("Watch Entity Info", nameof(GameSettings.InfoWatchEntity), ["Off", "HUD Only", "Studio Only", "Both"]),
+                MenuUtils.CreateGameSettingEnum<WatchEntityType>("Watch Entity Info (HUD)", nameof(GameSettings.InfoWatchEntityHudType), ["None", "Position", "Declared Only", "All"]),
+                MenuUtils.CreateGameSettingEnum<WatchEntityType>("Watch Entity Info (Studio)", nameof(GameSettings.InfoWatchEntityStudioType), ["None", "Position", "Declared Only", "All"]),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateGameSettingNumberInput("Position Decimals", nameof(GameSettings.PositionDecimals), minDecimals, maxDecimals, 1),
                 MenuUtils.CreateGameSettingNumberInput("Speed Decimals", nameof(GameSettings.SpeedDecimals), minDecimals, maxDecimals, 1),

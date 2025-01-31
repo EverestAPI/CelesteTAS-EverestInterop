@@ -67,8 +67,8 @@ public static class AutoMute {
 
     private static bool settingMusic;
     private static bool hasMuted;
-    private static bool ShouldBeMuted => Manager.FrameLoops >= 2 && !settingMusic;
-    private static bool FrameStep => Manager.Running && (Manager.States & States.FrameStep) != 0;
+    private static bool ShouldBeMuted => Manager.PlaybackSpeed >= 2.0f && !settingMusic;
+    private static bool FrameStep => Manager.CurrState == Manager.State.Paused;
     private static WeakReference<EventInstance> dummy;
 
     private static EventInstance DummyEventInstance {

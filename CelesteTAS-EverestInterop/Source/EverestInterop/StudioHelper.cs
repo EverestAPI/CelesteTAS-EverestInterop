@@ -18,8 +18,6 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop;
 
-#nullable enable
-
 public static class StudioHelper {
     #region Auto-filled values
 
@@ -31,6 +29,11 @@ public static class StudioHelper {
     private const string DownloadURL_Linux_x64   = "##URL_LINUX_x64##";
     private const string DownloadURL_MacOS_x64   = "##URL_MACOS_x64##";
     private const string DownloadURL_MacOS_ARM64 = "##URL_MACOS_ARM64##";
+
+    private const string FileName_Windows_x64    = "##FILENAME_WINDOWS_x64##";
+    private const string FileName_Linux_x64      = "##FILENAME_LINUX_x64##";
+    private const string FileName_MacOS_x64      = "##FILENAME_MACOS_x64##";
+    private const string FileName_MacOS_ARM64    = "##FILENAME_MACOS_ARM64##";
 
     private const string Checksum_Windows_x64    = "##CHECKSUM_WINDOWS_x64##";
     private const string Checksum_Linux_x64      = "##CHECKSUM_LINUX_x64##";
@@ -44,7 +47,8 @@ public static class StudioHelper {
     private static string StudioDirectory => Path.Combine(Everest.PathGame, "CelesteStudio");
     private static string TempStudioInstallDirectory => Path.Combine(StudioDirectory, ".temp_install");
     private static string VersionFile => Path.Combine(StudioDirectory, ".version");
-    private static string DownloadPath => Path.Combine(StudioDirectory, "CelesteStudio.zip");
+    private static string DownloadPath => Path.Combine(StudioDirectory, FileName);
+    private static string InnerArchivePath => Path.Combine(StudioDirectory, ".InnerArchive.zip");
 
     private static string DownloadURL {
         get {
@@ -59,6 +63,24 @@ public static class StudioHelper {
             }
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && RuntimeInformation.OSArchitecture == Architecture.Arm64) {
                 return DownloadURL_MacOS_ARM64;
+            }
+
+            throw new PlatformNotSupportedException($"Unsupported platform: {RuntimeInformation.OSDescription} with {RuntimeInformation.OSArchitecture}");
+        }
+    }
+    private static string FileName {
+        get {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.OSArchitecture == Architecture.X64) {
+                return FileName_Windows_x64;
+            }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && RuntimeInformation.OSArchitecture == Architecture.X64) {
+                return FileName_Linux_x64;
+            }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && RuntimeInformation.OSArchitecture == Architecture.X64) {
+                return FileName_MacOS_x64;
+            }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && RuntimeInformation.OSArchitecture == Architecture.Arm64) {
+                return FileName_MacOS_ARM64;
             }
 
             throw new PlatformNotSupportedException($"Unsupported platform: {RuntimeInformation.OSDescription} with {RuntimeInformation.OSArchitecture}");
@@ -167,10 +189,10 @@ public static class StudioHelper {
             // Keep "Celeste Studio.toml" for the settings to be migrated by Studio v3
 
             // Display migration (Studio v3 was never launched since the v2 .exe still existed)
-            string path = Path.GetTempFileName();
+            string path = Path.Combine(StudioDirectory, "migration_notice.txt");
             string text =
                 """
-                === Celeste Studio v3 - Migration notice ===
+                === Celeste TAS Studio v3 - Migration notice ===
                  
                 Celeste Studio was recently fully rewritten, bringing lots of new features and proper cross-platform compatibility for Windows, Linux and macOS.
                 With this change, the executable also moved slightly from "<celeste-install>/Celeste Studio.exe" to it's own directory under "<celeste-install>/CelesteStudio/".
@@ -207,38 +229,17 @@ public static class StudioHelper {
         bool skipDownload = false;
 
         if (File.Exists(DownloadPath)) {
-            await using (var fs = File.OpenRead(DownloadPath)) {
-                string hash = BitConverter.ToString(await md5.ComputeHashAsync(fs)).Replace("-", "");
-                if (Checksum.Equals(hash, StringComparison.OrdinalIgnoreCase)) {
-                    skipDownload = true;
-                }
-            }
-
-            if (!skipDownload) {
-                // Try handling double ZIPs caused by GitHub actions
-                if (DoubleZipArchive) {
-                    string innerPath;
-                    using (var zip = ZipFile.OpenRead(DownloadPath)) {
-                        var entry = zip.Entries[0]; // There should only be a single entry in this case
-                        innerPath = Path.Combine(StudioDirectory, entry.Name);
-                        $"Extracting inner ZIP archive: '{entry.Name}'".Log(LogLevel.Verbose);
-
-                        entry.ExtractToFile(innerPath);
-                    }
-
-                    File.Move(innerPath, DownloadPath, overwrite: true);
-                }
-
-                await using var fs = File.OpenRead(DownloadPath);
-                string hash = BitConverter.ToString(await md5.ComputeHashAsync(fs)).Replace("-", "");
-                if (Checksum.Equals(hash, StringComparison.OrdinalIgnoreCase)) {
-                    skipDownload = true;
-                }
+            await using var fs = File.OpenRead(DownloadPath);
+            string hash = BitConverter.ToString(await md5.ComputeHashAsync(fs)).Replace("-", "");
+            if (Checksum.Equals(hash, StringComparison.OrdinalIgnoreCase)) {
+                skipDownload = true;
+            } else {
+                $"Checksum for {FileName} doesn't match. Expected {Checksum}, found {hash}".Log(LogLevel.Verbose);
             }
         }
 
         if (!skipDownload) {
-            // Existing archive doesn't match at all
+            // Existing archive doesn't match
             if (File.Exists(DownloadPath)) {
                 File.Delete(DownloadPath);
             }
@@ -270,16 +271,18 @@ public static class StudioHelper {
 
             // Handle double ZIPs caused by GitHub actions
             if (DoubleZipArchive) {
-                string innerPath;
-                using (var zip = ZipFile.OpenRead(DownloadPath)) {
-                    var entry = zip.Entries[0]; // There should only be a single entry in this case
-                    innerPath = Path.Combine(StudioDirectory, entry.Name);
-                    $"Extracting inner ZIP archive: '{entry.Name}'".Log(LogLevel.Verbose);
-
-                    entry.ExtractToFile(innerPath);
+                if (File.Exists(InnerArchivePath)) {
+                    File.Delete(InnerArchivePath);
                 }
 
-                File.Move(innerPath, DownloadPath, overwrite: true);
+                using (var zip = ZipFile.OpenRead(DownloadPath)) {
+                    var entry = zip.Entries[0]; // There should only be a single entry in this case
+                    $"Extracting inner ZIP archive: '{entry.Name}'".Log(LogLevel.Verbose);
+
+                    entry.ExtractToFile(InnerArchivePath);
+                }
+
+                File.Move(InnerArchivePath, DownloadPath, overwrite: true);
             }
         }
 
@@ -341,15 +344,27 @@ public static class StudioHelper {
 
             File.Delete(file);
         }
+        foreach (string file in Directory.GetDirectories(StudioDirectory)) {
+            if (file == DownloadPath || file == TempStudioInstallDirectory) {
+                continue;
+            }
+
+            Directory.Delete(file, recursive: true);
+        }
 
         // Setup new install
         foreach (string file in Directory.GetFiles(TempStudioInstallDirectory)) {
             File.Move(file, Path.Combine(StudioDirectory, Path.GetFileName(file)));
         }
+        foreach (string file in Directory.GetDirectories(TempStudioInstallDirectory)) {
+            Directory.Move(file, Path.Combine(StudioDirectory, Path.GetFileName(file)));
+        }
         Directory.Delete(TempStudioInstallDirectory, recursive: true);
 
         StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Success;
         StudioUpdateBanner.FadeoutTimer = 5.0f;
+
+        "Successfully installed Studio".Log();
     }
 
     private static async Task<bool> ExecuteCommand(string[] parameters, string errorMessage) {
@@ -437,6 +452,7 @@ public static class StudioHelper {
 
     private static void ReportError(string error, string? additionalInfo = null) {
         error.Log(LogLevel.Error);
+        additionalInfo?.Log(LogLevel.Error);
 
         if (!Directory.Exists(StudioDirectory)) {
             Directory.CreateDirectory(StudioDirectory);
@@ -445,18 +461,21 @@ public static class StudioHelper {
         string path = Path.Combine(StudioDirectory, "error_report.txt");
         string text =
             $"""
-             === Celeste Studio v{CurrentStudioVersion} - Installation failed ===
+             === Celeste TAS Studio v{CurrentStudioVersion} - Installation failed ===
              {DateTime.Now.ToString(CultureInfo.InvariantCulture)}
              
-             The following error occured while trying to install Celeste Studio:
+             NOTE: 
+                If you're using CelesteTAS just for the in-game utilities and not for actual TASing with Celeste Studio, you can ignore this error.
+                However if this issue is consistent and NOT solved by the steps below, please report it.
+             
+             The following error occured while trying to install Celeste TAS Studio:
              {error}
              
              This may be caused by a bad internet connection. You can manually download Celeste Studio by following these steps:
              1. Close Celeste
              2. Manually download this file: {DownloadURL}
-             3. Rename it to be called "CelesteStudio.zip" (ensure you have file extensions enabled!)
-             4. Place it under "<celeste-install>/CelesteStudio/CelesteStudio.zip" (create the "CelesteStudio" directory if it doesn't already exist. The "<celeste-install>" directory is the same as where "Celeste.exe" / "Celeste.dll" is located)
-             5. Re-open Celeste
+             3. Place it under "<celeste-install>/CelesteStudio/{FileName}" (create the "CelesteStudio" directory if it doesn't already exist. The "<celeste-install>" directory is the same as where "Celeste.exe" / "Celeste.dll" is located)
+             4. Re-open Celeste
              
              If the error persists, please report this issue. And send this ENTIRE file along with it.
              (This file is located under "{path}")

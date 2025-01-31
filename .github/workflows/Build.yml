@@ -23,11 +23,14 @@ on:
 
 jobs:
   build-studio:
+    name: Build Celeste Studio
     uses: ./.github/workflows/Build.CelesteStudio.yml
     with:
       build-cfg: Debug
 
   build-celestetas:
+    name: Build CelesteTAS
+
     runs-on: ubuntu-latest
     needs: build-studio
 
@@ -39,7 +42,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0'
+          dotnet-version: '9.0'
 
       - name: Download Studio builds
         uses: actions/download-artifact@v4
@@ -52,6 +55,27 @@ jobs:
           mv CelesteStudio-macos-x64/CelesteStudio-macos-x64.zip .
           mv CelesteStudio-macos-arm64/CelesteStudio-macos-arm64.zip .
 
+      - name: Cache Windows build
+        if: ${{ needs.build-studio.outputs.windows_cache_hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: CelesteStudio-windows-x64.zip
+          key: ${{ needs.build-studio.outputs.windows_cache_key }}
+      - name: Cache Linux build
+        if: ${{ needs.build-studio.outputs.linux_cache_hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: CelesteStudio-linux-x64.zip
+          key: ${{ needs.build-studio.outputs.linux_cache_key }}
+      - name: Cache macOS build
+        if: ${{ needs.build-studio.outputs.macos_cache_hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            CelesteStudio-macos-x64.zip
+            CelesteStudio-macos-arm64.zip
+          key: ${{ needs.build-studio.outputs.macos_cache_key }}
+
       - name: Fill-in download info
         run: |
           sed -i "s\\false; //DOUBLE_ZIP_ARCHIVE\\true;\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
@@ -60,6 +84,10 @@ jobs:
           sed -i "s\\##URL_LINUX_x64##\\https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/CelesteStudio-linux-x64.zip\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
           sed -i "s\\##URL_MACOS_x64##\\https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/CelesteStudio-macos-x64.zip\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
           sed -i "s\\##URL_MACOS_ARM64##\\https://nightly.link/${{ github.repository }}/actions/runs/${{ github.run_id }}/CelesteStudio-macos-arm64.zip\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
+          sed -i "s\\##FILENAME_WINDOWS_x64##\\CelesteStudio-windows-x64.zip\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
+          sed -i "s\\##FILENAME_LINUX_x64##\\CelesteStudio-linux-x64.zip\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
+          sed -i "s\\##FILENAME_MACOS_x64##\\CelesteStudio-macos-x64.zip\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
+          sed -i "s\\##FILENAME_MACOS_ARM64##\\CelesteStudio-macos-arm64.zip\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
           sed -i "s\\##CHECKSUM_WINDOWS_x64##\\$(md5sum CelesteStudio-windows-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
           sed -i "s\\##CHECKSUM_LINUX_x64##\\$(md5sum CelesteStudio-linux-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
           sed -i "s\\##CHECKSUM_MACOS_x64##\\$(md5sum CelesteStudio-macos-x64.zip | head -c 32)\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs

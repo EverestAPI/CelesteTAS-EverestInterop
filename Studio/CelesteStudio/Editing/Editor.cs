@@ -24,7 +24,10 @@ namespace CelesteStudio.Editing;
 
 public sealed class Editor : SkiaDrawable {
     /// Reports insertions and deletions of the underlying document
-    public event Action<Document, Dictionary<int, string>, Dictionary<int, string>> TextChanged = (_, _, _) => {};
+    public event Action<Document, Dictionary<int, string>, Dictionary<int, string>> TextChanged = (_, _, _) => { };
+
+    /// The currently open file has changed. The previous document might not be available (for example during startup).
+    public event Action<Document?, Document> DocumentChanged = (_, _) => { };
 
     private Document? document;
     public Document Document {
@@ -39,7 +42,11 @@ public sealed class Editor : SkiaDrawable {
                 }
             }
 
+            DocumentChanged(document, value);
             document = value;
+
+            // Ensure everything is properly formatted
+            FormatLines(Enumerable.Range(0, document.Lines.Count).ToArray());
 
             // Jump to end when file only 10 lines, else the start
             document.Caret = document.Lines.Count is > 0 and <= 10
@@ -51,35 +58,15 @@ public sealed class Editor : SkiaDrawable {
 
             // Reset various state
             ActivePopupMenu = null;
-            FileCache.Clear(); // Unrelated to the file, but good to refresh semi-regularly
 
             FixInvalidInputs();
             Recalc();
             ScrollCaretIntoView();
 
-            // Detect user-preference for room indexing
-            DetectPreference();
-            UpdateRoomLabelIndices([]);
-
+            Task.Run(() => FileRefactor.FixRoomLabelIndices(Document.FilePath, StyleConfig.Current, Document.Caret.Row));
             Settings.Changed += () => {
-                DetectPreference();
-                UpdateRoomLabelIndices([]);
+                Task.Run(() => FileRefactor.FixRoomLabelIndices(Document.FilePath, StyleConfig.Current, Document.Caret.Row));
             };
-
-            void DetectPreference() {
-                if (Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.Disabled) {
-                    return;
-                }
-
-                roomLabelStartIndex = 0;
-                foreach ((string line, _, _, _) in IterateDocumentLines(includeReads: Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.IncludeReads)) {
-                    var match = RoomLabelRegex.Match(line);
-                    if (match is { Success: true, Groups.Count: >= 3} && int.TryParse(match.Groups[2].Value, out int startIndex)) {
-                        roomLabelStartIndex = startIndex;
-                        return;
-                    }
-                }
-            }
 
             // Calculate total frame count
             TotalFrameCount = 0;
@@ -112,7 +99,7 @@ public sealed class Editor : SkiaDrawable {
             void HandleTextChanged(Document _, Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
                 lastModification = DateTime.UtcNow;
 
-                ConvertToActionLines(insertions.Keys);
+                FormatLines(insertions.Keys);
 
                 // Adjust total frame count
                 foreach (string deletion in deletions.Values) {
@@ -128,80 +115,11 @@ public sealed class Editor : SkiaDrawable {
                     TotalFrameCount += actionLine.FrameCount;
                 }
 
-                UpdateRoomLabelIndices(rowsToIgnore: insertions.Keys.ToArray());
+                Task.Run(() => FileRefactor.FixRoomLabelIndices(Document.FilePath, StyleConfig.Current, Document.Caret.Row));
                 Recalc();
                 ScrollCaretIntoView();
 
                 TextChanged(document, insertions, deletions);
-            }
-
-            void UpdateRoomLabelIndices(int[] rowsToIgnore) {
-                if (Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.Disabled) {
-                    return;
-                }
-
-                // room label without indexing -> lines of all occurrences
-                Dictionary<string, List<(int Row, bool Update)>> roomLabels = [];
-                // Allows the user to edit labels without them being auto-trimmed
-                string untrimmedLabel = string.Empty;
-
-                foreach ((string line, int row, string filePath, _) in IterateDocumentLines(includeReads: Settings.Instance.AutoIndexRoomLabels == AutoRoomIndexing.IncludeReads)) {
-                    var match = RoomLabelRegex.Match(line);
-                    if (!match.Success) {
-                        continue;
-                    }
-
-                    bool isCurrentFile = filePath == Document.FilePath;
-
-                    string label = match.Groups[1].Value.Trim();
-                    if (row == Document.Caret.Row && isCurrentFile) {
-                        untrimmedLabel = match.Groups[1].Value;
-                    }
-
-                    if (roomLabels.TryGetValue(label, out var list)) {
-                        list.Add((row, isCurrentFile));
-                    } else {
-                        roomLabels[label] = [(row, isCurrentFile)];
-                    }
-                }
-
-                using var __ = Document.Update(raiseEvents: false);
-                foreach ((string label, var occurrences) in roomLabels) {
-                    if (occurrences.Count == 1) {
-                        if (!occurrences[0].Update) {
-                            continue;
-                        }
-
-                        string writtenLabel = occurrences[0].Row == Document.Caret.Row
-                            ? untrimmedLabel
-                            : label;
-
-                        if (!rowsToIgnore.Contains(occurrences[0].Row)) {
-                            string oldLabel = Document.Lines[occurrences[0].Row]["#".Length..];
-                            string newLabel = $"lvl_{label}";
-                            Task.Run(async () => await RefactorLabelName(oldLabel, newLabel).ConfigureAwait(false));
-                        }
-                        Document.ReplaceLine(occurrences[0].Row, $"#lvl_{writtenLabel}");
-                        continue;
-                    }
-
-                    for (int i = 0; i < occurrences.Count; i++) {
-                        if (!occurrences[i].Update) {
-                            continue;
-                        }
-
-                        string writtenLabel = occurrences[i].Row == Document.Caret.Row
-                            ? untrimmedLabel
-                            : label;
-
-                        if (!rowsToIgnore.Contains(occurrences[i].Row)) {
-                            string oldLabel = Document.Lines[occurrences[i].Row]["#".Length..];
-                            string newLabel = $"lvl_{label} ({i + roomLabelStartIndex})";
-                            Task.Run(async () => await RefactorLabelName(oldLabel, newLabel).ConfigureAwait(false));
-                        }
-                        Document.ReplaceLine(occurrences[i].Row, $"#lvl_{writtenLabel} ({i + roomLabelStartIndex})");
-                    }
-                }
             }
         }
     }
@@ -221,7 +139,7 @@ public sealed class Editor : SkiaDrawable {
     public PopupMenu? ActivePopupMenu {
         get => activePopupMenu;
         set {
-            if (activePopupMenu == value) {
+            if (activePopupMenu == value && (activePopupMenu?.Visible ?? false)) {
                 return;
             }
 
@@ -271,9 +189,6 @@ public sealed class Editor : SkiaDrawable {
     /// Indicates last modification time, used to check if the user is currently typing
     private DateTime lastModification = DateTime.UtcNow;
 
-    /// User-preference for the starting index of room labels
-    private int roomLabelStartIndex;
-
     /// Current total frame count (including commands if connected to Celeste)
     public int TotalFrameCount;
 
@@ -309,13 +224,17 @@ public sealed class Editor : SkiaDrawable {
     private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
     private static readonly Regex AllBreakpointRegex = new(@"^\s*#*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex TimestampRegex = new(@"^\s*#+\s*(\d+:)?\d{1,2}:\d{2}\.\d{3}\(\d+\)", RegexOptions.Compiled);
-    public static readonly Regex RoomLabelRegex = new(@"^#lvl_([^\(\)]*)(?:\s\((\d+)\))?$", RegexOptions.Compiled);
 
     private const int offscreenLinePadding = 3;
 
     public Editor(Document document, Scrollable scrollable) {
         this.document = document;
         this.scrollable = scrollable;
+
+        StyleConfig.Initialize(this);
+        FileRefactor.Initialize(this);
+
+        DocumentChanged(null, document);
 
         CanFocus = true;
         Cursor = Cursors.IBeam;
@@ -417,9 +336,9 @@ public sealed class Editor : SkiaDrawable {
             commandsMenu.Items.Clear();
 
             foreach (string? commandName in CommandInfo.CommandOrder) {
-                if (commandName == null) {
+                if (commandName == null && commandsMenu.Items.Count != 0) {
                     commandsMenu.Items.Add(new SeparatorMenuItem());
-                } else if (CommunicationWrapper.Commands.FirstOrDefault(cmd => cmd.Name == commandName) is var command) {
+                } else if (CommunicationWrapper.Commands.FirstOrDefault(cmd => cmd.Name == commandName) is var command && !string.IsNullOrEmpty(command.Name)) {
                     commandsMenu.Items.Add(CreateCommandInsert(command));
                 }
             }
@@ -430,11 +349,15 @@ public sealed class Editor : SkiaDrawable {
                 .ToArray();
 
             if (thirdPartyCommands.Any()) {
-                commandsMenu.Items.Add(new SeparatorMenuItem());
+                if (commandsMenu.Items.Count != 0) {
+                    commandsMenu.Items.Add(new SeparatorMenuItem());
+                }
                 foreach (var command in thirdPartyCommands) {
                     commandsMenu.Items.Add(CreateCommandInsert(command));
                 }
             }
+
+            commandsMenu.Enabled = commandsMenu.Items.Count != 0;
         }
 
         ContextMenu = CreateMenu();
@@ -816,28 +739,19 @@ public sealed class Editor : SkiaDrawable {
         return false;
     }
 
-    /// Applies the correct action-line formatting to all specified lines
-    private void ConvertToActionLines(IEnumerable<int> rows) {
+    /// Applies the correct formatting to all specified lines
+    private void FormatLines(ICollection<int> rows) {
         using var __ = Document.Update(raiseEvents: false);
 
-        // Convert to action lines, if possible
+        string[] lines = Document.Lines.ToArray();
+        FileRefactor.FormatLines(lines, rows, StyleConfig.Current.ForceCorrectCommandCasing, StyleConfig.Current.CommandArgumentSeparator);
+
         foreach (int row in rows) {
-            string line = Document.Lines[row];
-            if (!ActionLine.TryParse(line, out var actionLine)) {
+            if (row == Document.Caret.Row) {
                 continue;
             }
 
-            string newLine = actionLine.ToString();
-
-            if (Document.Caret.Row == row) {
-                if (Document.Caret.Col == line.Length) {
-                    Document.Caret.Col = newLine.Length;
-                } else {
-                    Document.Caret.Col = SnapColumnToActionLine(actionLine, Document.Caret.Col);
-                }
-            }
-
-            Document.ReplaceLine(row, newLine);
+            Document.ReplaceLine(row, lines[row]);
         }
     }
 
@@ -876,256 +790,6 @@ public sealed class Editor : SkiaDrawable {
                     Document.ReplaceLine(bottomRow, (bottomLine.Value with { FrameCount = Math.Min(bottomLine.Value.FrameCount + 1, ActionLine.MaxFrames) }).ToString());
                 }
             }
-        }
-    }
-
-    /// Caches the file contents in lines of external files
-    public static readonly Dictionary<string, string[]> FileCache = [];
-
-    /// Iterates over all lines of the document, optionally following Read-commands
-    public IEnumerable<(string Line, int Row, string File, CommandLine? TargetCommand)> IterateDocumentLines(bool includeReads, string? filePath = null) {
-        filePath ??= Document.FilePath;
-        if (!FileCache.ContainsKey(filePath) && filePath != Document.FilePath) {
-            FileCache[filePath] = File.ReadAllLines(filePath);
-        }
-
-        if (!includeReads) {
-            string[] lines = filePath == Document.FilePath ? Document.Lines.ToArray() : FileCache[filePath];
-
-            for (int row = 0; row < lines.Length; row++) {
-                yield return (lines[row], row, filePath, null);
-            }
-
-            yield break;
-        }
-
-        Stack<(string Path, int CurrRow, int EndRow, CommandLine? TargetCommand)> fileStack = [];
-        fileStack.Push((filePath, 0, Document.Lines.Count - 1, null));
-
-        while (fileStack.TryPop(out var file)) {
-            (string path, int currRow, int endRow, var targetCommand) = file;
-            string[] lines = path == Document.FilePath ? Document.Lines.ToArray() : FileCache[path];
-
-            for (int row = currRow; row <= endRow && row < lines.Length; row++) {
-                string line = lines[row];
-
-                if (!CommandLine.TryParse(line, out var commandLine) ||
-                    !commandLine.IsCommand("Read") || commandLine.Arguments.Length < 1)
-                {
-                    yield return (line, row, path, targetCommand);
-                    continue;
-                }
-
-                // Follow Read-command
-                if (Path.GetDirectoryName(path) is not { } documentDir) {
-                    continue;
-                }
-
-                string fullPath = Path.Combine(documentDir, $"{commandLine.Arguments[0]}.tas");
-                if (!File.Exists(fullPath)) {
-                    continue;
-                }
-
-                if (!FileCache.TryGetValue(fullPath, out string[]? cacheLines)) {
-                    FileCache[fullPath] = cacheLines = File.ReadAllLines(fullPath);
-                }
-
-                var readLines = cacheLines
-                    .Select((readLine, i) => (line: readLine, i))
-                    .ToArray();
-
-                int? startLabelRow = null;
-                if (commandLine.Arguments.Length > 1) {
-                    (var label, startLabelRow) = readLines
-                        .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[1]}");
-                    if (label == null) {
-                        continue;
-                    }
-                }
-                int? endLabelRow = null;
-                if (commandLine.Arguments.Length > 2) {
-                    (var label, endLabelRow) = readLines
-                        .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[2]}");
-                    if (label == null) {
-                        continue;
-                    }
-                }
-
-                startLabelRow ??= 0;
-                endLabelRow ??= readLines.Length - 1;
-
-                fileStack.Push((path, row + 1, endRow, targetCommand)); // Store current state
-                fileStack.Push((fullPath, startLabelRow.Value, endLabelRow.Value - 1, commandLine)); // Setup next state
-                break;
-            }
-        }
-    }
-
-    public readonly SemaphoreSlim RefactorSemaphore = new(1);
-
-    /// Changes the name of a label, updating all references to it in the project
-    public async Task RefactorLabelName(string oldLabel, string newLabel, string? filePath = null) {
-        if (oldLabel == newLabel) {
-            return; // Already has that name
-        }
-
-        filePath ??= Document.FilePath;
-        string projectRoot = FindProjectRoot(filePath);
-
-        // Find all commands which reference this label
-        List<(string FilePath, int Row, CommandLine Line)> commands = [];
-
-        await RefactorSemaphore.WaitAsync().ConfigureAwait(false);
-        Console.WriteLine($"Performing label refactor for '{oldLabel}' => '{newLabel}' file '{filePath}'");
-
-        try {
-            // External Read-commands
-            string[] files = Directory.GetFiles(projectRoot, "*.tas", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.Hidden });
-            foreach (string file in files) {
-                if (file == filePath || Directory.Exists(file)) {
-                    continue;
-                }
-
-                if (!FileCache.TryGetValue(file, out string[]? lines)) {
-                    FileCache[file] = lines = await File.ReadAllLinesAsync(file).ConfigureAwait(false);
-                }
-
-                for (int row = 0; row < lines.Length; row++) {
-                    string line = lines[row];
-                    if (CommandLine.TryParse(line, out var commandLine) && commandLine.IsCommand("Read") &&
-                        // Verify command points to our file
-                        commandLine.Arguments.Length >= 1 && string.Equals(
-                            Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file)!, $"{commandLine.Arguments[0]}.tas")),
-                            Path.GetFullPath(filePath),
-                            StringComparison.OrdinalIgnoreCase
-                        ) && (
-                            // Check in start label
-                            commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel ||
-                            // Check in end label
-                            commandLine.Arguments.Length >= 3 && commandLine.Arguments[2] == oldLabel))
-                    {
-                        commands.Add((file, row, commandLine));
-                    }
-                }
-            }
-            // Internal Play-commands
-            string[]? internalLines;
-            if (filePath == Document.FilePath) {
-                internalLines = Document.Lines.ToArray();
-            } else if (!FileCache.TryGetValue(filePath, out internalLines)) {
-                FileCache[filePath] = internalLines = await File.ReadAllLinesAsync(filePath).ConfigureAwait(false);
-            }
-
-            for (int row = 0; row < internalLines.Length; row++) {
-                string line = internalLines[row];
-                if (CommandLine.TryParse(line, out var commandLine) && commandLine.IsCommand("Play") && (
-                        // Check in start label
-                        commandLine.Arguments.Length >= 1 && commandLine.Arguments[0] == oldLabel ||
-                        // Check in end label
-                        commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel))
-                {
-                    commands.Add((string.Empty, row, commandLine));
-                }
-            }
-
-
-            // Apply changes to external Read-command
-            foreach ((string file, int row, var commandLine) in commands) {
-                if (!commandLine.IsCommand("Read")) {
-                    continue;
-                }
-
-                // Start label
-                if (commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel) {
-                    commandLine.Arguments[1] = newLabel;
-                }
-                // End label
-                if (commandLine.Arguments.Length >= 3 && commandLine.Arguments[2] == oldLabel) {
-                    commandLine.Arguments[2] = newLabel;
-                }
-
-                string[] lines = FileCache[file];
-                lines[row] = commandLine.ToString();
-
-                await File.WriteAllTextAsync(file, Document.FormatLinesToText(lines)).ConfigureAwait(false);
-                Console.WriteLine($"Edited command '{commandLine.OriginalText}' => '{commandLine}' file {file} line {row}");
-            }
-            // Apply changes to internal Play-command
-            using var __ = Document.Update(raiseEvents: false);
-            foreach ((_, int row, var commandLine) in commands) {
-                if (!commandLine.IsCommand("Play")) {
-                    continue;
-                }
-
-                // Start label
-                if (commandLine.Arguments.Length >= 1 && commandLine.Arguments[0] == oldLabel) {
-                    commandLine.Arguments[0] = newLabel;
-                }
-                // End label
-                if (commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel) {
-                    commandLine.Arguments[1] = newLabel;
-                }
-
-                if (filePath == Document.FilePath) {
-                    Document.ReplaceLine(row, commandLine.ToString());
-                } else {
-                    string[] lines = FileCache[filePath];
-                    lines[row] = commandLine.ToString();
-
-                    await File.WriteAllTextAsync(filePath, Document.FormatLinesToText(lines)).ConfigureAwait(false);
-                    Console.WriteLine($"Edited command '{commandLine.OriginalText}' => '{commandLine}' file {filePath} line {row}");
-                }
-            }
-
-            Console.WriteLine($"Label refactor for '{oldLabel}' => '{newLabel}' done");
-        } catch (Exception ex) {
-            Console.WriteLine($"Failed to refactor room label: {ex}");
-        } finally {
-            RefactorSemaphore.Release();
-        }
-    }
-
-    private static readonly Dictionary<string, string> projectRootCache = [];
-
-    /// Locates a probable root directory for the current TAS project
-    public static string FindProjectRoot(string filePath) {
-        if (projectRootCache.TryGetValue(filePath, out string? projectRoot)) {
-            return projectRoot;
-        }
-
-        // 1st approach: Search for a Git repository
-        for (string? path = Path.GetDirectoryName(filePath); !string.IsNullOrEmpty(path); path = Path.GetDirectoryName(path)) {
-            if (Directory.Exists(Path.Combine(path, ".git")) &&
-                // Require at least 75% of files in the repo to be TAS files
-                GetTasFilePercentage(path) >= 0.75f)
-            {
-                projectRootCache[filePath] = path;
-                return path;
-            }
-        }
-
-        // 2nd approach: Go up until there is a sudden drop in the percentage
-        const int maxDepth = 5;
-        int currentDepth = 0;
-        float previousPercentage = 1.0f;
-        string previousPath = string.Empty;
-
-        for (string? path = Path.GetDirectoryName(filePath); currentDepth <= maxDepth && !string.IsNullOrEmpty(path); previousPath = path, path = Path.GetDirectoryName(path), currentDepth++) {
-            float currentPercentage = GetTasFilePercentage(path);
-            if (previousPercentage - currentPercentage >= 0.2f || currentPercentage <= 0.75f) {
-                return previousPath;
-            }
-        }
-
-        // No good solution could be found
-        return Path.GetDirectoryName(filePath)!;
-
-        static float GetTasFilePercentage(string path) {
-            string[] allFiles = Directory.GetFiles(path, "*", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.Directory | FileAttributes.Hidden });
-
-            return allFiles.Count(file => file.EndsWith(".tas")) /
-                   // Ignore documentation in the total
-                   Math.Max(1.0f, allFiles.Count(file => !file.EndsWith(".md") && !file.EndsWith(".txt")));
         }
     }
 
@@ -1208,6 +872,30 @@ public sealed class Editor : SkiaDrawable {
         if (e.Key is Keys.LeftApplication or Keys.RightApplication) mods |= Keys.Application;
         UpdateMouseCursor(PointFromScreen(Mouse.Position), mods);
 
+        string lineTrimmed = Document.Lines[Document.Caret.Row].TrimStart();
+
+        // Send inputs to Celeste if applicable
+        bool isActionLine = lineTrimmed.StartsWith("***") ||
+                            ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _ );
+        bool isComment = lineTrimmed.StartsWith('#');
+        bool isTyping = (DateTime.UtcNow - lastModification).TotalSeconds < Settings.Instance.SendInputsTypingTimeout;
+        bool isRunning = CommunicationWrapper.Connected && CommunicationWrapper.TasStates.HasFlag(States.Enable) && !CommunicationWrapper.TasStates.HasFlag(States.FrameStep);
+        bool sendInputs =
+            (Settings.Instance.SendInputsOnActionLines && isActionLine) ||
+            (Settings.Instance.SendInputsOnComments && isComment) ||
+            (Settings.Instance.SendInputsOnCommands && !isActionLine && !isComment);
+
+        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && !isTyping && sendInputs && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
+            e.Handled = true;
+            return;
+        }
+
+        // Prevent editing file on accident
+        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && isRunning && Settings.Instance.SendInputsDisableWhileRunning) {
+            e.Handled = true;
+            return;
+        }
+
         // While there are quick-edits available, Tab will cycle through them
         // Using tab doesn't feel "right" for the context actions menu
         if (ActivePopupMenu?.HandleKeyDown(e, useTabComplete: ActivePopupMenu == autoCompleteMenu && !GetQuickEdits().Any()) ?? false) {
@@ -1256,23 +944,6 @@ public sealed class Editor : SkiaDrawable {
                 Recalc();
                 return;
             }
-        }
-
-        string lineTrimmed = Document.Lines[Document.Caret.Row].TrimStart();
-
-        // Send inputs to Celeste if applicable
-        bool isActionLine = lineTrimmed.StartsWith("***") ||
-                            ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _ );
-        bool isComment = lineTrimmed.StartsWith('#');
-        bool isTyping = (DateTime.UtcNow - lastModification).TotalSeconds < Settings.Instance.SendInputsTypingTimeout;
-        bool sendInputs =
-            (Settings.Instance.SendInputsOnActionLines && isActionLine) ||
-            (Settings.Instance.SendInputsOnComments && isComment) ||
-            (Settings.Instance.SendInputsOnCommands && !isActionLine && !isComment);
-
-        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && !isTyping && sendInputs && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
-            e.Handled = true;
-            return;
         }
 
         if (calculationState != null) {
@@ -1440,11 +1111,11 @@ public sealed class Editor : SkiaDrawable {
             {
                 // Rename label
                 string line = Document.Lines[Document.Caret.Row];
-                if (Comment.IsLabel(line)) {
+                if (CommentLine.IsLabel(line)) {
                     string oldLabel = line["#".Length..];
                     string newLabel = RenameLabelDialog.Show(oldLabel);
 
-                    Task.Run(async () => await RefactorLabelName(oldLabel, newLabel).ConfigureAwait(false));
+                    FileRefactor.RefactorLabelName(Document.FilePath, oldLabel, newLabel);
 
                     using var __ = Document.Update();
                     Document.ReplaceLine(Document.Caret.Row, $"#{newLabel}");
@@ -1566,7 +1237,7 @@ public sealed class Editor : SkiaDrawable {
             StartCalculation(op);
             e.Handled = true;
         } else {
-            // Allow A-Z to handled by the action line editing
+            // Allow A-Z to be handled by the action line editing
             if (e.Key is >= Keys.A and <= Keys.Z) {
                 calculationState = null;
                 e.Handled = false;
@@ -1693,8 +1364,8 @@ public sealed class Editor : SkiaDrawable {
                     });
                 }
                 SelectQuickEditIndex(0);
-            } else if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.PreviousPosition) {
-                Document.Caret = ClampCaret(oldCaret);
+            } else {
+                desiredVisualCol = Document.Caret.Col = Document.Lines[Document.Caret.Row].Length;
             }
 
             if (hasArguments) {
@@ -2110,11 +1781,30 @@ public sealed class Editor : SkiaDrawable {
                 UserData = new CollapseAnchorData()
             });
 
-            if (foldings.FirstOrDefault(f => f.MinRow == row) is { } fold &&
-                Document.Caret.Row >= fold.MinRow && Document.Caret.Row <= fold.MaxRow)
-            {
-                Document.Caret.Row = fold.MinRow;
-                Document.Caret = ClampCaret(Document.Caret);
+            if (foldings.FirstOrDefault(f => f.MinRow == row) is var fold) {
+                // Keep caret outside collapse
+                if (Document.Caret.Row >= fold.MinRow && Document.Caret.Row <= fold.MaxRow) {
+                    Document.Caret.Row = fold.MinRow;
+                    Document.Caret = ClampCaret(Document.Caret);
+                }
+
+                // Clear selection if it's inside the collapse
+                if (!Document.Selection.Empty) {
+                    bool minInside = Document.Selection.Min.Row >= fold.MinRow && Document.Selection.Min.Row <= fold.MaxRow;
+                    bool maxInside = Document.Selection.Max.Row >= fold.MinRow && Document.Selection.Max.Row <= fold.MaxRow;
+
+                    if (minInside && maxInside) {
+                        Document.Selection.Clear();
+                        Document.Caret.Row = fold.MinRow;
+                        Document.Caret = ClampCaret(Document.Caret);
+                    } else if (minInside) {
+                        Document.Caret = ClampCaret(Document.Selection.Max);
+                        Document.Selection.Clear();
+                    } else if (maxInside) {
+                        Document.Caret = ClampCaret(Document.Selection.Min);
+                        Document.Selection.Clear();
+                    }
+                }
             }
         } else {
             Document.RemoveAnchorsIf(anchor => anchor.Row == row && anchor.UserData is CollapseAnchorData);
@@ -2128,13 +1818,32 @@ public sealed class Editor : SkiaDrawable {
                 UserData = new CollapseAnchorData()
             });
 
-            if (foldings.FirstOrDefault(f => f.MinRow == row) is { } fold &&
-                Document.Caret.Row >= fold.MinRow && Document.Caret.Row <= fold.MaxRow)
-            {
-                Document.Caret.Row = fold.MinRow;
-                Document.Caret = ClampCaret(Document.Caret);
+            if (foldings.FirstOrDefault(f => f.MinRow == row) is var fold) {
+                // Keep caret outside collapse
+                if (Document.Caret.Row >= fold.MinRow && Document.Caret.Row <= fold.MaxRow) {
+                    Document.Caret.Row = fold.MinRow;
+                    Document.Caret = ClampCaret(Document.Caret);
+                }
+
+                // Clear selection if it's inside the collapse
+                if (!Document.Selection.Empty) {
+                    bool minInside = Document.Selection.Min.Row >= fold.MinRow && Document.Selection.Min.Row <= fold.MaxRow;
+                    bool maxInside = Document.Selection.Min.Row >= fold.MinRow && Document.Selection.Min.Row <= fold.MaxRow;
+
+                    if (minInside && maxInside) {
+                        Document.Selection.Clear();
+                        Document.Caret.Row = fold.MinRow;
+                        Document.Caret = ClampCaret(Document.Caret);
+                    } else if (minInside) {
+                        Document.Caret = ClampCaret(Document.Selection.Max);
+                        Document.Selection.Clear();
+                    } else if (maxInside) {
+                        Document.Caret = ClampCaret(Document.Selection.Min);
+                        Document.Selection.Clear();
+                    }
+                }
             }
-        } else {
+        } else if (!collapse) {
             Document.RemoveAnchorsIf(anchor => anchor.Row == row && anchor.UserData is CollapseAnchorData);
         }
     }
@@ -2325,6 +2034,23 @@ public sealed class Editor : SkiaDrawable {
         if (TryParseAndFormatActionLine(Document.Caret.Row, out actionLine) && e.Text.Length == 1) {
             ClearQuickEdits();
 
+            if (CalculationExtensions.TryParse(typedCharacter) is { } op) {
+                if (calculationState != null) {
+                    // Cancel with same operation again
+                    if (op == calculationState.Operator && calculationState.Operand.Length == 0) {
+                        calculationState = null;
+                        Invalidate();
+                        return;
+                    }
+
+                    CommitCalculation();
+                }
+
+                StartCalculation(op);
+                Invalidate();
+                return;
+            }
+
             line = Document.Lines[Document.Caret.Row];
             leadingSpaces = line.Length - line.TrimStart().Length;
 
@@ -2340,7 +2066,9 @@ public sealed class Editor : SkiaDrawable {
                     Document.Caret.Col = customBindEnd + 1;
                 }
 
-                goto FinishEdit; // Skip regular logic
+                // Skip regular logic
+                Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
+                goto FinishEdit;
             }
 
             var typedAction = typedCharacter.ActionForChar();
@@ -2423,8 +2151,14 @@ public sealed class Editor : SkiaDrawable {
                 }
             }
 
+            // Allow commenting out the line
+            if (typedCharacter == '#' && Document.Caret.Col <= leadingSpaces) {
+                Document.ReplaceLine(Document.Caret.Row, $"#{actionLine}");
+            } else {
+                Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
+            }
+
             FinishEdit:
-            Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
             Document.Caret = ClampCaret(Document.Caret);
         }
         // Just write it as text
@@ -2502,13 +2236,17 @@ public sealed class Editor : SkiaDrawable {
                 string framesLeft = actionLine.Frames[..caretIndex];
                 string framesRight = actionLine.Frames[caretIndex..];
 
-                // Fully delete the line if it's frameless
                 if (actionLine.Frames.Length == 0) {
+                    // Fully delete the line if it's frameless
                     line = string.Empty;
-                } else if (framesLeft.Length == 0 && direction is CaretMovementType.WordLeft or CaretMovementType.CharLeft ||
-                           framesRight.Length == 0 && direction is CaretMovementType.WordRight or CaretMovementType.CharRight)
-                {
-                    line = string.Empty;
+                } else if (framesLeft.Length == 0 && direction is CaretMovementType.WordLeft or CaretMovementType.CharLeft) {
+                    // Delete empty line above
+                    if (Document.Caret.Row > 0 && string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row - 1])) {
+                        Document.RemoveLine(Document.Caret.Row - 1);
+                        Document.Caret.Row--;
+                        desiredVisualCol = Document.Caret.Col;
+                        return;
+                    }
                 } else {
                     if (direction == CaretMovementType.WordLeft) {
                         actionLine.Frames = framesRight;
@@ -2621,41 +2359,59 @@ public sealed class Editor : SkiaDrawable {
         using var __ = Document.Update();
 
         string line = Document.Lines[Document.Caret.Row];
+        string lineTrimmedStart = line.TrimStart();
+        int leadingSpaces = line.Length - lineTrimmedStart.Length;
 
         // Auto-split on first and last column since nothing is broken there
-        splitLines = splitLines || Document.Caret.Col == 0 || Document.Caret.Col == line.Length;
+        bool autoSplit = Document.Caret.Col <= leadingSpaces || Document.Caret.Col == line.Length;
 
         int offset = up ? 0 : 1;
-        if (!splitLines || ActionLine.TryParse(line, out _)) {
-            // Don't split frame count and action
+        if (autoSplit || splitLines && !ActionLine.TryParse(line, out _)) {
+            if (!Document.Selection.Empty) {
+                RemoveRange(Document.Selection.Min, Document.Selection.Max);
+                Document.Caret.Col = Document.Selection.Min.Col;
+
+                line = Document.Lines[Document.Caret.Row];
+                lineTrimmedStart = line.TrimStart();
+                leadingSpaces = line.Length - lineTrimmedStart.Length;
+            } else if (line.Trim() == "#") {
+                // Replace empty comment
+                Document.ReplaceLine(Document.Caret.Row, string.Empty);
+                Document.Caret.Col = desiredVisualCol = 0;
+                return;
+            }
+
+            // Auto-insert # for multiline comments (not labels, not folds!)
+            // Additionally don't auto-multiline when caret is before #
+            if (Settings.Instance.AutoMultilineComments && Document.Caret.Col > leadingSpaces && lineTrimmedStart.StartsWith("# ")) {
+                const string prefix = "# ";
+
+                Document.Caret.Col = Math.Max(Document.Caret.Col, prefix.Length);
+
+                string beforeCaret = line[(prefix.Length + leadingSpaces)..Document.Caret.Col];
+                string afterCaret = line[Document.Caret.Col..];
+
+                int newRow = Document.Caret.Row + offset;
+
+                Document.ReplaceLine(Document.Caret.Row, prefix + (up ? afterCaret : beforeCaret));
+                Document.InsertLine(newRow, prefix + (up ? beforeCaret : afterCaret));
+                Document.Caret.Row = newRow;
+                Document.Caret.Col = desiredVisualCol = prefix.Length + (up ? beforeCaret.Length : 0);
+            } else {
+                Document.Insert($"{Document.NewLine}");
+            }
+        } else {
             int newRow = Document.Caret.Row + offset;
             if (GetCollapse(Document.Caret.Row) is { } collapse) {
                 newRow = (up ? collapse.MinRow : collapse.MaxRow) + offset;
             }
 
-            Document.InsertLine(newRow, string.Empty);
-            Document.Caret.Row = newRow;
-            Document.Caret.Col = desiredVisualCol = 0;
-        } else {
-            if (!Document.Selection.Empty) {
-                RemoveRange(Document.Selection.Min, Document.Selection.Max);
-                Document.Caret.Col = Document.Selection.Min.Col;
-                line = Document.Lines[Document.Caret.Row];
-            }
-
             // Auto-insert # for multiline comments (not labels, not folds!)
-            string prefix = line.StartsWith("# ") ? "# " : "";
-            Document.Caret.Col = Math.Max(Document.Caret.Col, prefix.Length);
+            string prefix = Settings.Instance.AutoMultilineComments && line.StartsWith("# ") ? "# " : "";
 
-            string beforeCaret = line[prefix.Length..Document.Caret.Col];
-            string afterCaret = line[Document.Caret.Col..];
-
-            int newRow = Document.Caret.Row + offset;
-
-            Document.Lines[Document.Caret.Row] = prefix + (up ? afterCaret : beforeCaret);
-            Document.InsertLine(newRow, prefix + (up ? beforeCaret : afterCaret));
+            Document.InsertLine(newRow, prefix);
             Document.Caret.Row = newRow;
-            Document.Caret.Col = desiredVisualCol = prefix.Length + (up ? beforeCaret.Length : 0);
+            Document.Caret.Col = desiredVisualCol = Math.Max(Document.Caret.Col, prefix.Length);
         }
 
         Document.Selection.Clear();
@@ -2780,7 +2536,18 @@ public sealed class Editor : SkiaDrawable {
 
     private void OnFind() {
         if (!Document.Selection.Empty) {
-            lastFindQuery = Document.GetSelectedText();
+            var min = Document.Selection.Min;
+            var max = Document.Selection.Max;
+
+            // Clamp to current line
+            if (min < new CaretPosition(Document.Caret.Row, 0)) {
+                min = new CaretPosition(Document.Caret.Row, 0);
+            }
+            if (max > new CaretPosition(Document.Caret.Row, Document.Lines[Document.Caret.Row].Length)) {
+                max = new CaretPosition(Document.Caret.Row, Document.Lines[Document.Caret.Row].Length);
+            }
+
+            lastFindQuery = Document.GetTextInRange(min, max);
         }
 
         FindDialog.Show(this, ref lastFindQuery, ref lastFindMatchCase);
@@ -2850,7 +2617,7 @@ public sealed class Editor : SkiaDrawable {
         // Otherwise just comment uncommented breakpoints
         bool allCommented = true;
         for (int row = minRow; row <= maxRow; row++) {
-            var line = Document.Lines[row];
+            string line = Document.Lines[row];
 
             if (UncommentedBreakpointRegex.IsMatch(line)) {
                 allCommented = false;
@@ -2859,7 +2626,7 @@ public sealed class Editor : SkiaDrawable {
         }
 
         for (int row = minRow; row <= maxRow; row++) {
-            var line = Document.Lines[row];
+            string line = Document.Lines[row];
             if (allCommented && CommentedBreakpointRegex.IsMatch(line)) {
                 int hashIdx = line.IndexOf('#');
                 Document.ReplaceLine(row, line.Remove(hashIdx, 1));
@@ -2901,9 +2668,11 @@ public sealed class Editor : SkiaDrawable {
             minRow = maxRow = Document.Caret.Row;
         }
 
+        int oldCol = Document.Caret.Col;
+
         for (int row = minRow; row <= maxRow; row++) {
-            var line = Document.Lines[row];
-            var lineTrimmed = line.TrimStart();
+            string line = Document.Lines[row];
+            string lineTrimmed = line.TrimStart();
 
             // Ignore blank lines
             if (string.IsNullOrEmpty(lineTrimmed) || lineTrimmed == "# ") {
@@ -2911,10 +2680,8 @@ public sealed class Editor : SkiaDrawable {
             }
 
             if (lineTrimmed.StartsWith('#')) {
-                if((Comment.IsLabel(lineTrimmed) && !ActionLine.TryParse(lineTrimmed[1..], out _)) ||
-                   lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed))
-                {
-                    // Ignore comments and special labels
+                if ((!CommentLine.IsLabel(lineTrimmed) && !lineTrimmed.StartsWith("#***") && !ActionLine.TryParse(lineTrimmed[1..], out _)) || lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) {
+                    // Ignore non-input comments and special labels
                     continue;
                 }
 
@@ -2941,6 +2708,12 @@ public sealed class Editor : SkiaDrawable {
             }
         }
 
+        // Jump to next line for single-line edits
+        if (minRow == maxRow && minRow == Document.Caret.Row && Document.Selection.Empty) {
+            Document.Caret.Col = oldCol;
+            Document.Caret.Row = Math.Min(Document.Lines.Count - 1, Document.Caret.Row + 1);
+        }
+
         // Clamp new column
         Document.Selection.Start.Col = Math.Clamp(Document.Selection.Start.Col, 0, Document.Lines[Document.Selection.Start.Row].Length);
         Document.Selection.End.Col = Math.Clamp(Document.Selection.End.Col, 0, Document.Lines[Document.Selection.End.Row].Length);
@@ -2961,7 +2734,7 @@ public sealed class Editor : SkiaDrawable {
         // Only remove # when all lines start with it. Otherwise, add another
         bool allCommented = true;
         for (int row = minRow; row <= maxRow; row++) {
-            var line = Document.Lines[row];
+            string line = Document.Lines[row];
 
             if (!line.TrimStart().StartsWith('#')) {
                 allCommented = false;
@@ -2969,8 +2742,10 @@ public sealed class Editor : SkiaDrawable {
             }
         }
 
+        int oldCol = Document.Caret.Col;
+
         for (int row = minRow; row <= maxRow; row++) {
-            var line = Document.Lines[row];
+            string line = Document.Lines[row];
 
             if (allCommented) {
                 int hashIdx = line.IndexOf('#');
@@ -2994,6 +2769,12 @@ public sealed class Editor : SkiaDrawable {
                 if (row == Document.Caret.Row)
                     Document.Caret.Col++;
             }
+        }
+
+        // Jump to next line for single-line edits
+        if (minRow == maxRow && minRow == Document.Caret.Row && Document.Selection.Empty) {
+            Document.Caret.Col = oldCol;
+            Document.Caret.Row = Math.Min(Document.Lines.Count - 1, Document.Caret.Row + 1);
         }
 
         // Clamp new column
@@ -3139,7 +2920,9 @@ public sealed class Editor : SkiaDrawable {
 
     #region Caret Movement
 
-    public CaretPosition ClampCaret(CaretPosition position, bool wrapLine = false) {
+    public enum SnappingDirection { Ignore, Left, Right }
+
+    public CaretPosition ClampCaret(CaretPosition position, bool wrapLine = false, SnappingDirection direction = SnappingDirection.Ignore) {
         // Wrap around to prev/next line
         if (wrapLine && position.Row > 0 && position.Col < 0) {
             position.Row = GetNextVisualLinePosition(-1, position).Row;
@@ -3156,9 +2939,9 @@ public sealed class Editor : SkiaDrawable {
         position.Col = Math.Clamp(position.Col, 0, Document.Lines[position.Row].Length);
 
         // Clamp to action line if possible
-        var line = Document.Lines[position.Row];
+        string line = Document.Lines[position.Row];
         if (ActionLine.TryParse(line, out var actionLine)) {
-            position.Col = Math.Min(line.Length, SnapColumnToActionLine(actionLine, position.Col));
+            position.Col = Math.Min(line.Length, SnapColumnToActionLine(actionLine, position.Col, direction));
         }
 
         return position;
@@ -3378,7 +3161,7 @@ public sealed class Editor : SkiaDrawable {
             string line = Document.Lines[row];
 
             // Go to the next label / breakpoint
-            if (Comment.IsLabel(Document.Lines[row]) || line.TrimStart().StartsWith("***")) {
+            if (CommentLine.IsLabel(Document.Lines[row]) || line.TrimStart().StartsWith("***")) {
                 break;
             }
 
@@ -3410,6 +3193,9 @@ public sealed class Editor : SkiaDrawable {
         calculationState = null;
 
         if (e.Buttons.HasFlag(MouseButtons.Primary)) {
+            // Refocus in case something unfocused the editor
+            Focus();
+
             if (LocationToFolding(e.Location) is { } folding) {
                 ToggleCollapse(folding.MinRow);
 
@@ -3429,6 +3215,19 @@ public sealed class Editor : SkiaDrawable {
 
             var oldCaret = Document.Caret;
             (Document.Caret, var visual) = LocationToCaretPosition(e.Location);
+
+            if (e.Modifiers.HasFlag(Keys.Shift)) {
+                if (Document.Selection.Empty) {
+                    Document.Selection.Start = oldCaret;
+                }
+
+                Document.Caret = ClampCaret(Document.Caret, direction: oldCaret < Document.Caret ? SnappingDirection.Left : SnappingDirection.Right);
+                Document.Selection.End = Document.Caret;
+            } else {
+                Document.Caret = ClampCaret(Document.Caret);
+                Document.Selection.Start = Document.Selection.End = Document.Caret;
+            }
+
             desiredVisualCol = visual.Col;
             ScrollCaretIntoView();
 
@@ -3437,14 +3236,6 @@ public sealed class Editor : SkiaDrawable {
             }
 
             ActivePopupMenu = null;
-
-            if (e.Modifiers.HasFlag(Keys.Shift)) {
-                if (Document.Selection.Empty)
-                    Document.Selection.Start = oldCaret;
-                Document.Selection.End = Document.Caret;
-            } else {
-                Document.Selection.Start = Document.Selection.End = Document.Caret;
-            }
 
             e.Handled = true;
             Recalc();
@@ -3469,13 +3260,13 @@ public sealed class Editor : SkiaDrawable {
     }
     protected override void OnMouseMove(MouseEventArgs e) {
         if (primaryMouseButtonDown) {
-            (Document.Caret, var visual) = LocationToCaretPosition(e.Location);
+            (Document.Caret, var visual) = LocationToCaretPosition(e.Location, SnappingDirection.Left);
+            Document.Caret = Document.Selection.End = ClampCaret(Document.Caret, direction: Document.Selection.Start < Document.Caret ? SnappingDirection.Left : SnappingDirection.Right);
+
             desiredVisualCol = visual.Col;
             ScrollCaretIntoView();
 
             ActivePopupMenu = null;
-
-            Document.Selection.End = Document.Caret;
 
             Recalc();
         }
@@ -3515,6 +3306,7 @@ public sealed class Editor : SkiaDrawable {
         if (e.Modifiers.HasFlag(Keys.Shift)) {
             if (Document.Selection.Empty) {
                 var (position, _) = LocationToCaretPosition(e.Location);
+                position = ClampCaret(position);
                 AdjustFrameCounts(Document.Caret.Row, position.Row, Math.Sign(e.Delta.Height));
             } else {
                 AdjustFrameCounts(Document.Selection.Start.Row, Document.Selection.End.Row, Math.Sign(e.Delta.Height));
@@ -3587,16 +3379,15 @@ public sealed class Editor : SkiaDrawable {
         }
     }
 
-    private (CaretPosition Actual, CaretPosition Visual) LocationToCaretPosition(PointF location) {
+    private (CaretPosition Actual, CaretPosition Visual) LocationToCaretPosition(PointF location, SnappingDirection direction = SnappingDirection.Ignore) {
         location.X -= textOffsetX;
 
-        int visualRow = (int)(location.Y / Font.LineHeight());
-        int visualCol = (int)(location.X / Font.CharWidth());
+        int visualRow = (int)Math.Floor(location.Y / Font.LineHeight());
+        int visualCol = (int)Math.Round(location.X / Font.CharWidth());
 
         var visualPos = new CaretPosition(visualRow, visualCol);
-        var actualPos = ClampCaret(GetActualPosition(visualPos));
 
-        return (actualPos, visualPos);
+        return (GetActualPosition(visualPos), visualPos);
     }
 
     private Folding? LocationToFolding(PointF location) {
@@ -3629,6 +3420,7 @@ public sealed class Editor : SkiaDrawable {
         }
 
         var (position, _) = LocationToCaretPosition(location);
+        position = ClampCaret(position);
         return Document.FindFirstAnchor(anchor => anchor.IsPositionInside(position) && anchor.UserData is LineLinkAnchorData);
     }
 
@@ -3640,11 +3432,10 @@ public sealed class Editor : SkiaDrawable {
     public override int DrawY => scrollablePosition.Y;
     public override int DrawWidth => scrollable.Width;
     public override int DrawHeight => scrollable.Height;
+    public override bool CanDraw => !Document.UpdateInProgress;
 
     public override void Draw(SKSurface surface) {
         var canvas = surface.Canvas;
-        canvas.Clear();
-        canvas.Translate(-scrollablePosition.X, -scrollablePosition.Y);
 
         using var strokePaint = new SKPaint();
         strokePaint.Style = SKPaintStyle.Stroke;
@@ -4097,7 +3888,7 @@ public sealed class Editor : SkiaDrawable {
         }
     }
 
-    public static int SnapColumnToActionLine(ActionLine actionLine, int column) {
+    public static int SnapColumnToActionLine(ActionLine actionLine, int column, SnappingDirection direction = SnappingDirection.Ignore) {
         // Snap to the closest valid column
         int nextLeft = GetSoftSnapColumns(actionLine).Reverse().FirstOrDefault(c => c <= column, -1);
         int nextRight = GetSoftSnapColumns(actionLine).FirstOrDefault(c => c >= column, -1);
@@ -4108,9 +3899,17 @@ public sealed class Editor : SkiaDrawable {
         if (nextLeft == -1) return nextRight;
         if (nextRight == -1) return nextLeft;
 
-        return column - nextLeft < nextRight - column
-            ? nextLeft
-            : nextRight;
+        return direction switch {
+            // Choose the closest one
+            SnappingDirection.Ignore => column - nextLeft < nextRight - column
+                ? nextLeft
+                : nextRight,
+
+            SnappingDirection.Left => nextLeft,
+            SnappingDirection.Right => nextRight,
+
+            _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
+        };
     }
 
     #endregion

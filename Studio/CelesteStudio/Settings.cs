@@ -98,6 +98,13 @@ public sealed class Settings {
     [TomlProperty("KeyBindings")]
     private Dictionary<string, Keys> _keyBindings { get; set; } = new();
 
+    // Frame operations
+    public char AddFrameOperationChar { get; set; } = '+';
+    public char SubFrameOperationChar { get; set; } = '-';
+    public char MulFrameOperationChar { get; set; } = '*';
+    public char DivFrameOperationChar { get; set; } = '/';
+    public char SetFrameOperationChar { get; set; } = '=';
+
     public bool AutoBackupEnabled { get; set; } = true;
     public int AutoBackupRate { get; set; } = 1;
     public int AutoBackupCount { get; set; } = 100;
@@ -115,11 +122,13 @@ public sealed class Settings {
     public AutoRoomIndexing AutoIndexRoomLabels { get; set; } = AutoRoomIndexing.CurrentFile;
     public bool AutoSelectFullActionLine { get; set; } = true;
     public bool SyncCaretWithPlayback { get; set; } = true;
+    public bool AutoMultilineComments { get; set; } = true;
 
     public bool SendInputsToCeleste { get; set; } = true;
     public bool SendInputsOnActionLines { get; set; } = true;
     public bool SendInputsOnCommands { get; set; } = true;
     public bool SendInputsOnComments { get; set; } = false;
+    public bool SendInputsDisableWhileRunning { get; set; } = true;
     public bool SendInputsNonWritable { get; set; } = true;
     public float SendInputsTypingTimeout { get; set; } = 0.3f;
 
@@ -166,6 +175,10 @@ public sealed class Settings {
     public string LastSaveDirectory { get; set; } = string.Empty;
 
     public bool FindMatchCase { get; set; }
+
+    /// In some rare cases, only creating a new WritableBitmap causes an update to the editor
+    /// Since this can cause a significant increase in resources, it's behind a flag
+    public bool WPFSkiaHack { get; set; } = false;
 
     // Zoom is temporary, so not saved
     [TomlNonSerialized]
@@ -317,6 +330,13 @@ public sealed class Settings {
     }
 
     private static void RegisterMappings() {
+        TomletMain.RegisterMapper(
+            c => new TomlString(c.ToString()),
+            tomlValue => {
+                if (tomlValue is not TomlString str)
+                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(char));
+                return str.Value.Length == 0 ? char.MaxValue : str.Value[0];
+            });
         TomletMain.RegisterMapper(
             point => new TomlTable { Entries = { { "X", new TomlLong(point.X) }, { "Y", new TomlLong(point.Y) } } },
             tomlValue => {
