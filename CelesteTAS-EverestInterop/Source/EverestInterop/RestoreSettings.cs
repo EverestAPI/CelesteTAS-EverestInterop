@@ -8,7 +8,8 @@ using TAS.Utils;
 
 namespace TAS.EverestInterop;
 
-public static class RestoreSettings {
+/// Restores settings which were changed during
+internal static class RestoreSettings {
     private static Settings? origSettings;
     private static Assists? origAssists;
     private static Dictionary<EverestModule, object>? origModSettings;
@@ -52,7 +53,6 @@ public static class RestoreSettings {
         if (origSettings != null) {
             Settings.Instance.CopyAllFields(origSettings);
             Settings.Instance.ApplyVolumes();
-            Settings.Instance.ApplyScreen();
             Settings.Instance.ApplyLanguage();
             origSettings = null;
         }
@@ -83,8 +83,9 @@ public static class RestoreSettings {
 
                     module._Settings.CopyAllProperties(modSettings, true);
                     module._Settings.CopyAllFields(modSettings, true);
-                } catch {
-                    // ignored
+                } catch (Exception ex) {
+                    $"Failed to restore settings for mod '{module.Metadata.Name}'".Log(LogLevel.Warn);
+                    ex.Log(LogLevel.Warn);
                 }
             }
 
