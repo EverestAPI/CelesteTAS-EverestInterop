@@ -442,7 +442,7 @@ public class CelesteTasSettings : EverestModuleSettings {
         }
     }
 
-    public bool RestoreSettings { get; set; } = false;
+    public bool RestoreSettings { get; set; } = true;
     public bool LaunchStudioAtBoot { get; set; } = false;
     public bool ShowStudioUpdateBanner { get; set; } = true;
 
