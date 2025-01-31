@@ -1,8 +1,11 @@
 using System.Collections.Generic;
 using Celeste;
 using Celeste.Mod;
+using StudioCommunication;
+using StudioCommunication.Util;
 using System;
 using TAS.Input.Commands;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -12,7 +15,8 @@ namespace TAS.EverestInterop;
 internal static class RestoreSettings {
     private static Settings? origSettings;
     private static Assists? origAssists;
-    private static Dictionary<EverestModule, object>? origModSettings;
+    private static readonly Dictionary<EverestModule, object> origModSettings = new();
+    private static readonly Dictionary<object, object?> origExtendedVariants = new();
 
     internal static readonly HashSet<EverestModule> ignoredModules = new();
     internal static readonly Dictionary<EverestModule, (Func<object> Backup, Action<object> Restore)> customHandlers = new();
@@ -21,7 +25,6 @@ internal static class RestoreSettings {
     private static void TryBackup() {
         origSettings = null;
         origAssists = null;
-        origModSettings = null;
 
         if (!TasSettings.RestoreSettings) {
             return;
@@ -30,7 +33,7 @@ internal static class RestoreSettings {
         origSettings = Settings.Instance.ShallowClone();
         origAssists = SaveData.Instance?.Assists;
 
-        origModSettings = new Dictionary<EverestModule, object>();
+        origModSettings.Clear();
         foreach (var module in Everest.Modules) {
             if (module._Settings == null || module.SettingsType == null || module._Settings is CelesteTasSettings) {
                 continue;
@@ -45,6 +48,17 @@ internal static class RestoreSettings {
             }
 
             origModSettings.Add(module, module._Settings.ShallowClone());
+        }
+
+        origExtendedVariants.Clear();
+        if (ExtendedVariantsInterop.GetVariantsEnum() is { } variantsEnum) {
+            foreach (object variant in Enum.GetValues(variantsEnum)) {
+                try {
+                    origExtendedVariants[variant] = ExtendedVariantsInterop.GetCurrentVariantValue(new Lazy<object?>(variant));;
+                } catch {
+                    // ignore
+                }
+            }
         }
     }
 
@@ -63,7 +77,7 @@ internal static class RestoreSettings {
             origAssists = null;
         }
 
-        if (origModSettings != null) {
+        if (origModSettings.IsNotEmpty()) {
             TasSettings.Enabled = true;
             TasSettings.RestoreSettings = true;
 
@@ -89,7 +103,23 @@ internal static class RestoreSettings {
                 }
             }
 
-            origModSettings = null;
+            origModSettings.Clear();
+        }
+
+        if (origExtendedVariants.IsNotEmpty()) {
+            var variantsEnum = ExtendedVariantsInterop.GetVariantsEnum()!;
+            foreach (object variant in Enum.GetValues(variantsEnum)) {
+                try {
+                    if (origExtendedVariants.TryGetValue(variant, out var value)) {
+                        ExtendedVariantsInterop.SetVariantValue(new Lazy<object?>(variant), value);
+                    }
+                } catch (Exception ex) {
+                    $"Failed to restore value for Extended Variant '{variant}'".Log(LogLevel.Warn);
+                    ex.Log(LogLevel.Warn);
+                }
+            }
+
+            origExtendedVariants.Clear();
         }
     }
 

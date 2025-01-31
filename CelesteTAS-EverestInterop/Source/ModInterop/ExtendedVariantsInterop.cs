@@ -51,7 +51,7 @@ internal static class ExtendedVariantsInterop {
         return getCurrentVariantValue.Value?.Invoke(triggerManager.Value, variant.Value);
     }
 
-    public static void SetVariantValue(Lazy<object?> variant, object value) {
+    public static void SetVariantValue(Lazy<object?> variant, object? value) {
         if (variant.Value is null) return;
         setVariantValue.Value?.Invoke(null, variant.Value, value);
     }
