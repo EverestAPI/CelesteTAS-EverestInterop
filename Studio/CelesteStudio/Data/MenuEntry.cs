@@ -257,11 +257,11 @@ public static class MenuEntryExtensions {
         MenuEntryCategory.File => "File",
         MenuEntryCategory.Settings => "Settings",
         MenuEntryCategory.View => "View",
-        MenuEntryCategory.Editor => "Editor - Context Menu",
+        MenuEntryCategory.Editor => "Editor",
         MenuEntryCategory.ContextActions => "Context Actions",
-        MenuEntryCategory.Status => "Status - Context Menu",
-        MenuEntryCategory.StatusPopout => "Status Popout - Context Menu",
-        MenuEntryCategory.GameHotkeys => "Game Hotkeys",
+        MenuEntryCategory.Status => "Game Info",
+        MenuEntryCategory.StatusPopout => "Game Info Popout",
+        MenuEntryCategory.GameHotkeys => "Additional Game Hotkeys",
         _ => throw new UnreachableException(),
     };
 

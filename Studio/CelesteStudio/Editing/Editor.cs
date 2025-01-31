@@ -2017,6 +2017,23 @@ public sealed class Editor : SkiaDrawable {
         if (TryParseAndFormatActionLine(Document.Caret.Row, out actionLine) && e.Text.Length == 1) {
             ClearQuickEdits();
 
+            if (CalculationExtensions.TryParse(typedCharacter) is { } op) {
+                if (calculationState != null) {
+                    // Cancel with same operation again
+                    if (op == calculationState.Operator && calculationState.Operand.Length == 0) {
+                        calculationState = null;
+                        Invalidate();
+                        return;
+                    }
+
+                    CommitCalculation();
+                }
+
+                StartCalculation(op);
+                Invalidate();
+                return;
+            }
+
             line = Document.Lines[Document.Caret.Row];
             leadingSpaces = line.Length - line.TrimStart().Length;
 

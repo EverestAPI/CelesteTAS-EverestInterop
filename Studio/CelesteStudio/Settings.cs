@@ -98,6 +98,13 @@ public sealed class Settings {
     [TomlProperty("KeyBindings")]
     private Dictionary<string, Keys> _keyBindings { get; set; } = new();
 
+    // Frame operations
+    public char AddFrameOperationChar { get; set; } = '+';
+    public char SubFrameOperationChar { get; set; } = '-';
+    public char MulFrameOperationChar { get; set; } = '*';
+    public char DivFrameOperationChar { get; set; } = '/';
+    public char SetFrameOperationChar { get; set; } = '=';
+
     public bool AutoBackupEnabled { get; set; } = true;
     public int AutoBackupRate { get; set; } = 1;
     public int AutoBackupCount { get; set; } = 100;
@@ -323,6 +330,13 @@ public sealed class Settings {
     }
 
     private static void RegisterMappings() {
+        TomletMain.RegisterMapper(
+            c => new TomlString(c.ToString()),
+            tomlValue => {
+                if (tomlValue is not TomlString str)
+                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(char));
+                return str.Value.Length == 0 ? char.MaxValue : str.Value[0];
+            });
         TomletMain.RegisterMapper(
             point => new TomlTable { Entries = { { "X", new TomlLong(point.X) }, { "Y", new TomlLong(point.Y) } } },
             tomlValue => {
