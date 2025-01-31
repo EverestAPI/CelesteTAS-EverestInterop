@@ -28,22 +28,22 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Reference Include="$(CelestePrefix)\Celeste.dll" Publicize="true" />
-        <Reference Include="$(CelestePrefix)\FNA.dll" Publicize="true" />
-        <Reference Include="$(CelestePrefix)\MMHOOK_Celeste.dll" />
+        <Reference Include="$(CelestePrefix)\Celeste.dll" Private="false" Publicize="true" />
+        <Reference Include="$(CelestePrefix)\FNA.dll" Private="false" Publicize="true" />
+        <Reference Include="$(CelestePrefix)\MMHOOK_Celeste.dll" Private="false" />
 
-        <Reference Include="lib-stripped\SpeedrunTool.dll" />
-        <Reference Include="lib-stripped\TASRecorder.dll" />
+        <Reference Include="lib-stripped\SpeedrunTool.dll" Private="false" />
+        <Reference Include="lib-stripped\TASRecorder.dll" Private="false" />
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="CelesteAnalyzer" Version="*" />
 
-        <PackageReference Include="MonoMod.RuntimeDetour" Version="25.0.2" />
-        <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1" PrivateAssets="all" />
+        <PackageReference Include="MonoMod.RuntimeDetour" Version="25.0.2" PrivateAssets="all" ExcludeAssets="runtime" />
+        <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1" PrivateAssets="all" ExcludeAssets="runtime" />
 
         <PackageReference Include="SharpZipLib" Version="1.4.2" IncludeAssets="all" />
-        <PackageReference Include="YamlDotNet" Version="13.1.1" />
+        <PackageReference Include="YamlDotNet" Version="13.1.1" PrivateAssets="all" ExcludeAssets="runtime" />
 
         <PackageReference Include="JetBrains.Annotations" Version="2024.2.0" />
         <PackageReference Include="JetBrains.Profiler.Api" Version="1.4.6" Condition="'$(Configuration)' == 'Debug'" />
