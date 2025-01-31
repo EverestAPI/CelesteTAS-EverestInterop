@@ -2651,6 +2651,8 @@ public sealed class Editor : SkiaDrawable {
             minRow = maxRow = Document.Caret.Row;
         }
 
+        int oldCol = Document.Caret.Col;
+
         for (int row = minRow; row <= maxRow; row++) {
             string line = Document.Lines[row];
             string lineTrimmed = line.TrimStart();
@@ -2689,6 +2691,12 @@ public sealed class Editor : SkiaDrawable {
             }
         }
 
+        // Jump to next line for single-line edits
+        if (minRow == maxRow && minRow == Document.Caret.Row && Document.Selection.Empty) {
+            Document.Caret.Col = oldCol;
+            Document.Caret.Row = Math.Min(Document.Lines.Count - 1, Document.Caret.Row + 1);
+        }
+
         // Clamp new column
         Document.Selection.Start.Col = Math.Clamp(Document.Selection.Start.Col, 0, Document.Lines[Document.Selection.Start.Row].Length);
         Document.Selection.End.Col = Math.Clamp(Document.Selection.End.Col, 0, Document.Lines[Document.Selection.End.Row].Length);
@@ -2717,6 +2725,8 @@ public sealed class Editor : SkiaDrawable {
             }
         }
 
+        int oldCol = Document.Caret.Col;
+
         for (int row = minRow; row <= maxRow; row++) {
             string line = Document.Lines[row];
 
@@ -2742,6 +2752,12 @@ public sealed class Editor : SkiaDrawable {
                 if (row == Document.Caret.Row)
                     Document.Caret.Col++;
             }
+        }
+
+        // Jump to next line for single-line edits
+        if (minRow == maxRow && minRow == Document.Caret.Row && Document.Selection.Empty) {
+            Document.Caret.Col = oldCol;
+            Document.Caret.Row = Math.Min(Document.Lines.Count - 1, Document.Caret.Row + 1);
         }
 
         // Clamp new column
