@@ -466,6 +466,13 @@ public static class SetCommand {
                     var mode = saveData.Assists.PlayAsBadeline
                         ? PlayerSpriteMode.MadelineAsBadeline
                         : player.DefaultSpriteMode;
+
+                    if (player.StateMachine.State == Player.StIntroWakeUp) {
+                        // player.Sprite is captured in IntroWakeUpCoroutine(),
+                        // so resetting the sprite would cause the player to be stuck in StIntroWakeUp
+                        break;
+                    }
+
                     if (player.Active) {
                         player.ResetSpriteNextFrame(mode);
                     } else {
