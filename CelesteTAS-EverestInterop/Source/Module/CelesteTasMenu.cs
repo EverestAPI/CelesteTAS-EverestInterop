@@ -43,6 +43,10 @@ internal static class CelesteTasMenu {
                 TasSettings.CenterCamera = value));
             subMenu.Add(new TextMenu.OnOff("Center Camera Horizontally Only".ToDialogText(), TasSettings.CenterCameraHorizontallyOnly).Change(value =>
                 TasSettings.CenterCameraHorizontallyOnly = value));
+            TextMenu.Item autoEnableExCameraDynamicsItem;
+            subMenu.Add(autoEnableExCameraDynamicsItem = new TextMenu.OnOff("Auto Enable ExCameraDynamics".ToDialogText(), TasSettings.EnableExCameraDynamicsForCenterCamera).Change(value =>
+                TasSettings.EnableExCameraDynamicsForCenterCamera = value));
+            subMenu.AddDescription(menu, autoEnableExCameraDynamicsItem, "ExCameraDynamics Description".ToDialogText());
             subMenu.Add(new TextMenu.OnOff("Restore Settings".ToDialogText(), TasSettings.RestoreSettings).Change(value =>
                 TasSettings.RestoreSettings = value));
             subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), TasSettings.LaunchStudioAtBoot).Change(value => {

@@ -16,6 +16,13 @@ internal static class ExCameraDynamicsInterop {
 
     public static bool Enabled => Installed && hooksEnabled();
 
+    public static void EnableHooks() {
+        if (Installed) { enableHooks(); }
+    }
+    public static void DisableHooks() {
+        if (Installed) { disableHooks(); }
+    }
+
     public static void SetCamera(Level level, Vector2 center, float zoom) {
         if (Installed) { setCamera(level, center, zoom); }
     }
@@ -37,8 +44,18 @@ internal static class ExCameraDynamicsInterop {
     // These methods must not be called (or inlined!) unless the mod is loaded
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool hooksEnabled() {
-        return ExCameraInterop.ExtendedCameraHooksEnabled();
+        return CameraZoomHooks.HooksEnabled;
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void enableHooks() {
+        CameraZoomHooks.Hook();
+    }
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void disableHooks() {
+        CameraZoomHooks.Unhook();
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void setCamera(Level level, Vector2 center, float zoom) {
         level.ForceCameraTo(CameraFocus.FromCenter(center, zoom));

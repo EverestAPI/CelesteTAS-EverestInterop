@@ -107,8 +107,33 @@ internal static class CenterCamera {
     private static float? savedLevelScreenPadding;
 
     // ExCameraDynamics
+    private static bool tasEnabledExCameraDynamics;
     private static bool? savedAutomaticZooming;
     private static float? savedTriggerZoomOverride;
+
+    public static void Toggled() {
+        // Enable ExCameraDynamics if needed
+        if (TasSettings.EnableExCameraDynamicsForCenterCamera && TasSettings.CenterCamera ) {
+            if (!ExCameraDynamicsInterop.Enabled) {
+                ExCameraDynamicsInterop.EnableHooks();
+                tasEnabledExCameraDynamics = true;
+            }
+        } else if (tasEnabledExCameraDynamics) {
+            if (ExCameraDynamicsInterop.Enabled) {
+                ExCameraDynamicsInterop.DisableHooks();
+            }
+            tasEnabledExCameraDynamics = false;
+        }
+    }
+
+    private delegate void orig_ExCameraDynamics_EnableHooks();
+
+    // Avoid disabling ExCameraDynamics if a map enabled it
+    [ModOnHook("ExtendedCameraDynamics", "Celeste.Mod.ExCameraDynamics.Code.Hooks.CameraZoomHooks", "Hook")]
+    private static void On_ExCameraDynamics_EnableHooks(orig_ExCameraDynamics_EnableHooks orig) {
+        tasEnabledExCameraDynamics = false;
+        orig();
+    }
 
     /// Adjust offset and zoom of the centered camera
     [UpdateMeta]
