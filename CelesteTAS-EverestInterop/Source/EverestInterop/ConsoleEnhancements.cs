@@ -111,7 +111,7 @@ public static class ConsoleEnhancements {
         int worldX = (int) Math.Round(x + level.LevelOffset.X);
         int worldY = (int) Math.Round(y + level.LevelOffset.Y);
 
-        if (MouseButtons.Left.Pressed) {
+        if (MouseInput.Left.Pressed) {
             Entity clickedEntity = InfoWatchEntity.FindClickedEntity();
             if (clickedEntity != null) {
                 Type type = clickedEntity.GetType();
@@ -135,7 +135,7 @@ public static class ConsoleEnhancements {
             } else {
                 clickedEntityInfo = string.Empty;
             }
-        } else if (MouseButtons.Right.Pressed) {
+        } else if (MouseInput.Right.Pressed) {
             clickedEntityInfo = string.Empty;
         }
 
