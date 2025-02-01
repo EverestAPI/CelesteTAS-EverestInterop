@@ -34,11 +34,9 @@ internal static class ExtendedVariantsInterop {
     // The integer enum value might be different between different ExtendedVariantMode versions, so we have to parse from string
     private static readonly Lazy<object?> upsideDownVariant = new(ParseVariant("UpsideDown"));
     private static readonly Lazy<object?> superDashingVariant = new(ParseVariant("SuperDashing"));
-    private static readonly Lazy<object?> zoomLevelVariant = new(ParseVariant("ZoomLevel"));
 
     public static bool UpsideDown => GetCurrentVariantValue(upsideDownVariant) is { } value && (bool) value;
     public static bool SuperDashing => GetCurrentVariantValue(superDashingVariant) is { } value && (bool) value;
-    public static float ZoomLevel => GetCurrentVariantValue(zoomLevelVariant) is { } value ? (float) value : 1.0f;
 
     public static Type? GetVariantsEnum() => variantType.Value;
 

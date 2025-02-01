@@ -57,7 +57,7 @@ internal static class OffscreenHitbox {
         Draw.SpriteBatch.End();
     }
     private static void DrawBufferToScreen(Scene scene) {
-        if (scene is not Level || !HitboxToggle.DrawHitboxes || !ShouldDraw || offscreenBuffer == null) {
+        if (scene is not Level level || !HitboxToggle.DrawHitboxes || !ShouldDraw || offscreenBuffer == null) {
             return;
         }
 

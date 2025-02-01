@@ -1,6 +1,7 @@
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
+using MonoMod.Cil;
 using System;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
@@ -59,6 +60,32 @@ internal static class CenterCamera {
         if (TasSettings.CenterCamera && !Hotkeys.InfoHud.Check && MouseInput.Right.Check) {
             InfoMouse.DrawCursor(MouseInput.Position);
         }
+    }
+
+    // Disable "Zoom Level" Extended Variant while using center camera, to avoid it causing issues with rendering
+    private static bool DisableZoomLevelVariant() => TasSettings.CenterCamera;
+
+    [ModILHook("ExtendedVariantMode", "ExtendedVariants.Variants.ZoomLevel", "modZoom")]
+    private static void IL_ZoomLevel_modZoom(ILCursor cursor) {
+        var start = cursor.MarkLabel();
+        cursor.MoveBeforeLabels();
+
+        cursor.EmitDelegate(DisableZoomLevelVariant);
+        cursor.EmitBrfalse(start);
+
+        cursor.EmitLdarg1();
+        cursor.EmitRet();
+    }
+    [ModILHook("ExtendedVariantMode", "ExtendedVariants.Variants.ZoomLevel", "getScreenPosition")]
+    private static void IL_ZoomLevel_getScreenPosition(ILCursor cursor) {
+        var start = cursor.MarkLabel();
+        cursor.MoveBeforeLabels();
+
+        cursor.EmitDelegate(DisableZoomLevelVariant);
+        cursor.EmitBrfalse(start);
+
+        cursor.EmitLdarg1();
+        cursor.EmitRet();
     }
 
     private static Vector2? cameraTargetPosition;
@@ -136,7 +163,7 @@ internal static class CenterCamera {
 
         // Drag support while holding right mouse button
         if (MouseInput.Right.Check) {
-            float scale = ZoomLevel * level.Camera.Zoom * ExtendedVariantsInterop.ZoomLevel * (Celeste.Celeste.TargetWidth / Celeste.Celeste.GameWidth) * Engine.ViewWidth / Engine.Width;
+            float scale = ZoomLevel * level.Camera.Zoom * (Celeste.Celeste.TargetWidth / Celeste.Celeste.GameWidth) * Engine.ViewWidth / Engine.Width;
 
             var mouseOffset = MouseInput.PositionDelta / scale;
             if (ExtendedVariantsInterop.UpsideDown) {
