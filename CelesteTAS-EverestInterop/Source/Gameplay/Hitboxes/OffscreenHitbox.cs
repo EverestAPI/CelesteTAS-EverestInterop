@@ -69,7 +69,17 @@ internal static class OffscreenHitbox {
             effects |= SpriteEffects.FlipVertically;
         }
 
-        Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.Default, RasterizerState.CullNone, null, Engine.ScreenMatrix);
+        string? colorGradeOverwrite = ExtendedVariantsInterop.ColorGrading;
+
+        var lastColorTex = GFX.ColorGrades.GetOrDefault(colorGradeOverwrite ?? level.lastColorGrade, GFX.ColorGrades["none"]);
+        var nextColorTex = GFX.ColorGrades.GetOrDefault(colorGradeOverwrite ?? level.Session.ColorGrade, GFX.ColorGrades["none"]);
+        if (level.colorGradeEase > 0f && lastColorTex != nextColorTex) {
+            ColorGrade.Set(lastColorTex, nextColorTex, level.colorGradeEase);
+        } else {
+            ColorGrade.Set(nextColorTex);
+        }
+
+        Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.Default, RasterizerState.CullNone, ColorGrade.Effect, Engine.ScreenMatrix);
         Draw.SpriteBatch.Draw(offscreenBuffer, Vector2.Zero, CenterCamera.ScreenCamera.Viewport.Bounds, Color.White, 0.0f, Vector2.Zero, CenterCamera.ZoomLevel * (Celeste.Celeste.TargetWidth / Celeste.Celeste.GameWidth) / BufferScale, effects, 0.0f);
         Draw.SpriteBatch.End();
     }
