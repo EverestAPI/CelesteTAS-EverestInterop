@@ -173,7 +173,7 @@ internal static class TriggerHitbox {
         AddModdedTypes("bitsbolts", "Bitsbolts.Triggers.UnlockCamera"); // v1.3.9
         AddCameraTypes("ContortHelper", "ContortHelper.PatchedCameraAdvanceTargetTrigger", "ContortHelper.PatchedCameraOffsetTrigger", "ContortHelper.PatchedCameraTargetTrigger", "ContortHelper.PatchedSmoothCameraOffsetTrigger"); // v1.5.5
         AddModdedTypes("ChroniaHelper", "ChroniaHelper.Triggers.SmoothToOffsetCamera", "ChroniaHelper.Triggers.SpeedAdaptiveCamera", "ChroniaHelper.Triggers.AxisCameraOffset"); // v1.28.15
-        AddModdedTypes("ExtendedCameraDynamics", "ExtendedCameraDynamics.Code.Triggers.CameraSnapTrigger", "ExtendedCameraDynamics.Code.Triggers.CameraZoomTrigger"); // v1.0.5
+        AddModdedTypes("ExtendedCameraDynamics", "ExtendedCameraDynamics.Code.Triggers.CameraSnapTrigger", "Celeste.Mod.ExCameraDynamics.Code.Triggers.CameraZoomTrigger"); // v1.0.5
         AddCameraTypes("FrostHelper", "FrostHelper.EasedCameraZoomTrigger"); // v1.65.0
         AddCameraTypes("FurryHelper", "Celeste.Mod.FurryHelper.MomentumCameraOffsetTrigger"); // v1.0.6
         AddCameraTypes("GameHelper", "Celeste.Mod.GameHelper.Triggers.CameraEntityTargetTrigger"); // v1.6.2.0
