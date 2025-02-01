@@ -106,6 +106,10 @@ internal static class CenterCamera {
     private static Vector2? savedLevelZoomFocusPoint;
     private static float? savedLevelScreenPadding;
 
+    // ExCameraDynamics
+    private static bool? savedAutomaticZooming;
+    private static float? savedTriggerZoomOverride;
+
     /// Adjust offset and zoom of the centered camera
     [UpdateMeta]
     private static void UpdateMeta() {
@@ -216,12 +220,19 @@ internal static class CenterCamera {
             camera.Position = target + cameraOffset - new Vector2(camera.Viewport.Width / 2.0f, camera.Viewport.Height / 2.0f);
         }
 
-        level.Zoom = level.ZoomTarget = ZoomLevel;
-        level.ZoomFocusPoint = new Vector2(Celeste.Celeste.GameWidth / 2.0f, Celeste.Celeste.GameHeight / 2.0f);
-        if (ZoomedOut) {
-            level.ZoomFocusPoint += canvasOffset;
+        if (ExCameraDynamicsInterop.Enabled) {
+            savedAutomaticZooming = ExCameraDynamicsInterop.AutomaticZooming;
+            savedTriggerZoomOverride = ExCameraDynamicsInterop.TriggerZoomOverride;
+
+            ExCameraDynamicsInterop.SetCamera(level, target + cameraOffset + canvasOffset, ZoomLevel);
+        } else {
+            level.Zoom = level.ZoomTarget = ZoomLevel;
+            level.ZoomFocusPoint = new Vector2(Celeste.Celeste.GameWidth / 2.0f, Celeste.Celeste.GameHeight / 2.0f);
+            if (ZoomedOut) {
+                level.ZoomFocusPoint += canvasOffset;
+            }
+            level.ScreenPadding = 0;
         }
-        level.ScreenPadding = 0;
 
         // Prepare screen-space camera for usage with OffscreenHitbox
         ScreenCamera.Viewport.Width = (int) Math.Round(Celeste.Celeste.GameWidth * viewportScale);
@@ -249,25 +260,30 @@ internal static class CenterCamera {
             level.Camera.Position = savedCameraPosition.Value;
             savedCameraPosition = null;
         }
-
         if (savedLevelZoom != null) {
             level.Zoom = savedLevelZoom.Value;
             savedLevelZoom = null;
         }
-
         if (savedLevelZoomTarget != null) {
             level.ZoomTarget = savedLevelZoomTarget.Value;
             savedLevelZoomTarget = null;
         }
-
         if (savedLevelZoomFocusPoint != null) {
             level.ZoomFocusPoint = savedLevelZoomFocusPoint.Value;
             savedLevelZoomFocusPoint = null;
         }
-
         if (savedLevelScreenPadding != null) {
             level.ScreenPadding = savedLevelScreenPadding.Value;
             savedLevelScreenPadding = null;
+        }
+
+        if (savedAutomaticZooming != null) {
+            ExCameraDynamicsInterop.AutomaticZooming = savedAutomaticZooming.Value;
+            savedAutomaticZooming = null;
+        }
+        if (savedTriggerZoomOverride != null) {
+            ExCameraDynamicsInterop.TriggerZoomOverride = savedTriggerZoomOverride.Value;
+            savedTriggerZoomOverride = null;
         }
     }
 }

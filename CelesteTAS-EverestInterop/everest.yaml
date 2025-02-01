@@ -9,3 +9,5 @@
       Version: 3.24.0
     - Name: TASRecorder
       Version: 1.6.0
+    - Name: ExtendedCameraDynamics
+      Version: 1.0.5
