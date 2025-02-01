@@ -178,16 +178,29 @@ internal static class CenterCamera {
             zoomDirection = -Math.Sign(MouseInput.WheelDelta);
         }
 
+        // (Un)lock current camera target
+        if (Hotkeys.LockCamera.Pressed) {
+            if (lockPosition != null) {
+                lockPosition = null;
+            } else if (cameraTargetPosition != null) {
+                lockPosition = cameraTargetPosition.Value;
+            }
+        }
+
         // Account for upside down camera
         if (ExtendedVariantsInterop.UpsideDown) {
             moveOffset.Y *= -1;
         }
 
+        bool changedCamera = false, changedCanvas = false;
+
         // Keep the gameplay canvas locked while using the FreeCamera hotkey
         if (Hotkeys.FreeCamera.Check && ZoomedOut) {
             canvasOffset += moveOffset;
+            changedCanvas = moveOffset != Vector2.Zero;
         } else if (Hotkeys.InfoHud.Check) {
             cameraOffset += moveOffset;
+            changedCamera = moveOffset != Vector2.Zero;
         }
 
         // Drag support while holding right mouse button
@@ -201,8 +214,10 @@ internal static class CenterCamera {
 
             if (Hotkeys.FreeCamera.Check && ZoomedOut) {
                 canvasOffset -= mouseOffset;
+                changedCanvas = mouseOffset != Vector2.Zero;
             } else {
                 cameraOffset -= mouseOffset;
+                changedCamera = mouseOffset != Vector2.Zero;
             }
         }
 
@@ -212,6 +227,17 @@ internal static class CenterCamera {
             _ => zoomDirection * 0.1f
         };
         viewportScale = Math.Max(0.2f, viewportScale + delta);
+
+        if (cameraTargetPosition is { } target && level.Session.MapData.Bounds is var bounds) {
+            if (changedCamera) {
+                var result = (target + cameraOffset).Clamp(bounds.X, bounds.Y, bounds.Right, bounds.Bottom);
+                cameraOffset = result - target;
+            }
+            if (changedCanvas) {
+                var result = (target + cameraOffset + canvasOffset).Clamp(bounds.X, bounds.Y, bounds.Right, bounds.Bottom);
+                canvasOffset = result - target - moveOffset;
+            }
+        }
     }
 
     /// Centers the camera onto the player or the currently locked position
