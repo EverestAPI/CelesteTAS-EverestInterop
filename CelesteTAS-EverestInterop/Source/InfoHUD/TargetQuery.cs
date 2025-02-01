@@ -9,12 +9,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using TAS.EverestInterop;
 using TAS.Input.Commands;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
-namespace TAS.EverestInterop;
+namespace TAS.InfoHUD;
 
 /// Contains all the logic for getting data from a target-query
 public static class TargetQuery {
@@ -301,12 +302,12 @@ public static class TargetQuery {
         // Special case for Actor / Platform positions, since they use subpixels
         if (memberArgs[^1] is nameof(Entity.X) or nameof(Entity.Y)) {
             var entityType = typeof(Entity);
-            if (typeStack.Count >= 1) {
-                // "Entity.X"
-                entityType = typeStack.Pop();
-            } else if (typeStack.Count >= 2 && memberArgs[^2] is nameof(Entity.Position)) {
+            if (typeStack.Count >= 2 && memberArgs[^2] is nameof(Entity.Position)) {
                 // "Entity.Position.X"
                 _ = typeStack.Pop();
+                entityType = typeStack.Pop();
+            } else if (typeStack.Count >= 1) {
+                // "Entity.X"
                 entityType = typeStack.Pop();
             }
 
