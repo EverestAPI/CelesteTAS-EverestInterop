@@ -16,6 +16,7 @@ using TAS.Entities;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Gameplay;
+using TAS.InfoHUD;
 using TAS.ModInterop;
 using TAS.Utils;
 
