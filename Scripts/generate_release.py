@@ -21,7 +21,7 @@ conventional_commit_types = {
     "style": 'Styles',
     "refactor": 'Code Refactoring',
     "tweak": "Tweaks",
-    "remove": "Removals"
+    "remove": "Removals",
     "perf": 'Performance Improvements',
     "test": 'Tests',
     "build": 'Builds',
