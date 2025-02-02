@@ -499,28 +499,8 @@ public static class SimplifiedGraphicsFeature {
         cursor.EmitBrtrue(start);
         cursor.EmitRet();
 
-        int backdropIdx = -1;
-        if (cursor.TryGotoNext(MoveType.After,
-                ins => ins.MatchLdloc(out backdropIdx),
-                ins => ins.MatchLdfld<Backdrop>(nameof(Backdrop.Visible))))
-        {
-            cursor.EmitLdloc(backdropIdx);
-            cursor.EmitDelegate(IsShow9DBlackBackdrop);
-        }
-
         static bool IsNotSimplifiedBackdrop() {
             return !TasSettings.SimplifiedGraphics || !TasSettings.SimplifiedBackdrop;
-        }
-        static bool IsShow9DBlackBackdrop(bool visible, Backdrop backdrop) {
-            if (TasSettings.Enabled && TasSettings.Mod9DLighting && backdrop.Visible && Engine.Scene is Level level) {
-                bool hideBackdrop =
-                    backdrop.Name?.StartsWith("bgs/nameguysdsides") == true &&
-                    (level.Session.Level.StartsWith("g") || level.Session.Level.StartsWith("h")) &&
-                    level.Session.Level != "hh-08";
-                return !hideBackdrop;
-            }
-
-            return visible;
         }
     }
 

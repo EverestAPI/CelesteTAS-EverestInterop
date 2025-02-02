@@ -70,8 +70,6 @@ internal static class CelesteTasMenu {
                 TasSettings.HideFreezeFrames = value));
             subMenu.AddDescription(menu, hideFreezeFramesItem, "Hide Freeze Frames Description 1".ToDialogText());
             subMenu.AddDescription(menu, hideFreezeFramesItem, "Hide Freeze Frames Description 2".ToDialogText());
-            subMenu.Add(new TextMenu.OnOff("Mod 9D Lighting".ToDialogText(), TasSettings.Mod9DLighting).Change(value =>
-                TasSettings.Mod9DLighting = value));
             TextMenu.Item ignoreGcItem;
             subMenu.Add(ignoreGcItem = new TextMenu.OnOff("Ignore GC Collect".ToDialogText(), TasSettings.IgnoreGcCollect).Change(value =>
                 TasSettings.IgnoreGcCollect = value));

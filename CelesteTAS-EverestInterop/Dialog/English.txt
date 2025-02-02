@@ -112,7 +112,6 @@ TAS_BETTER_INVINCIBLE_DESCRIPTION=   Running "Set Invincible true" will still pr
 TAS_HIDE_FREEZE_FRAMES=              Hide Freeze Frames during TAS
 TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_1=When a freeze frame is encountered, run it and continue to the next frame
 TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_2=before rendering. Applies only while a TAS is active.
-TAS_MOD_9D_LIGHTING=                 Mod 9D Lighting
 TAS_IGNORE_GC_COLLECT=               Ignore GC Collect during Fast Forward
 TAS_IGNORE_GC_COLLECT_DESCRIPTION_1= Benefits of fast forwarding multiple chapter length TAS
 TAS_IGNORE_GC_COLLECT_DESCRIPTION_2= but will increase memory usage and may cause out of memory exception

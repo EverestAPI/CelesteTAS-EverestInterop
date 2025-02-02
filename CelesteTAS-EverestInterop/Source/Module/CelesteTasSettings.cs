@@ -464,7 +464,6 @@ public class CelesteTasSettings : EverestModuleSettings {
     }
 
     public bool HideFreezeFrames { get; set; } = false;
-    public bool Mod9DLighting { get; set; } = false;
     public bool IgnoreGcCollect { get; set; } = true;
 
     #endregion
