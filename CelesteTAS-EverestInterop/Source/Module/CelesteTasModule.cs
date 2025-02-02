@@ -5,8 +5,9 @@ using FMOD.Studio;
 using JetBrains.Annotations;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
 using TAS.Communication;
-using TAS.EverestInterop;
 using TAS.Tools;
 using TAS.Utils;
 
@@ -35,12 +36,60 @@ public class CelesteTasModule : EverestModule {
         }
     }
 
+#if DEBUG
+    private readonly List<FileSystemWatcher> assetWatchers = [];
+#endif
+
     public override void Load() {
         AttributeUtils.Invoke<LoadAttribute>();
+
+#if DEBUG
+        // Since assets are copied / sym-linked, changes aren't detected by Everest when they're changed
+        string root = Path.Combine(Metadata.PathDirectory, "CelesteTAS-EverestInterop");
+
+        foreach (string dir in (ReadOnlySpan<string>)["Dialog", "Graphics"]) {
+            var watcher = new FileSystemWatcher {
+                Path = Path.Combine(root, dir),
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite,
+                IncludeSubdirectories = true
+            };
+            watcher.Changed += (s, e) => {
+                try {
+                    if (Everest.Content.Mods.FirstOrDefault(mod => mod.Mod == Metadata) is not FileSystemModContent tasContent) {
+                        return;
+                    }
+
+                    string actualVirtualPath = Path.ChangeExtension(Path.GetRelativePath(root, e.FullPath), null);
+                    if (tasContent.Map.GetValueOrDefault(actualVirtualPath) is not FileSystemModAsset actualAsset) {
+                        return;
+                    }
+
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+                        // Assets are copied on Windows
+                        File.Copy(e.FullPath, actualAsset.Path, overwrite: true);
+                    } else {
+                        // Assets are sym-linked on Unix
+                        QueuedTaskHelper.Do(actualAsset.Path, () => actualAsset.Source.Update(actualAsset.Path, actualAsset.Path));
+                    }
+                } catch (Exception ex) {
+                    $"Failed to forward file change of '{e.FullPath}'".Log(LogLevel.Error);
+                    ex.Log(LogLevel.Error);
+                }
+            };
+            watcher.EnableRaisingEvents = true;
+            assetWatchers.Add(watcher);
+        }
+#endif
     }
 
     public override void Unload() {
         AttributeUtils.Invoke<UnloadAttribute>();
+
+#if DEBUG
+        foreach (var watcher in assetWatchers) {
+            watcher.Dispose();
+        }
+#endif
     }
 
     public override bool ParseArg(string arg, Queue<string> args) {
