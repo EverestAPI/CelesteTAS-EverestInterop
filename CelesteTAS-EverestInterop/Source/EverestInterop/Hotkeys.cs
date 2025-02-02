@@ -161,12 +161,15 @@ public static class Hotkeys {
         return default;
     }
     internal static void UpdateMeta() {
-        // Determined which inputs are already used for something else
-        bool updateKey = true;
-        bool updateButton = true;
+        // Only update if the keys aren't already used for something else
+        bool updateKey = true, updateButton = true;
 
+        // Prevent triggering hotkeys while writing text
         if (Engine.Commands.Open) {
             updateKey = false;
+        } else if (TextInput.Initialized && typeof(TextInput).GetFieldValue<Action<char>>("_OnInput") is { } inputEvent) {
+            // ImGuiHelper is always subscribed, so ignore it
+            updateKey &= inputEvent.GetInvocationList().All(d => d.Target?.GetType().FullName == "Celeste.Mod.ImGuiHelper.ImGuiRenderer+<>c");
         }
 
         if (!Manager.Running) {
