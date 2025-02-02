@@ -34,6 +34,7 @@
 
         <Reference Include="lib-stripped\SpeedrunTool.dll" Private="false" />
         <Reference Include="lib-stripped\TASRecorder.dll" Private="false" />
+        <Reference Include="lib-stripped\ExCameraDynamics.dll" Private="false" />
     </ItemGroup>
 
     <ItemGroup>

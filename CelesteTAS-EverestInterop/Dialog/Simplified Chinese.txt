@@ -100,6 +100,8 @@ TAS_HOTKEYS_DESCRIPTION= 绑定多个按键表示组合键，需要同时按下�
 # ================================== More Options Submenu ==================================
 TAS_CENTER_CAMERA=                   镜头居中
 TAS_CENTER_CAMERA_HORIZONTALLY_ONLY= 镜头只水平居中
+TAS_AUTO_ENABLE_EXCAMERADYNAMICS=    镜头居中时启用 Extended Camera Dynamics
+TAS_EXCAMERADYNAMICS_DESCRIPTION=    注意: 关闭此功能后, 需要重启关卡以使得画面缩小后的碰撞箱能正常工作.
 TAS_RESTORE_SETTINGS=                TAS 停止时恢复所有设置
 TAS_LAUNCH_STUDIO_AT_BOOT=           启动游戏时打开 Studio
 TAS_ATTEMPT_TO_CONNECT_TO_STUDIO=    尝试连接 Studio

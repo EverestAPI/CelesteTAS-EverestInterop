@@ -3,6 +3,7 @@ using Celeste;
 using Microsoft.Xna.Framework.Graphics;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
+using TAS.Gameplay.Hitboxes;
 using TAS.Module;
 
 namespace TAS.EverestInterop.Hitboxes;
@@ -43,7 +44,7 @@ public static class HitboxToggle {
 
     private static bool IsShowHitbox(bool orig) {
         origDrawHitboxes = orig;
-        return DrawHitboxes && !FreeCameraHitbox.DrawFreeCameraHitboxes;
+        return DrawHitboxes && !OffscreenHitbox.ShouldDraw;
     }
 
     private static void DistortOnRender(ILContext il) {

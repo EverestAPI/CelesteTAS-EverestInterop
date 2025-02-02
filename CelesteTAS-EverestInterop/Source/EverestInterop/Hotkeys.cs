@@ -15,7 +15,6 @@ using TAS.Utils;
 using InputKeys = Microsoft.Xna.Framework.Input.Keys;
 using InputButtons = Microsoft.Xna.Framework.Input.Buttons;
 using Hud = TAS.EverestInterop.InfoHUD.InfoHud;
-using Camera = TAS.EverestInterop.CenterCamera;
 
 namespace TAS.EverestInterop;
 
@@ -229,7 +228,6 @@ public static class Hotkeys {
         }
 
         Hud.Toggle();
-        Camera.ResetCamera();
     }
 
     [DisableRun]
@@ -258,8 +256,8 @@ public static class Hotkeys {
 
         public bool LastCheck { get; set; }
 
-        private const double DoublePressTimeoutMS = 200.0;
-        private const double RepeatTimeoutMS = 500.0;
+        internal const double DoublePressTimeoutMS = 200.0;
+        internal const double RepeatTimeoutMS = 500.0;
 
         internal void Update(bool updateKey = true, bool updateButton = true) {
             LastCheck = Check;
@@ -338,77 +336,82 @@ public static class Hotkeys {
     }
 }
 
-public static class MouseButtons {
+/// Manages hotkeys for controlling TAS playback
+/// Cannot use MInput, since that isn't updated while paused and already used for TAS inputs
+internal static class MouseInput {
+    public class Button {
+        private DateTime doublePressTimeout;
+        private DateTime repeatTimeout;
+
+        public bool Check { get; private set; }
+        public bool Pressed => !LastCheck && Check;
+        public bool Released => LastCheck && !Check;
+
+        public bool DoublePressed { get; private set; }
+        public bool Repeated { get; private set; }
+
+        public bool LastCheck { get; set; }
+
+        public void Update(ButtonState state) {
+            LastCheck = Check;
+            Check = state == ButtonState.Pressed;
+
+            var now = DateTime.Now;
+            if (Pressed) {
+                DoublePressed = now < doublePressTimeout;
+                doublePressTimeout = DoublePressed ? default : now + TimeSpan.FromMilliseconds(Hotkeys.Hotkey.DoublePressTimeoutMS);
+
+                Repeated = true;
+                repeatTimeout = now + TimeSpan.FromMilliseconds(Hotkeys.Hotkey.RepeatTimeoutMS);
+            } else if (Check) {
+                DoublePressed = false;
+                Repeated = now >= repeatTimeout;
+            } else {
+                DoublePressed = false;
+                Repeated = false;
+                repeatTimeout = default;
+            }
+        }
+    }
+
     public static bool Updating { get; private set; }
+
     public static Vector2 Position { get; private set; }
-    public static Vector2 LastPosition { get; private set; }
+    public static Vector2 PositionDelta => Position - lastPosition;
+    private static Vector2 lastPosition;
+
+    public static int WheelDelta { get; private set; }
+    private static int lastWheel;
+
     public static readonly Button Left = new();
     public static readonly Button Middle = new();
     public static readonly Button Right = new();
-    public static int Wheel { get; private set; }
-    private static int lastWheel;
 
-    [Load]
-    private static void Load() {
-        On.Celeste.Celeste.RenderCore += CelesteOnRenderCore;
-    }
+    [UpdateMeta]
+    private static void UpdateMeta() {
+        // Avoid checking mouse inputs while fast forwarding for performance
+        if (Manager.FastForwarding) {
+            lastPosition = Position;
+            Left.Update(ButtonState.Released);
+            Middle.Update(ButtonState.Released);
+            Right.Update(ButtonState.Released);
+            WheelDelta = 0;
 
-    [Unload]
-    private static void Unload() {
-        On.Celeste.Celeste.RenderCore -= CelesteOnRenderCore;
-    }
-
-    private static void CelesteOnRenderCore(On.Celeste.Celeste.orig_RenderCore orig, Celeste.Celeste self) {
-        if (Manager.FastForwarding || !Engine.Instance.IsActive) {
-            UpdateNull();
-        } else {
-            Update();
+            return;
         }
 
-        orig(self);
-    }
-
-    private static void Update() {
         Updating = true;
-        MouseState mouseState = Mouse.GetState();
+        var mouseState = Mouse.GetState();
         Updating = false;
 
-        LastPosition = Position;
+        lastPosition = Position;
         Position = new Vector2(mouseState.X, mouseState.Y);
+
+        WheelDelta = mouseState.ScrollWheelValue - lastWheel;
+        lastWheel = mouseState.ScrollWheelValue;
+
         Left.Update(mouseState.LeftButton);
         Middle.Update(mouseState.MiddleButton);
         Right.Update(mouseState.RightButton);
-        Wheel = mouseState.ScrollWheelValue - lastWheel;
-        lastWheel = mouseState.ScrollWheelValue;
-    }
-
-    private static void UpdateNull() {
-        LastPosition = Position;
-        Left.Update(ButtonState.Released);
-        Middle.Update(ButtonState.Released);
-        Right.Update(ButtonState.Released);
-        Wheel = 0;
-    }
-
-    public class Button {
-        private DateTime lastPressedTime;
-        public bool Check { get; private set; }
-        public bool LastCheck { get; private set; }
-        public bool Pressed => !LastCheck && Check;
-        public bool DoublePressed { get; private set; }
-        public bool Released => LastCheck && !Check;
-
-        public void Update(ButtonState buttonState) {
-            LastCheck = Check;
-            Check = buttonState == ButtonState.Pressed;
-
-            if (Pressed) {
-                DateTime pressedTime = DateTime.Now;
-                DoublePressed = pressedTime.Subtract(lastPressedTime).TotalMilliseconds < 200;
-                lastPressedTime = DoublePressed ? default : pressedTime;
-            } else {
-                DoublePressed = false;
-            }
-        }
     }
 }

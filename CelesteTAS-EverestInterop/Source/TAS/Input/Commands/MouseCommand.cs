@@ -31,7 +31,7 @@ public static class MouseCommand {
     }
 
     private static bool IsRunningTas() {
-        return Manager.Running && !MouseButtons.Updating;
+        return Manager.Running && !MouseInput.Updating;
     }
 
     // "Mouse, X, Y, [ScrollWheel]"

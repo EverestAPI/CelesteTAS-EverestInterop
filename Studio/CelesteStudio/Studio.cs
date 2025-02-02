@@ -729,6 +729,7 @@ public sealed class Studio : Form {
                 new SeparatorMenuItem(),
                 MenuUtils.CreateGameSettingToggle("&Center Camera", nameof(GameSettings.CenterCamera)),
                 MenuUtils.CreateGameSettingToggle("Center Camera Horizontally Only", nameof(GameSettings.CenterCameraHorizontallyOnly)),
+                MenuUtils.CreateGameSettingToggle("Enable ExCameraDynamics for Center Camera", nameof(GameSettings.EnableExCameraDynamicsForCenterCamera)),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateGameSettingToggle("&Info HUD", nameof(GameSettings.InfoHud)),
                 MenuUtils.CreateGameSettingToggle("TAS Input Info", nameof(GameSettings.InfoTasInput)),
