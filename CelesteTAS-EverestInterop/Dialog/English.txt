@@ -101,7 +101,7 @@ TAS_HOTKEYS_DESCRIPTION= Binding multiple keys to a control will cause those key
 # ================================== More Options Submenu ==================================
 TAS_CENTER_CAMERA=                   Center Camera
 TAS_CENTER_CAMERA_HORIZONTALLY_ONLY= Center Camera Horizontally Only
-TAS_AUTO_ENABLE_EXCAMERADYNAMICS=    Enable ExCameraDynamics for Center Camera
+TAS_AUTO_ENABLE_EXCAMERADYNAMICS=    Enable Extended Camera Dynamics for Center Camera
 TAS_EXCAMERADYNAMICS_DESCRIPTION=    NOTE: You'll have to restart the level after disabling this for zoomed-out hitboxes to work.
 TAS_RESTORE_SETTINGS=                Restore All Settings when TAS Stop
 TAS_LAUNCH_STUDIO_AT_BOOT=           Launch Studio at Boot
