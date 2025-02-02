@@ -286,11 +286,11 @@ public static class TargetQuery {
         foreach (string member in memberArgs) {
             typeStack.Push(currentType);
 
-            if (currentType.GetFieldInfo(member) is { } field) {
+            if (currentType.GetFieldInfo(member, logFailure: false) is { } field) {
                 currentType = field.FieldType;
                 continue;
             }
-            if (currentType.GetPropertyInfo(member) is { } property && property.GetMethod != null) {
+            if (currentType.GetPropertyInfo(member, logFailure: false) is { } property && property.GetMethod != null) {
                 currentType = property.PropertyType;
                 continue;
             }
@@ -332,12 +332,12 @@ public static class TargetQuery {
         for (int i = 0; i < memberArgs.Length - 1; i++) {
             string member = memberArgs[i];
 
-            if (currentType.GetFieldInfo(member) is { } field) {
+            if (currentType.GetFieldInfo(member, logFailure: false) is { } field) {
                 currentType = field.FieldType;
                 continue;
             }
 
-            if (currentType.GetPropertyInfo(member) is { } property && property.GetMethod != null) {
+            if (currentType.GetPropertyInfo(member, logFailure: false) is { } property && property.GetMethod != null) {
                 currentType = property.PropertyType;
                 continue;
             }
@@ -347,7 +347,7 @@ public static class TargetQuery {
         }
 
         // Find method
-        if (currentType.GetMethodInfo(memberArgs[^1]) is { } method) {
+        if (currentType.GetMethodInfo(memberArgs[^1], logFailure: false) is { } method) {
             return (method, Success: true);
         }
 
@@ -361,7 +361,7 @@ public static class TargetQuery {
         var currentObject = baseObject;
         foreach (string member in memberArgs) {
             try {
-                if (currentType.GetFieldInfo(member) is { } field) {
+                if (currentType.GetFieldInfo(member, logFailure: false) is { } field) {
                     currentType = field.FieldType;
                     if (field.IsStatic) {
                         currentObject = field.GetValue(null);
@@ -375,7 +375,7 @@ public static class TargetQuery {
                     }
                     continue;
                 }
-                if (currentType.GetPropertyInfo(member) is { } property && property.GetMethod != null) {
+                if (currentType.GetPropertyInfo(member, logFailure: false) is { } property && property.GetMethod != null) {
                     if (PreventCodeExecution && !forceAllowCodeExecution) {
                         return (Value: null, Success: false, ErrorMessage: $"Cannot safely get property '{member}' during EnforceLegal");
                     }
@@ -440,7 +440,7 @@ public static class TargetQuery {
             string member = memberArgs[i];
 
             try {
-                if (currentType.GetFieldInfo(member) is { } field) {
+                if (currentType.GetFieldInfo(member, logFailure: false) is { } field) {
                     currentType = field.FieldType;
                     if (field.IsStatic) {
                         currentObject = field.GetValue(null);
@@ -451,7 +451,7 @@ public static class TargetQuery {
                     continue;
                 }
 
-                if (currentType.GetPropertyInfo(member) is { } property && property.SetMethod != null) {
+                if (currentType.GetPropertyInfo(member, logFailure: false) is { } property && property.SetMethod != null) {
                     if (PreventCodeExecution) {
                         return false; // Cannot safely invoke methods during EnforceLegal
                     }
@@ -530,13 +530,13 @@ public static class TargetQuery {
                 }
             }
 
-            if (currentType.GetFieldInfo(memberArgs[^1]) is { } field) {
+            if (currentType.GetFieldInfo(memberArgs[^1], logFailure: false) is { } field) {
                 if (field.IsStatic) {
                     field.SetValue(null, value);
                 } else {
                     field.SetValue(currentObject, value);
                 }
-            } else if (currentType.GetPropertyInfo(memberArgs[^1]) is { } property && property.SetMethod != null) {
+            } else if (currentType.GetPropertyInfo(memberArgs[^1], logFailure: false) is { } property && property.SetMethod != null) {
                 // Special case to support binding custom keys
                 if (property.PropertyType == typeof(ButtonBinding) && !PreventCodeExecution && property.GetValue(currentObject) is ButtonBinding binding) {
                     var nodes = binding.Button.Nodes;
@@ -620,13 +620,13 @@ public static class TargetQuery {
             string member = memberArgs[i];
 
             try {
-                if (currentType.GetFieldInfo(member) is { } field) {
+                if (currentType.GetFieldInfo(member, logFailure: false) is { } field) {
                     if (field.IsStatic) {
                         field.SetValue(null, value);
                     } else {
                         field.SetValue(currentObject, value);
                     }
-                } else if (currentType.GetPropertyInfo(member) is { } property && property.SetMethod != null) {
+                } else if (currentType.GetPropertyInfo(member, logFailure: false) is { } property && property.SetMethod != null) {
                     if (PreventCodeExecution) {
                         return false; // Cannot safely invoke methods during EnforceLegal
                     }
@@ -669,7 +669,7 @@ public static class TargetQuery {
             string member = memberArgs[i];
 
             try {
-                if (currentType.GetFieldInfo(member) is { } field) {
+                if (currentType.GetFieldInfo(member, logFailure: false) is { } field) {
                     currentType = field.FieldType;
                     if (field.IsStatic) {
                         currentObject = field.GetValue(null);
@@ -680,7 +680,7 @@ public static class TargetQuery {
                     continue;
                 }
 
-                if (currentType.GetPropertyInfo(member) is { } property && property.SetMethod != null) {
+                if (currentType.GetPropertyInfo(member, logFailure: false) is { } property && property.SetMethod != null) {
                     if (PreventCodeExecution) {
                         return false; // Cannot safely invoke methods during EnforceLegal
                     }
@@ -705,7 +705,7 @@ public static class TargetQuery {
 
         // Invoke the method
         try {
-            if (currentType.GetMethodInfo(memberArgs[^1]) is { } method) {
+            if (currentType.GetMethodInfo(memberArgs[^1], logFailure: false) is { } method) {
                 if (method.IsStatic) {
                     method.Invoke(null, parameters);
                 } else {

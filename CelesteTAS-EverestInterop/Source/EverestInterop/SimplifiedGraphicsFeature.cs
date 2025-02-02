@@ -192,7 +192,7 @@ public static class SimplifiedGraphicsFeature {
         HookHelper.OverrideReturns(SimplifiedWavedBlock, 0.0f,
             ModUtils.GetTypes()
                 .Where(type => type.FullName?.EndsWith("Renderer+Edge") == true)
-                .Select(type => type.GetMethodInfo("GetWaveAt"))
+                .Select(type => type.GetMethodInfo("GetWaveAt", logFailure: false))
                 .ToArray()
         );
 

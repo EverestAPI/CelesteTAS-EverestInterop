@@ -118,7 +118,7 @@ internal static class ReflectionExtensions {
     private static readonly ConcurrentDictionary<AllMemberKey, IEnumerable<MethodInfo>> CachedAllMethodInfos = new();
 
     /// Resolves the target member on the type, caching the result
-    public static MemberInfo? GetMemberInfo(this Type type, string name, BindingFlags bindingFlags = StaticInstanceAnyVisibility) {
+    public static MemberInfo? GetMemberInfo(this Type type, string name, BindingFlags bindingFlags = StaticInstanceAnyVisibility, bool logFailure = true) {
         var key = new MemberKey(type, name);
         if (CachedMemberInfos.TryGetValue(key, out var result)) {
             return result;
@@ -130,7 +130,7 @@ internal static class ReflectionExtensions {
             currentType = currentType.BaseType;
         } while (result == null && currentType != null);
 
-        if (result == null) {
+        if (result == null && logFailure) {
             $"Failed to find member '{name}' on type '{type}'".Log(LogLevel.Error);
         }
 
@@ -138,7 +138,7 @@ internal static class ReflectionExtensions {
     }
 
     /// Resolves the target field on the type, caching the result
-    public static FieldInfo? GetFieldInfo(this Type type, string name, BindingFlags bindingFlags = StaticInstanceAnyVisibility) {
+    public static FieldInfo? GetFieldInfo(this Type type, string name, BindingFlags bindingFlags = StaticInstanceAnyVisibility, bool logFailure = true) {
         var key = new MemberKey(type, name);
         if (CachedFieldInfos.TryGetValue(key, out var result)) {
             return result;
@@ -150,7 +150,7 @@ internal static class ReflectionExtensions {
             currentType = currentType.BaseType;
         } while (result == null && currentType != null);
 
-        if (result == null) {
+        if (result == null && logFailure) {
             $"Failed to find field '{name}' on type '{type}'".Log(LogLevel.Error);
         }
 
@@ -158,7 +158,7 @@ internal static class ReflectionExtensions {
     }
 
     /// Resolves the target property on the type, caching the result
-    public static PropertyInfo? GetPropertyInfo(this Type type, string name, BindingFlags bindingFlags = StaticInstanceAnyVisibility) {
+    public static PropertyInfo? GetPropertyInfo(this Type type, string name, BindingFlags bindingFlags = StaticInstanceAnyVisibility, bool logFailure = true) {
         var key = new MemberKey(type, name);
         if (CachedPropertyInfos.TryGetValue(key, out var result)) {
             return result;
@@ -170,7 +170,7 @@ internal static class ReflectionExtensions {
             currentType = currentType.BaseType;
         } while (result == null && currentType != null);
 
-        if (result == null) {
+        if (result == null && logFailure) {
             $"Failed to find property '{name}' on type '{type}'".Log(LogLevel.Error);
         }
 
@@ -178,7 +178,7 @@ internal static class ReflectionExtensions {
     }
 
     /// Resolves the target method on the type, with the specific parameter types, caching the result
-    public static MethodInfo? GetMethodInfo(this Type type, string name, Type?[]? parameterTypes = null, BindingFlags bindingFlags = StaticInstanceAnyVisibility) {
+    public static MethodInfo? GetMethodInfo(this Type type, string name, Type?[]? parameterTypes = null, BindingFlags bindingFlags = StaticInstanceAnyVisibility, bool logFailure = true) {
         var key = new MethodKey(type, name, parameterTypes.GetCustomHashCode());
         if (CachedMethodInfos.TryGetValue(key, out var result)) {
             return result;
@@ -205,11 +205,21 @@ internal static class ReflectionExtensions {
                     }
 
                     if (result != null) {
-                        $"Method '{name}' with parameters ({string.Join<Type?>(", ", parameterTypes)}) on type '{type}' is ambiguous".Log(LogLevel.Error);
-                        result = null;
-                        break;
+                        // "Amphibious" matches on different types indicate overrides. Choose the "latest" method
+                        if (result.DeclaringType != null && result.DeclaringType != method.DeclaringType) {
+                            if (method.DeclaringType!.IsSubclassOf(result.DeclaringType)) {
+                                result = method;
+                            }
+                        } else {
+                            if (logFailure) {
+                                $"Method '{name}' with parameters ({string.Join<Type?>(", ", parameterTypes)}) on type '{type}' is ambiguous between '{result}' and '{method}'".Log(LogLevel.Error);
+                            }
+                            result = null;
+                            break;
+                        }
+                    } else {
+                        result = method;
                     }
-                    result = method;
 
                     NextMethod:;
                 }
@@ -219,7 +229,7 @@ internal static class ReflectionExtensions {
             currentType = currentType.BaseType;
         } while (result == null && currentType != null);
 
-        if (result == null) {
+        if (result == null && logFailure) {
             if (parameterTypes == null) {
                 $"Failed to find method '{name}' on type '{type}'".Log(LogLevel.Error);
             } else {
