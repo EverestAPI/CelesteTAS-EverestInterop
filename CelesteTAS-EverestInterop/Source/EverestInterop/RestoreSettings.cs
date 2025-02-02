@@ -1,8 +1,7 @@
 using System.Collections.Generic;
 using Celeste;
 using Celeste.Mod;
-using StudioCommunication;
-using StudioCommunication.Util;
+using Monocle;
 using System;
 using TAS.Input.Commands;
 using TAS.ModInterop;
@@ -110,6 +109,12 @@ internal static class RestoreSettings {
             var variantsEnum = ExtendedVariantsInterop.GetVariantsEnum()!;
             foreach (object variant in Enum.GetValues(variantsEnum)) {
                 try {
+                    // Calling player.ResetSprite during StIntroWakeUp causes the player to be stuck in the state
+                    string? name = variant.ToString();
+                    if (name is "MadelineBackpackMode" or "PlayAsBadeline" && Engine.Scene.GetPlayer() is { } player && player.StateMachine.State == Player.StIntroWakeUp) {
+                        continue;
+                    }
+
                     if (origExtendedVariants.TryGetValue(variant, out var value)) {
                         ExtendedVariantsInterop.SetVariantValue(new Lazy<object?>(variant), value);
                     }
