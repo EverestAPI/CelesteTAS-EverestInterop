@@ -301,9 +301,10 @@ public static class StudioHelper {
         }
 
         // Install to another directory and only delete the old install once it was successful
-        if (!Directory.Exists(TempStudioInstallDirectory)) {
-            Directory.CreateDirectory(TempStudioInstallDirectory);
+        if (Directory.Exists(TempStudioInstallDirectory)) {
+            Directory.Delete(TempStudioInstallDirectory, recursive: true);
         }
+        Directory.CreateDirectory(TempStudioInstallDirectory);
 
         // Extract
         $"Extracting {DownloadPath} into {TempStudioInstallDirectory}".Log();
