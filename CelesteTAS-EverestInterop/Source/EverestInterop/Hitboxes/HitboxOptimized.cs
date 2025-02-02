@@ -42,10 +42,9 @@ public static class HitboxOptimized {
             }
         });
 
-        if (ModUtils.GetType("CrystallineHelper", "vitmod.CustomPuffer") is { } customPufferType &&
-            customPufferType.CreateGetDelegate<Entity, Circle>("pushRadius") is { } getPushRadius) {
-            customPufferType.GetMethodInfo("Explode")
-                .HookBefore<Entity>(self => pufferPushRadius.Add(new Circle(getPushRadius.Invoke(self).Radius, self.X, self.Y)));
+        if (ModUtils.GetType("CrystallineHelper", "vitmod.CustomPuffer") is { } customPufferType) {
+            customPufferType.GetMethodInfo("Explode")?
+                .HookBefore<Entity>(self => pufferPushRadius.Add(new Circle(self.GetFieldValue<Circle>("pushRadius")!.Radius, self.X, self.Y)));
             // its debug render also needs optimize
             // but i have no good idea, so i put it aside
         }
