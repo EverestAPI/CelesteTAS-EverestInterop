@@ -13,6 +13,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using MonoMod.Utils;
+using TAS.Gameplay;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
@@ -283,7 +284,7 @@ public static class SimplifiedGraphicsFeature {
     private static bool IsSimplifiedLightningStrike() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedLightningStrike;
     private static bool IsSimplifiedClutteredEntity() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedClutteredEntity;
     private static bool IsSimplifiedHud() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedHud ||
-                                             TasSettings.CenterCamera && Math.Abs(CenterCamera.LevelZoom - 1f) > 1e-3;
+                                             TasSettings.CenterCamera && Math.Abs(CenterCamera.ZoomLevel - 1f) > 1e-3;
 
     private static ScreenWipe SimplifiedScreenWipe(ScreenWipe wipe) => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedScreenWipe ? null : wipe;
 

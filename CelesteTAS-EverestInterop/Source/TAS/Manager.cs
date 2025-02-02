@@ -23,6 +23,10 @@ public class EnableRunAttribute : Attribute;
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
 public class DisableRunAttribute : Attribute;
 
+/// Causes the method to be called every real-time frame, even if a TAS is currently running / paused
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+public class UpdateMetaAttribute : Attribute;
+
 /// Main controller, which manages how the TAS is played back
 public static class Manager {
     public enum State {
@@ -42,6 +46,7 @@ public static class Manager {
     private static void Initialize() {
         AttributeUtils.CollectAllMethods<EnableRunAttribute>();
         AttributeUtils.CollectAllMethods<DisableRunAttribute>();
+        AttributeUtils.CollectAllMethods<UpdateMetaAttribute>();
     }
 
     public static bool Running => CurrState != State.Disabled;
@@ -184,6 +189,7 @@ public static class Manager {
         Hotkeys.UpdateMeta();
         Savestates.UpdateMeta();
         ConsoleEnhancements.UpdateMeta();
+        AttributeUtils.Invoke<UpdateMetaAttribute>();
 
         SendStudioState();
 

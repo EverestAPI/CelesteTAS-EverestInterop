@@ -65,11 +65,11 @@ public static class InfoWatchEntity {
     }
 
     internal static void CheckMouseButtons() {
-        if (MouseButtons.Right.Pressed) {
+        if (MouseInput.Right.Pressed) {
             ClearWatchEntities();
         }
 
-        if (MouseButtons.Left.Pressed && !MouseOverHud() && FindClickedEntity() is { } entity) {
+        if (MouseInput.Left.Pressed && !MouseOverHud() && FindClickedEntity() is { } entity) {
             AddOrRemoveWatching(entity);
             PrintAllSimpleValues(entity);
         }
@@ -80,12 +80,12 @@ public static class InfoWatchEntity {
             (int) TasSettings.InfoPosition.X, (int) TasSettings.InfoPosition.Y,
             (int) InfoHud.Size.X,             (int) InfoHud.Size.Y);
 
-        return hudRect.Contains((int) MouseButtons.Position.X, (int) MouseButtons.Position.Y);
+        return hudRect.Contains((int) MouseInput.Position.X, (int) MouseInput.Position.Y);
     }
 
     /// Resolves the entity, which the mouse is currently over
     internal static Entity? FindClickedEntity() {
-        var clickedEntities = FindEntitiesAt(MouseButtons.Position)
+        var clickedEntities = FindEntitiesAt(MouseInput.Position)
             // Sort triggers after entities
             .Sort((a, b) => (a is Trigger ? 1 : -1) - (b is Trigger ? 1 : -1))
             .ToArray();
