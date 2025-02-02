@@ -77,8 +77,8 @@ public static class SetCommand {
 
             if (targetArgs.Length == 0) {
                 // Vanilla settings. Manually selected to filter out useless entries
-                var vanillaSettings = ((string[])["DisableFlashes", "ScreenShake", "GrabMode", "CrouchDashMode", "SpeedrunClock", "Pico8OnMainMenu", "VariantsUnlocked"]).Select(e => typeof(Settings).GetField(e)!);
-                var vanillaSaveData = ((string[])["CheatMode", "AssistMode", "VariantMode", "UnlockedAreas", "RevealedChapter9", "DebugMode"]).Select(e => typeof(SaveData).GetField(e)!);
+                var vanillaSettings = ((string[])["DisableFlashes", "ScreenShake", "GrabMode", "CrouchDashMode", "SpeedrunClock", "Pico8OnMainMenu", "VariantsUnlocked"]).Select(e => typeof(Settings).GetFieldInfo(e)!);
+                var vanillaSaveData = ((string[])["CheatMode", "AssistMode", "VariantMode", "UnlockedAreas", "RevealedChapter9", "DebugMode"]).Select(e => typeof(SaveData).GetFieldInfo(e)!);
 
                 foreach (var f in vanillaSettings) {
                     yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Settings)", IsDone = true };
@@ -392,11 +392,11 @@ public static class SetCommand {
         object? settings = null;
 
         FieldInfo? field;
-        if ((field = typeof(Settings).GetField(settingName)) != null) {
+        if ((field = typeof(Settings).GetFieldInfo(settingName)) != null) {
             settings = Settings.Instance;
-        } else if ((field = typeof(SaveData).GetField(settingName)) != null) {
+        } else if ((field = typeof(SaveData).GetFieldInfo(settingName)) != null) {
             settings = SaveData.Instance;
-        } else if ((field = typeof(Assists).GetField(settingName)) != null) {
+        } else if ((field = typeof(Assists).GetFieldInfo(settingName)) != null) {
             settings = SaveData.Instance.Assists;
         }
 

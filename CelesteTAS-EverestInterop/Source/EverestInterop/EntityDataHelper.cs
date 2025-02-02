@@ -31,7 +31,7 @@ public static class EntityDataHelper {
         On.Celeste.Level.End += LevelOnEnd;
         On.Monocle.Entity.Removed += EntityOnRemoved;
         On.Celeste.FlyFeather.ctor_Vector2_bool_bool += FlyFeatherOnCtor_Vector2_bool_bool;
-        typeof(Level).GetMethod("orig_LoadLevel").IlHook(ModOrigLoadLevel);
+        typeof(Level).GetMethodInfo("orig_LoadLevel").IlHook(ModOrigLoadLevel);
     }
 
     [Initialize]

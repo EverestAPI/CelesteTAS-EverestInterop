@@ -835,7 +835,7 @@ internal static class CloneUtil<T> {
     private static readonly Func<T, object> Clone;
 
     static CloneUtil() {
-        MethodInfo cloneMethod = typeof(T).GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic);
+        MethodInfo cloneMethod = typeof(T).GetMethodInfo("MemberwiseClone", parameterTypes: null, BindingFlags.Instance | BindingFlags.NonPublic);
         Clone = (Func<T, object>) cloneMethod.CreateDelegate(typeof(Func<T, object>));
     }
 

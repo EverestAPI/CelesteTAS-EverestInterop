@@ -25,7 +25,7 @@ public static class GameData {
 
     [Load]
     private static void Load() {
-        typeof(ModUpdaterHelper).GetMethod("DownloadModUpdateList")?.OnHook(ModUpdaterHelperOnDownloadModUpdateList);
+        typeof(ModUpdaterHelper).GetMethodInfo("DownloadModUpdateList")?.OnHook(ModUpdaterHelperOnDownloadModUpdateList);
         modUpdateInfos = Engine.Instance.GetDynamicDataInstance().Get<Dictionary<string, ModUpdateInfo>>(nameof(modUpdateInfos));
     }
 
@@ -133,7 +133,7 @@ public static class GameData {
     }
 
     public static string GetSettingValue(string settingName) {
-        if (typeof(CelesteTasSettings).GetProperty(settingName) is { } property) {
+        if (typeof(CelesteTasSettings).GetPropertyInfo(settingName) is { } property) {
             return property.GetValue(TasSettings).ToString();
         } else {
             return string.Empty;

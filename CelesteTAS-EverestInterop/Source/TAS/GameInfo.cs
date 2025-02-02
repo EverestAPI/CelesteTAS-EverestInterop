@@ -622,7 +622,7 @@ public static class GameInfo {
 }
 
 public static class PlayerStates {
-    private static readonly Func<StateMachine, string> GetCurrentStateNameFunc = typeof(StateMachine).GetMethod("GetCurrentStateName")?.CreateDelegate<Func<StateMachine, string>>();
+    private static readonly Func<StateMachine, string> GetCurrentStateNameFunc = typeof(StateMachine).GetMethodInfo("GetCurrentStateName")?.CreateDelegate<Func<StateMachine, string>>();
 
     private static readonly IDictionary<int, string> States = new Dictionary<int, string> {
         {Player.StNormal, nameof(Player.StNormal)},

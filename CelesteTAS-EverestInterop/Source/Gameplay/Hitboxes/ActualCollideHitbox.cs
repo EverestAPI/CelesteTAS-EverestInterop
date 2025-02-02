@@ -116,7 +116,7 @@ public static class ActualCollideHitbox {
 
     [Load]
     private static void Load() {
-        typeof(Player).GetMethod("orig_Update")!.IlHook(IL_Player_origUpdate);
+        typeof(Player).GetMethodInfo("orig_Update")!.IlHook(IL_Player_origUpdate);
 
         On.Celeste.Player.Update += On_Player_Update;
         On.Monocle.EntityList.Update += On_EntityList_Update;
