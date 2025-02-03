@@ -16,7 +16,7 @@ internal static class CameraHitbox {
     [Load]
     private static void Load() {
         // Store values from update, since they are overwritten during Render
-        Events.PostUpdate += scene => {
+        Events.PostEntityUpdate += scene => {
             if (scene is not Level level) {
                 return;
             }
@@ -24,7 +24,7 @@ internal static class CameraHitbox {
             cameraTopLeft = level.MouseToWorld(Vector2.Zero);
             cameraBottomRight = level.MouseToWorld(new Vector2(Engine.ViewWidth, Engine.ViewHeight));
         };
-        Events.PostDebugRender += scene => {
+        Events.PostEntityDebugRender += scene => {
             if (!TasSettings.CenterCamera || !TasSettings.ShowCameraHitboxes || scene is not Level) {
                 return;
             }

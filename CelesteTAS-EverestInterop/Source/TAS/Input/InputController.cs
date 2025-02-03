@@ -5,6 +5,7 @@ using System.Linq;
 using Celeste.Mod;
 using JetBrains.Annotations;
 using StudioCommunication;
+using TAS.Communication;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
@@ -283,6 +284,26 @@ public class InputController {
         }
 
         LibTasHelper.WriteLibTasFrame(inputFrame);
+    }
+
+    /// Overwrites a line and sends the update to Studio
+    public void UpdateLine(int studioLine, string newLine) {
+        UpdateLines(new() { { studioLine, newLine } });
+    }
+    /// Overwrites multiple lines and sends the update to Studio
+    public void UpdateLines(Dictionary<int, string> newLines) {
+        string[] lines = File.ReadAllLines(FilePath);
+
+        foreach ((int studioLine, string newLine) in newLines) {
+            lines[studioLine] = newLine;
+        }
+
+        // Prevent a reload from being triggered by the file-system change
+        bool needsReload = NeedsReload;
+        File.WriteAllLines(FilePath, lines);
+        NeedsReload = needsReload;
+
+        CommunicationWrapper.SendUpdateLines(newLines);
     }
 
     /// Fast-forwards to the next label / breakpoint
