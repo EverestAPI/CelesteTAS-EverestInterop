@@ -162,12 +162,18 @@ internal static class CycleCommands {
                     AbortTas($"Cycle mode '{nameof(CycleType.TimeActiveInterval)}' needs to be inside a level");
                     return;
                 }
+                if (EnforceLegalCommand.EnabledWhenRunning) {
+                    if (!level.OnInterval(interval, offset)) {
+                        AbortTas("Cycle condition did was not met");
+                    }
+                    return;
+                }
 
                 var data = cycleData[name];
 
                 // First guess the amount of frames we need to wait for the desired interval
                 // Then validate and adjust to the correct value by applying the entire delta-time chain since the WaitCycle
-                // This is required because of floating point precision inaccuracies potentially causing issues
+                // This is required because doing "+= DeltaTime * wait" could lead to floating point precision inaccuracies potentially causing issues
 
                 // Exact copy from Scene.OnInterval
                 static bool OnInterval(float timeActive, float interval, float offset) {
