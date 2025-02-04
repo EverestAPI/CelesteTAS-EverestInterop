@@ -20,6 +20,10 @@ internal static class CycleCommands {
         public string Insert => $"WaitCycle{CommandInfo.Separator}[0;Name]{CommandInfo.Separator}";
         public bool HasArguments => true;
     }
+    private class OverrideWaitMeta : ITasCommandMeta {
+        public string Insert => $"OverrideWaitCycle{CommandInfo.Separator}[0;Name]{CommandInfo.Separator}";
+        public bool HasArguments => true;
+    }
     private class RequireMeta : ITasCommandMeta {
         public string Insert => $"RequireCycle{CommandInfo.Separator}[0;Name]{CommandInfo.Separator}[1;Type]{CommandInfo.Separator}[2;Options]";
         public bool HasArguments => true;
@@ -27,8 +31,10 @@ internal static class CycleCommands {
 
     private enum CycleType { TimeActiveInterval }
 
-    // Track starting frame of all WaitCycle commands
-    private static readonly Dictionary<string, int> waitCycles = new();
+    // Track frame of all WaitCycle commands
+    private static readonly Dictionary<string, int> waitCycleFrames = new();
+    // Track frame of all OverrideWaitCycle commands
+    private static readonly Dictionary<string, int> overrideCycleFrames = new();
 
     // The delta time of every frame between a WaitCycle and RequireCycle needs to be tracked,
     // to accurately calculate the required wait frames for conditions using TimeActive
@@ -36,13 +42,14 @@ internal static class CycleCommands {
 
     [ClearInputs]
     private static void ClearInputs() {
-        waitCycles.Clear();
+        waitCycleFrames.Clear();
+        overrideCycleFrames.Clear();
         CycleData.Clear();
     }
 
     [ParseFileEnd]
     private static void ParseFileEnd() {
-        foreach (string cycle in waitCycles.Keys) {
+        foreach (string cycle in waitCycleFrames.Keys) {
             if (!CycleData.ContainsKey(cycle)) {
                 // TODO: Display path / line of mismatching WaitCycle command
                 AbortTas("No matching RequireCycle for WaitCycle");
@@ -57,7 +64,7 @@ internal static class CycleCommands {
         foreach (string cycle in CycleData.Keys) {
             var data = CycleData[cycle];
 
-            int startFrame = waitCycles[cycle];
+            int startFrame = waitCycleFrames[cycle];
             int duration = data.DeltaTimes.Length;
             if (controller.CurrentFrameInTas < startFrame || controller.CurrentFrameInTas >= startFrame + duration || data.CurrentIndex >= duration) {
                 continue;
@@ -74,7 +81,7 @@ internal static class CycleCommands {
         }
     }
 
-    /// WaitCycle, Name, Input
+    /// WaitCycle, Name, WaitInput
     ///
     /// Exclude from checksum, to avoid a cycle change causing a save-state clear
     [TasCommand("WaitCycle", ExecuteTiming = ExecuteTiming.Parse, CalcChecksum = false, MetaDataProvider = typeof(WaitMeta))]
@@ -89,18 +96,72 @@ internal static class CycleCommands {
         string name = commandLine.Arguments[0];
         string waitInputs = commandLine.Arguments.GetValueOrDefault(1, defaultValue: string.Empty);
 
-        // TODO: Support overriding WaitCycle if this is in a Read command
-        if (waitCycles.ContainsKey(name)) {
-            AbortTas($"Cycle '{name}' already has a WaitCycle in the same file");
+        if (waitCycleFrames.TryGetValue(name, out int waitFrame)) {
+            var commands = controller.Commands[waitFrame];
+            var waitCommand = commands.First(cmd => cmd.Is("WaitCycle") && cmd.CommandLine.Arguments[0] == name);
+
+            if (waitCommand.FilePath == filePath) {
+                AbortTas($"Cycle '{name}' already has a WaitCycle in the same file");
+                return;
+            }
+            if (waitCommand.FilePath != controller.FilePath) {
+                AbortTas($"Cycle '{name}' already has a WaitCycle in a previously read file");
+                return;
+            }
+
+            return; // This WaitCycle was previously overwritten
+        }
+
+        waitCycleFrames[name] = controller.CurrentParsingFrame;
+
+        // Only actually perform the inputs now in EnforceLegal
+        if (EnforceLegalCommand.EnabledWhenParsing && ActionLine.TryParse(waitInputs, out var actionLine)) {
+            if (overrideCycleFrames.TryGetValue(name, out int overrideFrame)) {
+                var commands = controller.Commands[overrideFrame];
+                var overrideCommand = commands.First(cmd => cmd.Is("OverrideWaitCycle") && cmd.CommandLine.Arguments[0] == name);
+
+                actionLine.FrameCount = int.TryParse(overrideCommand.CommandLine.Arguments.GetValueOrDefault(1, defaultValue: string.Empty), out int x) ? x: 0;
+            }
+            if (actionLine.FrameCount < 0) {
+                AbortTas("Cannot wait less than zero frames");
+                return;
+            }
+
+            controller.AddFrames(InputFrame.Create(actionLine, studioLine, controller.Inputs.LastOrDefault(), repeatIndex: 0, repeatCount: 0, frameOffset: 0));
+        }
+    }
+
+    /// OverrideWaitCycle, Name, WaitOffset
+    ///
+    /// Exclude from checksum, to avoid a cycle change causing a save-state clear
+    [TasCommand("OverrideWaitCycle", ExecuteTiming = ExecuteTiming.Parse, CalcChecksum = false, MetaDataProvider = typeof(OverrideWaitMeta))]
+    private static void OverrideWaitCycle(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        if (commandLine.Arguments.Length < 1) {
+            AbortTas("Expected cycle name");
             return;
         }
 
-        waitCycles[name] = controller.CurrentParsingFrame;
+        var controller = Manager.Controller;
 
-        // Only actually perform the inputs now in EnforceLegal
-        if (EnforceLegalCommand.EnabledWhenParsing) {
-            controller.AddFrames(waitInputs, studioLine, repeatIndex: 0, repeatCount: 0, frameOffset: 0);
+        string name = commandLine.Arguments[0];
+
+        if (overrideCycleFrames.TryGetValue(name, out int frame)) {
+            var commands = controller.Commands[frame];
+            var overrideCommand = commands.First(cmd => cmd.Is("OverrideWaitCycle") && cmd.CommandLine.Arguments[0] == name);
+
+            if (overrideCommand.FilePath == filePath) {
+                AbortTas($"Cycle '{name}' already has a OverrideWaitCycle in the same file");
+                return;
+            }
+            if (overrideCommand.FilePath != controller.FilePath) {
+                AbortTas($"Cycle '{name}' already has a OverrideWaitCycle in a previously read file");
+                return;
+            }
+
+            return; // This OverrideWaitCycle was previously overwritten
         }
+
+        overrideCycleFrames[name] = controller.CurrentParsingFrame;
     }
 
     /// RequireCycle, Name, TimeActiveInterval, Interval, Offset
@@ -120,7 +181,7 @@ internal static class CycleCommands {
         string name = commandLine.Arguments[0];
 
         if (Command.Parsing) {
-            if (!waitCycles.ContainsKey(name)) {
+            if (!waitCycleFrames.ContainsKey(name)) {
                 AbortTas($"Cycle '{name}' has no corresponding WaitCycle");
                 return;
             }
@@ -129,7 +190,7 @@ internal static class CycleCommands {
                 return;
             }
 
-            CycleData[name] = (0.0f, 0.0f, 0, new float[controller.CurrentParsingFrame - waitCycles[name]]);
+            CycleData[name] = (0.0f, 0.0f, 0, new float[controller.CurrentParsingFrame - waitCycleFrames[name]]);
         }
 
         if (!Enum.TryParse<CycleType>(commandLine.Arguments[1], out var type)) {
@@ -165,8 +226,8 @@ internal static class CycleCommands {
                     return;
                 }
                 if (EnforceLegalCommand.EnabledWhenRunning) {
-                    if (!level.OnInterval(interval, offset)) {
-                        AbortTas("Cycle condition did was not met");
+                    if (!OnInterval(level.TimeActive + Engine.DeltaTime, interval, offset)) {
+                        AbortTas($"Cycle '{name}' condition was not met");
                     }
                     return;
                 }
@@ -223,22 +284,37 @@ internal static class CycleCommands {
                     return;
                 }
 
-                // Update WaitCycle command
-                // TODO: Account for Read files
-                var commands = controller.Commands[waitCycles[name]];
+                // Update (Override)WaitCycle command
+                if (overrideCycleFrames.TryGetValue(name, out int overrideFrame)) {
+                    var commands = controller.Commands[overrideFrame];
 
-                var waitCommand = commands.First(cmd => cmd.Is("WaitCycle") && cmd.CommandLine.Arguments[0] == name);
-                var waitInputs = ActionLine.Parse(waitCommand.CommandLine.Arguments.GetValueOrDefault(1, defaultValue: string.Empty));
+                    var overrideCommand = commands.First(cmd => cmd.Is("OverrideWaitCycle") && cmd.CommandLine.Arguments[0] == name);
+                    if (overrideCommand.FilePath == controller.FilePath) {
+                        string newLine = (overrideCommand.CommandLine with {
+                            Arguments = [name, currWait.ToString()]
+                        }).Format(Command.GetCommandList(), forceCasing: false, overrideSeparator: null);
+                        controller.UpdateLine(overrideCommand.FileLine - 1, newLine);
+                    }
+                } else if (waitCycleFrames.TryGetValue(name, out int waitFrame)) {
+                    var commands = controller.Commands[waitFrame];
 
-                string newLine = (waitCommand.CommandLine with {
-                    Arguments = [
-                        name,
-                        // Keep existing inputs on the wait if they exist
-                        (waitInputs.HasValue ? (waitInputs.Value with { FrameCount = currWait }).ToString() : currWait.ToString()).Trim()
-                    ]
-                }).Format(Command.GetCommandList(), forceCasing: false, overrideSeparator: null);
+                    var waitCommand = commands.First(cmd => cmd.Is("WaitCycle") && cmd.CommandLine.Arguments[0] == name);
+                    if (waitCommand.FilePath == controller.FilePath) {
+                        var waitInputs = ActionLine.Parse(waitCommand.CommandLine.Arguments.GetValueOrDefault(1, defaultValue: string.Empty));
 
-                controller.UpdateLine(waitCommand.StudioLine, newLine);
+                        string newLine = (waitCommand.CommandLine with {
+                            Arguments = [
+                                name,
+                                // Keep existing inputs on the wait if they exist
+                                (waitInputs.HasValue ? (waitInputs.Value with { FrameCount = currWait }).ToString() : currWait.ToString()).Trim()
+                            ]
+                        }).Format(Command.GetCommandList(), forceCasing: false, overrideSeparator: null);
+
+                        controller.UpdateLine(waitCommand.FileLine - 1, newLine);
+                    }
+                } else {
+                    AbortTas("Failed to find matching (Override)WaitCycle command to update");
+                }
 
                 // Adjust game state to match theoretical wait
                 level.Session.Time += data.StartRawDeltaTime.SecondsToTicks() * currWait;

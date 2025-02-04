@@ -86,18 +86,23 @@ public record InputFrame {
         MoveOnlyStickPositionShort = new Vector2Short((short) (MoveOnlyStickPosition.X * 32767), (short) (MoveOnlyStickPosition.Y * 32767));
     }
 
+    public static InputFrame Create(ActionLine actionLine, int studioLine, InputFrame? prevInputFrame, int repeatIndex = 0, int repeatCount = 0, int frameOffset = 0) {
+        var inputFrame = new InputFrame(actionLine, studioLine, repeatIndex, repeatCount, frameOffset) {
+            Previous = prevInputFrame
+        };
+        if (prevInputFrame != null) {
+            prevInputFrame.Next = inputFrame;
+        }
+        
+        return inputFrame;
+    }
     public static bool TryParse(string line, int studioLine, InputFrame? prevInputFrame, [NotNullWhen(true)] out InputFrame? inputFrame, int repeatIndex = 0, int repeatCount = 0, int frameOffset = 0) {
         inputFrame = null;
         if (!ActionLine.TryParse(line, out var actionLine)) {
             return false;
         }
 
-        inputFrame = new InputFrame(actionLine, studioLine, repeatIndex, repeatCount, frameOffset);
-
-        inputFrame.Previous = prevInputFrame;
-        if (prevInputFrame != null)
-            prevInputFrame.Next = inputFrame;
-
+        inputFrame = Create(actionLine, studioLine, prevInputFrame, repeatIndex, repeatCount, frameOffset);
         return true;
     }
 
