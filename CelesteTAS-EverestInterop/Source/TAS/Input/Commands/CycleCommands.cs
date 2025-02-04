@@ -32,18 +32,18 @@ internal static class CycleCommands {
 
     // The delta time of every frame between a WaitCycle and RequireCycle needs to be tracked,
     // to accurately calculate the required wait frames for conditions using TimeActive
-    private static readonly Dictionary<string, (float StartTimeActive, float StartRawDeltaTime, int CurrentIndex, float[] DeltaTimes)> cycleData = new();
+    internal static readonly Dictionary<string, (float StartTimeActive, float StartRawDeltaTime, int CurrentIndex, float[] DeltaTimes)> CycleData = new();
 
     [ClearInputs]
     private static void ClearInputs() {
         waitCycles.Clear();
-        cycleData.Clear();
+        CycleData.Clear();
     }
 
     [ParseFileEnd]
     private static void ParseFileEnd() {
         foreach (string cycle in waitCycles.Keys) {
-            if (!cycleData.ContainsKey(cycle)) {
+            if (!CycleData.ContainsKey(cycle)) {
                 // TODO: Display path / line of mismatching WaitCycle command
                 AbortTas("No matching RequireCycle for WaitCycle");
             }
@@ -54,12 +54,12 @@ internal static class CycleCommands {
     private static void PostSceneUpdate(Scene scene) {
         var controller = Manager.Controller;
 
-        foreach (string cycle in cycleData.Keys) {
-            var data = cycleData[cycle];
+        foreach (string cycle in CycleData.Keys) {
+            var data = CycleData[cycle];
 
             int startFrame = waitCycles[cycle];
             int duration = data.DeltaTimes.Length;
-            if (controller.CurrentFrameInTas < startFrame || controller.CurrentFrameInTas >= startFrame + duration) {
+            if (controller.CurrentFrameInTas < startFrame || controller.CurrentFrameInTas >= startFrame + duration || data.CurrentIndex >= duration) {
                 continue;
             }
 
@@ -70,12 +70,14 @@ internal static class CycleCommands {
 
             data.DeltaTimes[data.CurrentIndex++] = Engine.DeltaTime;
 
-            cycleData[cycle] = data;
+            CycleData[cycle] = data;
         }
     }
 
-    // WaitCycle, Name, Input
-    [TasCommand("WaitCycle", ExecuteTiming = ExecuteTiming.Parse, MetaDataProvider = typeof(WaitMeta))]
+    /// WaitCycle, Name, Input
+    ///
+    /// Exclude from checksum, to avoid a cycle change causing a save-state clear
+    [TasCommand("WaitCycle", ExecuteTiming = ExecuteTiming.Parse, CalcChecksum = false, MetaDataProvider = typeof(WaitMeta))]
     private static void WaitCycle(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         if (commandLine.Arguments.Length < 1) {
             AbortTas("Expected cycle name");
@@ -101,7 +103,7 @@ internal static class CycleCommands {
         }
     }
 
-    // RequireCycle, Name, TimeActiveInterval, Interval, Offset
+    /// RequireCycle, Name, TimeActiveInterval, Interval, Offset
     [TasCommand("RequireCycle", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime, MetaDataProvider = typeof(RequireMeta))]
     private static void RequireCycle(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         switch (commandLine.Arguments.Length) {
@@ -122,12 +124,12 @@ internal static class CycleCommands {
                 AbortTas($"Cycle '{name}' has no corresponding WaitCycle");
                 return;
             }
-            if (cycleData.ContainsKey(name)) {
+            if (CycleData.ContainsKey(name)) {
                 AbortTas($"Cycle '{name}' has already used with a RequireCycle");
                 return;
             }
 
-            cycleData[name] = (0.0f, 0.0f, 0, new float[controller.CurrentParsingFrame - waitCycles[name]]);
+            CycleData[name] = (0.0f, 0.0f, 0, new float[controller.CurrentParsingFrame - waitCycles[name]]);
         }
 
         if (!Enum.TryParse<CycleType>(commandLine.Arguments[1], out var type)) {
@@ -169,7 +171,7 @@ internal static class CycleCommands {
                     return;
                 }
 
-                var data = cycleData[name];
+                var data = CycleData[name];
 
                 // First guess the amount of frames we need to wait for the desired interval
                 // Then validate and adjust to the correct value by applying the entire delta-time chain since the WaitCycle

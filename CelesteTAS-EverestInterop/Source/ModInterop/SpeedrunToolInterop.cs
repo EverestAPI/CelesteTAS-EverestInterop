@@ -38,6 +38,7 @@ public static class SpeedrunToolInterop {
     private static bool disallowUnsafeInput;
     private static Random auraRandom;
     private static bool betterInvincible = false;
+    private static Dictionary<string, (float StartTimeActive, float StartRawDeltaTime, int CurrentIndex, float[] DeltaTimes)>? cycleData;
 
     [Load]
     private static void Load() {
@@ -64,6 +65,7 @@ public static class SpeedrunToolInterop {
             disallowUnsafeInput = SafeCommand.DisallowUnsafeInput;
             auraRandom = DesyncFixer.AuraHelperSharedRandom.DeepCloneShared();
             betterInvincible = Manager.Running && BetterInvincible.Invincible;
+            cycleData = CycleCommands.CycleData.DeepCloneShared();
         };
         Action<Dictionary<Type, Dictionary<string, object>>, Level> load = (_, _) => {
             EntityDataHelper.CachedEntityData = savedEntityData.DeepCloneShared();
@@ -86,6 +88,10 @@ public static class SpeedrunToolInterop {
             SafeCommand.DisallowUnsafeInput = disallowUnsafeInput;
             DesyncFixer.AuraHelperSharedRandom = auraRandom.DeepCloneShared();
             BetterInvincible.Invincible = Manager.Running && betterInvincible;
+            CycleCommands.CycleData.Clear();
+            foreach ((string key, var value) in cycleData) {
+                CycleCommands.CycleData[key] = value.DeepCloneShared();
+            }
         };
         Action clear = () => {
             savedEntityData = null;
