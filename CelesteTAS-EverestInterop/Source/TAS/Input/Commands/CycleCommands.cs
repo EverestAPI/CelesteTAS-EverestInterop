@@ -1,9 +1,11 @@
 using Celeste;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using Monocle;
 using StudioCommunication;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using TAS.Gameplay;
 using TAS.Module;
@@ -30,7 +32,7 @@ internal static class CycleCommands {
 
     // The delta time of every frame between a WaitCycle and RequireCycle needs to be tracked,
     // to accurately calculate the required wait frames for conditions using TimeActive
-    private static readonly Dictionary<string, (float StartTimeActive, float StartRawDeltaTime, float[] DeltaTimes)> cycleData = new();
+    private static readonly Dictionary<string, (float StartTimeActive, float StartRawDeltaTime, int CurrentIndex, float[] DeltaTimes)> cycleData = new();
 
     [ClearInputs]
     private static void ClearInputs() {
@@ -38,25 +40,37 @@ internal static class CycleCommands {
         cycleData.Clear();
     }
 
-    [Events.PostUpdate]
-    private static void PostUpdate() {
+    [ParseFileEnd]
+    private static void ParseFileEnd() {
+        foreach (string cycle in waitCycles.Keys) {
+            if (!cycleData.ContainsKey(cycle)) {
+                // TODO: Display path / line of mismatching WaitCycle command
+                AbortTas("No matching RequireCycle for WaitCycle");
+            }
+        }
+    }
+
+    [Events.PostSceneUpdate]
+    private static void PostSceneUpdate(Scene scene) {
         var controller = Manager.Controller;
 
-        foreach (string cycle in waitCycles.Keys) {
-            var currCycleData = cycleData[cycle];
+        foreach (string cycle in cycleData.Keys) {
+            var data = cycleData[cycle];
 
             int startFrame = waitCycles[cycle];
-            int duration = currCycleData.DeltaTimes.Length;
+            int duration = data.DeltaTimes.Length;
+            if (controller.CurrentFrameInTas < startFrame || controller.CurrentFrameInTas >= startFrame + duration) {
+                continue;
+            }
 
-            if (controller.CurrentFrameInTas == startFrame && Engine.Scene is Level level) {
-                currCycleData.StartTimeActive = level.TimeActive;
-                currCycleData.StartRawDeltaTime = Engine.RawDeltaTime;
-                cycleData[cycle] = currCycleData;
-                currCycleData.Log();
+            if (data.CurrentIndex == 0 && scene is Level level) {
+                data.StartTimeActive = level.TimeActive;
+                data.StartRawDeltaTime = Engine.RawDeltaTime;
             }
-            if (controller.CurrentFrameInTas >= startFrame && controller.CurrentFrameInTas <= startFrame + duration) {
-                $"POST UPDATE '{cycle}': {Engine.DeltaTime} {TimeSpan.FromTicks((Engine.Scene as Level)?.Session.Time ?? 0)}".Log();
-            }
+
+            data.DeltaTimes[data.CurrentIndex++] = Engine.DeltaTime;
+
+            cycleData[cycle] = data;
         }
     }
 
@@ -113,7 +127,7 @@ internal static class CycleCommands {
                 return;
             }
 
-            cycleData[name] = (0.0f, 0.0f, new float[controller.CurrentParsingFrame - waitCycles[name]]);
+            cycleData[name] = (0.0f, 0.0f, 0, new float[controller.CurrentParsingFrame - waitCycles[name]]);
         }
 
         if (!Enum.TryParse<CycleType>(commandLine.Arguments[1], out var type)) {
@@ -141,29 +155,90 @@ internal static class CycleCommands {
                     return;
                 }
 
-                if (!Command.Parsing) {
-                    var currCycleData = cycleData[name];
+                if (Command.Parsing) {
+                    return;
+                }
+                if (Engine.Scene is not Level level) {
+                    AbortTas($"Cycle mode '{nameof(CycleType.TimeActiveInterval)}' needs to be inside a level");
+                    return;
+                }
 
-                    // TODO: Actually OnInterval  logic
-                    int waitFrames = 2 - controller.CurrentFrameInTas % 3;
+                var data = cycleData[name];
 
-                    var commands = controller.Commands[waitCycles[name]];
+                // First guess the amount of frames we need to wait for the desired interval
+                // Then validate and adjust to the correct value by applying the entire delta-time chain since the WaitCycle
+                // This is required because of floating point precision inaccuracies potentially causing issues
 
-                    var waitCommand = commands.First(cmd => cmd.Is("WaitCycle") && cmd.CommandLine.Arguments[0] == name);
-                    var waitInputs = ActionLine.Parse(commandLine.Arguments.GetValueOrDefault(1, defaultValue: string.Empty));
+                // Exact copy from Scene.OnInterval
+                static bool OnInterval(float timeActive, float interval, float offset) {
+                    return Math.Floor((timeActive - offset - Engine.DeltaTime) / interval) < Math.Floor((timeActive - offset) / interval);
+                }
+                float GetRealTimeActive(int wait, bool includeCurrent = true) {
+                    float realTimeActive = data.StartTimeActive;
 
-                    string newLine = (waitCommand.CommandLine with {
-                        Arguments = [
-                            name,
-                            waitInputs.HasValue ? (waitInputs.Value with { FrameCount = waitFrames }).ToString() : waitFrames.ToString()
-                        ]
-                    }).ToString();
-
-                    controller.UpdateLine(waitCommand.StudioLine, newLine);
-
-                    if (Engine.Scene is Level level) {
-                        level.Session.Time += currCycleData.StartRawDeltaTime.SecondsToTicks() * waitFrames;
+                    for (int i = 0; i < wait; i++) {
+                        realTimeActive += data.DeltaTimes[0];
                     }
+                    foreach (float deltaTime in data.DeltaTimes[..data.CurrentIndex]) {
+                        realTimeActive += deltaTime;
+                    }
+                    if (includeCurrent) {
+                        realTimeActive += Engine.DeltaTime;
+                    }
+
+                    return realTimeActive;
+                }
+
+                // Based on the logic of Scene.OnInterval
+                float waitDeltaTime = data.DeltaTimes[0];
+                float nextTimeActive = level.TimeActive + Engine.DeltaTime;
+
+                int waitGuess = (int) ((MathF.Ceiling(nextTimeActive / interval) - nextTimeActive / interval) * waitDeltaTime / interval);
+
+                int currWait = waitGuess;
+                // Check for overshoot
+                while (currWait >= 0 && !OnInterval(GetRealTimeActive(currWait), interval, offset)) {
+                    currWait--;
+                }
+
+                if (currWait < 0) {
+                    // Check for undershoot
+                    int maxWait = (int) (5.0f / interval / waitDeltaTime); // Set safety limit of 5x theoretically possible cycle length
+                    currWait = waitGuess + 1;
+                    while (currWait <= maxWait && !OnInterval(GetRealTimeActive(currWait), interval, offset)) {
+                        currWait++;
+                    }
+                }
+
+                if (!OnInterval(GetRealTimeActive(currWait), interval, offset)) {
+                    AbortTas($"Failed to determine wait duration for cycle '{name}'");
+                    return;
+                }
+
+                // Update WaitCycle command
+                // TODO: Account for Read files
+                var commands = controller.Commands[waitCycles[name]];
+
+                var waitCommand = commands.First(cmd => cmd.Is("WaitCycle") && cmd.CommandLine.Arguments[0] == name);
+                var waitInputs = ActionLine.Parse(waitCommand.CommandLine.Arguments.GetValueOrDefault(1, defaultValue: string.Empty));
+
+                string newLine = (waitCommand.CommandLine with {
+                    Arguments = [
+                        name,
+                        // Keep existing inputs on the wait if they exist
+                        (waitInputs.HasValue ? (waitInputs.Value with { FrameCount = currWait }).ToString() : currWait.ToString()).Trim()
+                    ]
+                }).Format(Command.GetCommandList(), forceCasing: false, overrideSeparator: null);
+
+                controller.UpdateLine(waitCommand.StudioLine, newLine);
+
+                // Adjust game state to match theoretical wait
+                level.Session.Time += data.StartRawDeltaTime.SecondsToTicks() * currWait;
+                level.TimeActive = GetRealTimeActive(currWait, includeCurrent: false); // TimeActive will already get incremented this frame
+
+                // level.RawTimeActive is less important, so inaccuracies are fine
+                for (int i = 0; i < currWait; i++) {
+                    level.RawTimeActive += data.StartRawDeltaTime;
                 }
 
                 break;
