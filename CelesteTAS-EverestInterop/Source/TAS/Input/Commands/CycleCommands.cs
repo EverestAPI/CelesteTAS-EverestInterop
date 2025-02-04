@@ -191,7 +191,7 @@ internal static class CycleCommands {
 
                 // Based on the logic of Scene.OnInterval
                 float waitDeltaTime = data.DeltaTimes[0];
-                float nextTimeActive = level.TimeActive + Engine.DeltaTime;
+                float nextTimeActive = level.TimeActive - offset + Engine.DeltaTime;
 
                 int waitGuess = (int) ((MathF.Ceiling(nextTimeActive / interval) - nextTimeActive / interval) * waitDeltaTime / interval);
 
