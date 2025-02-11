@@ -32,7 +32,7 @@ public static class SpeedrunToolInterop {
     private static StunPauseCommand.StunPauseMode? localMode;
     private static StunPauseCommand.StunPauseMode? globalModeRuntime;
     private static HashSet<Keys> pressKeys;
-    private static long? tasStartFileTime;
+    private static (long, int)? tasStartInfo;
     private static MouseState mouseState;
     private static Dictionary<Follower, bool> followers;
     private static bool disallowUnsafeInput;
@@ -58,7 +58,7 @@ public static class SpeedrunToolInterop {
             localMode = StunPauseCommand.LocalMode;
             globalModeRuntime = StunPauseCommand.GlobalModeRuntime;
             pressKeys = PressCommand.PressKeys.DeepCloneShared();
-            tasStartFileTime = MetadataCommands.TasStartFileTime;
+            tasStartInfo = MetadataCommands.TasStartInfo.DeepCloneShared();
             mouseState = MouseCommand.CurrentState;
             followers = HitboxSimplified.Followers.DeepCloneShared();
             disallowUnsafeInput = SafeCommand.DisallowUnsafeInput;
@@ -80,7 +80,7 @@ public static class SpeedrunToolInterop {
                 PressCommand.PressKeys.Add(keys);
             }
 
-            MetadataCommands.TasStartFileTime = tasStartFileTime;
+            MetadataCommands.TasStartInfo = tasStartInfo.DeepCloneShared();
             MouseCommand.CurrentState = mouseState;
             HitboxSimplified.Followers = followers.DeepCloneShared();
             SafeCommand.DisallowUnsafeInput = disallowUnsafeInput;

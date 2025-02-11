@@ -130,7 +130,7 @@ internal static class SelectCampaignCommand {
         }
 
         controller.ReadLine("Unsafe", filePath, fileLine, studioLine);
-        controller.ReadLine("console overworld", filePath, fileLine, studioLine);
+        controller.ReadLine("console titlescreen", filePath, fileLine, studioLine);
 
         controller.AddFrames("2", studioLine);
         LibTasHelper.AddInputFrame("1,O");

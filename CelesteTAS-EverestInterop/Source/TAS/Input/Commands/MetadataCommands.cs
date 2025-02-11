@@ -11,46 +11,60 @@ using TAS.Utils;
 
 namespace TAS.Input.Commands;
 
-public static class MetadataCommands {
-    public static long? TasStartFileTime;
+/// Commands which don't influence gameplay at all and just provide information to the user
+internal static class MetadataCommands {
+    // Track starting conditions for TAS to properly calculate (Midway)FileTime
+    public static (long FileTimeTicks, int FileSlot)? TasStartInfo;
 
     [Load]
     private static void Load() {
-        On.Celeste.Level.Begin += LevelOnBegin;
-        On.Celeste.Level.UpdateTime += LevelOnUpdateTime;
         Everest.Events.Level.OnComplete += UpdateChapterTime;
+
+        typeof(Level)
+            .GetMethodInfo(nameof(Level.Begin))!
+            .HookAfter(StartFileTime);
+        typeof(Level)
+            .GetMethodInfo(nameof(Level.UpdateTime))!
+            .HookAfter(StartFileTime);
+
+        static void StartFileTime() {
+            if (!Manager.Running || SaveData.Instance is not { } saveData) {
+                return;
+            }
+
+            if (TasStartInfo == null || TasStartInfo.Value.FileSlot != saveData.FileSlot) {
+                TasStartInfo = (saveData.Time, saveData.FileSlot);
+            }
+        }
     }
 
     [Unload]
     private static void Unload() {
-        On.Celeste.Level.Begin -= LevelOnBegin;
-        On.Celeste.Level.UpdateTime -= LevelOnUpdateTime;
         Everest.Events.Level.OnComplete -= UpdateChapterTime;
-    }
-
-    private static void LevelOnBegin(On.Celeste.Level.orig_Begin orig, Level self) {
-        orig(self);
-        StartFileTime();
-    }
-
-    private static void LevelOnUpdateTime(On.Celeste.Level.orig_UpdateTime orig, Level self) {
-        orig(self);
-        StartFileTime();
-    }
-
-    private static void StartFileTime() {
-        if (Manager.Running && TasStartFileTime == null) {
-            TasStartFileTime = SaveData.Instance?.Time;
-        }
     }
 
     [DisableRun]
     private static void UpdateFileTime() {
-        if (TasStartFileTime != null && SaveData.Instance != null && !Manager.Controller.CanPlayback) {
-            UpdateAllMetadata("FileTime", _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartFileTime.Value));
+        if (TasStartInfo != null && SaveData.Instance != null && !Manager.Controller.CanPlayback) {
+            UpdateAllMetadata("FileTime", _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartInfo.Value.FileTimeTicks));
         }
 
-        TasStartFileTime = null;
+        TasStartInfo = null;
+    }
+
+    private static void UpdateChapterTime(Level level) {
+        if (!Manager.Running || !level.Session.StartedFromBeginning) {
+            return;
+        }
+
+        UpdateAllMetadata("ChapterTime", _ => GameInfo.GetChapterTime(level));
+    }
+
+    public static void UpdateRecordCount(InputController inputController) {
+        UpdateAllMetadata(
+            "RecordCount",
+            command => (int.Parse(command.Args.FirstOrDefault() ?? "0") + 1).ToString(),
+            command => int.TryParse(command.Args.FirstOrDefault() ?? "0", out int _));
     }
 
     private class RecordCountMeta : ITasCommandMeta {
@@ -75,12 +89,12 @@ public static class MetadataCommands {
 
     [TasCommand("MidwayFileTime", Aliases = ["MidwayFileTime:", "MidwayFileTime："], CalcChecksum = false)]
     private static void MidwayFileTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
-        if (TasStartFileTime == null || SaveData.Instance == null) {
+        if (TasStartInfo == null || SaveData.Instance == null) {
             return;
         }
 
         UpdateAllMetadata("MidwayFileTime",
-            _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartFileTime.Value),
+            _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartInfo.Value.FileTimeTicks),
             command => Manager.Controller.CurrentCommands.Contains(command));
     }
 
@@ -93,21 +107,6 @@ public static class MetadataCommands {
         UpdateAllMetadata("MidwayChapterTime",
             _ => GameInfo.GetChapterTime(level),
             command => Manager.Controller.CurrentCommands.Contains(command));
-    }
-
-    private static void UpdateChapterTime(Level level) {
-        if (!Manager.Running || !level.Session.StartedFromBeginning) {
-            return;
-        }
-
-        UpdateAllMetadata("ChapterTime", _ => GameInfo.GetChapterTime(level));
-    }
-
-    public static void UpdateRecordCount(InputController inputController) {
-        UpdateAllMetadata(
-            "RecordCount",
-            command => (int.Parse(command.Args.FirstOrDefault() ?? "0") + 1).ToString(),
-            command => int.TryParse(command.Args.FirstOrDefault() ?? "0", out int _));
     }
 
     private static void UpdateAllMetadata(string commandName, Func<Command, string> getMetadata, Func<Command, bool>? predicate = null) {
