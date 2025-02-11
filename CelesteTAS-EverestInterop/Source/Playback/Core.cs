@@ -47,7 +47,11 @@ internal static class Core {
     private static readonly float playbackDeltaTime = (float) TimeSpan.FromTicks(166667L).TotalSeconds; // Usually equal to Engine.RawDeltaTime, but some mods change that value
 
     private static void On_Celeste_Update(On.Celeste.Celeste.orig_Update orig, Celeste.Celeste self, GameTime gameTime) {
-        if (!TasSettings.Enabled || !Manager.Running) {
+        if (!TasSettings.Enabled) {
+            orig(self, gameTime);
+            return;
+        }
+        if (!Manager.Running) {
             Manager.UpdateMeta();
             orig(self, gameTime);
             return;
