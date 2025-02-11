@@ -188,7 +188,6 @@ public static class Manager {
 
         Hotkeys.UpdateMeta();
         Savestates.UpdateMeta();
-        ConsoleEnhancements.UpdateMeta();
         AttributeUtils.Invoke<UpdateMetaAttribute>();
 
         SendStudioState();

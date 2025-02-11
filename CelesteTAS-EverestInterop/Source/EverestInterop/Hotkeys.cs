@@ -191,6 +191,8 @@ public static class Hotkeys {
         foreach (var hotkey in AllHotkeys.Values) {
             if (hotkey == InfoHud) {
                 hotkey.Update(); // Always update Info HUD
+            } else if (hotkey == OpenConsole) {
+                hotkey.Update(true, updateButton); // Keep updating Open Console hotkey while console is open
             } else {
                 hotkey.Update(updateKey, updateButton);
             }
@@ -221,10 +223,6 @@ public static class Hotkeys {
                 TasSettings.CenterCamera = !TasSettings.CenterCamera;
                 CelesteTasModule.Instance.SaveSettings();
             }
-        }
-
-        if (OpenConsole.Pressed) {
-            ConsoleEnhancements.OpenConsole();
         }
 
         Hud.Toggle();

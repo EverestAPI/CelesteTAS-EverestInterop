@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Celeste;
 using Celeste.Mod;
+using Celeste.Mod.Core;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using MonoMod.Cil;
@@ -47,49 +48,37 @@ public static class ConsoleEnhancements {
         Engine.Commands.Open = false;
     }
 
-    internal static void UpdateMeta() {
+    [UpdateMeta]
+    private static void UpdateMeta() {
         if (!Manager.Running) {
-            return;
+            return; // Only allow inside a TAS, since outside it's already handled
         }
 
-        justClosed = false;
         if (Engine.Commands.Open) {
             Engine.Commands.UpdateOpen();
             if (!Engine.Commands.Open) {
-                justClosed = true;
+                return; // Avoid reopening console
             }
         } else if (Engine.Commands.Enabled) {
             Engine.Commands.UpdateClosed();
         }
-    }
 
-    private static bool justClosed = false;
-    internal static void OpenConsole() {
-        if (!Manager.Running) {
-            return; // Only allow inside a TAS, since outside it's already handled
-        }
         if (!Engine.Commands.Enabled || Engine.Commands.Open) {
             return;
         }
-        if (justClosed) {
-            // While the console is open, hotkeys are not updated (in Hotkeys.UpdateMeta(), updateKey = false)
-            // so if without this extra check:
-            // Update() 1: Console is open
-            // Update() 2: CoreModule.ToggleDebugConsole gets pressed (note this is not our OpenConsole hotkey), and the console gets closed
-            // Update() 3: Hotkeys find that the console is closed and decides to update. It finds that OpenConsole was pressed, so it opens the console again!
-            return;
-        }
 
-        // Copied from Commands.UpdateClosed
-        Engine.Commands.Open = true;
-        Engine.Commands.currentState = Keyboard.GetState();
-        if (!Engine.Commands.installedListener) {
-            Engine.Commands.installedListener = true;
-            TextInput.OnInput += Engine.Commands.HandleChar;
-        }
-        if (!Engine.Commands.printedInfoMessage) {
-            Engine.Commands.Log("Use the 'help' command for a list of debug commands. Press Esc or use the 'q' command to close the console.");
-            Engine.Commands.printedInfoMessage = true;
+        if (Hotkeys.OpenConsole.Pressed) {
+            // Copied from Commands.UpdateClosed
+            Engine.Commands.Open = true;
+            Engine.Commands.currentState = Keyboard.GetState();
+            if (!Engine.Commands.installedListener) {
+                Engine.Commands.installedListener = true;
+                TextInput.OnInput += Engine.Commands.HandleChar;
+            }
+            if (!Engine.Commands.printedInfoMessage) {
+                Engine.Commands.Log("Use the 'help' command for a list of debug commands. Press Esc or use the 'q' command to close the console.");
+                Engine.Commands.printedInfoMessage = true;
+            }
         }
     }
 
