@@ -349,14 +349,21 @@ public static class Manager {
 
     [Monocle.Command("dump_tas", "Dumps the parsed TAS file into the console (CelesteTAS)"), UsedImplicitly]
     private static void CmdDumpTas() {
-        // Pretend to start a TAS. so that AbortTas detection works
-        NextState = State.Running;
-        Controller.RefreshInputs(forceRefresh: true);
-        if (NextState == State.Disabled) {
-            "TAS contains errors. Cannot dump to console".ConsoleLog(LogLevel.Error);
-            return;
+        if (Controller.NeedsReload) {
+            if (Running) {
+                "Cannot dump TAS file while running it with unparsed changes".Log(LogLevel.Error);
+                return;
+            }
+
+            // Pretend to start a TAS. so that AbortTas detection works
+            NextState = State.Running;
+            Controller.RefreshInputs(forceRefresh: true);
+            if (NextState == State.Disabled) {
+                "TAS contains errors. Cannot dump to console".ConsoleLog(LogLevel.Error);
+                return;
+            }
+            NextState = State.Disabled;
         }
-        NextState = State.Disabled;
 
         $"TAS file dump for '{Controller.FilePath}':".Log();
 

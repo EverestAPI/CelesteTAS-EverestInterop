@@ -312,6 +312,7 @@ public class InputController {
     public void Clear() {
         Inputs.Clear();
         Commands.Clear();
+        Comments.Clear();
         FastForwards.Clear();
         FastForwardLabels.Clear();
 
