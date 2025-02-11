@@ -346,42 +346,42 @@ public static class SetCommand {
         foreach (var type in baseTypes) {
             if (componentTypes.IsNotEmpty()) {
                 foreach (var componentType in componentTypes) {
-                    (var targetType, bool success) = TargetQuery.ResolveMemberType(componentType, memberArgs);
-                    if (!success) {
-                        ReportError($"Failed to find members '{string.Join('.', memberArgs)}' on type '{componentType}'");
+                    var typeResult = TargetQuery.ResolveMemberType(componentType, memberArgs);
+                    if (typeResult.Failure) {
+                        ReportError(typeResult);
                         return;
                     }
 
-                    (object?[] values, success, string errorMessage) = TargetQuery.ResolveValues(args[1..], [targetType]);
-                    if (!success) {
-                        ReportError(errorMessage);
+                    var valuesResult = TargetQuery.ResolveValues(args[1..], [typeResult]);
+                    if (valuesResult.Failure) {
+                        ReportError(valuesResult);
                         return;
                     }
 
                     var instances = TargetQuery.ResolveTypeInstances(type, [componentType], entityId);
-                    var result = TargetQuery.SetMemberValues(componentType, instances, values[0], memberArgs);
-                    if (result.Failure) {
-                        ReportError($"Failed to set members '{string.Join('.', memberArgs)}' of type '{targetType}' on type '{componentType}' to '{values[0]}':\n{result.Error}");
+                    var setResult = TargetQuery.SetMemberValues(componentType, instances, valuesResult.Value[0], memberArgs);
+                    if (setResult.Failure) {
+                        ReportError($"Failed to set members '{string.Join('.', memberArgs)}' of type '{typeResult.Value}' on type '{componentType}' to '{valuesResult.Value[0]}':\n{setResult.Error}");
                         return;
                     }
                 }
             } else {
-                (var targetType, bool success) = TargetQuery.ResolveMemberType(type, memberArgs);
-                if (!success) {
-                    ReportError($"Failed to find members '{string.Join('.', memberArgs)}' on type '{type}'");
+                var targetResult = TargetQuery.ResolveMemberType(type, memberArgs);
+                if (targetResult.Failure) {
+                    ReportError(targetResult);
                     return;
                 }
 
-                (object?[] values, success, string errorMessage) = TargetQuery.ResolveValues(args[1..], [targetType]);
-                if (!success) {
-                    ReportError(errorMessage);
+                var valuesResult = TargetQuery.ResolveValues(args[1..], [targetResult]);
+                if (valuesResult.Failure) {
+                    ReportError(valuesResult);
                     return;
                 }
 
                 var instances = TargetQuery.ResolveTypeInstances(type, componentTypes, entityId);
-                var result = TargetQuery.SetMemberValues(type, instances, values[0], memberArgs);
-                if (result.Failure) {
-                    ReportError($"Failed to set members '{string.Join('.', memberArgs)}' of type '{targetType}' on type '{type}' to '{values[0]}':\n{result.Error}");
+                var setResult = TargetQuery.SetMemberValues(type, instances, valuesResult.Value[0], memberArgs);
+                if (setResult.Failure) {
+                    ReportError($"Failed to set members '{string.Join('.', memberArgs)}' of type '{targetResult.Value}' on type '{type}' to '{valuesResult.Value[0]}':\n{setResult.Error}");
                     return;
                 }
             }
@@ -404,14 +404,14 @@ public static class SetCommand {
             return;
         }
 
-        (object?[] values, bool success, string errorMessage) = TargetQuery.ResolveValues(valueArgs, [field.FieldType]);
-        if (!success) {
-            ReportError(errorMessage);
+        var valuesResult = TargetQuery.ResolveValues(valueArgs, [field.FieldType]);
+        if (valuesResult.Failure) {
+            ReportError(valuesResult);
             return;
         }
 
-        if (!HandleSpecialCases(settingName, values[0])) {
-            field.SetValue(settings, values[0]);
+        if (!HandleSpecialCases(settingName, valuesResult.Value[0])) {
+            field.SetValue(settings, valuesResult.Value[0]);
 
             // Assists is a struct, so it needs to be re-assign
             if (settings is Assists assists) {
@@ -432,13 +432,13 @@ public static class SetCommand {
             return;
         }
 
-        (object?[] values, bool success, string errorMessage) = TargetQuery.ResolveValues(valueArgs, [variantType]);
-        if (!success) {
-            ReportError(errorMessage);
+        var valuesResult = TargetQuery.ResolveValues(valueArgs, [variantType]);
+        if (valuesResult.Failure) {
+            ReportError(valuesResult);
             return;
         }
 
-        ExtendedVariantsInterop.SetVariantValue(variant, values[0]);
+        ExtendedVariantsInterop.SetVariantValue(variant, valuesResult.Value[0]);
     }
 
     /// Applies the setting, while handing special cases

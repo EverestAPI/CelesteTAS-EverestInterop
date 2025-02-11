@@ -105,13 +105,13 @@ public static class InfoCustom {
                     }
                 }
 
-                (var queryResults, bool success, string errorMessage) = TargetQuery.GetMemberValues(query, forceAllowCodeExecution);
-                if (!success) {
-                    tableResults.AddToKey("Error", $"{prefixText}{queryPrefix}<{errorMessage}>");
+                var result = TargetQuery.GetMemberValues(query, forceAllowCodeExecution);
+                if (result.Failure) {
+                    tableResults.AddToKey("Error", $"{prefixText}{queryPrefix}<{result.Error}>");
                     continue;
                 }
 
-                foreach ((object? value, object? baseInstance) in queryResults) {
+                foreach ((object? value, object? baseInstance) in result.Value) {
                     var currResultType = baseInstance?.GetType();
                     firstResultType ??= currResultType;
 
@@ -124,16 +124,16 @@ public static class InfoCustom {
                     }
 
                     string key = currResultType?.Name ?? "";
-                    string result = $"{queryPrefix}{valueStr}";
+                    string queryResult = $"{queryPrefix}{valueStr}";
 
                     if (baseInstance is Entity entity && entity.GetEntityData()?.ToEntityId() is { } entityId) {
                         key += $"[{entityId}]";
                     }
 
                     if (tableResults.TryGetValue(key, out var results)) {
-                        results.Add(prefixText + result);
+                        results.Add(prefixText + queryResult);
                     } else {
-                        tableResults[key] = [prefixText.TrimStart() +result];
+                        tableResults[key] = [prefixText.TrimStart() +queryResult];
                     }
                 }
             }
@@ -172,17 +172,17 @@ public static class InfoCustom {
                 }
             }
 
-            (var queryResults, bool success, string errorMessage) = TargetQuery.GetMemberValues(query, forceAllowCodeExecution);
-            if (!success) {
-                return $"{queryPrefix}<{errorMessage}>";
+            var result = TargetQuery.GetMemberValues(query, forceAllowCodeExecution);
+            if (result.Failure) {
+                return $"{queryPrefix}<{result.Error}>";
             }
 
-            if (queryResults.Count == 0) {
+            if (result.Value.Count == 0) {
                 return "<Not found>";
             }
-            if (queryResults.Count == 1) {
-                if (formatter == null || !formatter(queryResults[0].Value, decimals, out string valueStr)) {
-                    valueStr = DefaultFormatter(queryResults[0].Value, decimals);
+            if (result.Value.Count == 1) {
+                if (formatter == null || !formatter(result.Value[0].Value, decimals, out string valueStr)) {
+                    valueStr = DefaultFormatter(result.Value[0].Value, decimals);
                 }
 
                 return $"{queryPrefix}{valueStr}";
@@ -190,7 +190,7 @@ public static class InfoCustom {
 
             var resultCollection = new StringBuilder("{ ");
             bool firstValue = true;
-            foreach ((object? value, object? baseInstance) in queryResults) {
+            foreach ((object? value, object? baseInstance) in result.Value) {
                 if (!firstValue) {
                     resultCollection.Append(", ");
                 }

@@ -194,42 +194,42 @@ public static class InvokeCommand {
         foreach (var type in baseTypes) {
             if (componentTypes.IsNotEmpty()) {
                 foreach (var componentType in componentTypes) {
-                    (var method, bool success) = TargetQuery.ResolveMemberMethod(componentType, memberArgs);
-                    if (!success) {
-                        ReportError($"Failed to find method '{string.Join('.', memberArgs)}' on type '{type}'");
+                    var methodResult = TargetQuery.ResolveMemberMethod(componentType, memberArgs);
+                    if (methodResult.Failure) {
+                        ReportError(methodResult);
                         return;
                     }
 
-                    (object?[] values, success, string errorMessage) = TargetQuery.ResolveValues(args[1..], method!.GetParameters().Select(param => param.ParameterType).ToArray());
-                    if (!success) {
-                        ReportError(errorMessage);
+                    var valuesResult = TargetQuery.ResolveValues(args[1..], methodResult.Value.GetParameters().Select(param => param.ParameterType).ToArray());
+                    if (valuesResult.Failure) {
+                        ReportError(valuesResult);
                         return;
                     }
 
                     var instances = TargetQuery.ResolveTypeInstances(type, [componentType], entityId);
-                    success = TargetQuery.InvokeMemberMethods(componentType, instances, values, memberArgs);
-                    if (!success) {
-                        ReportError($"Failed to invoke method '{string.Join('.', memberArgs)}' on type '{componentType}' to with parameters '{string.Join(';', values)}'");
+                    var invokeResult = TargetQuery.InvokeMemberMethods(componentType, instances, valuesResult, memberArgs);
+                    if (invokeResult.Failure) {
+                        ReportError($"Failed to invoke method '{string.Join('.', memberArgs)}' on type '{componentType}' to with parameters '{string.Join(';', valuesResult.Value)}':\n{invokeResult.Error}");
                         return;
                     }
                 }
             } else {
-                (var method, bool success) = TargetQuery.ResolveMemberMethod(type, memberArgs);
-                if (!success) {
-                    ReportError($"Failed to find method '{string.Join('.', memberArgs)}' on type '{type}'");
+                var methodResult = TargetQuery.ResolveMemberMethod(type, memberArgs);
+                if (methodResult.Failure) {
+                    ReportError(methodResult);
                     return;
                 }
 
-                (object?[] values, success, string errorMessage) = TargetQuery.ResolveValues(args[1..], method!.GetParameters().Select(param => param.ParameterType).ToArray());
-                if (!success) {
-                    ReportError(errorMessage);
+                var valuesResult = TargetQuery.ResolveValues(args[1..], methodResult.Value!.GetParameters().Select(param => param.ParameterType).ToArray());
+                if (valuesResult.Failure) {
+                    ReportError(valuesResult);
                     return;
                 }
 
                 var instances = TargetQuery.ResolveTypeInstances(type, componentTypes, entityId);
-                success = TargetQuery.InvokeMemberMethods(type, instances, values, memberArgs);
-                if (!success) {
-                    ReportError($"Failed to invoke method '{string.Join('.', memberArgs)}' on type '{type}' to with parameters '{string.Join(';', values)}'");
+                var invokeResult = TargetQuery.InvokeMemberMethods(type, instances, valuesResult, memberArgs);
+                if (invokeResult.Failure) {
+                    ReportError($"Failed to invoke method '{string.Join('.', memberArgs)}' on type '{type}' to with parameters '{string.Join(';', valuesResult.Value)}':\n{invokeResult.Error}");
                     return;
                 }
             }
