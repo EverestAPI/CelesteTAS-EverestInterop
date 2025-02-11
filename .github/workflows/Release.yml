@@ -83,7 +83,7 @@ jobs:
         with:
           python-version: 3.12.6
       - name: Setup Firefox WebDriver
-        uses: browser-actions/setup-firefox@v1.5.2
+        uses: browser-actions/setup-firefox@v1
 
       - name: Download Studio builds
         uses: actions/download-artifact@v4
