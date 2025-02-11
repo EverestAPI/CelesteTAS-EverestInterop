@@ -362,17 +362,21 @@ public static class TargetQuery {
         foreach (string member in memberArgs) {
             try {
                 if (currentType.GetFieldInfo(member, logFailure: false) is { } field) {
-                    currentType = field.FieldType;
                     if (field.IsStatic) {
                         currentObject = field.GetValue(null);
                     } else {
                         if (currentObject == null) {
+                            if (currentType == baseType) {
+                                return (Value: null, Success: false, ErrorMessage: $"Cannot access instance field '{member}' in a static context");
+                            }
+
                             // Propagate null
                             return (Value: null, Success: true, ErrorMessage: "");
                         }
 
                         currentObject = field.GetValue(currentObject);
                     }
+                    currentType = field.FieldType;
                     continue;
                 }
                 if (currentType.GetPropertyInfo(member, logFailure: false) is { } property && property.GetMethod != null) {
@@ -380,17 +384,21 @@ public static class TargetQuery {
                         return (Value: null, Success: false, ErrorMessage: $"Cannot safely get property '{member}' during EnforceLegal");
                     }
 
-                    currentType = property.PropertyType;
                     if (property.IsStatic()) {
                         currentObject = property.GetValue(null);
                     } else {
                         if (currentObject == null) {
+                            if (currentType == baseType) {
+                                return (Value: null, Success: false, ErrorMessage: $"Cannot access instance property '{member}' in a static context");
+                            }
+
                             // Propagate null
                             return (Value: null, Success: true, ErrorMessage: "");
                         }
 
                         currentObject = property.GetValue(currentObject);
                     }
+                    currentType = property.PropertyType;
                     continue;
                 }
             } catch (Exception ex) {
@@ -427,13 +435,13 @@ public static class TargetQuery {
     }
 
     /// Recursively resolves the value of the specified members
-    public static bool SetMemberValue(Type baseType, object? baseObject, object? value, string[] memberArgs) {
+    public static VoidResult<string> SetMemberValue(Type baseType, object? baseObject, object? value, string[] memberArgs) {
         var typeStack = new Stack<Type>();
         var objectStack = new Stack<object?>();
 
         var currentType = baseType;
         object? currentObject = baseObject;
-        for (int i = 0; i < memberArgs.Length - 1; i++) {
+        for (int i = 0; i < memberArgs.Length; i++) {
             typeStack.Push(currentType);
             objectStack.Push(currentObject);
 
@@ -441,37 +449,53 @@ public static class TargetQuery {
 
             try {
                 if (currentType.GetFieldInfo(member, logFailure: false) is { } field) {
-                    currentType = field.FieldType;
                     if (field.IsStatic) {
                         currentObject = field.GetValue(null);
                     } else {
+                        if (currentObject == null) {
+                            if (currentType == baseType) {
+                                return VoidResult<string>.Fail($"Cannot access instance field '{member}' in a static context");
+                            }
+
+                            // Propagate null
+                            return VoidResult<string>.Ok;
+                        }
+
                         currentObject = field.GetValue(currentObject);
                     }
+                    currentType = field.FieldType;
 
                     continue;
                 }
 
                 if (currentType.GetPropertyInfo(member, logFailure: false) is { } property && property.SetMethod != null) {
                     if (PreventCodeExecution) {
-                        return false; // Cannot safely invoke methods during EnforceLegal
+                        return VoidResult<string>.Fail($"Cannot safely set property '{member}' during EnforceLegal");
                     }
 
-                    currentType = property.PropertyType;
                     if (property.IsStatic()) {
                         currentObject = property.GetValue(null);
                     } else {
+                        if (currentObject == null) {
+                            if (currentType == baseType) {
+                                return VoidResult<string>.Fail($"Cannot access instance property '{member}' in a static context");
+                            }
+
+                            // Propagate null
+                            return VoidResult<string>.Ok;
+                        }
+
                         currentObject = property.GetValue(currentObject);
                     }
+                    currentType = property.PropertyType;
 
                     continue;
                 }
-            } catch (Exception) {
-                // Something went wrong
-                return false;
+            } catch (Exception ex) {
+                return VoidResult<string>.Fail($"Unknown exception: {ex}");
             }
 
-            // Unable to recurse further
-            return false;
+            return VoidResult<string>.Fail($"Field / Property '{member}' not found on type '{currentType}'");
         }
 
         // Set the value
@@ -499,7 +523,7 @@ public static class TargetQuery {
                         remainder.Y = subpixelValue.Remainder;
                     }
                     actor.movementCounter = remainder;
-                    return true;
+                    return VoidResult<string>.Ok;
                 } else if (entityObject is Platform platform) {
                     var subpixelValue = (SubpixelComponent) value!;
 
@@ -512,7 +536,7 @@ public static class TargetQuery {
                         remainder.Y = subpixelValue.Remainder;
                     }
                     platform.movementCounter = remainder;
-                    return true;
+                    return VoidResult<string>.Ok;
                 }
             } else if (memberArgs[^1] is nameof(Entity.Position)) {
                 if (currentObject is Actor actor) {
@@ -520,13 +544,13 @@ public static class TargetQuery {
 
                     actor.Position = new(subpixelValue.X.Position, subpixelValue.Y.Position);
                     actor.movementCounter = new(subpixelValue.X.Remainder, subpixelValue.Y.Remainder);
-                    return true;
+                    return VoidResult<string>.Ok;
                 } else if (currentObject is Platform platform) {
                     var subpixelValue = (SubpixelPosition) value!;
 
                     platform.Position = new(subpixelValue.X.Position, subpixelValue.Y.Position);
                     platform.movementCounter = new(subpixelValue.X.Remainder, subpixelValue.Y.Remainder);
-                    return true;
+                    return VoidResult<string>.Ok;
                 }
             }
 
@@ -534,6 +558,15 @@ public static class TargetQuery {
                 if (field.IsStatic) {
                     field.SetValue(null, value);
                 } else {
+                    if (currentObject == null) {
+                        if (currentType == baseType) {
+                            return VoidResult<string>.Fail($"Cannot access instance field '{memberArgs[^1]}' in a static context");
+                        }
+
+                        // Propagate null
+                        return VoidResult<string>.Ok;
+                    }
+
                     field.SetValue(currentObject, value);
                 }
             } else if (currentType.GetPropertyInfo(memberArgs[^1], logFailure: false) is { } property && property.SetMethod != null) {
@@ -583,32 +616,37 @@ public static class TargetQuery {
                                         nodes.AddRange(data.KeyboardKeys.Select(_ => new VirtualButton.MouseMiddleButton()));
                                         break;
                                     case MInput.MouseData.MouseButtons.XButton1 or MInput.MouseData.MouseButtons.XButton2:
-                                        // TODO: Error message
-                                        // AbortTas("X1 and X2 are not supported before Everest adding mouse support");
-                                        return false;
+                                        return VoidResult<string>.Fail("X1 and X2 are not supported before Everest adding mouse support");
                                 }
                             }
                         }
                     }
-                    return true;
+                    return VoidResult<string>.Ok;
                 }
 
                 if (PreventCodeExecution) {
-                    return false; // Cannot safely invoke methods during EnforceLegal
+                    return VoidResult<string>.Fail($"Cannot safely set property '{memberArgs[^1]}' during EnforceLegal");
                 }
 
                 if (property.IsStatic()) {
                     property.SetValue(null, value);
                 } else {
+                    if (currentObject == null) {
+                        if (currentType == baseType) {
+                            return VoidResult<string>.Fail($"Cannot access instance field '{memberArgs[^1]}' in a static context");
+                        }
+
+                        // Propagate null
+                        return VoidResult<string>.Ok;
+                    }
+
                     property.SetValue(currentObject, value);
                 }
             } else {
-                // Couldn't find the last member
-                return false;
+                return VoidResult<string>.Fail($"Field / Property '{memberArgs[^1]}' not found on type '{currentType}'");
             }
-        } catch (Exception) {
-            // Something went wrong
-            return false;
+        } catch (Exception ex) {
+            return VoidResult<string>.Fail($"Unknown exception: {ex}");
         }
 
         // Recurse back up to properly set value-types
@@ -628,7 +666,7 @@ public static class TargetQuery {
                     }
                 } else if (currentType.GetPropertyInfo(member, logFailure: false) is { } property && property.SetMethod != null) {
                     if (PreventCodeExecution) {
-                        return false; // Cannot safely invoke methods during EnforceLegal
+                        return VoidResult<string>.Fail($"Cannot safely set property '{member}' during EnforceLegal");
                     }
 
                     if (property.IsStatic()) {
@@ -637,23 +675,22 @@ public static class TargetQuery {
                         property.SetValue(currentObject, value);
                     }
                 }
-            } catch (Exception) {
-                // Something went wrong
-                return false;
+            } catch (Exception ex) {
+                return VoidResult<string>.Fail($"Unknown exception: {ex}");
             }
         }
 
-        return true;
+        return VoidResult<string>.Ok;
     }
 
     /// Recursively resolves the value of the specified members for multiple instances at once
-    public static bool SetMemberValues(Type baseType, List<object> baseObjects, object? value, string[] memberArgs) {
+    public static VoidResult<string> SetMemberValues(Type baseType, List<object> baseObjects, object? value, string[] memberArgs) {
         if (baseObjects.IsEmpty()) {
             return SetMemberValue(baseType, null, value, memberArgs);
         } else {
             return baseObjects
                 .Select(obj => SetMemberValue(baseType, obj, value, memberArgs))
-                .All(success => success);
+                .Aggregate(VoidResult<string>.AggregateError);
         }
     }
 

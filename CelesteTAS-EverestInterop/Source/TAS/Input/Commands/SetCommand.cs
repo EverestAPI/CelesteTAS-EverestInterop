@@ -359,9 +359,9 @@ public static class SetCommand {
                     }
 
                     var instances = TargetQuery.ResolveTypeInstances(type, [componentType], entityId);
-                    success = TargetQuery.SetMemberValues(componentType, instances, values[0], memberArgs);
-                    if (!success) {
-                        ReportError($"Failed to set members '{string.Join('.', memberArgs)}' of type '{targetType}' on type '{componentType}' to '{values[0]}'");
+                    var result = TargetQuery.SetMemberValues(componentType, instances, values[0], memberArgs);
+                    if (result.Failure) {
+                        ReportError($"Failed to set members '{string.Join('.', memberArgs)}' of type '{targetType}' on type '{componentType}' to '{values[0]}':\n{result.Error}");
                         return;
                     }
                 }
@@ -379,9 +379,9 @@ public static class SetCommand {
                 }
 
                 var instances = TargetQuery.ResolveTypeInstances(type, componentTypes, entityId);
-                success = TargetQuery.SetMemberValues(type, instances, values[0], memberArgs);
-                if (!success) {
-                    ReportError($"Failed to set members '{string.Join('.', memberArgs)}' of type '{targetType}' on type '{type}' to '{values[0]}'");
+                var result = TargetQuery.SetMemberValues(type, instances, values[0], memberArgs);
+                if (result.Failure) {
+                    ReportError($"Failed to set members '{string.Join('.', memberArgs)}' of type '{targetType}' on type '{type}' to '{values[0]}':\n{result.Error}");
                     return;
                 }
             }
