@@ -107,7 +107,7 @@ public static class InvokeCommand {
         private static IEnumerator<CommandAutoCompleteEntry> GetParameterAutoCompleteEntries(string[] targetArgs, int parameterIndex) {
             if (targetArgs.Length >= 1 && TargetQuery.ResolveBaseTypes(targetArgs, out string[] memberArgs, out _, out _) is { } types && types.IsNotEmpty() && memberArgs.Length == 1) {
                 // Assume the first type
-                var parameters = types[0].GetMethodInfo(memberArgs[0]).GetParameters();
+                var parameters = types[0].GetMethodInfo(memberArgs[0], logFailure: false)?.GetParameters() ?? [];
                 if (parameterIndex >= 0 && parameterIndex < parameters.Length) {
                     // End arguments if further parameters aren't settable anymore
                     bool final = parameterIndex == parameters.Length - 1 ||
@@ -220,7 +220,7 @@ public static class InvokeCommand {
                     return;
                 }
 
-                var valuesResult = TargetQuery.ResolveValues(args[1..], methodResult.Value!.GetParameters().Select(param => param.ParameterType).ToArray());
+                var valuesResult = TargetQuery.ResolveValues(args[1..], methodResult.Value.GetParameters().Select(param => param.ParameterType).ToArray());
                 if (valuesResult.Failure) {
                     ReportError(valuesResult);
                     return;

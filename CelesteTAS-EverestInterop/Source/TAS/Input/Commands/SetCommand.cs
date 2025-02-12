@@ -10,11 +10,9 @@ using Monocle;
 using StudioCommunication;
 using StudioCommunication.Util;
 using System.Collections.Generic;
-using System.IO;
 using System.Runtime.CompilerServices;
 using TAS.Entities;
 using TAS.EverestInterop;
-using TAS.EverestInterop.InfoHUD;
 using TAS.Gameplay;
 using TAS.InfoHUD;
 using TAS.ModInterop;
@@ -144,7 +142,7 @@ public static class SetCommand {
                     foreach (object variant in Enum.GetValues(variantsEnum)) {
                         string typeName = string.Empty;
                         try {
-                            var variantType = ExtendedVariantsInterop.GetVariantType(new Lazy<object>(variant));
+                            var variantType = ExtendedVariantsInterop.GetVariantType(new Lazy<object?>(variant));
                             if (variantType != null) {
                                 typeName = variantType.CSharpName();
                             }
@@ -196,13 +194,13 @@ public static class SetCommand {
         private static IEnumerator<CommandAutoCompleteEntry> GetParameterAutoCompleteEntries(string[] targetArgs) {
             if (targetArgs.Length == 1) {
                 // Vanilla setting / session / assist
-                if (typeof(Settings).GetFieldInfo(targetArgs[0], BindingFlags.Instance | BindingFlags.Public) is { } fSettings) {
+                if (typeof(Settings).GetFieldInfo(targetArgs[0], logFailure: false) is { } fSettings) {
                     return GetParameterTypeAutoCompleteEntries(fSettings.FieldType);
                 }
-                if (typeof(SaveData).GetFieldInfo(targetArgs[0], BindingFlags.Instance | BindingFlags.Public) is { } fSaveData) {
+                if (typeof(SaveData).GetFieldInfo(targetArgs[0], logFailure: false) is { } fSaveData) {
                     return GetParameterTypeAutoCompleteEntries(fSaveData.FieldType);
                 }
-                if (typeof(Assists).GetFieldInfo(targetArgs[0], BindingFlags.Instance | BindingFlags.Public) is { } fAssists) {
+                if (typeof(Assists).GetFieldInfo(targetArgs[0], logFailure: false) is { } fAssists) {
                     return GetParameterTypeAutoCompleteEntries(fAssists.FieldType);
                 }
             }
@@ -251,11 +249,11 @@ public static class SetCommand {
         private static Type RecurseSetType(Type baseType, string[] memberArgs) {
             var type = baseType;
             foreach (string member in memberArgs) {
-                if (type.GetFieldInfo(member) is { } field) {
+                if (type.GetFieldInfo(member, logFailure: false) is { } field) {
                     type = field.FieldType;
                     continue;
                 }
-                if (type.GetPropertyInfo(member) is { } property && property.SetMethod != null) {
+                if (type.GetPropertyInfo(member, logFailure: false) is { } property && property.SetMethod != null) {
                     type = property.PropertyType;
                     continue;
                 }
@@ -392,11 +390,11 @@ public static class SetCommand {
         object? settings = null;
 
         FieldInfo? field;
-        if ((field = typeof(Settings).GetFieldInfo(settingName)) != null) {
+        if ((field = typeof(Settings).GetFieldInfo(settingName, logFailure: false)) != null) {
             settings = Settings.Instance;
-        } else if ((field = typeof(SaveData).GetFieldInfo(settingName)) != null) {
+        } else if ((field = typeof(SaveData).GetFieldInfo(settingName, logFailure: false)) != null) {
             settings = SaveData.Instance;
-        } else if ((field = typeof(Assists).GetFieldInfo(settingName)) != null) {
+        } else if ((field = typeof(Assists).GetFieldInfo(settingName, logFailure: false)) != null) {
             settings = SaveData.Instance.Assists;
         }
 
@@ -425,7 +423,7 @@ public static class SetCommand {
         }
     }
     private static void SetExtendedVariant(string variantName, string[] valueArgs) {
-        var variant = new Lazy<object>(ExtendedVariantsInterop.ParseVariant(variantName));
+        var variant = new Lazy<object?>(ExtendedVariantsInterop.ParseVariant(variantName));
         var variantType = ExtendedVariantsInterop.GetVariantType(variant);
         if (variantType is null) {
             ReportError($"Failed to resolve type for extended variant '{variantName}'");
