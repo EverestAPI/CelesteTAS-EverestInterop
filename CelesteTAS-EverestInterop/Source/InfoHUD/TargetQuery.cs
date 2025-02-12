@@ -449,7 +449,7 @@ public static class TargetQuery {
 
         var currentType = baseType;
         object? currentObject = baseObject;
-        for (int i = 0; i < memberArgs.Length; i++) {
+        for (int i = 0; i < memberArgs.Length - 1; i++) {
             typeStack.Push(currentType);
             objectStack.Push(currentObject);
 
