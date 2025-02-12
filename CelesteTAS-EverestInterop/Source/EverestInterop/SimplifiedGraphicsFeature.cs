@@ -240,10 +240,17 @@ public static class SimplifiedGraphicsFeature {
         HookHelper.SkipMethods(IsSimplifiedHud,
             typeof(HeightDisplay).GetMethodInfo(nameof(HeightDisplay.Render)),
             typeof(CustomHeightDisplay).GetMethodInfo(nameof(CustomHeightDisplay.Render)),
-            ModUtils.GetType("Monika's D-Sides", "Celeste.Mod.RubysEntities.AltHeightDisplay")?.GetMethodInfo("Render"),
+            ModUtils.GetMethod("Monika's D-Sides", "Celeste.Mod.RubysEntities.AltHeightDisplay", "Render"),
+
             typeof(TalkComponent.TalkComponentUI).GetMethodInfo(nameof(TalkComponent.TalkComponentUI.Render)),
             typeof(BirdTutorialGui).GetMethodInfo(nameof(BirdTutorialGui.Render)),
+
             typeof(CoreMessage).GetMethodInfo(nameof(CoreMessage.Render)),
+            typeof(CustomCoreMessage).GetMethodInfo(nameof(CustomCoreMessage.Render)),
+            ModUtils.GetMethod("ArphimigonsToyBox", "Celeste.Mod.ArphimigonHelper.CustomCoreMessage", "Render"), // v1.4.0
+            ModUtils.GetMethod("ChroniaHelper", "ChroniaHelper.Entities.ColoredCustomCoreMessage", "Render"), // v1.28.15
+            ModUtils.GetMethod("VivHelper", "VivHelper.Entities.ColoredCustomCoreMessage", "Render"), // v1.14.10
+
             typeof(MemorialText).GetMethodInfo(nameof(MemorialText.Render))
         );
 
