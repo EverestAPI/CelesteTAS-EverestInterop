@@ -90,6 +90,7 @@ public static class TargetQuery {
     }
 
     /// Parses a target-query and returns the results for that
+    /// A single BaseInstance == null entry is returned for static contexts
     public static Result<List<(object? Value, object? BaseInstance)>, string> GetMemberValues(string query, bool forceAllowCodeExecution = false) {
         string[] queryArgs = query.Split('.');
 
@@ -124,7 +125,7 @@ public static class TargetQuery {
                     return VoidResult<string>.Fail(result.Error);
                 }
 
-                if (instances.IsEmpty()) {
+                if (instances == null) {
                     allResults.Add((result.Value[0], null));
                 } else {
                     allResults.AddRange(result.Value.Select((value, i) => (value, (object?)instances[i])));
@@ -214,7 +215,8 @@ public static class TargetQuery {
     }
 
     /// Resolves a type into all applicable instances of it
-    public static List<object> ResolveTypeInstances(Type type, List<Type> componentTypes, EntityID? entityId) {
+    /// Returns null for types which are always in a static context
+    public static List<object>? ResolveTypeInstances(Type type, List<Type> componentTypes, EntityID? entityId) {
         if (type == typeof(Settings)) {
             return [Settings.Instance];
         }
@@ -276,7 +278,7 @@ public static class TargetQuery {
         }
 
         // Nothing found
-        return [];
+        return null;
     }
 
     /// Recursively resolves the type of the specified members
@@ -415,28 +417,29 @@ public static class TargetQuery {
     }
 
     /// Recursively resolves the value of the specified members for multiple instances at once
-    public static Result<List<object?>, string> ResolveMemberValues(Type baseType, List<object> baseObjects, string[] memberArgs, bool forceAllowCodeExecution = false) {
-        if (baseObjects.IsEmpty()) {
+    public static Result<List<object?>, string> ResolveMemberValues(Type baseType, List<object>? baseObjects, string[] memberArgs, bool forceAllowCodeExecution = false) {
+        if (baseObjects == null) {
+            // Static target context
             var result = ResolveMemberValue(baseType, null, memberArgs, forceAllowCodeExecution);
             if (result.Failure) {
                 return Result<List<object?>, string>.Fail(result.Error);
             }
 
             return Result<List<object?>, string>.Ok([result.Value]);
-        } else {
-            List<object?> values = new(capacity: baseObjects.Count);
+        }
 
-            foreach (object obj in baseObjects) {
-                var result = ResolveMemberValue(baseType, obj, memberArgs, forceAllowCodeExecution);
-                if (result.Failure) {
-                    return Result<List<object?>, string>.Fail(result.Error);
-                }
+        List<object?> values = new(capacity: baseObjects.Count);
 
-                values.Add(result.Value);
+        foreach (object obj in baseObjects) {
+            var result = ResolveMemberValue(baseType, obj, memberArgs, forceAllowCodeExecution);
+            if (result.Failure) {
+                return Result<List<object?>, string>.Fail(result.Error);
             }
 
-            return Result<List<object?>, string>.Ok(values);
+            values.Add(result.Value);
         }
+
+        return Result<List<object?>, string>.Ok(values);
     }
 
     /// Recursively resolves the value of the specified members
@@ -689,14 +692,15 @@ public static class TargetQuery {
     }
 
     /// Recursively resolves the value of the specified members for multiple instances at once
-    public static VoidResult<string> SetMemberValues(Type baseType, List<object> baseObjects, object? value, string[] memberArgs) {
-        if (baseObjects.IsEmpty()) {
+    public static VoidResult<string> SetMemberValues(Type baseType, List<object>? baseObjects, object? value, string[] memberArgs) {
+        if (baseObjects == null) {
+            // Static target context
             return SetMemberValue(baseType, null, value, memberArgs);
-        } else {
-            return baseObjects
-                .Select(obj => SetMemberValue(baseType, obj, value, memberArgs))
-                .Aggregate(VoidResult<string>.AggregateError);
         }
+
+        return baseObjects
+            .Select(obj => SetMemberValue(baseType, obj, value, memberArgs))
+            .Aggregate(VoidResult<string>.AggregateError);
     }
 
     /// Recursively resolves the value of the specified members
@@ -787,14 +791,15 @@ public static class TargetQuery {
     }
 
     /// Recursively resolves the value of the specified members for multiple instances at once
-    public static VoidResult<string> InvokeMemberMethods(Type baseType, List<object> baseObjects, object?[] parameters, string[] memberArgs) {
-        if (baseObjects.IsEmpty()) {
+    public static VoidResult<string> InvokeMemberMethods(Type baseType, List<object>? baseObjects, object?[] parameters, string[] memberArgs) {
+        if (baseObjects == null) {
+            // Static target context
             return InvokeMemberMethod(baseType, null, parameters, memberArgs);
-        } else {
-            return baseObjects
-                .Select(obj => InvokeMemberMethod(baseType, obj, parameters, memberArgs))
-                .Aggregate(VoidResult<string>.AggregateError);
         }
+
+        return baseObjects
+            .Select(obj => InvokeMemberMethod(baseType, obj, parameters, memberArgs))
+            .Aggregate(VoidResult<string>.AggregateError);
     }
 
     /// Data-class to hold parsed ButtonBinding data, before it being set
