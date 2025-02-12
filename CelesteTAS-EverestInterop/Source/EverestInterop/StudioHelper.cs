@@ -207,6 +207,10 @@ public static class StudioHelper {
                     (Note Only major bugs will be fixed in that version! No features will be backported!)
                 """;
 
+            if (!Directory.Exists(StudioDirectory)) {
+                Directory.CreateDirectory(StudioDirectory);
+            }
+
             File.WriteAllText(path, text);
             ProcessHelper.OpenInDefaultApp(path);
         }
