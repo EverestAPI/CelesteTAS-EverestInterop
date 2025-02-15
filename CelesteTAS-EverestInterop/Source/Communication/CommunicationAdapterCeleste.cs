@@ -99,7 +99,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                 gameData = GameData.GetModInfo();
                                 break;
                             case GameDataType.ExactGameInfo:
-                                gameData = GameInfo.ExactStudioInfo;
+                                gameData = InfoHUD.GameInfo.Query(InfoHUD.GameInfo.Target.ExactInfo);
                                 break;
                             case GameDataType.SettingValue:
                                 gameData = GameData.GetSettingValue((string)arg!);

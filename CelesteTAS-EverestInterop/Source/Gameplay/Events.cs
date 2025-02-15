@@ -1,3 +1,5 @@
+using Celeste;
+using JetBrains.Annotations;
 using Monocle;
 using System;
 using TAS.Module;
@@ -14,6 +16,10 @@ internal static class Events {
     /// Invoked after all other entity hitboxes have been rendered
     public static event Action<Scene>? PostDebugRender;
 
+    /// Invoked after the current scene was updated
+    [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+    public class PostSceneUpdate : Attribute;
+
     [Load]
     private static void Load() {
         typeof(EntityList)
@@ -23,5 +29,11 @@ internal static class Events {
         typeof(EntityList)
             .GetMethodInfo(nameof(EntityList.DebugRender))!
             .HookAfter((EntityList entityList) => PostDebugRender?.Invoke(entityList.Scene));
+
+        typeof(Scene)
+            .GetMethodInfo(nameof(Scene.AfterUpdate))!
+            .HookAfter((Scene scene) => AttributeUtils.Invoke<PostSceneUpdate>(scene));
+
+        AttributeUtils.CollectOwnMethods<PostSceneUpdate>(typeof(Scene));
     }
 }

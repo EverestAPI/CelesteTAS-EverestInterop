@@ -35,7 +35,7 @@ internal static class DebugRcPage {
             WriteLine(builder, "Game Info: ");
 
             var args = Everest.DebugRC.ParseQueryString(c.Request.RawUrl);
-            builder.Append($"<pre>{HttpUtility.HtmlEncode(args["forceAllowCodeExecution"] == "true" ? GameInfo.ExactStudioInfoAllowCodeExecution : GameInfo.ExactStudioInfo)}</pre>");
+            builder.Append($"<pre>{HttpUtility.HtmlEncode(TAS.InfoHUD.GameInfo.Query(args["forceAllowCodeExecution"] == "true" ? TAS.InfoHUD.GameInfo.Target.ExactInfoAllowCodeExecution : TAS.InfoHUD.GameInfo.Target.ExactInfo))}</pre>");
 
             Everest.DebugRC.WriteHTMLEnd(c, builder);
             Everest.DebugRC.Write(c, builder.ToString());

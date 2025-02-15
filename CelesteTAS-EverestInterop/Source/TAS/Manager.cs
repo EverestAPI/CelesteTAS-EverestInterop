@@ -327,7 +327,7 @@ public static class Manager {
             TotalFrames = Controller.Inputs.Count,
             SaveStateLine = Savestates.StudioHighlightLine,
             tasStates = 0,
-            GameInfo = GameInfo.StudioInfo,
+            GameInfo = InfoHUD.GameInfo.Query(InfoHUD.GameInfo.Target.Studio),
             LevelName = GameInfo.LevelName,
             ChapterTime = GameInfo.ChapterTime,
             ShowSubpixelIndicator = TasSettings.InfoSubpixelIndicator && Engine.Scene is Level or Emulator,

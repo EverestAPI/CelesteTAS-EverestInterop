@@ -78,7 +78,7 @@ public static class InfoHud {
             WriteTasInput(stringBuilder);
         }
 
-        string hudInfo = GameInfo.HudInfo;
+        string hudInfo = TAS.InfoHUD.GameInfo.Query(TAS.InfoHUD.GameInfo.Target.InGameHud);
         if (hudInfo.IsNotEmpty()) {
             if (stringBuilder.Length > 0) {
                 stringBuilder.AppendLine();

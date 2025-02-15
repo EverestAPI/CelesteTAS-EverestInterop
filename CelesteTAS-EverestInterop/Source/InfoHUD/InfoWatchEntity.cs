@@ -160,7 +160,7 @@ public static class InfoWatchEntity {
             }
         }
 
-        GameInfo.Update();
+        TAS.GameInfo.Update();
     }
 
     internal static void ClearWatchEntities() {
@@ -169,7 +169,7 @@ public static class InfoWatchEntity {
         WatchedEntities_Save.Clear();
         WatchedEntityIds.Clear();
         CurrentlyWatchedEntities.Clear();
-        GameInfo.Update();
+        TAS.GameInfo.Update();
 
         ClearWatching?.Invoke();
     }
@@ -201,8 +201,8 @@ public static class InfoWatchEntity {
 
     internal static void UpdateInfo(string separator = "\n", int? decimals = null) {
         CurrentlyWatchedEntities.Clear();
-        GameInfo.HudWatchingInfo = string.Empty;
-        GameInfo.StudioWatchingInfo = string.Empty;
+        TAS.GameInfo.HudWatchingInfo = string.Empty;
+        TAS.GameInfo.StudioWatchingInfo = string.Empty;
         if (Engine.Scene is not Level level || !TasSettings.WatchEntity && !ForceUpdateInfo) {
             return;
         }
@@ -218,20 +218,20 @@ public static class InfoWatchEntity {
         CurrentlyWatchedEntities.AddRange(allEntities);
 
         if (!TasSettings.HudWatchEntity) {
-            GameInfo.HudWatchingInfo = string.Empty;
+            TAS.GameInfo.HudWatchingInfo = string.Empty;
         } else {
-            GameInfo.HudWatchingInfo = string.Join(separator,
+            TAS.GameInfo.HudWatchingInfo = string.Join(separator,
             allEntities
                 .Select(entity => GetEntityValues(entity, TasSettings.InfoWatchEntityHudType, separator, decimals.Value))
             );
         }
 
         if (!TasSettings.StudioWatchEntity || !Communication.CommunicationWrapper.Connected) {
-            GameInfo.StudioWatchingInfo = string.Empty;
+            TAS.GameInfo.StudioWatchingInfo = string.Empty;
         } else if (TasSettings.InfoWatchEntityStudioType == TasSettings.InfoWatchEntityHudType) {
-            GameInfo.StudioWatchingInfo = GameInfo.HudWatchingInfo;
+            TAS.GameInfo.StudioWatchingInfo = TAS.GameInfo.HudWatchingInfo;
         } else {
-            GameInfo.StudioWatchingInfo = string.Join(separator,
+            TAS.GameInfo.StudioWatchingInfo = string.Join(separator,
             allEntities
                 .Select(entity => GetEntityValues(entity, TasSettings.InfoWatchEntityStudioType, separator, decimals.Value))
             );
@@ -327,7 +327,7 @@ public static class InfoWatchEntity {
 
             if (value is float floatValue) {
                 if (info.Name.EndsWith("Timer")) {
-                    value = $"{GameInfo.ConvertToFrames(floatValue)}f ({floatValue.ToFormattedString(decimals)})" ;
+                    value = $"{TAS.GameInfo.ConvertToFrames(floatValue)}f ({floatValue.ToFormattedString(decimals)})" ;
                 } else {
                     value = floatValue.ToFormattedString(decimals);
                 }

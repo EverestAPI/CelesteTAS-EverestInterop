@@ -270,7 +270,7 @@ public static class InfoCustom {
     /// Formats a value in seconds into frames
     private static bool Formatter_toFrame(object? value, int _, out string formattedValue) {
         if (value is float floatValue) {
-            formattedValue = GameInfo.ConvertToFrames(floatValue).ToString();
+            formattedValue = TAS.GameInfo.ConvertToFrames(floatValue).ToString();
             return true;
         }
 
@@ -280,11 +280,11 @@ public static class InfoCustom {
     /// Formats a value in px/s into px/f
     private static bool Formatter_toPixelPerFrame(object? value, int decimals, out string formattedValue) {
         if (value is float floatValue) {
-            formattedValue = GameInfo.ConvertSpeedUnit(floatValue, SpeedUnit.PixelPerFrame).ToFormattedString(decimals);
+            formattedValue = TAS.GameInfo.ConvertSpeedUnit(floatValue, SpeedUnit.PixelPerFrame).ToFormattedString(decimals);
             return true;
         }
         if (value is Vector2 vectorValue) {
-            formattedValue = GameInfo.ConvertSpeedUnit(vectorValue, SpeedUnit.PixelPerFrame).ToSimpleString(decimals);
+            formattedValue = TAS.GameInfo.ConvertSpeedUnit(vectorValue, SpeedUnit.PixelPerFrame).ToSimpleString(decimals);
             return true;
         }
 
