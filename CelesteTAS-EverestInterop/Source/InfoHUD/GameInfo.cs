@@ -34,10 +34,15 @@ public static class GameInfo {
         switch (target) {
             case Target.InGameHud: {
                 yield return TAS.GameInfo.HudInfo;
+                yield return "\n";
                 yield return "===";
+                yield return "\n";
 
                 if (levelStatus.Value is { } status) {
                     yield return status;
+                }
+                if (sessionData.Value is { } session) {
+                    yield return $"[{session.RoomName}] Timer: {session.ChapterTime}";
                 }
 
                 break;
@@ -47,6 +52,9 @@ public static class GameInfo {
                 if (levelStatus.Value is { } status) {
                     yield return status;
                 }
+                if (sessionData.Value is { } session) {
+                    yield return $"[{session.RoomName}] Timer: {session.ChapterTime}";
+                }
 
                 break;
             }
@@ -54,6 +62,9 @@ public static class GameInfo {
             case Target.ExactInfo: {
                 if (levelStatusExact.Value is { } status) {
                     yield return status;
+                }
+                if (sessionData.Value is { } session) {
+                    yield return $"[{session.RoomName}] Timer: {session.ChapterTime}";
                 }
 
                 break;
@@ -117,10 +128,14 @@ public static class GameInfo {
             // Maintain previous state if player disappeared (e.g. death)
             if (level.Tracker.GetEntity<Player>() is not null) {
                 levelStatus.Reset();
+                levelStatusExact.Reset();
             }
         } else {
             levelStatus.Reset();
+            levelStatusExact.Reset();
         }
+
+        sessionData.Reset();
     }
 
     private static void OnLevelTransition(Level level, LevelData next, Vector2 direction) {
@@ -149,6 +164,7 @@ public static class GameInfo {
     // Caches of calculations for the current frame
     private static LazyValue<string?> levelStatus = new(QueryDisplayLevelStatus);
     private static LazyValue<string?> levelStatusExact = new(QueryExactLevelStatus);
+    private static LazyValue<(string RoomName, string ChapterTime)?> sessionData = new(QuerySessionData);
 
     // Data which needs to be tracked, because it'll be used in the next frame
     private static SubpixelPosition preUpdatePosition, lastPosition;
@@ -294,7 +310,15 @@ public static class GameInfo {
             return null;
         }
 
-        return builder.ToString();
+        return builder.TrimEnd().ToString();
+    }
+
+    private static (string RoomName, string ChapterTime)? QuerySessionData() {
+        if (Engine.Scene is Level level) {
+            return (level.Session.Level, FormatTime(level.Session.Time));
+        }
+
+        return null;
     }
 
     private const string PositionPrefix      = "Pos:   ";
@@ -351,6 +375,12 @@ public static class GameInfo {
         }
 
         return name;
+    }
+    public static string FormatTime(long ticks) {
+        var timeSpan = TimeSpan.FromTicks(ticks);
+        long frames = ticks / Engine.RawDeltaTime.SecondsToTicks();
+
+        return $"{timeSpan.ShortGameplayFormat()}({frames})";
     }
 
     private static float ConvertSpeedUnit(float speed, SpeedUnit unit) {

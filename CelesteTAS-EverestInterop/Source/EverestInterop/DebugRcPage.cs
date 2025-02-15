@@ -35,8 +35,7 @@ internal static class DebugRcPage {
             WriteLine(builder, "Game Info: ");
 
             var args = Everest.DebugRC.ParseQueryString(c.Request.RawUrl);
-            // TODO: Avoid string.Join and just iterate info blocks
-            string info = string.Join("\n\n", TAS.InfoHUD.GameInfo.Query(TAS.InfoHUD.GameInfo.Target.ExactInfo, args["forceAllowCodeExecution"] == "true"));
+            string info = string.Join('\n', TAS.InfoHUD.GameInfo.Query(TAS.InfoHUD.GameInfo.Target.ExactInfo, args["forceAllowCodeExecution"] == "true"));
             builder.Append($"<pre>{HttpUtility.HtmlEncode(info)}</pre>");
 
             Everest.DebugRC.WriteHTMLEnd(c, builder);

@@ -328,7 +328,7 @@ public static class Manager {
             SaveStateLine = Savestates.StudioHighlightLine,
             tasStates = 0,
             // TODO: Avoid string.Join and just iterate info blocks
-            GameInfo = string.Join("\n\n", InfoHUD.GameInfo.Query(InfoHUD.GameInfo.Target.Studio)),
+            GameInfo = string.Join('\n', InfoHUD.GameInfo.Query(InfoHUD.GameInfo.Target.Studio)),
             LevelName = GameInfo.LevelName,
             ChapterTime = GameInfo.ChapterTime,
             ShowSubpixelIndicator = TasSettings.InfoSubpixelIndicator && Engine.Scene is Level or Emulator,
