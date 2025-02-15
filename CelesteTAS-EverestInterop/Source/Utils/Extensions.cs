@@ -708,8 +708,8 @@ internal static class TrackerExtensions {
 }
 
 internal static class Vector2Extensions {
-    public static string ToSimpleString(this Vector2 vector2, int decimals) {
-        return $"{vector2.X.ToFormattedString(decimals)}, {vector2.Y.ToFormattedString(decimals)}";
+    public static string ToSimpleString(this Vector2 vec, int decimals) {
+        return $"{vec.X.ToFormattedString(decimals)}, {vec.Y.ToFormattedString(decimals)}";
     }
 }
 

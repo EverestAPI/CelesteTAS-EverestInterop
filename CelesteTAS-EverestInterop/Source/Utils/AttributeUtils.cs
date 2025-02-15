@@ -21,7 +21,7 @@ public static class AttributeUtils {
     }
 
     /// Gathers all static, parameterless methods with attribute T
-    /// Only searches through all mods - Should only be called after Load()
+    /// Searches through all mods - Should only be called after Load()
     public static void CollectAllMethods<T>(params Type[] parameterTypes) where T : Attribute {
         attributeMethods[typeof(T)] = FakeAssembly.GetFakeEntryAssembly()
             .GetTypesSafe()
