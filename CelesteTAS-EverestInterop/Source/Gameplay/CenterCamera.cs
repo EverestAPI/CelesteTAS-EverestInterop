@@ -198,7 +198,7 @@ internal static class CenterCamera {
         if (Hotkeys.FreeCamera.Check && ZoomedOut) {
             canvasOffset += moveOffset;
             changedCanvas = moveOffset != Vector2.Zero;
-        } else if (Hotkeys.InfoHud.Check) {
+        } else if (Hotkeys.FreeCamera.Check || Hotkeys.InfoHud.Check) {
             cameraOffset += moveOffset;
             changedCamera = moveOffset != Vector2.Zero;
         }
@@ -222,11 +222,13 @@ internal static class CenterCamera {
         }
 
         // Adjust camera zoom. Use faster speed for zooming out
-        float delta = (viewportScale + zoomDirection * 0.1f) switch {
-            > 1 => zoomDirection * 0.2f,
-            _ => zoomDirection * 0.1f
-        };
-        viewportScale = Math.Max(0.2f, viewportScale + delta);
+        if (Hotkeys.FreeCamera.Check || Hotkeys.InfoHud.Check) {
+            float delta = (viewportScale + zoomDirection * 0.1f) switch {
+                > 1 => zoomDirection * 0.2f,
+                _ => zoomDirection * 0.1f
+            };
+            viewportScale = Math.Max(0.2f, viewportScale + delta);
+        }
 
         if (cameraTargetPosition is { } target && level.Session.MapData.Bounds is var bounds) {
             if (changedCamera) {
@@ -235,7 +237,7 @@ internal static class CenterCamera {
             }
             if (changedCanvas) {
                 var result = (target + cameraOffset + canvasOffset).Clamp(bounds.X, bounds.Y, bounds.Right, bounds.Bottom);
-                canvasOffset = result - target - moveOffset;
+                canvasOffset = result - target - cameraOffset;
             }
         }
     }
