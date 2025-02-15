@@ -93,7 +93,7 @@ public static class GameInfo {
             }
 
             StudioWatchingInfo = InfoWatchEntity.GetInfo(TasSettings.InfoWatchEntityStudioType, alwaysUpdate: true, decimals: GameSettings.MaxDecimals);
-            CustomInfo = InfoCustom.GetInfo(GameSettings.MaxDecimals);
+            CustomInfo = string.Empty;//InfoCustom.GetInfo(GameSettings.MaxDecimals);
 
             if (CustomInfo.IsNotNullOrWhiteSpace()) {
                 infos.Add(CustomInfo);
@@ -116,7 +116,7 @@ public static class GameInfo {
             }
 
             StudioWatchingInfo = InfoWatchEntity.GetInfo(TasSettings.InfoWatchEntityStudioType, alwaysUpdate: true, decimals: GameSettings.MaxDecimals);
-            CustomInfo = InfoCustom.GetInfo(GameSettings.MaxDecimals, forceAllowCodeExecution: true);
+            CustomInfo = string.Empty;//InfoCustom.GetInfo(GameSettings.MaxDecimals, forceAllowCodeExecution: true);
 
             if (CustomInfo.IsNotNullOrWhiteSpace()) {
                 infos.Add(CustomInfo);
@@ -405,7 +405,7 @@ public static class GameInfo {
 
         if (TasSettings.InfoHud && (TasSettings.InfoCustom & HudOptions.HudOnly) != 0 ||
             (TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && CommunicationWrapper.Connected) {
-            CustomInfo = InfoCustom.GetInfo();
+            CustomInfo = string.Empty;//InfoCustom.GetInfo();
         } else {
             CustomInfo = string.Empty;
         }

@@ -154,10 +154,11 @@ public static class ExportGameInfo {
                 }
             }
 
-            if (InfoCustom.GetInfo(GetDecimals(TasSettings.CustomInfoDecimals, GameSettings.MaxDecimals)) is { } customInfo &&
-                customInfo.IsNotEmpty()) {
-                output += $"\t{customInfo.ReplaceLineBreak(" ")}";
-            }
+            // FIXME: Custom Info
+            // if (InfoCustom.GetInfo(GetDecimals(TasSettings.CustomInfoDecimals, GameSettings.MaxDecimals)) is { } customInfo &&
+            //     customInfo.IsNotEmpty()) {
+            //     output += $"\t{customInfo.ReplaceLineBreak(" ")}";
+            // }
 
             if (InfoWatchEntity.GetInfo(TasSettings.InfoWatchEntityHudType, "\t", true, GetDecimals(TasSettings.CustomInfoDecimals, GameSettings.MaxDecimals)) is { } watchInfo &&
                 watchInfo.IsNotEmpty()) {

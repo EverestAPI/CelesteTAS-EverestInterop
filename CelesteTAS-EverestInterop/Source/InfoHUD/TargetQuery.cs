@@ -89,6 +89,66 @@ public static class TargetQuery {
         }
     }
 
+    /// Parsed target-query which can be evaluated without having to be parsed from a string
+    // TODO: Generate DMD to JIT target-queries??
+    public readonly record struct Parsed(
+        List<Type> baseTypes, List<Type> componentTypes,
+        string[] memberArgs, EntityID? entityId
+    ) {
+        public static Result<Parsed, string> FromQuery(string query) {
+            string[] queryArgs = query.Split('.');
+
+            var baseTypes = ResolveBaseTypes(queryArgs, out string[] memberArgs, out var componentTypes, out var entityId);
+            if (baseTypes.IsEmpty()) {
+                return Result<Parsed, string>.Fail($"Failed to find base type for target-query '{query}'");
+            }
+            if (memberArgs.IsEmpty()) {
+                return Result<Parsed, string>.Fail("No members specified");
+            }
+
+            return Result<Parsed, string>.Ok(new Parsed(baseTypes, componentTypes, memberArgs, entityId));
+        }
+
+        public Result<List<(object? Value, object? BaseInstance)>, string> GetMemberValues(bool forceAllowCodeExecution = false) {
+            List< (object? Value, object? BaseInstance)> allResults = [];
+
+            foreach (var baseType in baseTypes) {
+                var instances = ResolveTypeInstances(baseType, componentTypes, entityId);
+
+                if (componentTypes.IsEmpty()) {
+                    if (ProcessType(this, baseType).CheckFailure(out string? error)) {
+                        return Result<List<(object? Value, object? BaseInstance)>, string>.Fail(error);
+                    }
+                } else {
+                    foreach (var componentType in componentTypes) {
+                        if (ProcessType(this, componentType).CheckFailure(out string? error)) {
+                            return Result<List<(object? Value, object? BaseInstance)>, string>.Fail(error);
+                        }
+                    }
+                }
+
+                continue;
+
+                VoidResult<string> ProcessType(Parsed parsed, Type type) {
+                    var result = ResolveMemberValues(type, instances, parsed.memberArgs, forceAllowCodeExecution);
+                    if (result.Failure) {
+                        return VoidResult<string>.Fail(result.Error);
+                    }
+
+                    if (instances == null) {
+                        allResults.Add((result.Value[0], null));
+                    } else {
+                        allResults.AddRange(result.Value.Select((value, i) => (value, (object?)instances[i])));
+                    }
+
+                    return VoidResult<string>.Ok;
+                }
+            }
+
+            return Result<List<(object? Value, object? BaseInstance)>, string>.Ok(allResults);
+        }
+    }
+
     /// Parses a target-query and returns the results for that
     /// A single BaseInstance == null entry is returned for static contexts
     public static Result<List<(object? Value, object? BaseInstance)>, string> GetMemberValues(string query, bool forceAllowCodeExecution = false) {
@@ -232,6 +292,10 @@ public static class TargetQuery {
         }
 
         if (type.IsSameOrSubclassOf(typeof(Entity))) {
+            if (Engine.Scene == null) {
+                return [];
+            }
+
             IEnumerable<Entity> entityInstances;
             if (Engine.Scene.Tracker.Entities.TryGetValue(type, out var entities)) {
                 entityInstances = entities
@@ -243,17 +307,21 @@ public static class TargetQuery {
 
             if (componentTypes.IsEmpty()) {
                 return entityInstances
-                    .Select(e => (object) e)
+                    .Select(object (e) => e)
                     .ToList();
             } else {
                 return entityInstances
                     .SelectMany(e => e.Components.Where(c => componentTypes.Any(componentType => c.GetType().IsSameOrSubclassOf(componentType))))
-                    .Select(c => (object) c)
+                    .Select(object (c) => c)
                     .ToList();
             }
         }
 
         if (type.IsSameOrSubclassOf(typeof(Component))) {
+            if (Engine.Scene == null) {
+                return [];
+            }
+
             IEnumerable<Component> componentInstances;
             if (Engine.Scene.Tracker.Components.TryGetValue(type, out var components)) {
                 componentInstances = components;
@@ -264,17 +332,23 @@ public static class TargetQuery {
             }
 
             return componentInstances
-                .Select(c => (object) c)
+                .Select(object (c) => c)
                 .ToList();
         }
 
-        if (Engine.Scene is Level level) {
-            if (type == typeof(Session)) {
+        if (type == typeof(Session)) {
+            if (Engine.Scene is Level level) {
                 return [level.Session];
             }
+
+            return [];
         }
-        if (Engine.Scene.GetType() == type) {
-            return [Engine.Scene];
+        if (type.IsSameOrSubclassOf(typeof(Scene))) {
+            if (Engine.Scene?.GetType() == type) {
+                return [Engine.Scene];
+            }
+
+            return [];
         }
 
         // Nothing found

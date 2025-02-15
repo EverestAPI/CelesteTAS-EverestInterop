@@ -171,6 +171,23 @@ public static class StringExtensions {
         }
     }
 
+    /// Trims leading whitespace of the StringBuilder
+    public static StringBuilder TrimStart(this StringBuilder sb) {
+        if (sb.Length == 0) {
+            return sb;
+        }
+
+        int i = 0;
+        for (; i < sb.Length; i++) {
+            if (!char.IsWhiteSpace(sb[i])) {
+                break;
+            }
+        }
+
+        sb.Remove(0, i);
+
+        return sb;
+    }
     /// Trims trailing whitespace of the StringBuilder
     public static StringBuilder TrimEnd(this StringBuilder sb) {
         if (sb.Length == 0) {

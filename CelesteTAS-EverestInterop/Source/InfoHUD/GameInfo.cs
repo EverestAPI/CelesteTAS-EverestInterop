@@ -34,37 +34,39 @@ public static class GameInfo {
         switch (target) {
             case Target.InGameHud: {
                 yield return TAS.GameInfo.HudInfo;
-                yield return "\n";
                 yield return "===";
-                yield return "\n";
 
-                if (levelStatus.Value is { } status) {
-                    yield return status;
+                if (TasSettings.InfoGame && levelStatus.Value is { } status && sessionData.Value is { } session) {
+                    yield return $"{status}\n[{session.RoomName}] Timer: {session.ChapterTime}";
                 }
-                if (sessionData.Value is { } session) {
-                    yield return $"[{session.RoomName}] Timer: {session.ChapterTime}";
+                if (TasSettings.InfoCustom.Has(HudOptions.HudOnly) && customInfo.Value is { } info && !string.IsNullOrEmpty(info)) {
+                    yield return info;
                 }
 
                 break;
             }
 
             case Target.Studio: {
-                if (levelStatus.Value is { } status) {
-                    yield return status;
+                if (TasSettings.InfoGame && levelStatus.Value is { } status && sessionData.Value is { } session) {
+                    yield return $"{status}\n[{session.RoomName}] Timer: {session.ChapterTime}";
                 }
-                if (sessionData.Value is { } session) {
-                    yield return $"[{session.RoomName}] Timer: {session.ChapterTime}";
+                if (TasSettings.InfoCustom.Has(HudOptions.StudioOnly) && customInfo.Value is { } info && !string.IsNullOrEmpty(info)) {
+                    yield return info;
                 }
 
                 break;
             }
 
             case Target.ExactInfo: {
-                if (levelStatusExact.Value is { } status) {
-                    yield return status;
+                if (TasSettings.InfoGame && levelStatusExact.Value is { } status && sessionData.Value is { } session) {
+                    yield return $"{status}\n[{session.RoomName}] Timer: {session.ChapterTime}";
                 }
-                if (sessionData.Value is { } session) {
-                    yield return $"[{session.RoomName}] Timer: {session.ChapterTime}";
+
+                string info = forceAllowCodeExecution
+                    ? customInfoExactForceAllowCodeExecution.Value
+                    : customInfoExact.Value;
+                if (!string.IsNullOrEmpty(info)) {
+                    yield return info;
                 }
 
                 break;
@@ -136,6 +138,14 @@ public static class GameInfo {
         }
 
         sessionData.Reset();
+
+        if (customInfoTemplateHash != TasSettings.InfoCustomTemplate.GetHashCode()) {
+            customInfoComponents.Reset();
+        }
+
+        customInfo.Reset();
+        customInfoExact.Reset();
+        customInfoExactForceAllowCodeExecution.Reset();
     }
 
     private static void OnLevelTransition(Level level, LevelData next, Vector2 direction) {
@@ -165,6 +175,13 @@ public static class GameInfo {
     private static LazyValue<string?> levelStatus = new(QueryDisplayLevelStatus);
     private static LazyValue<string?> levelStatusExact = new(QueryExactLevelStatus);
     private static LazyValue<(string RoomName, string ChapterTime)?> sessionData = new(QuerySessionData);
+
+    private static int customInfoTemplateHash = int.MaxValue;
+    private static LazyValue<InfoCustom.TemplateComponent[]> customInfoComponents = new(QueryCustomInfoComponents);
+
+    private static LazyValue<string> customInfo = new(QueryDisplayCustomInfo);
+    private static LazyValue<string> customInfoExact = new(QueryExactCustomInfo);
+    private static LazyValue<string> customInfoExactForceAllowCodeExecution = new(QueryExactCustomInfoForceAllowCodeExecution);
 
     // Data which needs to be tracked, because it'll be used in the next frame
     private static SubpixelPosition preUpdatePosition, lastPosition;
@@ -320,6 +337,15 @@ public static class GameInfo {
 
         return null;
     }
+
+    private static InfoCustom.TemplateComponent[] QueryCustomInfoComponents() {
+        customInfoTemplateHash = TasSettings.InfoCustomTemplate.GetHashCode();
+        return InfoCustom.ParseTemplate(TasSettings.InfoCustomTemplate);
+    }
+
+    private static string QueryDisplayCustomInfo() => InfoCustom.EvaluateTemplate(customInfoComponents.Value, TasSettings.CustomInfoDecimals);
+    private static string QueryExactCustomInfo() => InfoCustom.EvaluateTemplate(customInfoComponents.Value, GameSettings.MaxDecimals);
+    private static string QueryExactCustomInfoForceAllowCodeExecution() => InfoCustom.EvaluateTemplate(customInfoComponents.Value, GameSettings.MaxDecimals, forceAllowCodeExecution: true);
 
     private const string PositionPrefix      = "Pos:   ";
     private const string SpeedPrefix         = "Speed: ";
