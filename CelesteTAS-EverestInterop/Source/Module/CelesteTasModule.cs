@@ -41,6 +41,14 @@ public class CelesteTasModule : EverestModule {
 #endif
 
     public override void Load() {
+        // Activate verbose logging if loaded from a directory or when compiled in DEBUG mode
+        if (!string.IsNullOrWhiteSpace(Instance.Metadata.PathDirectory)) {
+            Logger.SetLogLevel("CelesteTAS", LogLevel.Verbose);
+        }
+#if DEBUG
+        Logger.SetLogLevel("CelesteTAS", LogLevel.Verbose);
+#endif
+
         AttributeUtils.Invoke<LoadAttribute>();
 
 #if DEBUG
