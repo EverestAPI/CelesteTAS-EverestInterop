@@ -1,8 +1,12 @@
 using Celeste.Mod;
 using JetBrains.Annotations;
+using Microsoft.Xna.Framework;
 using MonoMod.ModInterop;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using TAS.EverestInterop;
+using TAS.InfoHUD;
 using TAS.Utils;
 
 namespace TAS.Module;
@@ -14,17 +18,29 @@ public static class CelesteTasImports {
     public delegate void AddSettingsRestoreHandlerDelegate(EverestModule module, (Func<object> Backup, Action<object> Restore)? handler);
     public delegate void RemoveSettingsRestoreHandlerDelegate(EverestModule module);
 
-    /// Registers custom delegates for backing up and restoring mod setting before / after running a TAS
-    /// A `null` handler causes the settings to not be backed up and later restored
+    public delegate void RegisterHudWindowHandlerDelegate(
+        Func<bool> visibleProvider,
+        Func<IEnumerable<string>> textProvider,
+        Func<Vector2>? loadPosition,
+        Action<Vector2>? storePosition,
+        (Func<bool> visibleProvider, Func<Vector2> sizeProvider, Action<Vector2> render)[] renderers
+    );
+
+    /// Registers custom delegates for backing up and restoring mod setting before / after running a TAS <br/>
+    /// A <c>null</c> handler causes the settings to not be backed up and later restored
     public static AddSettingsRestoreHandlerDelegate AddSettingsRestoreHandler = null!;
 
     /// De-registers a previously registered handler for the module
     public static RemoveSettingsRestoreHandlerDelegate RemoveSettingsRestoreHandler = null!;
+
+    /// Register a handler for displaying a custom HUD window, like the Info HUD. <br/>
+    /// Visibility is <b>not</b> tied to the CelesteTAS Info HUD being visible. It must be manually handled by the callback.
+    public static RegisterHudWindowHandlerDelegate RegisterHudWindowHandler = null!;
 }
 
 /// Official stable API for interacting with CelesteTAS
 [ModExportName("CelesteTAS"), PublicAPI]
-public static class CelesteTasExports {
+internal static class CelesteTasExports {
     [Load]
     private static void Load() {
         typeof(CelesteTasExports).ModInterop();
@@ -50,5 +66,21 @@ public static class CelesteTasExports {
         } else {
             $"Tried to de-register a custom setting-restore handler for mod '{module.Metadata.Name}', without having a handler previously registered".Log(LogLevel.Warn);
         }
+    }
+
+    public static void RegisterHudWindowHandler(
+        Func<bool> visibleProvider,
+        Func<IEnumerable<string>> textProvider,
+        Func<Vector2>? loadPosition,
+        Action<Vector2>? storePosition,
+        (Func<bool> visibleProvider, Func<Vector2> sizeProvider, Action<Vector2> render)[] renderers
+    ) {
+        var handler = new WindowManager.Handler(
+                visibleProvider, textProvider, loadPosition, storePosition,
+                renderers
+                    .Select(entry => new WindowManager.Renderer(entry.visibleProvider, entry.sizeProvider, entry.render))
+                    .ToArray());
+
+        WindowManager.Register(handler);
     }
 }

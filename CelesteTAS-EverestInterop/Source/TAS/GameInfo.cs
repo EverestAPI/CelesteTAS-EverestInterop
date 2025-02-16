@@ -18,6 +18,7 @@ using TAS.InfoHUD;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
+using InfoMouse = TAS.InfoHUD.InfoMouse;
 
 namespace TAS;
 
@@ -48,9 +49,9 @@ public static class GameInfo {
                 infos.Add(Status);
             }
 
-            if (InfoMouse.MouseInfo.IsNotEmpty()) {
-                infos.Add(InfoMouse.MouseInfo);
-            }
+            // if (InfoMouse.MouseInfo.IsNotEmpty()) {
+            //     infos.Add(InfoMouse.MouseInfo);
+            // }
 
             if ((TasSettings.InfoCustom & HudOptions.HudOnly) != 0 && CustomInfo.IsNotNullOrWhiteSpace()) {
                 infos.Add(CustomInfo);
@@ -68,9 +69,9 @@ public static class GameInfo {
         get {
             List<string> infos = new() {Status};
 
-            if (InfoMouse.MouseInfo.IsNotEmpty()) {
-                infos.Add(InfoMouse.MouseInfo);
-            }
+            // if (InfoMouse.MouseInfo.IsNotEmpty()) {
+            //     infos.Add(InfoMouse.MouseInfo);
+            // }
 
             if ((TasSettings.InfoCustom & HudOptions.StudioOnly) != 0 && CustomInfo.IsNotNullOrWhiteSpace()) {
                 infos.Add(CustomInfo);
@@ -88,9 +89,9 @@ public static class GameInfo {
         get {
             List<string> infos = new() {ExactStatus};
 
-            if (InfoMouse.MouseInfo.IsNotEmpty()) {
-                infos.Add(InfoMouse.MouseInfo);
-            }
+            // if (InfoMouse.MouseInfo.IsNotEmpty()) {
+            //     infos.Add(InfoMouse.MouseInfo);
+            // }
 
             StudioWatchingInfo = InfoWatchEntity.GetInfo(TasSettings.InfoWatchEntityStudioType, alwaysUpdate: true, decimals: GameSettings.MaxDecimals);
             CustomInfo = string.Empty;//InfoCustom.GetInfo(GameSettings.MaxDecimals);
@@ -111,9 +112,9 @@ public static class GameInfo {
         get {
             List<string> infos = new() {ExactStatus};
 
-            if (InfoMouse.MouseInfo.IsNotEmpty()) {
-                infos.Add(InfoMouse.MouseInfo);
-            }
+            // if (InfoMouse.MouseInfo.IsNotEmpty()) {
+            //     infos.Add(InfoMouse.MouseInfo);
+            // }
 
             StudioWatchingInfo = InfoWatchEntity.GetInfo(TasSettings.InfoWatchEntityStudioType, alwaysUpdate: true, decimals: GameSettings.MaxDecimals);
             CustomInfo = string.Empty;//InfoCustom.GetInfo(GameSettings.MaxDecimals, forceAllowCodeExecution: true);

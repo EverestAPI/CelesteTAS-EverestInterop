@@ -24,6 +24,14 @@ internal static class Events {
     [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
     public class PostSceneUpdate : Attribute;
 
+    /// Invoked before the current scene is updated
+    [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+    public class PreSceneRender : Attribute;
+
+    /// Invoked after the current scene was updated
+    [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+    public class PostSceneRender : Attribute;
+
     /// Invoked while the engine is frozen
     [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
     public class EngineFrozenUpdate : Attribute;
@@ -59,8 +67,26 @@ internal static class Events {
                 cursor.EmitStaticDelegate($"Event_{nameof(PostSceneUpdate)}", (Scene scene) => AttributeUtils.Invoke<PostSceneUpdate>(scene));
             });
 
+        typeof(Engine)
+            .GetMethodInfo(nameof(Engine.RenderCore))!
+            .IlHook((cursor, _) => {
+                // PreSceneRender
+                cursor.GotoNext(MoveType.Before, instr => instr.MatchCallvirt<Scene>(nameof(Scene.BeforeRender)));
+                cursor.EmitDup();
+                cursor.EmitStaticDelegate($"Event_{nameof(PreSceneRender)}", (Scene scene) => AttributeUtils.Invoke<PreSceneRender>(scene));
+
+                // PostSceneRender
+                cursor.GotoNext(MoveType.Before, instr => instr.MatchCallvirt<Scene>(nameof(Scene.AfterRender)));
+                cursor.EmitDup();
+                cursor.Index++; // Go after callvirt Scene::AfterRender
+                cursor.MoveBeforeLabels();
+                cursor.EmitStaticDelegate($"Event_{nameof(PostSceneRender)}", (Scene scene) => AttributeUtils.Invoke<PostSceneRender>(scene));
+            });
+
         AttributeUtils.CollectOwnMethods<PreSceneUpdate>(typeof(Scene));
         AttributeUtils.CollectOwnMethods<PostSceneUpdate>(typeof(Scene));
+        AttributeUtils.CollectOwnMethods<PreSceneRender>(typeof(Scene));
+        AttributeUtils.CollectOwnMethods<PostSceneRender>(typeof(Scene));
         AttributeUtils.CollectOwnMethods<EngineFrozenUpdate>();
     }
 }

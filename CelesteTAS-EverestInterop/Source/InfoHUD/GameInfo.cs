@@ -36,6 +36,11 @@ public static class GameInfo {
                 yield return TAS.GameInfo.HudInfo;
                 yield return "===";
 
+                // TODO:
+                // if (TasSettings.InfoTasInput) {
+                //     WriteTasInput(stringBuilder);
+                // }
+
                 if (TasSettings.InfoGame && levelStatus.Value is { } status && sessionData.Value is { } session) {
                     yield return $"{status}\n[{session.RoomName}] Timer: {session.ChapterTime}";
                 }

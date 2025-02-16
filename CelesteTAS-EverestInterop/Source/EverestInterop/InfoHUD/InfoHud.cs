@@ -17,20 +17,19 @@ public static class InfoHud {
     private static EaseInSubMenu subMenuItem;
     public static Vector2 Size { get; private set; }
 
-    [Load]
-    private static void Load() {
-        On.Celeste.Level.Render += LevelOnRender;
-        On.Celeste.Pico8.Emulator.Render += EmulatorOnRender;
-        On.Monocle.Scene.Render += SceneOnRender;
-    }
-
-    [Unload]
-    private static void Unload() {
-        On.Celeste.Level.Render -= LevelOnRender;
-        On.Celeste.Pico8.Emulator.Render -= EmulatorOnRender;
-        On.Monocle.Scene.Render -= SceneOnRender;
-    }
-
+    // [Load]
+    // private static void Load() {
+    //     On.Celeste.Level.Render += LevelOnRender;
+    //     On.Celeste.Pico8.Emulator.Render += EmulatorOnRender;
+    //     On.Monocle.Scene.Render += SceneOnRender;
+    // }
+    //
+    // [Unload]
+    // private static void Unload() {
+    //     On.Celeste.Level.Render -= LevelOnRender;
+    //     On.Celeste.Pico8.Emulator.Render -= EmulatorOnRender;
+    //     On.Monocle.Scene.Render -= SceneOnRender;
+    // }
 
     private static void LevelOnRender(On.Celeste.Level.orig_Render orig, Level self) {
         orig(self);
