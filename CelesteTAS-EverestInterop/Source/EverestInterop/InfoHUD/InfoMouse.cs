@@ -50,7 +50,7 @@ public static class InfoMouse {
         }
 
         if (Engine.Scene is Level level) {
-            mouseWorldPosition = level.MouseToWorld(MouseInput.Position);
+            mouseWorldPosition = level.MouseToWorldPosition(MouseInput.Position);
         } else {
             mouseWorldPosition = null;
         }
@@ -196,11 +196,11 @@ internal class SelectedAreaEntity : Entity {
         }
 
         if (MouseInput.Right.Pressed) {
-            start = level.MouseToWorld(MouseInput.Position);
+            start = level.MouseToWorldPosition(MouseInput.Position);
         }
 
         if (start != null) {
-            Vector2 end = level.MouseToWorld(MouseInput.Position);
+            Vector2 end = level.MouseToWorldPosition(MouseInput.Position);
             left = (int) Math.Min(start.Value.X, end.X);
             right = (int) Math.Max(start.Value.X, end.X);
             top = (int) Math.Min(start.Value.Y, end.Y);

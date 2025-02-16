@@ -19,27 +19,25 @@ internal static class Events {
     public class PostGameplayRender(int priority = 0) : EventAttribute(priority);
 
     /// Invoked before the current scene is updated
-    [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-    public class PreSceneUpdate : Attribute;
+    public class PreSceneUpdate(int priority = 0) : EventAttribute(priority);
 
     /// Invoked after the current scene was updated
-    [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-    public class PostSceneUpdate : Attribute;
+    public class PostSceneUpdate(int priority = 0) : EventAttribute(priority);
 
     /// Invoked before the current scene is rendered
-    [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-    public class PreSceneRender : Attribute;
+    public class PreSceneRender(int priority = 0) : EventAttribute(priority);
 
     /// Invoked after the current scene was rendered
-    [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-    public class PostSceneRender : Attribute;
+    public class PostSceneRender(int priority = 0) : EventAttribute(priority);
 
     /// Invoked after the current scene was rendered, while an HD spritebatch is active
     public class PostSceneRenderBatch(int priority = 0) : EventAttribute(priority);
 
     /// Invoked while the engine is frozen
-    [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-    public class EngineFrozenUpdate : Attribute;
+    public class EngineFrozenUpdate(int priority = 0) : EventAttribute(priority);
+
+    /// Invoked before the EntityList is changed with added / removed entities
+    public class PreEntityListUpdate(int priority = 0) : EventAttribute(priority);
 
     [Load]
     private static void Load() {
@@ -106,6 +104,10 @@ internal static class Events {
                 });
             });
 
+        typeof(EntityList)
+            .GetMethodInfo(nameof(EntityList.UpdateLists))!
+            .HookBefore((EntityList list) => AttributeUtils.Invoke<PreEntityListUpdate>(list));
+
         AttributeUtils.CollectOwnMethods<PostDebugRender>(typeof(Scene));
         AttributeUtils.CollectOwnMethods<PreSceneUpdate>(typeof(Scene));
         AttributeUtils.CollectOwnMethods<PostSceneUpdate>(typeof(Scene));
@@ -113,5 +115,6 @@ internal static class Events {
         AttributeUtils.CollectOwnMethods<PostSceneRender>(typeof(Scene));
         AttributeUtils.CollectOwnMethods<PostSceneRenderBatch>(typeof(Scene));
         AttributeUtils.CollectOwnMethods<EngineFrozenUpdate>();
+        AttributeUtils.CollectOwnMethods<PreEntityListUpdate>(typeof(EntityList));
     }
 }

@@ -743,58 +743,6 @@ internal static class SceneExtensions {
     }
 }
 
-internal static class LevelExtensions {
-    public static Vector2 ScreenToWorld(this Level level, Vector2 position) {
-        Vector2 size = new Vector2(320f, 180f);
-        Vector2 scaledSize = size / level.ZoomTarget;
-        Vector2 offset = level.ZoomTarget != 1f ? (level.ZoomFocusPoint - scaledSize / 2f) / (size - scaledSize) * size : Vector2.Zero;
-        float scale = level.Zoom * ((320f - level.ScreenPadding * 2f) / 320f);
-        Vector2 paddingOffset = new Vector2(level.ScreenPadding, level.ScreenPadding * 9f / 16f);
-
-        if (SaveData.Instance?.Assists.MirrorMode ?? false) {
-            position.X = 1920f - position.X;
-        }
-
-        if (ExtendedVariantsInterop.UpsideDown) {
-            position.Y = 1080f - position.Y;
-        }
-
-        position /= 1920f / 320f;
-        position -= paddingOffset;
-        position = (position - offset) / scale + offset;
-        position = level.Camera.ScreenToCamera(position);
-        return position;
-    }
-
-    public static Vector2 WorldToScreen(this Level level, Vector2 position) {
-        Vector2 size = new Vector2(320f, 180f);
-        Vector2 scaledSize = size / level.ZoomTarget;
-        Vector2 offset = level.ZoomTarget != 1f ? (level.ZoomFocusPoint - scaledSize / 2f) / (size - scaledSize) * size : Vector2.Zero;
-        float scale = level.Zoom * ((320f - level.ScreenPadding * 2f) / 320f);
-        Vector2 paddingOffset = new Vector2(level.ScreenPadding, level.ScreenPadding * 9f / 16f);
-
-        position = level.Camera.CameraToScreen(position);
-        position = (position - offset) * scale + offset;
-        position += paddingOffset;
-        position *= 1920f / 320f;
-
-        if (SaveData.Instance?.Assists.MirrorMode ?? false) {
-            position.X = 1920f - position.X;
-        }
-
-        if (ExtendedVariantsInterop.UpsideDown) {
-            position.Y = 1080f - position.Y;
-        }
-
-        return position;
-    }
-
-    public static Vector2 MouseToWorld(this Level level, Vector2 mousePosition) {
-        float viewScale = (float) Engine.ViewWidth / Engine.Width;
-        return level.ScreenToWorld(mousePosition / viewScale).Floor();
-    }
-}
-
 internal static class GridExtensions {
     public static List<Tuple<Vector2, bool>> GetCheckedTilesInLineCollision(this Grid grid, Vector2 from, Vector2 to) {
         from -= grid.AbsolutePosition;

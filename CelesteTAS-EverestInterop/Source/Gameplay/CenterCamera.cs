@@ -207,7 +207,7 @@ internal static class CenterCamera {
 
         // Drag support while holding right mouse button
         if (MouseInput.Right.Check && !InfoHUD.InfoMouse.DraggingArea) {
-            float scale = ZoomLevel * level.Camera.Zoom * (Celeste.Celeste.TargetWidth / Celeste.Celeste.GameWidth) * Engine.ViewWidth / Engine.Width;
+            float scale = ZoomLevel * level.Camera.Zoom * (CelesteGame.TargetWidth / CelesteGame.GameWidth) * Engine.ViewWidth / Engine.Width;
 
             var mouseOffset = MouseInput.PositionDelta / scale;
             if (ExtendedVariantsInterop.UpsideDown) {
@@ -243,7 +243,7 @@ internal static class CenterCamera {
     }
 
     /// Adjusts the camera to apply target-locking, offset, and zooming
-    private static void AdjustCamera() {
+    internal static void AdjustCamera() {
         if (!TasSettings.CenterCamera || Engine.Scene is not Level level) {
             return;
         }
@@ -280,7 +280,7 @@ internal static class CenterCamera {
             ExCameraDynamicsInterop.SetCamera(level, target + cameraOffset + canvasOffset, ZoomLevel);
         } else {
             level.Zoom = level.ZoomTarget = ZoomLevel;
-            level.ZoomFocusPoint = new Vector2(Celeste.Celeste.GameWidth / 2.0f, Celeste.Celeste.GameHeight / 2.0f);
+            level.ZoomFocusPoint = new Vector2(CelesteGame.GameWidth / 2.0f, CelesteGame.GameHeight / 2.0f);
             if (ZoomedOut) {
                 level.ZoomFocusPoint += canvasOffset;
             }
@@ -288,8 +288,8 @@ internal static class CenterCamera {
         }
 
         // Prepare screen-space camera for usage with OffscreenHitbox
-        ScreenCamera.Viewport.Width = (int) Math.Round(Celeste.Celeste.GameWidth * viewportScale);
-        ScreenCamera.Viewport.Height = (int) Math.Round(Celeste.Celeste.GameHeight * viewportScale);
+        ScreenCamera.Viewport.Width = (int) Math.Round(CelesteGame.GameWidth * viewportScale);
+        ScreenCamera.Viewport.Height = (int) Math.Round(CelesteGame.GameHeight * viewportScale);
         ScreenCamera.Position = target + cameraOffset - new Vector2(ScreenCamera.Viewport.Width / 2f, ScreenCamera.Viewport.Height / 2f);
 
         if (ZoomedOut) {
@@ -300,7 +300,7 @@ internal static class CenterCamera {
     }
 
     /// Restore camera settings to previous values, to avoid altering gameplay
-    private static void RestoreCamera() {
+    internal static void RestoreCamera() {
         if (Engine.Scene is not Level level) {
             return;
         }

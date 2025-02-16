@@ -174,7 +174,7 @@ public static class AutoMute {
         }
     }
 
-    private static void CelesteOnUpdate(On.Celeste.Celeste.orig_Update orig, Celeste.Celeste self, GameTime gameTime) {
+    private static void CelesteOnUpdate(On.Celeste.Celeste.orig_Update orig, CelesteGame self, GameTime gameTime) {
         orig(self, gameTime);
 
         if (FrameStep) {

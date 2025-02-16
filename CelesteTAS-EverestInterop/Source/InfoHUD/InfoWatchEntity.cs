@@ -94,21 +94,35 @@ public static class InfoWatchEntity {
         entities.AddRange(ResolveEntityIds(level).Values);
     }
 
+    [Events.PreEntityListUpdate]
+    private static void PreEntityListUpdate(EntityList list) {
+        // Don't check if specifically a watched entity is removed, as it's not worth
+        if (list.toAdd.Count != 0 || list.toRemove.Count != 0) {
+            CurrentlyWatchedEntities.Reset();
+        }
+    }
+
     [UpdateMeta]
     private static void UpdateMeta() {
+        if (!Hotkeys.InfoHud.Check) {
+            return;
+        }
+
         if (MouseInput.Right.Pressed) {
             ClearWatchEntities();
         }
 
+        CenterCamera.AdjustCamera();
         if (MouseInput.Left.Pressed && !WindowManager.IsMouseOverWindow() && FindClickedEntity() is { } entity) {
             AddOrRemoveWatching(entity);
             PrintAllSimpleValues(entity);
         }
+        CenterCamera.RestoreCamera();
     }
 
     /// Resolves the entity, which the mouse is currently over
     internal static Entity? FindClickedEntity() {
-        var clickedEntities = FindEntitiesAt(MouseInput.Position)
+        var clickedEntities = FindEntities()
             // Sort triggers after entities
             .Sort((a, b) => (a is Trigger ? 1 : -1) - (b is Trigger ? 1 : -1))
             .ToArray();
@@ -123,37 +137,34 @@ public static class InfoWatchEntity {
 
         LastClickedEntity.SetTarget(clickedEntity);
         return clickedEntity;
-    }
 
-    /// Resolves all entities which overlay with the screen position
-    private static IEnumerable<Entity> FindEntitiesAt(Vector2 screenPosition) {
-        if (Engine.Scene is not Level level) {
-            yield break;
-        }
+        static IEnumerable<Entity> FindEntities() {
+            if (Engine.Scene is not Level level) {
+                yield break;
+            }
 
-        var worldPosition = level.MouseToWorld(screenPosition);
-        foreach (var entity in level.Entities.Where(e => !IgnoreEntity(e))) {
-            if (entity.Collider == null) {
-                // Attempt to reconstruct collider from entity data
-                if (entity.GetEntityData() is { } data) {
-                    entity.Collider = new Hitbox(data.Width, data.Height);
+            var worldPosition = level.MouseToWorldPosition(MouseInput.Position);
+            foreach (var entity in level.Entities.Where(e => !IgnoreEntity(e))) {
+                if (entity.Collider == null) {
+                    // Attempt to reconstruct collider from entity data
+                    if (entity.GetEntityData() is { } data) {
+                        entity.Collider = new Hitbox(data.Width, data.Height);
 
-                    if (entity.CollidePoint(worldPosition)) {
-                        yield return entity;
+                        if (entity.CollidePoint(worldPosition)) {
+                            yield return entity;
+                        }
+
+                        entity.Collider = null;
                     }
 
-                    entity.Collider = null;
+                    continue;
                 }
 
-                continue;
-            }
-
-            if (entity.CollidePoint(worldPosition)) {
-                yield return entity;
+                if (entity.CollidePoint(worldPosition)) {
+                    yield return entity;
+                }
             }
         }
-
-        yield break;
 
         static bool IgnoreEntity(Entity entity) {
             return entity.GetType() == typeof(Entity)

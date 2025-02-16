@@ -49,6 +49,7 @@ internal struct LazySet<T>(Action<HashSet<T>> populator) {
 
             value.Clear();
             populator(value);
+            populated = true;
             return value;
         }
     }

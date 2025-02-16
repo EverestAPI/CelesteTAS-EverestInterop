@@ -20,8 +20,8 @@ internal static class CameraHitbox {
             return;
         }
 
-        cameraTopLeft = level.MouseToWorld(Vector2.Zero);
-        cameraBottomRight = level.MouseToWorld(new Vector2(Engine.ViewWidth, Engine.ViewHeight));
+        cameraTopLeft = level.MouseToWorldPosition(Vector2.Zero);
+        cameraBottomRight = level.MouseToWorldPosition(new Vector2(Engine.ViewWidth, Engine.ViewHeight));
     }
 
     [Events.PostDebugRender]

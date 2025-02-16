@@ -37,14 +37,14 @@ internal static class OffscreenHitbox {
     }
 
     // Scale down rendered hitboxes once camera is zoomed out too far
-    private static float BufferScale => Math.Min(1.0f, (offscreenBuffer?.Width ?? 0) / (Celeste.Celeste.GameWidth / CenterCamera.ZoomLevel));
+    private static float BufferScale => Math.Min(1.0f, (offscreenBuffer?.Width ?? 0) / (CelesteGame.GameWidth / CenterCamera.ZoomLevel));
 
     private static void DrawHitboxesToBuffer(Scene scene) {
         if (scene is not Level || !HitboxToggle.DrawHitboxes || !ShouldDraw) {
             return;
         }
 
-        offscreenBuffer ??= VirtualContent.CreateRenderTarget("CelesteTAS/offscreen-hitboxes", Celeste.Celeste.TargetWidth + 2, Celeste.Celeste.TargetHeight + 2, depth: true, preserve: true);
+        offscreenBuffer ??= VirtualContent.CreateRenderTarget("CelesteTAS/offscreen-hitboxes", CelesteGame.TargetWidth + 2, CelesteGame.TargetHeight + 2, depth: true, preserve: true);
         Engine.Graphics.GraphicsDevice.SetRenderTarget(offscreenBuffer);
         Engine.Graphics.GraphicsDevice.Clear(Color.Transparent);
 
@@ -80,7 +80,7 @@ internal static class OffscreenHitbox {
         }
 
         Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.Default, RasterizerState.CullNone, ColorGrade.Effect, Engine.ScreenMatrix);
-        Draw.SpriteBatch.Draw(offscreenBuffer, Vector2.Zero, CenterCamera.ScreenCamera.Viewport.Bounds, Color.White, 0.0f, Vector2.Zero, CenterCamera.ZoomLevel * (Celeste.Celeste.TargetWidth / Celeste.Celeste.GameWidth) / BufferScale, effects, 0.0f);
+        Draw.SpriteBatch.Draw(offscreenBuffer, Vector2.Zero, CenterCamera.ScreenCamera.Viewport.Bounds, Color.White, 0.0f, Vector2.Zero, CenterCamera.ZoomLevel * (CelesteGame.TargetWidth / CelesteGame.GameWidth) / BufferScale, effects, 0.0f);
         Draw.SpriteBatch.End();
     }
 }

@@ -105,7 +105,7 @@ public static class ConsoleEnhancements {
             if (clickedEntity != null) {
                 Type type = clickedEntity.GetType();
                 clickedEntityInfo = "\n entity type: ";
-                if (type.Assembly == typeof(Celeste.Celeste).Assembly) {
+                if (type.Assembly == typeof(CelesteGame).Assembly) {
                     clickedEntityInfo += type.FullName;
                 } else {
                     // StartExport uses a comma as a separator, so we can't use comma,

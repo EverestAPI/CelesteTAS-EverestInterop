@@ -63,7 +63,7 @@ public static class SaveAndQuitReenterCommand {
             }
 
             // Ensure ~DEBUG~ button is available
-            if (slot == -1 && Celeste.Celeste.PlayMode != Celeste.Celeste.PlayModes.Debug) {
+            if (slot == -1 && CelesteGame.PlayMode != CelesteGame.PlayModes.Debug) {
                 controller.ReadLine("Set,Celeste.PlayMode,Debug", filePath, fileLine, studioLine);
             }
 
@@ -98,8 +98,8 @@ public static class SaveAndQuitReenterCommand {
             }
 
             // Restore settings
-            if (slot == -1 && Celeste.Celeste.PlayMode != Celeste.Celeste.PlayModes.Debug) {
-                controller.ReadLine($"Set,Celeste.PlayMode,{Celeste.Celeste.PlayMode}", filePath, fileLine, studioLine);
+            if (slot == -1 && CelesteGame.PlayMode != CelesteGame.PlayModes.Debug) {
+                controller.ReadLine($"Set,Celeste.PlayMode,{CelesteGame.PlayMode}", filePath, fileLine, studioLine);
                 controller.ReadLine("Set,Engine.Commands.Enabled,false", filePath, fileLine, studioLine);
             }
             if (safe) {

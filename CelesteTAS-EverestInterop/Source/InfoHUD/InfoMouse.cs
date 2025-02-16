@@ -57,7 +57,7 @@ internal static class InfoMouse {
             return;
         }
 
-        mouseWorldPosition = level.MouseToWorld(MouseInput.Position);
+        mouseWorldPosition = level.MouseToWorldPosition(MouseInput.Position);
 
         if (MouseInput.Right.Pressed) {
             dragStartPosition = mouseWorldPosition.Value;

@@ -188,6 +188,11 @@ public static class GameInfo {
         customInfo.Reset();
         customInfoExact.Reset();
         customInfoExactForceAllowCodeExecution.Reset();
+
+        InfoWatchEntity.InfoPosition.Reset();
+        InfoWatchEntity.InfoDeclaredOnly.Reset();
+        InfoWatchEntity.InfoAll.Reset();
+        InfoWatchEntity.InfoAllExact.Reset();
     }
 
     private static void OnLevelTransition(Level level, LevelData next, Vector2 direction) {

@@ -122,7 +122,7 @@ internal static class StudioUpdateBanner {
 
         Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, null, RasterizerState.CullNone, null, Engine.ScreenMatrix);
 
-        float left = Celeste.Celeste.TargetWidth - bannerWidth;
+        float left = CelesteGame.TargetWidth - bannerWidth;
 
         banner.DrawJustified(position: new Vector2(left, BannerY),
             justify: new Vector2(1.0f, 0.0f),

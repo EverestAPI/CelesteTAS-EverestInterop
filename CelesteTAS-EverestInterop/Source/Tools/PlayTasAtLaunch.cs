@@ -18,7 +18,7 @@ internal static class PlayTasAtLaunch {
     /// Pending file which should be played
     public static string? FilePath;
 
-    private static void On_Celeste_OnScreenTransition(On.Celeste.Celeste.orig_OnSceneTransition orig, Celeste.Celeste self, Scene last, Scene next) {
+    private static void On_Celeste_OnScreenTransition(On.Celeste.Celeste.orig_OnSceneTransition orig, CelesteGame self, Scene last, Scene next) {
         orig(self, last, next);
 
         if (FilePath != null && next is Overworld) {
