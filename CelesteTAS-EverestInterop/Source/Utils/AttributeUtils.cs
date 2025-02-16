@@ -4,9 +4,15 @@ using System.Linq;
 using System.Reflection;
 using Celeste.Mod;
 using Celeste.Mod.Helpers;
+using JetBrains.Annotations;
 using TAS.Module;
 
 namespace TAS.Utils;
+
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+internal class EventAttribute(int priority) : Attribute {
+    public readonly int Priority = priority;
+}
 
 public static class AttributeUtils {
     private static readonly Dictionary<Type, MethodInfo[]> attributeMethods = new();
@@ -17,6 +23,13 @@ public static class AttributeUtils {
         attributeMethods[typeof(T)] = typeof(CelesteTasModule).Assembly
             .GetTypesSafe()
             .SelectMany(type => type.Collect<T>(parameterTypes))
+            // Invoke higher priorities later in the chain (i.e. on top of everything else)
+            .OrderBy(info => {
+                if (info.GetCustomAttribute<T>() is EventAttribute eventAttr) {
+                    return eventAttr.Priority;
+                }
+                return 0;
+            })
             .ToArray();
     }
 
@@ -26,6 +39,13 @@ public static class AttributeUtils {
         attributeMethods[typeof(T)] = FakeAssembly.GetFakeEntryAssembly()
             .GetTypesSafe()
             .SelectMany(type => type.Collect<T>(parameterTypes))
+            // Invoke higher priorities later in the chain (i.e. on top of everything else)
+            .OrderBy(info => {
+                if (info.GetCustomAttribute<T>() is EventAttribute eventAttr) {
+                    return eventAttr.Priority;
+                }
+                return 0;
+            })
             .ToArray();
     }
 

@@ -168,11 +168,13 @@ internal static class CenterCamera {
             moveOffset.Y += ArrowKeySensitivity;
         }
 
-        if (Hotkeys.CameraZoomIn.Check) {
-            zoomDirection -= 1;
-        }
-        if (Hotkeys.CameraZoomOut.Check) {
-            zoomDirection += 1;
+        if (Hotkeys.FreeCamera.Check || Hotkeys.InfoHud.Check) {
+            if (Hotkeys.CameraZoomIn.Check) {
+                zoomDirection -= 1;
+            }
+            if (Hotkeys.CameraZoomOut.Check) {
+                zoomDirection += 1;
+            }
         }
         if (zoomDirection == 0) {
             zoomDirection = -Math.Sign(MouseInput.WheelDelta);
@@ -204,7 +206,7 @@ internal static class CenterCamera {
         }
 
         // Drag support while holding right mouse button
-        if (MouseInput.Right.Check) {
+        if (MouseInput.Right.Check && !InfoHUD.InfoMouse.DraggingArea) {
             float scale = ZoomLevel * level.Camera.Zoom * (Celeste.Celeste.TargetWidth / Celeste.Celeste.GameWidth) * Engine.ViewWidth / Engine.Width;
 
             var mouseOffset = MouseInput.PositionDelta / scale;
@@ -222,13 +224,11 @@ internal static class CenterCamera {
         }
 
         // Adjust camera zoom. Use faster speed for zooming out
-        if (Hotkeys.FreeCamera.Check || Hotkeys.InfoHud.Check) {
-            float delta = (viewportScale + zoomDirection * 0.1f) switch {
-                > 1 => zoomDirection * 0.2f,
-                _ => zoomDirection * 0.1f
-            };
-            viewportScale = Math.Max(0.2f, viewportScale + delta);
-        }
+        float delta = (viewportScale + zoomDirection * 0.1f) switch {
+            > 1 => zoomDirection * 0.2f,
+            _ => zoomDirection * 0.1f
+        };
+        viewportScale = Math.Max(0.2f, viewportScale + delta);
 
         if (cameraTargetPosition is { } target && level.Session.MapData.Bounds is var bounds) {
             if (changedCamera) {

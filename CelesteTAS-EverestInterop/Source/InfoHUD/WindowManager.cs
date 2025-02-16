@@ -1,5 +1,4 @@
 using Celeste;
-using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication.Util;
 using System;
@@ -111,7 +110,6 @@ internal static class WindowManager {
                 float yDist = Calc.Max(0.0f, topDist, bottomDist);
 
                 float dist = xDist*xDist + yDist*yDist;
-                $"{handler.Index}: {leftDist} | {rightDist} | {topDist} {bottomDist} => {xDist} {yDist} => {dist}".DebugLog();
                 if (dist < closestDist) {
                     closestIndex = handler.Index;
                     closestDist = dist;
@@ -143,14 +141,13 @@ internal static class WindowManager {
     // Reused to reduce allocations
     private static readonly StringBuilder textBuilder = new();
 
+    public const int PostSceneRenderBatchPriority = 10;
     /// Renders all currently active HUD windows
-    [Events.PostSceneRender]
+    [Events.PostSceneRenderBatch(PostSceneRenderBatchPriority)]
     private static void DrawWindows(Scene scene) {
         if (!TasSettings.Enabled || !Hotkeys.Initialized || Engine.Scene is GameLoader { loaded: false }) {
             return;
         }
-
-        Draw.SpriteBatch.Begin();
 
         foreach (var handler in handlers.Where(handler => handler.Visible)) {
             textBuilder.Clear();
@@ -220,8 +217,6 @@ internal static class WindowManager {
                 drawPosition.Y += renderer.Size.Y + padding * 2.0f;
             }
         }
-
-        Draw.SpriteBatch.End();
     }
 
     private static bool CollidePlayer(Level level, Rectangle bgRect) {

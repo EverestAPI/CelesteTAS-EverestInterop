@@ -44,8 +44,11 @@ public static class GameInfo {
                 if (TasSettings.InfoGame && levelStatus.Value is { } status && sessionData.Value is { } session) {
                     yield return $"{status}\n[{session.RoomName}] Timer: {session.ChapterTime}";
                 }
-                if (TasSettings.InfoCustom.Has(HudOptions.HudOnly) && customInfo.Value is { } info && !string.IsNullOrEmpty(info)) {
-                    yield return info;
+                if (InfoMouse.Info.Value is { } infoMouse) {
+                    yield return infoMouse;
+                }
+                if (TasSettings.InfoCustom.Has(HudOptions.HudOnly) && customInfo.Value is { } infoCustom && !string.IsNullOrEmpty(infoCustom)) {
+                    yield return infoCustom;
                 }
 
                 break;
@@ -55,8 +58,11 @@ public static class GameInfo {
                 if (TasSettings.InfoGame && levelStatus.Value is { } status && sessionData.Value is { } session) {
                     yield return $"{status}\n[{session.RoomName}] Timer: {session.ChapterTime}";
                 }
-                if (TasSettings.InfoCustom.Has(HudOptions.StudioOnly) && customInfo.Value is { } info && !string.IsNullOrEmpty(info)) {
-                    yield return info;
+                if (InfoMouse.Info.Value is { } infoMouse) {
+                    yield return infoMouse;
+                }
+                if (TasSettings.InfoCustom.Has(HudOptions.StudioOnly) && customInfo.Value is { } infoCustom && !string.IsNullOrEmpty(infoCustom)) {
+                    yield return infoCustom;
                 }
 
                 break;
@@ -66,12 +72,15 @@ public static class GameInfo {
                 if (TasSettings.InfoGame && levelStatusExact.Value is { } status && sessionData.Value is { } session) {
                     yield return $"{status}\n[{session.RoomName}] Timer: {session.ChapterTime}";
                 }
+                if (InfoMouse.Info.Value is { } infoMouse) {
+                    yield return infoMouse;
+                }
 
-                string info = forceAllowCodeExecution
+                string infoCustom = forceAllowCodeExecution
                     ? customInfoExactForceAllowCodeExecution.Value
                     : customInfoExact.Value;
-                if (!string.IsNullOrEmpty(info)) {
-                    yield return info;
+                if (!string.IsNullOrEmpty(infoCustom)) {
+                    yield return infoCustom;
                 }
 
                 break;

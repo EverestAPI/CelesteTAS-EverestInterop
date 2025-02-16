@@ -1,7 +1,9 @@
+using Celeste;
 using JetBrains.Annotations;
 using Monocle;
 using MonoMod.Cil;
 using System;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -10,11 +12,14 @@ namespace TAS.Gameplay;
 /// Exposes additional events, along the ones provided by Everest
 internal static class Events {
 
-    /// Invoked after all other entities have updated
+    /// Invoked after all entities have updated
     public static event Action<Scene>? PostUpdate;
 
-    /// Invoked after all other entity hitboxes have been rendered
+    /// Invoked after all entity hitboxes have been rendered
     public static event Action<Scene>? PostDebugRender;
+
+    /// Invoked after all entities (and their hitboxes) have been rendered
+    public class PostGameplayRender(int priority = 0) : EventAttribute(priority);
 
     /// Invoked before the current scene is updated
     [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
@@ -24,13 +29,16 @@ internal static class Events {
     [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
     public class PostSceneUpdate : Attribute;
 
-    /// Invoked before the current scene is updated
+    /// Invoked before the current scene is rendered
     [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
     public class PreSceneRender : Attribute;
 
-    /// Invoked after the current scene was updated
+    /// Invoked after the current scene was rendered
     [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
     public class PostSceneRender : Attribute;
+
+    /// Invoked after the current scene was rendered, while an HD spritebatch is active
+    public class PostSceneRenderBatch(int priority = 0) : EventAttribute(priority);
 
     /// Invoked while the engine is frozen
     [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
@@ -45,6 +53,22 @@ internal static class Events {
         typeof(EntityList)
             .GetMethodInfo(nameof(EntityList.DebugRender))!
             .HookAfter((EntityList entityList) => PostDebugRender?.Invoke(entityList.Scene));
+
+        typeof(GameplayRenderer)
+            .GetMethodInfo(nameof(GameplayRenderer.Render))!
+            .IlHook((cursor, _) => {
+                cursor.GotoNext(MoveType.AfterLabel, instr => instr.MatchCall<GameplayRenderer>(nameof(GameplayRenderer.End)));
+
+                cursor.EmitLdarg1();
+                cursor.EmitStaticDelegate($"Event_{nameof(PostGameplayRender)}", (Scene scene) => AttributeUtils.Invoke<PostGameplayRender>(scene));
+            });
+        ModUtils.GetMethod("SpirialisHelper", "Celeste.Mod.Spirialis.TimeGameplayRenderer", "Render")
+            ?.IlHook((cursor, _) => {
+                cursor.GotoNext(MoveType.AfterLabel, instr => instr.MatchCall("Celeste.Mod.Spirialis.TimeGameplayRenderer", "End"));
+
+                cursor.EmitLdarg1();
+                cursor.EmitStaticDelegate($"Event_{nameof(PostGameplayRender)}", (Scene scene) => AttributeUtils.Invoke<PostGameplayRender>(scene));
+            });
 
         typeof(Engine)
             .GetMethodInfo(nameof(Engine.Update))!
@@ -80,13 +104,20 @@ internal static class Events {
                 cursor.EmitDup();
                 cursor.Index++; // Go after callvirt Scene::AfterRender
                 cursor.MoveBeforeLabels();
-                cursor.EmitStaticDelegate($"Event_{nameof(PostSceneRender)}", (Scene scene) => AttributeUtils.Invoke<PostSceneRender>(scene));
+                cursor.EmitStaticDelegate($"Event_{nameof(PostSceneRender)}", (Scene scene) => {
+                    AttributeUtils.Invoke<PostSceneRender>(scene);
+
+                    Draw.SpriteBatch.Begin();
+                    AttributeUtils.Invoke<PostSceneRenderBatch>(scene);
+                    Draw.SpriteBatch.End();
+                });
             });
 
         AttributeUtils.CollectOwnMethods<PreSceneUpdate>(typeof(Scene));
         AttributeUtils.CollectOwnMethods<PostSceneUpdate>(typeof(Scene));
         AttributeUtils.CollectOwnMethods<PreSceneRender>(typeof(Scene));
         AttributeUtils.CollectOwnMethods<PostSceneRender>(typeof(Scene));
+        AttributeUtils.CollectOwnMethods<PostSceneRenderBatch>(typeof(Scene));
         AttributeUtils.CollectOwnMethods<EngineFrozenUpdate>();
     }
 }

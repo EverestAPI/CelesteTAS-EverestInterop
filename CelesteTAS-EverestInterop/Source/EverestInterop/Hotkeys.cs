@@ -374,6 +374,7 @@ internal static class MouseInput {
 
     public static bool Updating { get; private set; }
 
+    /// Current mouse position in 1920x1080 screen space
     public static Vector2 Position { get; private set; }
     public static Vector2 PositionDelta => Position - lastPosition;
     private static Vector2 lastPosition;
@@ -403,7 +404,7 @@ internal static class MouseInput {
         Updating = false;
 
         lastPosition = Position;
-        Position = new Vector2(mouseState.X, mouseState.Y);
+        Position = new Vector2(mouseState.X - Engine.Viewport.X, mouseState.Y - Engine.Viewport.Y); // Account for non 16:9 aspect-ratios
 
         WheelDelta = mouseState.ScrollWheelValue - lastWheel;
         lastWheel = mouseState.ScrollWheelValue;
