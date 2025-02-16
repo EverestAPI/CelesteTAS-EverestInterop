@@ -77,7 +77,6 @@ public static class SpeedrunToolInterop {
         return;
 
         static void OnSave(Dictionary<Type, Dictionary<string, object>> savedValues, Level level) {
-            "Save".DebugLog();
             savedEntityData = EntityDataHelper.CachedEntityData.DeepCloneShared();
             InfoWatchEntity.WatchedEntities_Save = InfoWatchEntity.WatchedEntities.DeepCloneShared();
             groupCounter = CycleHitboxColor.GroupCounter;
@@ -97,7 +96,6 @@ public static class SpeedrunToolInterop {
         }
 
         static void OnLoad(Dictionary<Type, Dictionary<string, object>> savedValues, Level level) {
-            "Load".DebugLog();
             EntityDataHelper.CachedEntityData = savedEntityData!.DeepCloneShared();
             InfoWatchEntity.WatchedEntities = InfoWatchEntity.WatchedEntities_Save.DeepCloneShared();
             InfoWatchEntity.CurrentlyWatchedEntities.Reset();
@@ -122,7 +120,6 @@ public static class SpeedrunToolInterop {
         }
 
         static void OnClear() {
-            "Clear".DebugLog();
             savedEntityData = null;
             pressKeys = null;
             followers = null;
