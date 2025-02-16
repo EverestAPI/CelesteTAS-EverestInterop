@@ -206,7 +206,8 @@ internal static class CenterCamera {
         }
 
         // Drag support while holding right mouse button
-        if (MouseInput.Right.Check && !InfoHUD.InfoMouse.DraggingArea) {
+        // Avoid panning while selecting an area
+        if (MouseInput.Right.Check && !Hotkeys.InfoHud.Check) {
             float scale = ZoomLevel * level.Camera.Zoom * (CelesteGame.TargetWidth / CelesteGame.GameWidth) * Engine.ViewWidth / Engine.Width;
 
             var mouseOffset = MouseInput.PositionDelta / scale;

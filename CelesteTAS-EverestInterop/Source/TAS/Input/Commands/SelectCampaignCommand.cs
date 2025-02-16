@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using TAS.ModInterop;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -24,6 +25,9 @@ internal static class SelectCampaignCommand {
 
             foreach (string levelSet in AreaData.Areas.Select(area => area.LevelSet).Distinct()) {
                 if (string.IsNullOrWhiteSpace(levelSet)) {
+                    continue;
+                }
+                if (CollabUtils2Interop.Lobby.IsCollabLevelSet?.Invoke(levelSet) ?? false) {
                     continue;
                 }
 
@@ -157,7 +161,7 @@ internal static class SelectCampaignCommand {
         controller.AddFrames("1,D", studioLine);
         InputName(controller, slot, saveFileName, studioLine);
 
-        SelectCampaign(controller, campaignName, studioLine);
+        ChangeSelectedCampaign(controller, campaignName, studioLine);
 
         // Runtime-assert for even more additional safety
         controller.ReadLine("Assert,Equal,True,[[local ui = scene.Current; return ui ~= nil and ui.SlotSelected and not ui.Slots[ui.SlotIndex].Exists and getValue(ui.Slots[ui.SlotIndex], \"buttonIndex\") == 0]]", filePath, fileLine, studioLine);
@@ -348,20 +352,52 @@ internal static class SelectCampaignCommand {
         controller.AddFrames("48", studioLine);
     }
 
-    private static void SelectCampaign(InputController controller, string campaignName, int studioLine) {
+    private static void ChangeSelectedCampaign(InputController controller, string campaignName, int studioLine) {
         string[] levelSets = AreaData.Areas.Select(area => area.LevelSet).Distinct().ToArray();
 
-        int currentIndex = Array.FindIndex(levelSets, set => set == CoreModule.Settings.DefaultStartingLevelSet);
-        if (currentIndex == -1) {
-            currentIndex = Array.FindIndex(levelSets, set => set == "Celeste");
+        int startingIndex = Array.FindIndex(levelSets, set => set == CoreModule.Settings.DefaultStartingLevelSet);
+        if (startingIndex == -1) {
+            startingIndex = Array.FindIndex(levelSets, set => set == "Celeste");
         }
 
-        int targetIndex = Array.FindIndex(levelSets, set => set == campaignName);
+        // Check both movement directions - Repeat move until level set is valid
+        int movesLeft = 0;
+        int currentIndex = startingIndex;
+        while (levelSets[currentIndex] != campaignName) {
+            currentIndex = Array.IndexOf(levelSets, levelSets[currentIndex]) - 1;
 
-        int shiftRight = currentIndex < targetIndex ? targetIndex - currentIndex : currentIndex - targetIndex;
-        int shiftLeft = (levelSets.Length + shiftRight) % levelSets.Length;
+            if (currentIndex >= levelSets.Length) {
+                currentIndex = 0;
+            }
+            if (currentIndex < 0) {
+                currentIndex = AreaData.Areas.Count - 1;
+            }
 
-        if (shiftRight == 0 && shiftLeft == 0) {
+            // Collab level sets aren't selectable and shouldn't be counted
+            if (!(CollabUtils2Interop.Lobby.IsCollabLevelSet?.Invoke(levelSets[currentIndex]) ?? false)) {
+                movesLeft++;
+            }
+        }
+
+        int movesRight = 0;
+        currentIndex = startingIndex;
+        while (levelSets[currentIndex] != campaignName) {
+            currentIndex = Array.LastIndexOf(levelSets, levelSets[currentIndex]) - 1;
+
+            if (currentIndex >= levelSets.Length) {
+                currentIndex = 0;
+            }
+            if (currentIndex < 0) {
+                currentIndex = AreaData.Areas.Count - 1;
+            }
+
+            // Collab level sets aren't selectable and shouldn't be counted
+            if (!(CollabUtils2Interop.Lobby.IsCollabLevelSet?.Invoke(levelSets[currentIndex]) ?? false)) {
+                movesRight++;
+            }
+        }
+
+        if (movesLeft == 0 && movesRight == 0) {
             // No need to change campaign. Return back to "Begin"
             controller.AddFrames("1,U", studioLine);
             return;
@@ -371,12 +407,12 @@ internal static class SelectCampaignCommand {
         controller.AddFrames("1,D", studioLine);
         controller.AddFrames("1,F,180", studioLine);
 
-        if (shiftRight >= shiftLeft) {
-            for (int i = 0; i < shiftRight; i++) {
+        if (movesRight >= movesLeft) {
+            for (int i = 0; i < movesRight; i++) {
                 controller.AddFrames(i % 2 == 0 ? "1,R" : "1,F,90", studioLine);
             }
         } else {
-            for (int i = 0; i < shiftLeft; i++) {
+            for (int i = 0; i < movesLeft; i++) {
                 controller.AddFrames(i % 2 == 0 ? "1,L" : "1,F,270", studioLine);
             }
         }
