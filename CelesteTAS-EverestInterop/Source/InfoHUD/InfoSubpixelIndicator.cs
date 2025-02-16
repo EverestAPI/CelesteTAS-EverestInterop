@@ -1,9 +1,7 @@
-using Celeste;
 using Celeste.Pico8;
 using Monocle;
 using System;
 using System.Linq;
-using TAS.EverestInterop.InfoHUD;
 using TAS.Utils;
 
 namespace TAS.InfoHUD;
@@ -70,8 +68,8 @@ internal static class InfoSubpixelIndicator {
             (int) (position.Y + textSize.Y + padding),
             (int) rectSide, (int) rectSide, thickness, Color.Green * alpha);
         Draw.Rect(
-            position.X + textSize.X + padding + (rectSide - thickness) * subPixelLeft,
-            position.Y + textSize.Y + padding + (rectSide - thickness) * subPixelTop,
+            position.X + textSize.X + padding + (rectSide - thickness) * (remainder.X + 0.5f),
+            position.Y + textSize.Y + padding + (rectSide - thickness) * (remainder.Y + 0.5f),
             thickness, thickness,
             Color.Red * alpha);
     }

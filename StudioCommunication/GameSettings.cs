@@ -36,6 +36,7 @@ public partial class GameSettings {
     public int VelocityDecimals = 2;
     public int AngleDecimals = 5;
     public int CustomInfoDecimals = 2;
+    public int WatchEntityDecimals = 5;
     public int SubpixelIndicatorDecimals = 2;
 
     public SpeedUnit SpeedUnit = SpeedUnit.PixelPerSecond;

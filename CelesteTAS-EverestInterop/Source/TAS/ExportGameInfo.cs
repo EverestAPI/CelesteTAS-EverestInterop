@@ -160,10 +160,11 @@ public static class ExportGameInfo {
             //     output += $"\t{customInfo.ReplaceLineBreak(" ")}";
             // }
 
-            if (InfoWatchEntity.GetInfo(TasSettings.InfoWatchEntityHudType, "\t", true, GetDecimals(TasSettings.CustomInfoDecimals, GameSettings.MaxDecimals)) is { } watchInfo &&
-                watchInfo.IsNotEmpty()) {
-                output += $"\t{watchInfo}";
-            }
+            // FIXME: Watch Entity
+            // if (InfoWatchEntity.GetInfo(TasSettings.InfoWatchEntityHudType, "\t", true, GetDecimals(TasSettings.CustomInfoDecimals, GameSettings.MaxDecimals)) is { } watchInfo &&
+            //     watchInfo.IsNotEmpty()) {
+            //     output += $"\t{watchInfo}";
+            // }
         } else {
             string sceneName;
             if (Engine.Scene is Overworld overworld) {

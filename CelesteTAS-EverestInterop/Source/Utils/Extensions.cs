@@ -658,6 +658,14 @@ internal static class EntityExtensions {
     private static string ToSimplePositionString(Platform platform, int decimals) {
         return platform.GetMoreExactPosition(true).ToSimpleString(decimals);
     }
+
+    public static string FormatPosition(this Entity entity, int decimals) {
+        return entity switch {
+            Actor actor => SubpixelPosition.FromActor(actor).FormatValue(decimals, false),
+            Platform platform => SubpixelPosition.FromPlatform(platform).FormatValue(decimals, false),
+            _ => entity.Position.FormatValue(decimals),
+        };
+    }
 }
 
 internal static class Vector2DoubleExtension {

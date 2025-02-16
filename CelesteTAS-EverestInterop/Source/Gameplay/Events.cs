@@ -12,11 +12,8 @@ namespace TAS.Gameplay;
 /// Exposes additional events, along the ones provided by Everest
 internal static class Events {
 
-    /// Invoked after all entities have updated
-    public static event Action<Scene>? PostUpdate;
-
-    /// Invoked after all entity hitboxes have been rendered
-    public static event Action<Scene>? PostDebugRender;
+    /// Invoked after all entities (and their hitboxes) have been rendered
+    public class PostDebugRender(int priority = 0) : EventAttribute(priority);
 
     /// Invoked after all entities (and their hitboxes) have been rendered
     public class PostGameplayRender(int priority = 0) : EventAttribute(priority);
@@ -47,12 +44,8 @@ internal static class Events {
     [Load]
     private static void Load() {
         typeof(EntityList)
-            .GetMethodInfo(nameof(EntityList.Update))!
-            .HookAfter((EntityList entityList) => PostUpdate?.Invoke(entityList.Scene));
-
-        typeof(EntityList)
             .GetMethodInfo(nameof(EntityList.DebugRender))!
-            .HookAfter((EntityList entityList) => PostDebugRender?.Invoke(entityList.Scene));
+            .HookAfter((EntityList entityList) => AttributeUtils.Invoke<PostDebugRender>(entityList.Scene));
 
         typeof(GameplayRenderer)
             .GetMethodInfo(nameof(GameplayRenderer.Render))!
@@ -113,6 +106,7 @@ internal static class Events {
                 });
             });
 
+        AttributeUtils.CollectOwnMethods<PostDebugRender>(typeof(Scene));
         AttributeUtils.CollectOwnMethods<PreSceneUpdate>(typeof(Scene));
         AttributeUtils.CollectOwnMethods<PostSceneUpdate>(typeof(Scene));
         AttributeUtils.CollectOwnMethods<PreSceneRender>(typeof(Scene));

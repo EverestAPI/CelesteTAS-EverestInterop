@@ -356,6 +356,15 @@ public class CelesteTasSettings : EverestModuleSettings {
         }
     }
 
+    public int WatchEntityDecimals {
+        get => StudioShared.WatchEntityDecimals;
+        set {
+            StudioShared.WatchEntityDecimals = Calc.Clamp(value, GameSettings.MinDecimals, GameSettings.MaxDecimals);
+            GameInfo.Update();
+            SyncSettings();
+        }
+    }
+
     public int SubpixelIndicatorDecimals {
         get => StudioShared.SubpixelIndicatorDecimals;
         set {

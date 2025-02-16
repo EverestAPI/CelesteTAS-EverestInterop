@@ -7,15 +7,16 @@ using JetBrains.Annotations;
 using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication;
+using System.Text;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
+using TAS.Gameplay;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.InfoHUD;
-
 
 /// Displays information about specific entities inside the Info HUD
 public static class InfoWatchEntity {
@@ -45,6 +46,13 @@ public static class InfoWatchEntity {
     [PublicAPI]
     public static event Action? ClearWatching;
 
+    /// Checks if the specified entity is intended to be watched
+    [PublicAPI]
+    public static bool IsWatching(Entity entity) {
+        return CurrentlyWatchedEntities.Value.Contains(entity)
+               || (entity.GetEntityData() is { } entityData && WatchedEntityIds.Contains(new UniqueEntityId(entity, entityData)));
+    }
+
     private static readonly Dictionary<MemberKey, List<MemberInfo>> CachedMemberInfos = new();
     private static readonly WeakReference<Entity?> LastClickedEntity = new(null);
 
@@ -57,30 +65,45 @@ public static class InfoWatchEntity {
     private static readonly HashSet<UniqueEntityId> WatchedEntityIds = [];
 
     /// Entities which are actively watched for the current frame
-    internal static readonly HashSet<Entity> CurrentlyWatchedEntities = [];
+    internal static LazySet<Entity> CurrentlyWatchedEntities = new(PopulateWatchedEntities);
 
-    [PublicAPI]
-    public static bool IsWatching(Entity entity) {
-        return CurrentlyWatchedEntities.Contains(entity) || (entity.GetEntityData() is EntityData entityData && WatchedEntityIds.Contains(new UniqueEntityId(entity, entityData)));
+    internal static LazyValue<string> InfoPosition = new(() => QueryInfo(WatchEntityType.Position, TasSettings.WatchEntityDecimals));
+    internal static LazyValue<string> InfoDeclaredOnly = new(() => QueryInfo(WatchEntityType.DeclaredOnly, TasSettings.WatchEntityDecimals));
+    internal static LazyValue<string> InfoAll = new(() => QueryInfo(WatchEntityType.All, TasSettings.WatchEntityDecimals));
+    internal static LazyValue<string> InfoAllExact = new(() => QueryInfo(WatchEntityType.All, GameSettings.MaxDecimals));
+
+    private static readonly StringBuilder infoBuilder = new();
+    private static string QueryInfo(WatchEntityType watchType, int decimals, string separator = "\n") {
+        infoBuilder.Clear();
+        foreach (var entity in CurrentlyWatchedEntities.Value) {
+            infoBuilder.AppendEntityValues(entity, watchType, decimals, separator);
+        }
+        return infoBuilder.ToString();
     }
 
-    internal static void CheckMouseButtons() {
+    private static void PopulateWatchedEntities(HashSet<Entity> entities) {
+        if (Engine.Scene is not Level level) {
+            return;
+        }
+
+        entities.AddRange(
+            WatchedEntities
+                .Where(reference => reference.IsAlive)
+                .Select(reference => (Entity)reference.Target!)
+        );
+        entities.AddRange(ResolveEntityIds(level).Values);
+    }
+
+    [UpdateMeta]
+    private static void UpdateMeta() {
         if (MouseInput.Right.Pressed) {
             ClearWatchEntities();
         }
 
-        if (MouseInput.Left.Pressed && !MouseOverHud() && FindClickedEntity() is { } entity) {
+        if (MouseInput.Left.Pressed && !WindowManager.IsMouseOverWindow() && FindClickedEntity() is { } entity) {
             AddOrRemoveWatching(entity);
             PrintAllSimpleValues(entity);
         }
-    }
-
-    private static bool MouseOverHud() {
-        var hudRect = new Rectangle(
-            (int) TasSettings.InfoPosition.X, (int) TasSettings.InfoPosition.Y,
-            (int) InfoHud.Size.X,             (int) InfoHud.Size.Y);
-
-        return hudRect.Contains((int) MouseInput.Position.X, (int) MouseInput.Position.Y);
     }
 
     /// Resolves the entity, which the mouse is currently over
@@ -160,7 +183,11 @@ public static class InfoWatchEntity {
             }
         }
 
-        TAS.GameInfo.Update();
+        CurrentlyWatchedEntities.Reset();
+        InfoPosition.Reset();
+        InfoDeclaredOnly.Reset();
+        InfoAll.Reset();
+        InfoAllExact.Reset();
     }
 
     internal static void ClearWatchEntities() {
@@ -168,79 +195,21 @@ public static class InfoWatchEntity {
         WatchedEntities.Clear();
         WatchedEntities_Save.Clear();
         WatchedEntityIds.Clear();
-        CurrentlyWatchedEntities.Clear();
-        TAS.GameInfo.Update();
+
+        CurrentlyWatchedEntities.Reset();
+        InfoPosition.Reset();
+        InfoDeclaredOnly.Reset();
+        InfoAll.Reset();
+        InfoAllExact.Reset();
 
         ClearWatching?.Invoke();
     }
 
-    internal static string GetInfo(WatchEntityType watchEntityType, string separator = "\n", bool alwaysUpdate = false, int? decimals = null) {
-        CurrentlyWatchedEntities.Clear();
-        if (Engine.Scene is not Level level || !TasSettings.WatchEntity && !alwaysUpdate) {
-            return string.Empty;
-        }
-
-        decimals ??= TasSettings.CustomInfoDecimals;
-
-        var allEntities =
-            WatchedEntities
-                .Where(reference => reference.IsAlive)
-                .Select(reference => (Entity) reference.Target!)
-                .Concat(ResolveEntityIds(level).Values);
-
-        return string.Join(separator,
-            allEntities
-                .Select(entity => {
-                    CurrentlyWatchedEntities.Add(entity);
-                    return GetEntityValues(entity, watchEntityType, separator, decimals.Value);
-                }));
-    }
-
-    [PublicAPI]
+    [Obsolete("No longer needed", error: true)]
     public static bool ForceUpdateInfo = false; // for TasHelper.AutoWatchEntity
-
-    internal static void UpdateInfo(string separator = "\n", int? decimals = null) {
-        CurrentlyWatchedEntities.Clear();
-        TAS.GameInfo.HudWatchingInfo = string.Empty;
-        TAS.GameInfo.StudioWatchingInfo = string.Empty;
-        if (Engine.Scene is not Level level || !TasSettings.WatchEntity && !ForceUpdateInfo) {
-            return;
-        }
-
-        decimals ??= TasSettings.CustomInfoDecimals;
-
-        var allEntities =
-            WatchedEntities
-                .Where(reference => reference.IsAlive)
-                .Select(reference => (Entity)reference.Target!)
-                .Concat(ResolveEntityIds(level).Values);
-
-        CurrentlyWatchedEntities.AddRange(allEntities);
-
-        if (!TasSettings.HudWatchEntity) {
-            TAS.GameInfo.HudWatchingInfo = string.Empty;
-        } else {
-            TAS.GameInfo.HudWatchingInfo = string.Join(separator,
-            allEntities
-                .Select(entity => GetEntityValues(entity, TasSettings.InfoWatchEntityHudType, separator, decimals.Value))
-            );
-        }
-
-        if (!TasSettings.StudioWatchEntity || !Communication.CommunicationWrapper.Connected) {
-            TAS.GameInfo.StudioWatchingInfo = string.Empty;
-        } else if (TasSettings.InfoWatchEntityStudioType == TasSettings.InfoWatchEntityHudType) {
-            TAS.GameInfo.StudioWatchingInfo = TAS.GameInfo.HudWatchingInfo;
-        } else {
-            TAS.GameInfo.StudioWatchingInfo = string.Join(separator,
-            allEntities
-                .Select(entity => GetEntityValues(entity, TasSettings.InfoWatchEntityStudioType, separator, decimals.Value))
-            );
-        }
-    }
 
     [Load]
     private static void Load() {
-        On.Monocle.EntityList.DebugRender += On_EntityList_DebugRender;
         On.Celeste.Level.Begin += On_Level_Begin;
         On.Celeste.Level.End += On_Level_End;
         On.Celeste.Level.LoadLevel += On_Level_LoadLevel;
@@ -248,22 +217,20 @@ public static class InfoWatchEntity {
 
     [Unload]
     private static void Unload() {
-        On.Monocle.EntityList.DebugRender -= On_EntityList_DebugRender;
         On.Celeste.Level.Begin -= On_Level_Begin;
         On.Celeste.Level.End -= On_Level_End;
         On.Celeste.Level.LoadLevel -= On_Level_LoadLevel;
     }
 
-    private static void On_EntityList_DebugRender(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
-        orig(self, camera);
-
+    [Events.PostDebugRender]
+    private static void PostDebugRender(Scene scene) {
         if (!TasSettings.ShowHitboxes) {
             return;
         }
 
         // Highlight currently watched entities
-        foreach (var entity in self) {
-            if (CurrentlyWatchedEntities.Contains(entity)) {
+        foreach (var entity in scene.Entities) {
+            if (CurrentlyWatchedEntities.Value.Contains(entity)) {
                 Draw.Point(entity.Position, HitboxColor.EntityColorInversely);
             }
         }
@@ -279,7 +246,7 @@ public static class InfoWatchEntity {
     }
     private static void On_Level_End(On.Celeste.Level.orig_End orig, Level self) {
         orig(self);
-        CurrentlyWatchedEntities.Clear();
+        CurrentlyWatchedEntities.Reset();
     }
     private static void On_Level_LoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader) {
         orig(self, playerIntro, isFromLoader);
@@ -289,13 +256,17 @@ public static class InfoWatchEntity {
     }
 
     private static void PrintAllSimpleValues(Entity entity) {
-        ("Info of Clicked Entity:\n" + GetEntityValues(entity, WatchEntityType.All)).Log(string.Empty, TasSettings.InfoWatchEntityLogToConsole);
+        var builder = new StringBuilder();
+        builder.AppendLine("Info of Clicked Entity:");
+        builder.AppendEntityValues(entity, WatchEntityType.All, TasSettings.WatchEntityDecimals);
+
+        builder.ToString().Log(string.Empty, TasSettings.InfoWatchEntityLogToConsole);
     }
 
     /// Formats all member values into a multi-line string
-    private static string GetEntityValues(Entity entity, WatchEntityType watchEntityType, string separator = "\n", int decimals = 2) {
+    private static void AppendEntityValues(this StringBuilder builder, Entity entity, WatchEntityType watchEntityType, int decimals, string separator = "\n") {
         if (watchEntityType == WatchEntityType.None) {
-            return "";
+            return;
         }
 
         var entityType = entity.GetType();
@@ -306,17 +277,18 @@ public static class InfoWatchEntity {
         }
 
         string entityPrefix = $"{entityType.Name}{entityId}";
-        string positionInfo = $"{entityPrefix}: {entity.ToSimplePositionString(decimals)}";
+        builder.Append(entityPrefix);
+        builder.Append(": ");
+        builder.Append(entity.FormatPosition(decimals));
 
         if (watchEntityType == WatchEntityType.Position) {
-            return positionInfo;
+            return;
         }
 
-        List<string> values = [positionInfo];
-        values.AddRange(ResolveAllSimpleMembers(entityType, watchEntityType == WatchEntityType.DeclaredOnly).Select(info => {
+        foreach (var member in ResolveAllSimpleMembers(entityType, watchEntityType == WatchEntityType.DeclaredOnly)) {
             object? value;
             try {
-                value = info switch {
+                value = member switch {
                     FieldInfo fieldInfo => fieldInfo.GetValue(entity),
                     PropertyInfo propertyInfo => propertyInfo.GetValue(entity),
                     _ => null
@@ -326,23 +298,26 @@ public static class InfoWatchEntity {
             }
 
             if (value is float floatValue) {
-                if (info.Name.EndsWith("Timer")) {
-                    value = $"{TAS.GameInfo.ConvertToFrames(floatValue)}f ({floatValue.ToFormattedString(decimals)})" ;
+                if (member.Name.EndsWith("Timer")) {
+                    value = $"{floatValue.ToCeilingFrames()}f ({floatValue.FormatValue(decimals)})" ;
                 } else {
-                    value = floatValue.ToFormattedString(decimals);
+                    value = floatValue.FormatValue(decimals);
                 }
-            } else if (value is Vector2 vector2) {
-                value = vector2.ToSimpleString(decimals);
+            } else if (value is Vector2 vectorValue) {
+                value = vectorValue.FormatValue(decimals);
             }
 
             if (separator == "\t" && value != null) {
                 value = value.ToString()?.ReplaceLineBreak(" ");
             }
 
-            return $"{entityPrefix}.{info.Name}: {value}";
-        }));
-
-        return string.Join(separator, values);
+            builder.Append(separator);
+            builder.Append(entityPrefix);
+            builder.Append('.');
+            builder.Append(member.Name);
+            builder.Append(": ");
+            builder.Append(value);
+        }
     }
 
     /// Resolves all members with a "simple" type (see <see cref="TAS.Utils.TypeExtensions.IsSimpleType"/>)

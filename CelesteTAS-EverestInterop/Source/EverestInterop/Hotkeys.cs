@@ -386,7 +386,7 @@ internal static class MouseInput {
     [UpdateMeta]
     private static void UpdateMeta() {
         // Avoid checking mouse inputs while fast forwarding for performance
-        if (Manager.FastForwarding) {
+        if (Manager.FastForwarding || !Engine.Instance.IsActive) {
             lastPosition = Position;
             Left.Update(ButtonState.Released);
             Middle.Update(ButtonState.Released);

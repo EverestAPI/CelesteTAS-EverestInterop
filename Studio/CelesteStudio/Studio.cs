@@ -744,6 +744,7 @@ public sealed class Studio : Form {
                 MenuUtils.CreateGameSettingNumberInput("Velocity Decimals", nameof(GameSettings.VelocityDecimals), minDecimals, maxDecimals, 1),
                 MenuUtils.CreateGameSettingNumberInput("Angle Decimals", nameof(GameSettings.AngleDecimals), minDecimals, maxDecimals, 1),
                 MenuUtils.CreateGameSettingNumberInput("Custom Info Decimals", nameof(GameSettings.CustomInfoDecimals), minDecimals, maxDecimals, 1),
+                MenuUtils.CreateGameSettingNumberInput("Watch Entity Decimals", nameof(GameSettings.WatchEntityDecimals), minDecimals, maxDecimals, 1),
                 MenuUtils.CreateGameSettingNumberInput("Subpixel Indicator Decimals", nameof(GameSettings.SubpixelIndicatorDecimals), minDecimals, maxDecimals, 1),
                 MenuUtils.CreateGameSettingEnum<SpeedUnit>("Speed Unit", nameof(GameSettings.SpeedUnit), ["px/s", "px/f"]),
                 MenuUtils.CreateGameSettingEnum<SpeedUnit>("Velocity Unit", nameof(GameSettings.VelocityUnit), ["px/s", "px/f"]),

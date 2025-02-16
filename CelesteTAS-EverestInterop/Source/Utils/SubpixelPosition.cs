@@ -10,8 +10,13 @@ internal record struct SubpixelPosition(SubpixelComponent X, SubpixelComponent Y
 
     public static SubpixelPosition FromActor(Actor actor) {
         return new SubpixelPosition(
-            new SubpixelComponent((int) actor.Position.X, actor.PositionRemainder.X),
-            new SubpixelComponent((int) actor.Position.Y, actor.PositionRemainder.Y));
+            new SubpixelComponent((int) actor.Position.X, actor.movementCounter.X),
+            new SubpixelComponent((int) actor.Position.Y, actor.movementCounter.Y));
+    }
+    public static SubpixelPosition FromPlatform(Platform platform) {
+        return new SubpixelPosition(
+            new SubpixelComponent((int) platform.Position.X, platform.movementCounter.X),
+            new SubpixelComponent((int) platform.Position.Y, platform.movementCounter.Y));
     }
 
     public string FormatValue(int decimals, bool subpixelRounding) {

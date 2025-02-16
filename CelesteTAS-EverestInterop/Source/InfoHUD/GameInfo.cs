@@ -50,6 +50,18 @@ public static class GameInfo {
                 if (TasSettings.InfoCustom.Has(HudOptions.HudOnly) && customInfo.Value is { } infoCustom && !string.IsNullOrEmpty(infoCustom)) {
                     yield return infoCustom;
                 }
+                if (TasSettings.InfoWatchEntityHudType != WatchEntityType.None) {
+                    string infoEntity = TasSettings.InfoWatchEntityHudType switch {
+                        WatchEntityType.Position => InfoWatchEntity.InfoPosition.Value,
+                        WatchEntityType.DeclaredOnly => InfoWatchEntity.InfoDeclaredOnly.Value,
+                        WatchEntityType.All => InfoWatchEntity.InfoAll.Value,
+                        _ => throw new ArgumentOutOfRangeException()
+                    };
+
+                    if (!string.IsNullOrEmpty(infoEntity)) {
+                        yield return infoEntity;
+                    }
+                }
 
                 break;
             }
@@ -63,6 +75,18 @@ public static class GameInfo {
                 }
                 if (TasSettings.InfoCustom.Has(HudOptions.StudioOnly) && customInfo.Value is { } infoCustom && !string.IsNullOrEmpty(infoCustom)) {
                     yield return infoCustom;
+                }
+                if (TasSettings.InfoWatchEntityStudioType != WatchEntityType.None) {
+                    string infoEntity = TasSettings.InfoWatchEntityStudioType switch {
+                        WatchEntityType.Position => InfoWatchEntity.InfoPosition.Value,
+                        WatchEntityType.DeclaredOnly => InfoWatchEntity.InfoDeclaredOnly.Value,
+                        WatchEntityType.All => InfoWatchEntity.InfoAll.Value,
+                        _ => throw new ArgumentOutOfRangeException()
+                    };
+
+                    if (!string.IsNullOrEmpty(infoEntity)) {
+                        yield return infoEntity;
+                    }
                 }
 
                 break;
@@ -81,6 +105,10 @@ public static class GameInfo {
                     : customInfoExact.Value;
                 if (!string.IsNullOrEmpty(infoCustom)) {
                     yield return infoCustom;
+                }
+
+                if (InfoWatchEntity.InfoAllExact.Value is var infoEntity && !string.IsNullOrEmpty(infoEntity)) {
+                    yield return infoEntity;
                 }
 
                 break;
@@ -423,17 +451,17 @@ public static class GameInfo {
         return $"{timeSpan.ShortGameplayFormat()}({frames})";
     }
 
-    private static float ConvertSpeedUnit(float speed, SpeedUnit unit) {
+    public static float ConvertSpeedUnit(float speed, SpeedUnit unit) {
         return unit == SpeedUnit.PixelPerSecond
             ? speed * Engine.TimeRateB
             : speed * Engine.RawDeltaTime * Engine.TimeRateB;
     }
-    private static Vector2 ConvertSpeedUnit(Vector2 speed, SpeedUnit unit) {
+    public static Vector2 ConvertSpeedUnit(Vector2 speed, SpeedUnit unit) {
         return unit == SpeedUnit.PixelPerSecond
             ? speed * Engine.TimeRateB
             : speed * Engine.RawDeltaTime * Engine.TimeRateB;
     }
 
-    private static int ToCeilingFrames(this float seconds) => (int) Math.Ceiling(seconds / Engine.RawDeltaTime / Engine.TimeRateB);
-    private static int ToFloorFrames(this float seconds) => (int) Math.Floor(seconds / Engine.RawDeltaTime / Engine.TimeRateB);
+    public static int ToCeilingFrames(this float seconds) => (int) Math.Ceiling(seconds / Engine.RawDeltaTime / Engine.TimeRateB);
+    public static int ToFloorFrames(this float seconds) => (int) Math.Floor(seconds / Engine.RawDeltaTime / Engine.TimeRateB);
 }

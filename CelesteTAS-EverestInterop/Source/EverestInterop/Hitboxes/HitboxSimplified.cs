@@ -87,7 +87,7 @@ public static class HitboxSimplified {
 
     [PublicAPI]
     public static bool HideHitbox(Entity entity) {
-        if (!TasSettings.ShowHitboxes || InfoWatchEntity.CurrentlyWatchedEntities.Contains(entity)) {
+        if (!TasSettings.ShowHitboxes || InfoWatchEntity.CurrentlyWatchedEntities.Value.Contains(entity)) {
             return false;
         }
 

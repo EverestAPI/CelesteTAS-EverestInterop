@@ -58,6 +58,22 @@ internal static class WindowManager {
     public static void DrawText(string text, Vector2 position, Vector2 justify, Vector2 scale, Color color) => JetBrainsMonoFont.Draw(text, position, justify, scale * FontSize, color);
     public static Vector2 MeasureText(string text) => JetBrainsMonoFont.Measure(text) * FontSize;
 
+    public static bool IsMouseOverWindow() {
+        var mousePosition = MouseInput.Position;
+        foreach (var handler in handlers.Where(handler => handler.Visible)) {
+            var position = windowPositions[handler.Index];
+            var size = windowSizes[handler.Index];
+
+            if (mousePosition.X >= position.X && mousePosition.X <= position.X + size.X &&
+                mousePosition.Y >= position.Y && mousePosition.Y <= position.Y + size.Y
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static void Register(Handler handler) {
         handler.Index = handlers.Count;
 

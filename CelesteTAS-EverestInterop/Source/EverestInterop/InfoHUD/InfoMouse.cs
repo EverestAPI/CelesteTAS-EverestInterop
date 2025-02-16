@@ -55,7 +55,7 @@ public static class InfoMouse {
             mouseWorldPosition = null;
         }
 
-        InfoWatchEntity.CheckMouseButtons();
+        // InfoWatchEntity.UpdateMeta();
 
         DrawCursor(MouseInput.Position);
         MoveInfoHud();
