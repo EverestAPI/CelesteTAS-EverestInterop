@@ -14,7 +14,6 @@ using TAS.Module;
 using TAS.Utils;
 using InputKeys = Microsoft.Xna.Framework.Input.Keys;
 using InputButtons = Microsoft.Xna.Framework.Input.Buttons;
-using Hud = TAS.EverestInterop.InfoHUD.InfoHud;
 
 namespace TAS.EverestInterop;
 
@@ -224,8 +223,6 @@ public static class Hotkeys {
                 CelesteTasModule.Instance.SaveSettings();
             }
         }
-
-        Hud.Toggle();
     }
 
     [DisableRun]

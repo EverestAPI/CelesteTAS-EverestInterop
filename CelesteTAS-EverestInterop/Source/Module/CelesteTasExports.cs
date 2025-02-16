@@ -23,7 +23,7 @@ public static class CelesteTasImports {
         Func<IEnumerable<string>> textProvider,
         Func<Vector2>? loadPosition,
         Action<Vector2>? storePosition,
-        (Func<bool> visibleProvider, Func<Vector2> sizeProvider, Action<Vector2> render)[] renderers
+        (Func<bool> visibleProvider, Func<Vector2> sizeProvider, Action<Vector2, float> render)[] renderers
     );
 
     /// Registers custom delegates for backing up and restoring mod setting before / after running a TAS <br/>
@@ -73,7 +73,7 @@ internal static class CelesteTasExports {
         Func<IEnumerable<string>> textProvider,
         Func<Vector2>? loadPosition,
         Action<Vector2>? storePosition,
-        (Func<bool> visibleProvider, Func<Vector2> sizeProvider, Action<Vector2> render)[] renderers
+        (Func<bool> visibleProvider, Func<Vector2> sizeProvider, Action<Vector2, float> render)[] renderers
     ) {
         var handler = new WindowManager.Handler(
                 visibleProvider, textProvider, loadPosition, storePosition,

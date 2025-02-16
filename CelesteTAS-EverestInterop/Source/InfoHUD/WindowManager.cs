@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using TAS.Entities;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Gameplay;
@@ -38,17 +39,24 @@ internal static class WindowManager {
     public readonly struct Renderer(
         Func<bool> visibleProvider,
         Func<Vector2> sizeProvider,
-        Action<Vector2> render
+        Action<Vector2, float> render
     ) {
         public bool Visible => visibleProvider();
         public Vector2 Size => sizeProvider();
 
-        public void Render(Vector2 position) => render(position);
+        public void Render(Vector2 position, float alpha) => render(position, alpha);
     }
 
     private static readonly List<Handler> handlers = [];
     private static readonly List<Vector2> windowPositions = new();
     private static readonly List<Vector2> windowSizes = new();
+
+    public static float PixelSize => Engine.ViewWidth / (float) CelesteGame.GameWidth;
+    public static float FontSize => 0.15f * PixelSize * TasSettings.InfoTextSize / 10.0f;
+    public static float Padding => 2.0f * PixelSize;
+
+    public static void DrawText(string text, Vector2 position, Vector2 justify, Vector2 scale, Color color) => JetBrainsMonoFont.Draw(text, position, justify, scale * FontSize, color);
+    public static Vector2 MeasureText(string text) => JetBrainsMonoFont.Measure(text) * FontSize;
 
     public static void Register(Handler handler) {
         handler.Index = handlers.Count;
@@ -58,14 +66,25 @@ internal static class WindowManager {
         windowSizes.Add(Vector2.Zero);
     }
 
+    [UpdateMeta]
+    public static void ToggleInfoHud() {
+        if (Hotkeys.InfoHud.DoublePressed) {
+            TasSettings.InfoHud = !TasSettings.InfoHud;
+
+            if (TasSettings.InfoHud && TasSettings.EnableInfoHudFirstTime) {
+                TasSettings.EnableInfoHudFirstTime = false;
+                Toast.Show($"The Info HUD is provided by CelesteTAS\nDouble press {Hotkeys.InfoHud} to toggle it", 5.0f);
+            }
+
+            CelesteTasModule.Instance.SaveSettings();
+        }
+    }
+
     [Load]
     private static void Load() {
         // Handler for CelesteTAS' own InfoHUD
-        var infoHudHandler = new Handler(InfoHudVisible, InfoHudText, LoadInfoHudPosition, StoreInfoHudPosition, [new Renderer(SubpixelIndicatorVisible, SubpixelIndicatorSize, RenderSubpixelIndicator)]);
+        var infoHudHandler = new Handler(InfoHudVisible, InfoHudText, LoadInfoHudPosition, StoreInfoHudPosition, [InfoSubpixelIndicator.Renderer]);
         Register(infoHudHandler);
-
-        var infoHudHandler2 = new Handler(InfoHudVisible, InfoHudText, LoadInfoHudPosition, StoreInfoHudPosition, [new Renderer(SubpixelIndicatorVisible, SubpixelIndicatorSize, RenderSubpixelIndicator)]);
-        Register(infoHudHandler2);
 
         static bool InfoHudVisible() => TasSettings.InfoHud;
         static IEnumerable<string> InfoHudText() => GameInfo.Query(GameInfo.Target.InGameHud);
@@ -75,10 +94,6 @@ internal static class WindowManager {
             TasSettings.InfoPosition = pos;
             CelesteTasModule.Instance.SaveSettings();
         }
-
-        static bool SubpixelIndicatorVisible() => TasSettings.InfoSubpixelIndicator;
-        static Vector2 SubpixelIndicatorSize() => Vector2.Zero;
-        static void RenderSubpixelIndicator(Vector2 pos) { }
     }
 
     private static (Vector2 StartPosition, int HandlerIndex)? dragWindow;
@@ -163,39 +178,36 @@ internal static class WindowManager {
             int viewWidth = Engine.ViewWidth;
             int viewHeight = Engine.ViewHeight;
 
-            float pixelScale = Engine.ViewWidth / (float) Celeste.Celeste.GameWidth;
-            float margin = 2.0f * pixelScale;
-            float padding = 2.0f * pixelScale;
-            float fontSize = 0.15f * pixelScale * TasSettings.InfoTextSize / 10.0f;
+            float margin = 2.0f * PixelSize;
 
             float backgroundAlpha = TasSettings.InfoOpacity / 10.0f;
             float foregroundAlpha = 1.0f;
 
             var position = windowPositions[handler.Index];
-            var textSize = JetBrainsMonoFont.Measure(text) * fontSize;
+            var textSize = MeasureText(text);
 
             var size = textSize;
             foreach (var renderer in handler.Renderers.Where(renderer => renderer.Visible)) {
                 var rendererSize = renderer.Size;
 
                 if (size.Y != 0) {
-                    size.Y += padding * 2.0f;
+                    size.Y += Padding * 2.0f;
                 }
 
                 size.X = Math.Max(size.X, rendererSize.X);
                 size.Y += rendererSize.Y;
             }
 
-            float maxX = viewWidth  - size.X - margin - padding * 2.0f;
-            float maxY = viewHeight - size.Y - margin - padding * 2.0f;
+            float maxX = viewWidth  - size.X - margin - Padding * 2.0f;
+            float maxY = viewHeight - size.Y - margin - Padding * 2.0f;
             if (maxX > 0.0f && maxY > 0.0f) {
                 position = position.Clamp(margin, margin, maxX, maxY);
             }
 
             windowPositions[handler.Index] = position;
-            windowSizes[handler.Index] = new Vector2(size.X + padding * 2.0f, size.Y + padding * 2.0f);
+            windowSizes[handler.Index] = new Vector2(size.X + Padding * 2.0f, size.Y + Padding * 2.0f);
 
-            Rectangle bgRect = new((int) position.X, (int) position.Y, (int) (size.X + padding * 2.0f), (int) (size.Y + padding * 2.0f));
+            Rectangle bgRect = new((int) position.X, (int) position.Y, (int) (size.X + Padding * 2.0f), (int) (size.Y + Padding * 2.0f));
 
             if (TasSettings.InfoMaskedOpacity < 10 && !Hotkeys.InfoHud.Check && (scene.Paused && !Celeste.Input.MenuJournal.Check || scene is Level level && CollidePlayer(level, bgRect))) {
                 backgroundAlpha *= TasSettings.InfoMaskedOpacity / 10.0f;
@@ -204,17 +216,17 @@ internal static class WindowManager {
 
             Draw.Rect(bgRect, Color.Black * backgroundAlpha);
 
-            var drawPosition = new Vector2(position.X + padding, position.Y + padding);
-            JetBrainsMonoFont.Draw(text,
+            var drawPosition = new Vector2(position.X + Padding, position.Y + Padding);
+            DrawText(text,
                 drawPosition,
                 justify: Vector2.Zero,
-                scale: new(fontSize),
+                scale: Vector2.One,
                 color: Color.White * foregroundAlpha);
 
-            drawPosition.Y += textSize.Y + padding * 2.0f;
+            drawPosition.Y += textSize.Y + Padding * 2.0f;
             foreach (var renderer in handler.Renderers.Where(renderer => renderer.Visible)) {
-                renderer.Render(drawPosition);
-                drawPosition.Y += renderer.Size.Y + padding * 2.0f;
+                renderer.Render(drawPosition, foregroundAlpha);
+                drawPosition.Y += renderer.Size.Y + Padding * 2.0f;
             }
         }
     }
