@@ -120,12 +120,12 @@ public static class StudioHelper {
                     foreach (var process in Process.GetProcesses().Where(process => process.ProcessName is "CelesteStudio" or "CelesteStudio.WPF" or "CelesteStudio.GTK" or "CelesteStudio.Mac" or "Celeste Studio")) {
                         $"Closing process {process} ({process.Id})...".Log(LogLevel.Verbose);
                         process.Terminate();
-                        await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10.0f));
+                        await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10.0f)).ConfigureAwait(false);
 
                         // Make sure it's _really_ closed
                         try {
                             process.Kill();
-                            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5.0f));
+                            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5.0f)).ConfigureAwait(false);
                         } catch {
                             // ignore
                         }
@@ -160,7 +160,7 @@ public static class StudioHelper {
                 }
 
                 try {
-                    await DownloadStudio();
+                    await DownloadStudio().ConfigureAwait(false);
                     installed = true;
                 } catch (Exception ex) {
                     ReportError("Failed to install Studio", ex.ToString());
@@ -316,12 +316,12 @@ public static class StudioHelper {
         "Successfully extracted Studio archive".Log();
 
         // Store installed version number
-        await File.WriteAllTextAsync(Path.Combine(TempStudioInstallDirectory, Path.GetFileName(VersionFile)), CurrentStudioVersion);
+        await File.WriteAllTextAsync(Path.Combine(TempStudioInstallDirectory, Path.GetFileName(VersionFile)), CurrentStudioVersion).ConfigureAwait(false);
 
         // Fix lost file permissions
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
             if (!await ExecuteCommand(["chmod", "+x", Path.Combine(TempStudioInstallDirectory, "CelesteStudio")],
-                    errorMessage: "Install failed! Couldn't make Studio executable"))
+                    errorMessage: "Install failed! Couldn't make Studio executable").ConfigureAwait(false))
             {
                 Directory.Delete(TempStudioInstallDirectory, recursive: true);
                 StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Failure;
@@ -330,9 +330,9 @@ public static class StudioHelper {
             }
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
             if (!await ExecuteCommand(["chmod", "+x", Path.Combine(TempStudioInstallDirectory, "CelesteStudio.app", "Contents", "MacOS", "CelesteStudio")],
-                    errorMessage: "Install failed! Couldn't make Studio executable") ||
+                    errorMessage: "Install failed! Couldn't make Studio executable").ConfigureAwait(false) ||
                 !await ExecuteCommand(["xattr", "-c", Path.Combine(TempStudioInstallDirectory, "CelesteStudio.app")],
-                    errorMessage: "Install failed! Couldn't clear Studio app bundle config"))
+                    errorMessage: "Install failed! Couldn't clear Studio app bundle config").ConfigureAwait(false))
             {
                 Directory.Delete(TempStudioInstallDirectory, recursive: true);
                 StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Failure;
@@ -382,7 +382,7 @@ public static class StudioHelper {
         }
 
         var proc = Process.Start(startInfo)!;
-        await proc.WaitForExitAsync();
+        await proc.WaitForExitAsync().ConfigureAwait(false);
 
         string? line;
 
@@ -426,7 +426,7 @@ public static class StudioHelper {
                     return;
                 }
 
-                await Task.Delay(1000);
+                await Task.Delay(1000).ConfigureAwait(false);
             }
 
             if (Process.GetProcesses().Any(process => process.ProcessName == "CelesteStudio")) {
