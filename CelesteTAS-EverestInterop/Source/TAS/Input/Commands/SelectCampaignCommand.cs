@@ -99,7 +99,7 @@ internal static class SelectCampaignCommand {
 
         if (!Command.Parsing) {
             if (EnforceLegalCommand.EnabledWhenRunning && Engine.Scene is not Overworld { Current: OuiTitleScreen }) {
-                AbortTas("SelectCampaign command must start on title screen");
+                AbortTas("SelectCampaign command must start on title screen when using EnforceLegal");
                 return;
             }
 
