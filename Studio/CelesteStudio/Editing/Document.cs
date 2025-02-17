@@ -263,7 +263,7 @@ public class Document : IDisposable {
                     return await File.ReadAllLinesAsync(FilePath);
                 }
                 catch (IOException ex) when (ex.HResult == ERROR_SHARING_VIOLATION || ex is FileNotFoundException) {
-                    await Task.Delay(delayOnRetry).ConfigureAwait(false);
+                    await Task.Delay(delayOnRetry);
                 } catch (Exception ex) {
                     // Something else failed; abort reload
                     Console.WriteLine($"Failed to reload file: {ex}");

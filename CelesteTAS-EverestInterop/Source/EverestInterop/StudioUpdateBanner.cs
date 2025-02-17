@@ -41,7 +41,7 @@ internal static class StudioUpdateBanner {
             // Wait for font / dialog to be loaded
             // NOTE: 'loader.loaded' is checked instead of 'loader.dialogLoaded' since for the latter, there is a race condition with Fast-Texture-Loading not yet being done
             while ((Engine.Scene is GameLoader loader && !loader.loaded) || !GFX.Loaded || Dialog.Languages == null || !Dialog.Languages.ContainsKey(Settings.EnglishLanguage) || Font == null) {
-                await Task.Delay(10).ConfigureAwait(false);
+                await Task.Delay(10);
             }
 
             // This only gets called when the speedrun timer is constructed

@@ -1451,7 +1451,7 @@ public sealed class Editor : SkiaDrawable {
                 Task.Run(async () => {
                     int loadingDots = 0;
 
-                    while (!token.IsCancellationRequested && ActivePopupMenu == autoCompleteMenu && await Application.Instance.InvokeAsync(() => ActivePopupMenu.Visible).ConfigureAwait(false)) {
+                    while (!token.IsCancellationRequested && ActivePopupMenu == autoCompleteMenu && await Application.Instance.InvokeAsync(() => ActivePopupMenu.Visible)) {
                         if (!CommunicationWrapper.Connected) {
                             loadingEntry.DisplayText = "Connection with Celeste required for command auto-complete!";
                             await Application.Instance.InvokeAsync(() => {
@@ -1459,7 +1459,7 @@ public sealed class Editor : SkiaDrawable {
                                 autoCompleteMenu.Entries.Add(loadingEntry);
                                 autoCompleteMenu.Recalc();
                                 Recalc();
-                            }).ConfigureAwait(false);
+                            });
 
                             break;
                         }
@@ -1467,7 +1467,7 @@ public sealed class Editor : SkiaDrawable {
                         loadingDots = (loadingDots + 1).Mod(4);
                         loadingEntry.DisplayText = $"Loading{new string('.', loadingDots)}{new string(' ', 3 - loadingDots)}";
 
-                        (var commandEntries, bool done) = await CommunicationWrapper.RequestAutoCompleteEntries(command.Name, commandLine.Value.Arguments, Document.FilePath, Document.Caret.Row).ConfigureAwait(false);
+                        (var commandEntries, bool done) = await CommunicationWrapper.RequestAutoCompleteEntries(command.Name, commandLine.Value.Arguments, Document.FilePath, Document.Caret.Row);
 
                         var menuEntries = commandEntries.Select(entry => new PopupMenu.Entry {
                             SearchText = entry.FullName,
@@ -1551,7 +1551,7 @@ public sealed class Editor : SkiaDrawable {
 
                             autoCompleteMenu.Recalc();
                             Recalc();
-                        }).ConfigureAwait(false);
+                        });
 
                         if (done) {
                             commandAutoCompleteTokenSource?.Dispose();
@@ -1559,7 +1559,7 @@ public sealed class Editor : SkiaDrawable {
                             break;
                         }
 
-                        await Task.Delay(TimeSpan.FromSeconds(0.25f), token).ConfigureAwait(false);
+                        await Task.Delay(TimeSpan.FromSeconds(0.25f), token);
                     }
                 }, token);
             } else {

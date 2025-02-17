@@ -252,7 +252,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                         });
                         LogVerbose($"Sent message CommandAutoComplete: {entriesToWrite.Length} [incremental] ({hash})");
 
-                        await Task.Delay(TimeSpan.FromSeconds(0.1f)).ConfigureAwait(false);
+                        await Task.Delay(TimeSpan.FromSeconds(0.1f));
                     }
 
                     lock (entries) {

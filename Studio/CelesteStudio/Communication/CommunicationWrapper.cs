@@ -211,7 +211,7 @@ public static class CommunicationWrapper {
             return (Entries: [], Done: true);
         }
 
-        object? argsHash = await comm!.RequestGameData(GameDataType.CommandHash, (commandName, commandArgs, filePath, fileLine)).ConfigureAwait(false);
+        object? argsHash = await comm!.RequestGameData(GameDataType.CommandHash, (commandName, commandArgs, filePath, fileLine));
         if (argsHash == null) {
             return (Entries: [], Done: true);
         }
@@ -240,7 +240,7 @@ public static class CommunicationWrapper {
             return null;
         }
 
-        return (GameState?)await comm!.RequestGameData(GameDataType.GameState).ConfigureAwait(false);
+        return (GameState?)await comm!.RequestGameData(GameDataType.GameState);
     }
 
     #endregion

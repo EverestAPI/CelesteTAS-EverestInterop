@@ -191,7 +191,7 @@ public sealed class CommunicationAdapterStudio(
             // Wait for another request to finish
             var waitStart = DateTime.UtcNow;
             while (gameDataPending[gameDataType]) {
-                await Task.Delay(UpdateRate).ConfigureAwait(false);
+                await Task.Delay(UpdateRate);
 
                 if (DateTime.UtcNow - waitStart >= timeout) {
                     LogError("Timed-out while while waiting for previous request to finish");
@@ -214,7 +214,7 @@ public sealed class CommunicationAdapterStudio(
         // Wait for data to arrive
         var start = DateTime.UtcNow;
         while (gameDataPending[gameDataType]) {
-            await Task.Delay(UpdateRate).ConfigureAwait(false);
+            await Task.Delay(UpdateRate);
 
             if (DateTime.UtcNow - start >= timeout) {
                 LogError("Timed-out while requesting data from game");
