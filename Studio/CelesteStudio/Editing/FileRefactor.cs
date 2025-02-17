@@ -421,7 +421,7 @@ public static class FileRefactor {
                     }
                 }
 
-                FileCache[e.FullPath] = await File.ReadAllLinesAsync(e.FullPath).ConfigureAwait(false);
+                FileCache[e.FullPath] = await File.ReadAllLinesAsync(e.FullPath);
             } catch (Exception ex) {
                 Console.WriteLine($"Failed to update file cache for '{e.FullPath}'");
                 Console.WriteLine(ex);
