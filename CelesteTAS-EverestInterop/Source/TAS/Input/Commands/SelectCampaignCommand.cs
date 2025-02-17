@@ -124,6 +124,10 @@ internal static class SelectCampaignCommand {
             AbortTas($"Unknown campaign '{campaignName}'");
             return;
         }
+        if (CollabUtils2Interop.Lobby.IsCollabLevelSet?.Invoke(campaignName) ?? false) {
+            AbortTas($"Invalid campaign '{campaignName}'");
+            return;
+        }
         if (saveFileName.Length < OuiFileNaming.MinNameLength || saveFileName.Length > OuiFileNaming.MaxNameLengthNormal) {
             AbortTas($"Save-File name must be between {OuiFileNaming.MinNameLength} and {OuiFileNaming.MaxNameLengthNormal} characters long");
             return;
@@ -353,48 +357,52 @@ internal static class SelectCampaignCommand {
     }
 
     private static void ChangeSelectedCampaign(InputController controller, string campaignName, int studioLine) {
-        string[] levelSets = AreaData.Areas.Select(area => area.LevelSet).Distinct().ToArray();
-
-        int startingIndex = Array.FindIndex(levelSets, set => set == CoreModule.Settings.DefaultStartingLevelSet);
-        if (startingIndex == -1) {
-            startingIndex = Array.FindIndex(levelSets, set => set == "Celeste");
+        string startingLevelSet = "Celeste";
+        if (AreaData.Areas.Any(area => area.LevelSet == CoreModule.Settings.DefaultStartingLevelSet)) {
+            startingLevelSet = CoreModule.Settings.DefaultStartingLevelSet;
         }
 
         // Check both movement directions - Repeat move until level set is valid
         int movesLeft = 0;
-        int currentIndex = startingIndex;
-        while (levelSets[currentIndex] != campaignName) {
-            currentIndex = Array.IndexOf(levelSets, levelSets[currentIndex]) - 1;
+        string currentLevelSet = startingLevelSet;
+        while (currentLevelSet != campaignName) {
+            int id = AreaData.Areas.FindIndex(area => area.LevelSet == currentLevelSet) - 1;
+            if (id >= AreaData.Areas.Count) {
+                id = 0;
+            }
+            if (id < 0) {
+                id = AreaData.Areas.Count - 1;
+            }
 
-            if (currentIndex >= levelSets.Length) {
-                currentIndex = 0;
-            }
-            if (currentIndex < 0) {
-                currentIndex = AreaData.Areas.Count - 1;
-            }
+            currentLevelSet = AreaData.Areas[id].LevelSet;
 
             // Collab level sets aren't selectable and shouldn't be counted
-            if (!(CollabUtils2Interop.Lobby.IsCollabLevelSet?.Invoke(levelSets[currentIndex]) ?? false)) {
-                movesLeft++;
+            if (CollabUtils2Interop.Lobby.IsCollabLevelSet?.Invoke(currentLevelSet) ?? false) {
+                continue;
             }
+
+            movesLeft++;
         }
 
         int movesRight = 0;
-        currentIndex = startingIndex;
-        while (levelSets[currentIndex] != campaignName) {
-            currentIndex = Array.LastIndexOf(levelSets, levelSets[currentIndex]) - 1;
+        currentLevelSet = startingLevelSet;
+        while (currentLevelSet != campaignName) {
+            int id = AreaData.Areas.FindLastIndex(area => area.LevelSet == currentLevelSet) + 1;
+            if (id >= AreaData.Areas.Count) {
+                id = 0;
+            }
+            if (id < 0) {
+                id = AreaData.Areas.Count - 1;
+            }
 
-            if (currentIndex >= levelSets.Length) {
-                currentIndex = 0;
-            }
-            if (currentIndex < 0) {
-                currentIndex = AreaData.Areas.Count - 1;
-            }
+            currentLevelSet = AreaData.Areas[id].LevelSet;
 
             // Collab level sets aren't selectable and shouldn't be counted
-            if (!(CollabUtils2Interop.Lobby.IsCollabLevelSet?.Invoke(levelSets[currentIndex]) ?? false)) {
-                movesRight++;
+            if (CollabUtils2Interop.Lobby.IsCollabLevelSet?.Invoke(currentLevelSet) ?? false) {
+                continue;
             }
+
+            movesRight++;
         }
 
         if (movesLeft == 0 && movesRight == 0) {
@@ -406,8 +414,11 @@ internal static class SelectCampaignCommand {
         // "Rename" is currently selected
         controller.AddFrames("1,D", studioLine);
         controller.AddFrames("1,F,180", studioLine);
+        if (Settings.Instance.VariantsUnlocked) {
+            controller.AddFrames("1,D", studioLine);
+        }
 
-        if (movesRight >= movesLeft) {
+        if (movesRight <= movesLeft) {
             for (int i = 0; i < movesRight; i++) {
                 controller.AddFrames(i % 2 == 0 ? "1,R" : "1,F,90", studioLine);
             }
@@ -421,5 +432,8 @@ internal static class SelectCampaignCommand {
         controller.AddFrames("1,U", studioLine);
         controller.AddFrames("1,F,0", studioLine);
         controller.AddFrames("1,U", studioLine);
+        if (Settings.Instance.VariantsUnlocked) {
+            controller.AddFrames("1,F,0", studioLine);
+        }
     }
 }
