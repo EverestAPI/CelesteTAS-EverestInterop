@@ -1,0 +1,152 @@
+# ================================== Menu ==================================
+TAS_ENABLED=                    Ativado
+TAS_ENABLED_DESCRIPTION=        Caminho do Arquivo de TAS:
+TAS_SHOW_HITBOXES=              Hitboxes
+TAS_HITBOX_COLOR_DESCRIPTION_1= A cor da Hitbox pode apenas ser editado no menu do menu principal
+TAS_HITBOX_COLOR_DESCRIPTION_2= Ou use o comando entity/trigger/plataform_hitbox_color no seu console
+TAS_SIMPLIFIED_GRAPHICS=        Gráficos Simplificados
+TAS_INFO_HUD=                   HUD de Informações
+TAS_INFO_HUD_DESCRIPTION_1=     Segure a hotkey do HUD de Informações e clique-esquerdo para agarrar e soltá-lo
+TAS_INFO_HUD_DESCRIPTION_2=     Aperte duas vezes o botão do HUD de informações para ativar ou desativá-lo
+TAS_INFO_HUD_DESCRIPTION_3=     Segure o botão de HUD de informações e depois clique-esquerdo para observar a entidade
+TAS_ROUND_VALUES=               Arrendondar Valores
+TAS_FORWARD_SPEED=              Velocidade de Avanço
+TAS_MORE_OPTIONS=               Mais Opções
+
+# ================================== Hitbox Submenu ==================================
+TAS_ACTUAL_COLLIDE_HITBOXES=        Hitboxes de Colisões Reais
+TAS_SHOW_TRIGGER_HITBOXES=          Hitboxes de Trigger
+TAS_SHOW_UNLOADED_ROOMS_HITBOXES=   Hitboxes de Salas Não-Carregadas
+TAS_SHOW_CAMERA_HITBOXES=           Hitboxes de Câmera
+TAS_SHOW_CYCLE_HITBOX_COLORS=       Mostrar Cores de Hitboxes de Ciclos
+TAS_SIMPLIFIED_HITBOXES=            Hitboxes Simplificadas
+TAS_UN_COLLIDABLE_HITBOXES_OPACITY= Opacidade de Hitboxes Não-Colidíveis
+TAS_ENTITY_HITBOX_COLOR=            Cor da Hitbox de Entidade
+TAS_TRIGGER_HITBOX_COLOR=           Cor da Hitbox de Trigger
+TAS_PLATFORM_HITBOX_COLOR=          Cor da Hitbox de Plataformas
+TAS_CYCLE1_HITBOX_COLOR=            Cor da Hitbox de Ciclo 1
+TAS_CYCLE2_HITBOX_COLOR=            Cor da Hitbox de Ciclo 2
+TAS_CYCLE3_HITBOX_COLOR=            Cor da Hitbox de Ciclo 3
+TAS_CYCLE4_HITBOX_COLOR=            Outras Cores de Hitbbox de Ciclo
+
+# ================================== Simplified Graphics Submenu ==================================
+TAS_GAMEPLAY=                     Gameplay
+TAS_LIGHTING=                     Iluminação
+TAS_BLOOM_BASE=                   Base de Bloom
+TAS_BLOOM_STRENGTH=               Força do Bloom
+TAS_SPINNER_COLOR=                Cor dos Spinners
+TAS_DUST_SPRITE_EDGE=             Bordas do Sprite de Poeira
+TAS_SCREEN_WIPE=                  Animação de Tela
+TAS_COLOR_GRADE=                  Correção de Cor
+TAS_SOLID_TILES_STYLE=            Estilo dos Tiles Sólidos
+TAS_BACKGROUND_TILES=             Tiles de Fundo
+TAS_BACKDROP=                     Plano de Fundo
+TAS_DECAL=                        Decal
+TAS_PARTICLE=                     Partículas
+TAS_DISTORT=                      Distorcer
+TAS_MINI_TEXT_BOX=                Mini Caixa de Texto
+TAS_LIGHTNING_STRIKE=             Queda de Raios
+TAS_CLUTTERED_ENTITY=             Entidades Desordenadas
+TAS_CLUTTERED_ENTITY_DESCRIPTION= Tentáculos, Nuvem de Cume, Olhos
+TAS_HUD=                          HUD
+TAS_HUD_DESCRIPTION=              Ícone de interação, tutorial de pássaro e algum texto
+TAS_WAVED_EDGE=                   Pontas Curvas
+TAS_SPIKES=                       Espinhos
+
+# ================================== Info HUD ==================================
+TAS_INFO_GAME=                             Informação do Jogo
+TAS_INFO_TAS_INPUT=                        Input do TAS
+TAS_INFO_SUBPIXEL_INDICATOR=               Indicador de Subpixel
+TAS_INFO_CUSTOM=                           Informação Customizada
+TAS_INFO_COPY_CUSTOM_TEMPLATE=             Copiar Modelo de Informação Costumizada ao Clipboard
+TAS_INFO_SET_CUSTOM_TEMPLATE=              Definir Modelo de Informação Costumizada do Clipboard
+TAS_INFO_WATCH_ENTITY_HUD_TYPE=            Checar Informações de Entidade (HUD)
+TAS_INFO_WATCH_ENTITY_STUDIO_TYPE=         Checar Informações de Entidade (Studio)
+TAS_INFO_WATCH_ENTITY_NONE=                Nenhum
+TAS_INFO_WATCH_ENTITY_POSITION=            Posição
+TAS_INFO_WATCH_ENTITY_DECLARED_ONLY=       Apenas Declarado
+TAS_INFO_WATCH_ENTITY_ALL=                 Todos
+TAS_INFO_WATCH_ENTITY_LOG_TO_CONSOLE=	   Fazer Log de Entidades ao Console
+TAS_INFO_TEXT_SIZE=                        Tamanho do Texto
+TAS_INFO_SUBPIXEL_INDICATOR_SIZE=          Tamanho do Indicador de Subpixel
+TAS_INFO_OPACITY=                          Opacidade
+TAS_INFO_MASKED_OPACITY=                   Opacidade Mascarada
+
+# ================================== Info HUD Options ==================================
+TAS_INFO_HUD_OPTIONS_OFF=         DESATIVADO
+TAS_INFO_HUD_OPTIONS_HUD_ONLY=    Apenas HUD
+TAS_INFO_HUD_OPTIONS_STUDIO_ONLY= Apenas Studio
+TAS_INFO_HUD_OPTIONS_BOTH=        Ambos
+
+# ================================== Round Values ==================================
+TAS_POSITION_DECIMALS=            Decimais de Posição
+TAS_SPEED_DECIMALS=               Decimais de Velocidade
+TAS_VELOCITY_DECIMALS=            Decimais de Rapidez
+TAS_ANGLE_DECIMALS=               Decimais de Ângulo
+TAS_CUSTOM_INFO_DECIMALS=         Decimais de Informações Customizadas
+TAS_SUBPIXEL_INDICATOR_DECIMALS=  Decimais de Indicador de Subpixel
+TAS_SPEED_UNIT=                   Unidade de Velocidade
+TAS_VELOCITY_UNIT=                Unidade de Rapidez
+TAS_PIXEL_PER_SECOND=             Pixel/Segundo
+TAS_PIXEL_PER_FRAME=              Pixel/Frame
+
+# ================================== Forward Speed Submenu ==================================
+TAS_FAST_FORWARD_SPEED=       Velocidade de Avanço Rápido
+TAS_SLOW_FORWARD_SPEED=       Velocidade de Avanço Lento
+
+# ================================== Hotkeys Submenu ==================================
+TAS_HOTKEYS=             Atalhos
+TAS_HOTKEYS_DESCRIPTION= Realizar a bind de múltiplas teclas para um controle fará{n} que esses botões sirvam como um "combo" de teclas
+
+# ================================== More Options Submenu ==================================
+TAS_CENTER_CAMERA=                   Centralizar Câmera
+TAS_CENTER_CAMERA_HORIZONTALLY_ONLY= Centralizar Câmera Apenas Horizontalmente
+TAS_AUTO_ENABLE_EXCAMERADYNAMICS=    Ativar 'Extended Camera Dynamics' para o Centralizar Câmera
+TAS_EXCAMERADYNAMICS_DESCRIPTION=    NOTA: Você precisará reiniciar o nível após desativá-lo para que hitboxes com menor zoom funcionem.
+TAS_RESTORE_SETTINGS=                Restaurar Todas as Opções quando o TAS Parar
+TAS_LAUNCH_STUDIO_AT_BOOT=           Lançar Studio ao Iniciar Jogo
+TAS_ATTEMPT_TO_CONNECT_TO_STUDIO=    Tentar se Conectar ao Studio
+TAS_SHOW_STUDIO_UPDATE_BANNER=       Mostrar Faixa de Update do Studio
+TAS_OPEN_CONSOLE_IN_TAS=             Permitir Abrir o Console no TAS
+TAS_BETTER_INVINCIBILITY=            Melhor Invencibilidade
+TAS_BETTER_INVINCIBLE_DESCRIPTION=   Executar o comando "Set Invincible true" ainda fará que previna a morte, mas evita mudanças de gameplay como quicar{n}do plano de morte, visando evitar dessincronização com o TAS. Aplica apenas enquanto o TAS estiver ativo.
+TAS_HIDE_FREEZE_FRAMES=              Esconder os Freeze Frames durante o TAS
+TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_1=Quando um Freeze Frame é encontrado, rode-o e continue para o próximo frame
+TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_2=antes de renderizar. Aplica apenas enquanto o TAS estiver ativo.
+TAS_IGNORE_GC_COLLECT=               Ignorar o GC Collect durante o Avanço Rápido
+TAS_IGNORE_GC_COLLECT_DESCRIPTION_1= Beneficia o Avanço Rápido para TASses com múltiplos caracteres de tamanho
+TAS_IGNORE_GC_COLLECT_DESCRIPTION_2= mas aumentará o uso de memória e poderá causar erro de falta de memória
+
+# ================================== Hotkey Config ==================================
+TAS_KEY_START_STOP=           Iniciar/Parar
+TAS_KEY_RESTART=              Reiniciar
+TAS_KEY_FAST_FORWARD=         Avanço Rápido
+TAS_KEY_FAST_FORWARD_COMMENT= Avanço Rápido ao Próximo Comentário
+TAS_KEY_SLOW_FORWARD=         Avanço Lento
+TAS_KEY_FRAME_ADVANCE=        Avanço de Frame
+TAS_KEY_PAUSE_RESUME=         Pausar/Resumir
+TAS_KEY_HITBOXES=             Hitboxes
+TAS_KEY_TRIGGER_HITBOXES=     Hitboxes de Trigger
+TAS_KEY_SIMPLIFIED_GRAPHICS=  Gráficos Simplificados
+TAS_KEY_CENTER_CAMERA=        Centralizar Câmera
+TAS_KEY_LOCK_CAMERA=          Travar Câmera
+TAS_KEY_SAVE_STATE=           Save State no TAS
+TAS_KEY_CLEAR_STATE=          Clear State no TAS
+TAS_KEY_INFO_HUD=             HUD de Informações
+TAS_KEY_FREE_CAMERA=          Câmera Livre
+
+# ================================== Option Values ==================================
+TAS_DEFAULT=                  Padrão
+TAS_HIDE=                     Esconder
+TAS_SIMPLIFY=                 Simplificar
+TAS_RED=                      Vermelho
+TAS_GREEN=                    Verde
+TAS_BLUE=                     Azul
+TAS_YELLOW=                   Amarelo
+TAS_PURPLE=                   Roxo
+TAS_WHITE=                    Branco
+TAS_BLACK=                    Preto
+TAS_TRANSPARENT=              Transparente
+TAS_OFF=                      DESLIGADO
+TAS_OVERRIDE=                 Substituir
+TAS_APPEND=                   Acrescentar
