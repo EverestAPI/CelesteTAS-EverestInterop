@@ -9,45 +9,39 @@ using Monocle;
 using System.Diagnostics.CodeAnalysis;
 using TAS.EverestInterop.InfoHUD;
 using TAS.InfoHUD;
+using TAS.Input.Commands;
 using TAS.Utils;
 
-namespace TAS.EverestInterop.Lua;
+namespace TAS.Lua;
 
 /// Provides helper methods for usage in Lua scripts
 public static class LuaHelpers {
-    public class ValueHolder<T>(T value) {
-        public T Value = value;
-    }
-
-    /// Used to pass a null value from Lua
-    [UsedImplicitly]
-    public static readonly object? NullValue = new ValueHolder<object?>(null);
 
     /// Resolves the first entity which matches the specified target-query, e.g. "Player" or "Celeste.Player"
     [UsedImplicitly]
     public static Entity? GetEntity(string targetQuery) {
         if (TryGetEntityTypeWithId(targetQuery, out var type, out var entityId)) {
-            return (Entity?) TargetQuery.ResolveTypeInstances(type, [], entityId).FirstOrDefault();
-        } else {
-            return null;
+            return (Entity?) TargetQuery.ResolveTypeInstances(type, [], entityId)!.FirstOrDefault();
         }
+
+        return null;
     }
 
     /// Resolves all entities which match the specified target-query, e.g. "Player" or "Celeste.Player"
     [UsedImplicitly]
     public static List<Entity> GetEntities(string targetQuery) {
         if (TryGetEntityTypeWithId(targetQuery, out var type, out var entityId)) {
-            return TargetQuery.ResolveTypeInstances(type, [], entityId).Cast<Entity>().ToList();
-        } else {
-            return [];
+            return TargetQuery.ResolveTypeInstances(type, [], entityId)!.Cast<Entity>().ToList();
         }
+
+        return [];
     }
 
     /// Gets the value of a (private) field / property
     [UsedImplicitly]
     public static object? GetValue(object? instanceOrTargetQuery, string memberName) {
         if (!TryGetInstance(instanceOrTargetQuery, out var type, out object? instance)) {
-            $"Failed to get instance for '{instance}".Log("Lua", EvalLuaCommand.ConsoleCommandRunning, LogLevel.Error);
+            $"Failed to get instance for '{instance}".Log("Lua", EvalLuaCommand.LogToConsole, LogLevel.Error);
             return null;
         }
 
@@ -67,11 +61,11 @@ public static class LuaHelpers {
                 }
             }
         } catch (Exception e) {
-            e.LogException($"Failed getting member '{memberName}' on type '{type}'", "Lua", EvalLuaCommand.ConsoleCommandRunning);
+            e.LogException($"Failed getting member '{memberName}' on type '{type}'", "Lua", EvalLuaCommand.LogToConsole);
             return null;
         }
 
-        $"Failed finding member '{memberName}' on type '{type}'".Log("Lua", EvalLuaCommand.ConsoleCommandRunning, LogLevel.Error);
+        $"Failed finding member '{memberName}' on type '{type}'".Log("Lua", EvalLuaCommand.LogToConsole, LogLevel.Error);
         return null;
     }
 
@@ -79,7 +73,7 @@ public static class LuaHelpers {
     [UsedImplicitly]
     public static void SetValue(object? instanceOrTargetQuery, string memberName, object? value) {
         if (!TryGetInstance(instanceOrTargetQuery, out var type, out object? instance)) {
-            $"Failed to get instance for '{instance}".Log("Lua", EvalLuaCommand.ConsoleCommandRunning, LogLevel.Error);
+            $"Failed to get instance for '{instance}".Log("Lua", EvalLuaCommand.LogToConsole, LogLevel.Error);
             return;
         }
 
@@ -101,22 +95,22 @@ public static class LuaHelpers {
                 }
             }
         } catch (Exception e) {
-            e.LogException($"Failed setting member '{memberName}' on type '{type}'", "Lua", EvalLuaCommand.ConsoleCommandRunning);
+            e.LogException($"Failed setting member '{memberName}' on type '{type}'", "Lua", EvalLuaCommand.LogToConsole);
             return;
         }
 
-        $"Failed finding member '{memberName}' on type '{type}'".Log("Lua", EvalLuaCommand.ConsoleCommandRunning, LogLevel.Error);
+        $"Failed finding member '{memberName}' on type '{type}'".Log("Lua", EvalLuaCommand.LogToConsole, LogLevel.Error);
     }
 
     /// Invokes a (private) method
     [UsedImplicitly]
     public static object? InvokeMethod(object? instanceOrTargetQuery, string methodName, params object?[] parameters) {
         if (!TryGetInstance(instanceOrTargetQuery, out var type, out object? instance)) {
-            $"Failed to get instance for '{instance}".Log("Lua", EvalLuaCommand.ConsoleCommandRunning, LogLevel.Error);
+            $"Failed to get instance for '{instance}".Log("Lua", EvalLuaCommand.LogToConsole, LogLevel.Error);
             return null;
         }
         if (instance == null) {
-            $"Cannot get value of member '{methodName}' for null-instance".Log("Lua", EvalLuaCommand.ConsoleCommandRunning, LogLevel.Error);
+            $"Cannot get value of member '{methodName}' for null-instance".Log("Lua", EvalLuaCommand.LogToConsole, LogLevel.Error);
             return null;
         }
         if (type.GetMethodInfo(methodName) is { } methodInfo) {
@@ -134,12 +128,12 @@ public static class LuaHelpers {
             try {
                 return methodInfo.Invoke(instance, parameters);
             } catch (Exception e) {
-                e.LogException($"Failed invoking method '{methodName}' on type '{type}'", "Lua", EvalLuaCommand.ConsoleCommandRunning);
+                e.LogException($"Failed invoking method '{methodName}' on type '{type}'", "Lua", EvalLuaCommand.LogToConsole);
                 return null;
             }
         }
 
-        $"Failed finding method '{methodName}' on type '{type}'".Log("Lua", EvalLuaCommand.ConsoleCommandRunning, LogLevel.Error);
+        $"Failed finding method '{methodName}' on type '{type}'".Log("Lua", EvalLuaCommand.LogToConsole, LogLevel.Error);
         return null;
     }
 
@@ -147,21 +141,20 @@ public static class LuaHelpers {
     [UsedImplicitly]
     public static object? GetEnum(string enumTargetQuery, object value) {
         if (TargetQuery.ResolveBaseTypes(enumTargetQuery.Split('.'), out _, out _, out _) is { } types && types.IsNotEmpty() &&
-            types.FirstOrDefault(t => t.IsEnum) is { } type)
-        {
+            types.FirstOrDefault(t => t.IsEnum) is { } type) {
             if (value is long longValue || long.TryParse(value.ToString(), out longValue)) {
                 return Enum.ToObject(type, longValue);
-            } else {
-                try {
-                    return Enum.Parse(type, value.ToString() ?? string.Empty, true);
-                } catch {
-                    $"Failed finding enum-value '{value}' on type '{type}'".Log("Lua", EvalLuaCommand.ConsoleCommandRunning, LogLevel.Error);
-                    return null;
-                }
+            }
+
+            try {
+                return Enum.Parse(type, value.ToString() ?? string.Empty, true);
+            } catch {
+                $"Failed finding enum-value '{value}' on type '{type}'".Log("Lua", EvalLuaCommand.LogToConsole, LogLevel.Error);
+                return null;
             }
         }
 
-        $"Failed finding enum '{enumTargetQuery}'".Log("Lua", EvalLuaCommand.ConsoleCommandRunning, LogLevel.Error);
+        $"Failed finding enum '{enumTargetQuery}'".Log("Lua", EvalLuaCommand.LogToConsole, LogLevel.Error);
         return null;
     }
 
@@ -177,22 +170,11 @@ public static class LuaHelpers {
         return Engine.Scene.GetSession();
     }
 
-    /// Casts the value to an int, for usage with setValue / invokeMethod
-    [UsedImplicitly]
-    public static ValueHolder<int> ToInt(long value) {
-        return new ValueHolder<int>((int) value);
-    }
-    /// Casts the value to a float, for usage with setValue / invokeMethod
-    [UsedImplicitly]
-    public static ValueHolder<float> ToFloat(double value) {
-        return new ValueHolder<float>((float) value);
-    }
-
     private static bool TryGetInstance(object? instanceOrTargetQuery, [NotNullWhen(true)] out Type? type, out object? instance) {
         if (instanceOrTargetQuery is string targetQuery) {
             if (TargetQuery.ResolveBaseTypes(targetQuery.Split('.'), out _, out _, out _) is { } types && types.IsNotEmpty()) {
                 type = types[0];
-                instance = TargetQuery.ResolveTypeInstances(types[0], [], EntityID.None).FirstOrDefault();
+                instance = TargetQuery.ResolveTypeInstances(types[0], [], EntityID.None)?.FirstOrDefault();
                 return true;
             } else {
                 type = null;
@@ -220,15 +202,6 @@ public static class LuaHelpers {
 
     /// Tries to convert the value to the target type
     private static object? ConvertType(object? value, Type? valueType, Type type) {
-        switch (value) {
-            case ValueHolder<int> intHolder:
-                return intHolder.Value;
-            case ValueHolder<float> floatHolder:
-                return floatHolder.Value;
-            case ValueHolder<object> objectHolder:
-                return objectHolder.Value;
-        }
-
         if (valueType != null && type.IsSameOrSubclassOf(valueType)) {
             return value;
         }

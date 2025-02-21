@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using TAS.EverestInterop;
-using TAS.EverestInterop.Lua;
+using TAS.Lua;
 using TAS.Utils;
 
 namespace TAS.InfoHUD;
@@ -62,7 +62,9 @@ public static class InfoCustom {
     /// Target-query
     private record QueryComponent(TargetQuery.Parsed Query, string Prefix, ValueFormatter? Formatter = null) : TemplateComponent;
     /// Lua code
-    private record LuaComponent(string Code) : TemplateComponent;
+    private record LuaComponent(LuaContext Context) : TemplateComponent {
+        ~LuaComponent() => Context.Dispose();
+    }
     /// Table
     private record TableComponent : TemplateComponent {
         public int ComponentCount { get; set; } = 0;
@@ -137,8 +139,13 @@ public static class InfoCustom {
                     components.Add(new QueryComponent(parsedQuery, queryPrefix, formatter));
                 } else if (currMatch == nextLuaMatch) {
                     string code = currMatch.Groups[1].Value;
-                    // TODO: Use NeoLua and JIT compile this
-                    components.Add(new LuaComponent(code));
+
+                    var ctx = LuaContext.Compile(code, "CustomInfo");
+                    if (ctx.Failure) {
+                        components.Add(new TextComponent($"<Invalid Lua code: {ctx.Error}>"));
+                    } else {
+                        components.Add(new LuaComponent(ctx));
+                    }
                 } else if (currMatch == nextTableMatch) {
                     var table = new TableComponent();
                     components.Add(table);
@@ -227,12 +234,19 @@ public static class InfoCustom {
                         infoBuilder.Append("<Cannot safely evaluate Lua code during EnforceLegal>");
                     }
 
-                    object?[]? objects = EvalLuaCommand.EvalLuaImpl(lua.Code);
-                    if (objects == null) {
-                        infoBuilder.Append("null");
+                    var result = lua.Context.Execute();
+                    if (result.Failure) {
+                        infoBuilder.Append($"<Lua error: {result.Error.Message}>");
                     } else {
-                        infoBuilder.AppendJoin(", ", objects.Select(o => o?.ToString() ?? "null"));
+                        object?[] objects = result.Value.ToArray();
+                        for (int objIdx = 0; objIdx < objects.Length; objIdx++) {
+                            if (objIdx != 0) {
+                                infoBuilder.Append(", ");
+                            }
+                            infoBuilder.Append(objects[objIdx]?.ToString() ?? "null");
+                        }
                     }
+
                     continue;
                 }
 
@@ -258,14 +272,20 @@ public static class InfoCustom {
                             }
                             case LuaComponent lua: {
                                 if (TargetQuery.PreventCodeExecution && !forceAllowCodeExecution) {
-                                    infoBuilder.Append("<Cannot safely evaluate Lua code during EnforceLegal>");
+                                    resultBuilder.Append("<Cannot safely evaluate Lua code during EnforceLegal>");
                                 }
 
-                                object?[]? objects = EvalLuaCommand.EvalLuaImpl(lua.Code);
-                                if (objects == null) {
-                                    resultBuilder.Append("null");
+                                var result = lua.Context.Execute();
+                                if (result.Failure) {
+                                    resultBuilder.Append($"<Lua error: {result.Error.Message}>");
                                 } else {
-                                    resultBuilder.AppendJoin(", ", objects.Select(o => o?.ToString() ?? "null"));
+                                    object?[] objects = result.Value.ToArray();
+                                    for (int objIdx = 0; objIdx < objects.Length; objIdx++) {
+                                        if (objIdx != 0) {
+                                            resultBuilder.Append(", ");
+                                        }
+                                        resultBuilder.Append(objects[objIdx]?.ToString() ?? "null");
+                                    }
                                 }
                                 continue;
                             }
@@ -497,8 +517,8 @@ public static class InfoCustom {
                                      TimeActive: {Level.TimeActive}
                                      """;
         const string luaTemplate =   """
-                                     Float position: [[if not player then return 0 end; return math.floor((player.PositionRemainder.x*360+0.5)%360)]]/360, [[if not player then return 0 end; return math.floor(((player.Position.x+player.PositionRemainder.x)*360+0.5)%540)]]/540, [[if not player then return 0 end; oldfloat = float; subp = player.PositionRemainder.x*360%1;if subp < 0.5 then float = math.floor((subp)*3000000) else float = math.floor((subp-1)*3000000) end; return float]]/3mil
-                                     Air manip (65s): x - [[if not player then return 0 end; if level.Paused then return manip65 end; oldmanip65 = manip65; pos5 = math.floor((player.PositionRemainder.x*360+0.5)%5); manip65 = math.floor(((player.Position.x+player.PositionRemainder.x)*360%540*5-21*pos5+0.5)%108); val = manip65.."/108 (+"..pos5.."/5)"; return val]], Δx - [[if not player or not oldmanip65 then return 0 end; ans = manip65 - oldmanip65; return (ans-54)%108-54]] (+[[if not player then return 0 end; return math.floor((player.Speed.x/60%1*360+0.5)%5)]]/5)
+                                     Float position: [[if not player then return 0 end; return math.floor((player.PositionRemainder.X*360+0.5)%360)]]/360, [[if not player then return 0 end; return math.floor(((player.Position.X+player.PositionRemainder.X)*360+0.5)%540)]]/540, [[if not player then return 0 end; oldfloat = float; subp = player.PositionRemainder.X*360%1;if subp < 0.5 then float = math.floor((subp)*3000000) else float = math.floor((subp-1)*3000000) end; return float]]/3mil
+                                     Air manip (65s): x - [[if not player then return 0 end; if level.Paused then return manip65 end; oldmanip65 = manip65; pos5 = math.floor((player.PositionRemainder.X*360+0.5)%5); manip65 = math.floor(((player.Position.x+player.PositionRemainder.X)*360%540*5-21*pos5+0.5)%108); val = manip65.."/108 (+"..pos5.."/5)"; return val]], Δx - [[if not player or not oldmanip65 then return 0 end; ans = manip65 - oldmanip65; return (ans-54)%108-54]] (+[[if not player then return 0 end; return math.floor((player.Speed.x/60%1*360+0.5)%5)]]/5)
                                      Float speed: [[if not player then return 0 end; subp = player.Speed.x/60%1; return math.floor(subp*360+0.5)]]/360, [[if not player then return 0 end; subp = player.Speed.x/60%1*360%1;if subp < 0.5 then return math.floor((subp)*3000000) else return math.floor((subp-1)*3000000) end]]/3mil
                                      Float velocity: [[if not player or not oldfloat then return 0 end; return float - oldfloat]]/3mil
                                      """;

@@ -66,6 +66,7 @@ public static class AssertCommand {
             // FIXME
             string actual = string.Empty;//string.Join("\n", InfoCustom.ParseTemplateLine(actualTemplate, 0, forceAllowCodeExecution: true));
             Running = false;
+            return;
 
             switch (condition) {
                 case AssertCondition.Equal: {

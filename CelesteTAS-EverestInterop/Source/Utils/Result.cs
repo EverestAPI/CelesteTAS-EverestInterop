@@ -1,9 +1,10 @@
+using System;
 using System.Diagnostics.CodeAnalysis;
 
 namespace TAS.Utils;
 
 /// Represents a result value which might not be available, due to errors
-public readonly record struct Result<TValue, TError>(TValue Value, TError? Error) where TError : notnull {
+public readonly record struct Result<TValue, TError>(TValue Value, TError? Error) where TError : IEquatable<TError> {
     public static Result<TValue, TError> Ok(TValue value) => new(value, default);
     public static Result<TValue, TError> Fail(TError error) => new(default!, error);
 
@@ -12,11 +13,11 @@ public readonly record struct Result<TValue, TError>(TValue Value, TError? Error
 
     /// Checks if the operation was successfully
     [MemberNotNullWhen(false, nameof(Error))]
-    public bool Success => Error == null;
+    public bool Success => Error?.Equals(default) ?? true;
 
     /// Checks if the operations has failed
     [MemberNotNullWhen(true, nameof(Error))]
-    public bool Failure => Error != null;
+    public bool Failure => !Success;
 
     /// Provides the result value if the operation was successful
     public bool CheckSuccess([NotNullWhen(true)] out TValue? value) {

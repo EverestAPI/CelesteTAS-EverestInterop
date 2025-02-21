@@ -1,11 +1,10 @@
-local Monocle = require("#Monocle")
-local Celeste = require("#Celeste")
-local TAS = require("#TAS")
-local Vector2 = require("#Microsoft.Xna.Framework.Vector2")
-local LuaHelpers = require("#TAS.EverestInterop.Lua.LuaHelpers")
+--- Environment to provide commonly used helpers
 
---- Use nullValue instead of nil when using setValue / invokeMethod
-local nullValue = LuaHelpers.NullValue
+const Monocle typeof Monocle
+const Celeste typeof Monocle
+const Vector2 typeof Microsoft.Xna.Framework.Vector2
+
+const LuaHelpers typeof TAS.Lua.LuaHelpers
 
 --- Logs a message
 local function log(message, tag)
@@ -14,8 +13,8 @@ end
 
 --- Resolves the first entity which matches the specified target-query
 --- Example: getEntity("Player"), getEntity("Celeste.Player"), getEntity("DustStaticSpinner[s1:12]")
-local function getEntity(entityTypeName)
-    return LuaHelpers.GetEntity(entityTypeName)
+local function getEntity(query)
+    return LuaHelpers.GetEntity(query)
 end
 
 --- Resolves all entities which match the specified target-query, e.g. "Player" or "Celeste.Player"
@@ -58,14 +57,13 @@ local function getSession()
 end
 
 --- Casts the value to an int, for usage with setValue / invokeMethod
-local function toInt(longValue)
-    return LuaHelpers.ToInt(longValue)
+local function toInt(value)
+    return cast(int, value)
 end
 
 --- Casts the value to a float, for usage with setValue / invokeMethod
---- Example: invokeMethod("ExtendedVariants.UI.ModOptionsEntries", "SetVariantValue", getEnum("Variant", "Gravity"), toFloat(0.1))
-local function toFloat(doubleValue)
-    return LuaHelpers.ToFloat(doubleValue)
+local function toFloat(value)
+    return cast(float, value)
 end
 
 local scene = Monocle.Engine.Scene

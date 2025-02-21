@@ -1,8 +1,12 @@
 global using NeoLua = Neo.IronLua;
+using Celeste;
 using Monocle;
 using System;
 using MonoMod.RuntimeDetour;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -12,7 +16,9 @@ using TAS.Utils;
 namespace TAS.Lua;
 
 /// Compiled Lua code which can be executed
-internal class LuaContext : IDisposable {
+internal readonly struct LuaContext : IDisposable {
+
+    private static string EnvironmentCode = null!;
 
     [Load]
     private static void Load() {
@@ -23,37 +29,55 @@ internal class LuaContext : IDisposable {
         typeof(NeoLua.LuaType)
             .GetMethodInfo("IsCallableMethod")!
             .OnHook(bool (Func<MethodInfo, bool, bool> _, MethodInfo methodInfo, bool searchStatic) => methodInfo.IsStatic == searchStatic);
+
+        using var envStream = typeof(CelesteTasModule).Assembly.GetManifestResourceStream("environment.lua")!;
+        using var envReader = new StreamReader(envStream);
+
+        EnvironmentCode = envReader.ReadToEnd();
     }
 
     private readonly NeoLua.Lua lua;
     private readonly NeoLua.LuaChunk chunk;
     private readonly NeoLua.LuaTable environment;
 
-    public LuaContext(string code) {
-        lua = new NeoLua.Lua();
-        lua.SetPropertyValue("PrintExpressionTree", Console.Out);
-        chunk = lua.CompileChunk(code, "CelesteTAS_LuaContext", new NeoLua.LuaCompileOptions() );
-        environment = lua.CreateEnvironment();
+    private LuaContext(NeoLua.Lua lua, NeoLua.LuaChunk chunk, NeoLua.LuaTable environment) {
+        this.lua = lua;
+        this.chunk = chunk;
+        this.environment = environment;
+    }
+    public void Dispose() {
+        lua.Dispose();
     }
 
-    [MonocleCommand("test_lua", "")]
-    public static void CmdTest() {
-        string code = Engine.Commands.commandHistory[0]["test_lua ".Length..];
-        using var ctx = new LuaContext(code);
-        var result = ctx.chunk.Run(ctx.environment, null);
+    /// Compiles Lua text code into an executable context
+    public static Result<LuaContext, string> Compile(string code, string? name = null) {
+        try {
+            var lua = new NeoLua.Lua();
+            var chunk = lua.CompileChunk(EnvironmentCode + code, name ?? "CelesteTAS_LuaContext", new NeoLua.LuaCompileOptions { DebugEngine = NeoLua.LuaExceptionDebugger.Default } );
+            var environment = lua.CreateEnvironment();
 
-        result.Log("Lua", outputToCommands: true);
-        foreach (var value in result.Values) {
-            $"  - {value}".Log("Lua", outputToCommands: true);
+            return Result<LuaContext, string>.Ok(new LuaContext(lua, chunk, environment));
+        } catch (NeoLua.LuaException ex) {
+            ex.LogException("Lua compilation error");
+            return Result<LuaContext, string>.Fail(ex.Message); // Stacktrace isn't useful for the user
+        } catch (Exception ex) {
+            return Result<LuaContext, string>.Fail($"Unexpected error: {ex.Message}");
         }
     }
 
-    ~LuaContext() {
-        Dispose();
-    }
-    public void Dispose() {
-        GC.SuppressFinalize(this);
-
-        lua.Dispose();
+    /// Executes the compiled Lua code
+    public Result<IEnumerable<object?>, (string Message, string? Stacktrace)> Execute() {
+        try {
+            var result = chunk.Run(environment, null);
+            return Result<IEnumerable<object?>, (string Message, string? Stacktrace)>.Ok(
+                result.Values
+                    // Level is an IEnumerable<Entity>, but we don't want to format it like that
+                .SelectMany(value => value is not Level && value is IEnumerable<object?> enumerable ? enumerable : [value]));
+        } catch (NeoLua.LuaException ex) {
+            ex.LogException("Lua execution error");
+            return Result<IEnumerable<object?>, (string Message, string? Stacktrace)>.Fail((ex.Message, ex.StackTrace));
+        } catch (Exception ex) {
+            return Result<IEnumerable<object?>, (string Message, string? Stacktrace)>.Fail(($"Unexpected error: {ex.Message}", ex.StackTrace));
+        }
     }
 }
