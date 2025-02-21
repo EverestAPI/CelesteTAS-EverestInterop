@@ -7,6 +7,510 @@ using Eto.Forms;
 
 namespace CelesteStudio.Data;
 
+public record struct BindableAction {
+    public required MenuEntryCategory Category;
+    public required string EntryName;
+    public required Hotkey DefaultKeyBinding;
+    public required Action Action;
+
+    public static readonly Dictionary<MenuEntry, BindableAction> All = new() {
+        {
+            MenuEntry.File_New, new BindableAction {
+                Category = MenuEntryCategory.File,
+                EntryName = "&New File",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.N),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.File_Open, new BindableAction {
+                Category = MenuEntryCategory.File,
+                EntryName = "&Open File...",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.O),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.File_OpenPrevious, new BindableAction {
+                Category = MenuEntryCategory.File,
+                EntryName = "Open &Previous File",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.AlternateModifier | Keys.Left),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.File_Save, new BindableAction {
+                Category = MenuEntryCategory.File,
+                EntryName = "Save",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.S),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.File_SaveAs, new BindableAction {
+                Category = MenuEntryCategory.File,
+                EntryName = "&Save As...",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.S),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.File_Show, new BindableAction {
+                Category = MenuEntryCategory.File,
+                EntryName = "Show in &File Explorer...",
+                DefaultKeyBinding = Hotkey.None,
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.File_RecordTAS, new BindableAction {
+                Category = MenuEntryCategory.File,
+                EntryName = "&Record TAS...",
+                DefaultKeyBinding = Hotkey.None,
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.File_Quit, new BindableAction {
+                Category = MenuEntryCategory.File,
+                EntryName = "Quit",
+                DefaultKeyBinding = Hotkey.None,
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Settings_SendInputs, new BindableAction {
+                Category = MenuEntryCategory.Settings,
+                EntryName = "&Send Inputs to Celeste",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.D),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.View_ShowGameInfo, new BindableAction {
+                Category = MenuEntryCategory.View,
+                EntryName = "Show Game Info",
+                DefaultKeyBinding = Hotkey.None,
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.View_ShowSubpixelIndicator, new BindableAction {
+                Category = MenuEntryCategory.View,
+                EntryName = "Show Subpixel Indicator",
+                DefaultKeyBinding = Hotkey.None,
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.View_AlwaysOnTop, new BindableAction {
+                Category = MenuEntryCategory.View,
+                EntryName = "Always on Top",
+                DefaultKeyBinding = Hotkey.None,
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.View_WrapComments, new BindableAction {
+                Category = MenuEntryCategory.View,
+                EntryName = "Word Wrap Comments",
+                DefaultKeyBinding = Hotkey.None,
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.View_ShowFoldingIndicator, new BindableAction {
+                Category = MenuEntryCategory.View,
+                EntryName = "Show Fold Indicators",
+                DefaultKeyBinding = Hotkey.None,
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_Cut, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Cut",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.X),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_Copy, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Copy",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.C),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_Paste, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Paste",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.V),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_Undo, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Undo",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Z),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_Redo, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Redo",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.Z),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_SelectAll, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Select All",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.A),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_SelectBlock, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Select Block",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.W),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_Find, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Find...",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.F),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_GoTo, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Go To...",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.G),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_ToggleFolding, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Toggle Folding",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Minus),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_DeleteSelectedLines, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Delete Selected Lines",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Y),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_SetFrameCountToStepAmount, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Set Frame Count to current Step Amount",
+                DefaultKeyBinding = Hotkey.None,
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_InsertRemoveBreakpoint, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Insert / Remove Breakpoint",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Period),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_InsertRemoveSavestateBreakpoint, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Insert / Remove Savestate Breakpoint",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.Period),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_RemoveAllUncommentedBreakpoints, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Remove All Uncommented Breakpoints",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.P),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_RemoveAllBreakpoints, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Remove All Breakpoints",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.P),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_CommentUncommentAllBreakpoints, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Comment / Uncomment All Breakpoints",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier |
+                                               Application.Instance.AlternateModifier | Keys.P),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_CommentUncommentInputs, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Comment / Uncomment Inputs",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.K),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_CommentUncommentText, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Comment / Uncomment Text",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.K),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_InsertRoomName, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Insert Room Name",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.R),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_InsertCurrentTime, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Insert Current In-Game Time",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.T),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_RemoveAllTimestamps, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Remove All Timestamps",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.T),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_InsertCurrentPosition, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Insert Current Player Position",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_InsertCurrentSpeed, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Insert Current Player Speed",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_InsertModInfo, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Insert Mod Info",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_InsertConsoleLoadCommand, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Insert Console Load Command",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.R),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_InsertSimpleConsoleLoadCommand, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Insert Simple Console Load Command",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier |
+                                               Application.Instance.AlternateModifier | Keys.R),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_SwapSelectedLR, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Swap Selected L and R",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_SwapSelectedJK, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Swap Selected J and K",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_SwapSelectedXC, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Swap Selected X and C",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_CombineConsecutiveSameInputs, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Combine Consecutive Same Inputs",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.L),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_ForceCombineInputFrames, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Force Combine Input Frames",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.L),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_SplitFrames, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Split Input Frames",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_OpenReadFileGoToPlayLine, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Open Read File / Go To Play Line",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_OpenAutoCompleteMenu, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Open Auto Complete menu...",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Space),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Editor_OpenContextActionsMenu, new BindableAction {
+                Category = MenuEntryCategory.Editor,
+                EntryName = "Open Context Actions menu...",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.AlternateModifier | Keys.Enter),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.ContextActions_InlineReadCommand, new BindableAction {
+                Category = MenuEntryCategory.ContextActions,
+                EntryName = "Inline Read-command",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.ContextActions_InlineRepeatCommand, new BindableAction {
+                Category = MenuEntryCategory.ContextActions,
+                EntryName = "Inline Repeat-command",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.ContextActions_CreateRepeatCommand, new BindableAction {
+                Category = MenuEntryCategory.ContextActions,
+                EntryName = "Create Repeat-command",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.ContextActions_SwapActionsLR, new BindableAction {
+                Category = MenuEntryCategory.ContextActions,
+                EntryName = "Swap L and R",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.ContextActions_SwapActionsJK, new BindableAction {
+                Category = MenuEntryCategory.ContextActions,
+                EntryName = "Swap J and K",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.ContextActions_SwapActionsXC, new BindableAction {
+                Category = MenuEntryCategory.ContextActions,
+                EntryName = "Swap X and C",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.ContextActions_CombineConsecutiveSameInputs, new BindableAction {
+                Category = MenuEntryCategory.ContextActions,
+                EntryName = "Combine Consecutive Same Inputs",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.L),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.ContextActions_ForceCombineInputFrames, new BindableAction {
+                Category = MenuEntryCategory.ContextActions,
+                EntryName = "Force Combine Input Frames",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.L),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.ContextActions_SplitFrames, new BindableAction {
+                Category = MenuEntryCategory.ContextActions,
+                EntryName = "Split Input Frames",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.ContextActions_OpenReadFile, new BindableAction {
+                Category = MenuEntryCategory.ContextActions,
+                EntryName = "Open Read File",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.ContextActions_GoToPlayLine, new BindableAction {
+                Category = MenuEntryCategory.ContextActions,
+                EntryName = "Go To Play Line",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Status_CopyGameInfoToClipboard, new BindableAction {
+                Category = MenuEntryCategory.Status,
+                EntryName = "&Copy Game Info to Clipboard",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.C),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Status_ReconnectStudioCeleste, new BindableAction {
+                Category = MenuEntryCategory.Status,
+                EntryName = "&Reconnect Studio and Celeste",
+                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.D),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Status_EditCustomInfoTemplate, new BindableAction {
+                Category = MenuEntryCategory.Status,
+                EntryName = "&Edit Custom Info Template",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Status_ClearWatchEntityInfo, new BindableAction {
+                Category = MenuEntryCategory.Status,
+                EntryName = "Clear Watch Entity Info",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.StatusPopout_AlwaysOnTop, new BindableAction {
+                Category = MenuEntryCategory.StatusPopout,
+                EntryName = "Always on Top",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Game_Start, new BindableAction {
+                Category = MenuEntryCategory.GameHotkeys,
+                EntryName = "Start",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Game_Pause, new BindableAction {
+                Category = MenuEntryCategory.GameHotkeys,
+                EntryName = "Pause",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Game_Restart, new BindableAction {
+                Category = MenuEntryCategory.GameHotkeys,
+                EntryName = "Restart",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        }, {
+            MenuEntry.Game_FrameAdvance, new BindableAction {
+                Category = MenuEntryCategory.GameHotkeys,
+                EntryName = "Advance Frame",
+                DefaultKeyBinding = Hotkey.Key(Keys.None),
+                Action = () => { },
+            }
+        },
+    };
+}
+
+// ReSharper disable InconsistentNaming
 public enum MenuEntry {
     File_New, File_Open, File_OpenPrevious, File_Save, File_SaveAs, File_Show, File_RecordTAS, File_Quit,
     Settings_SendInputs,
@@ -36,164 +540,6 @@ public enum MenuEntry {
 public enum MenuEntryCategory { File, Settings, View, Editor, ContextActions, Status, StatusPopout, GameHotkeys }
 
 public static class MenuEntryExtensions {
-    private static readonly Dictionary<MenuEntry, Keys> DefaultKeyBindings = new() {
-        { MenuEntry.File_New, Application.Instance.CommonModifier | Keys.N },
-        { MenuEntry.File_Open, Application.Instance.CommonModifier | Keys.O },
-        { MenuEntry.File_OpenPrevious, Application.Instance.AlternateModifier | Keys.Left },
-        { MenuEntry.File_Save, Application.Instance.CommonModifier | Keys.S },
-        { MenuEntry.File_SaveAs, Application.Instance.CommonModifier | Keys.Shift | Keys.S },
-        { MenuEntry.File_Show, Keys.None },
-        { MenuEntry.File_RecordTAS, Keys.None },
-        { MenuEntry.File_Quit, Keys.None },
-
-        { MenuEntry.Settings_SendInputs, Application.Instance.CommonModifier | Keys.D },
-
-        { MenuEntry.View_ShowGameInfo, Keys.None },
-        { MenuEntry.View_ShowSubpixelIndicator, Keys.None },
-        { MenuEntry.View_AlwaysOnTop, Keys.None },
-        { MenuEntry.View_WrapComments, Keys.None },
-        { MenuEntry.View_ShowFoldingIndicator, Keys.None },
-
-        { MenuEntry.Editor_Cut, Application.Instance.CommonModifier | Keys.X },
-        { MenuEntry.Editor_Copy, Application.Instance.CommonModifier | Keys.C },
-        { MenuEntry.Editor_Paste, Application.Instance.CommonModifier | Keys.V },
-        { MenuEntry.Editor_Undo, Application.Instance.CommonModifier | Keys.Z },
-        { MenuEntry.Editor_Redo, Application.Instance.CommonModifier | Keys.Shift | Keys.Z },
-        { MenuEntry.Editor_SelectAll, Application.Instance.CommonModifier | Keys.A },
-        { MenuEntry.Editor_SelectBlock, Application.Instance.CommonModifier | Keys.W },
-        { MenuEntry.Editor_Find, Application.Instance.CommonModifier | Keys.F },
-        { MenuEntry.Editor_GoTo, Application.Instance.CommonModifier | Keys.G },
-        { MenuEntry.Editor_ToggleFolding, Application.Instance.CommonModifier | Keys.Minus },
-        { MenuEntry.Editor_DeleteSelectedLines, Application.Instance.CommonModifier | Keys.Y },
-        { MenuEntry.Editor_SetFrameCountToStepAmount, Keys.None },
-        { MenuEntry.Editor_InsertRemoveBreakpoint, Application.Instance.CommonModifier | Keys.Period },
-        { MenuEntry.Editor_InsertRemoveSavestateBreakpoint, Application.Instance.CommonModifier | Keys.Shift | Keys.Period },
-        { MenuEntry.Editor_RemoveAllUncommentedBreakpoints, Application.Instance.CommonModifier | Keys.P },
-        { MenuEntry.Editor_RemoveAllBreakpoints, Application.Instance.CommonModifier | Keys.Shift | Keys.P },
-        { MenuEntry.Editor_CommentUncommentAllBreakpoints, Application.Instance.CommonModifier | Application.Instance.AlternateModifier | Keys.P },
-        { MenuEntry.Editor_CommentUncommentInputs, Application.Instance.CommonModifier | Keys.K },
-        { MenuEntry.Editor_CommentUncommentText, Application.Instance.CommonModifier | Keys.Shift | Keys.K },
-        { MenuEntry.Editor_InsertRoomName, Application.Instance.CommonModifier | Keys.R },
-        { MenuEntry.Editor_InsertCurrentTime, Application.Instance.CommonModifier | Keys.T },
-        { MenuEntry.Editor_RemoveAllTimestamps, Application.Instance.CommonModifier | Keys.Shift | Keys.T },
-        { MenuEntry.Editor_InsertCurrentPosition, Keys.None },
-        { MenuEntry.Editor_InsertCurrentSpeed, Keys.None },
-        { MenuEntry.Editor_InsertModInfo, Keys.None },
-        { MenuEntry.Editor_InsertConsoleLoadCommand, Application.Instance.CommonModifier | Keys.Shift | Keys.R },
-        { MenuEntry.Editor_InsertSimpleConsoleLoadCommand, Application.Instance.CommonModifier | Application.Instance.AlternateModifier | Keys.R },
-        { MenuEntry.Editor_SwapSelectedLR, Keys.None },
-        { MenuEntry.Editor_SwapSelectedJK, Keys.None },
-        { MenuEntry.Editor_SwapSelectedXC, Keys.None },
-        { MenuEntry.Editor_CombineConsecutiveSameInputs, Application.Instance.CommonModifier | Keys.L },
-        { MenuEntry.Editor_ForceCombineInputFrames, Application.Instance.CommonModifier | Keys.Shift | Keys.L },
-        { MenuEntry.Editor_SplitFrames, Keys.None },
-        { MenuEntry.Editor_OpenReadFileGoToPlayLine, Keys.None },
-        { MenuEntry.Editor_OpenAutoCompleteMenu, Application.Instance.CommonModifier | Keys.Space },
-        { MenuEntry.Editor_OpenContextActionsMenu, Application.Instance.AlternateModifier | Keys.Enter },
-
-        { MenuEntry.ContextActions_InlineReadCommand, Keys.None },
-        { MenuEntry.ContextActions_InlineRepeatCommand, Keys.None },
-        { MenuEntry.ContextActions_CreateRepeatCommand, Keys.None },
-        { MenuEntry.ContextActions_SwapActionsLR, Keys.None },
-        { MenuEntry.ContextActions_SwapActionsJK, Keys.None },
-        { MenuEntry.ContextActions_SwapActionsXC, Keys.None },
-        { MenuEntry.ContextActions_CombineConsecutiveSameInputs, Application.Instance.CommonModifier | Keys.L },
-        { MenuEntry.ContextActions_ForceCombineInputFrames, Application.Instance.CommonModifier | Keys.Shift | Keys.L },
-        { MenuEntry.ContextActions_SplitFrames, Keys.None },
-        { MenuEntry.ContextActions_OpenReadFile, Keys.None },
-        { MenuEntry.ContextActions_GoToPlayLine, Keys.None },
-
-        { MenuEntry.Status_CopyGameInfoToClipboard, Application.Instance.CommonModifier | Keys.Shift | Keys.C },
-        { MenuEntry.Status_ReconnectStudioCeleste, Application.Instance.CommonModifier | Keys.Shift | Keys.D },
-        { MenuEntry.Status_EditCustomInfoTemplate, Keys.None },
-        { MenuEntry.Status_ClearWatchEntityInfo, Keys.None },
-
-        { MenuEntry.StatusPopout_AlwaysOnTop, Keys.None },
-
-        { MenuEntry.Game_Start, Keys.None },
-        { MenuEntry.Game_Pause, Keys.None },
-        { MenuEntry.Game_Restart, Keys.None },
-        { MenuEntry.Game_FrameAdvance, Keys.None },
-    };
-    private static readonly Dictionary<MenuEntry, string> EntryNames = new() {
-        { MenuEntry.File_New, "&New File" },
-        { MenuEntry.File_Open, "&Open File..." },
-        { MenuEntry.File_OpenPrevious, "Open &Previous File" },
-        { MenuEntry.File_Save, "Save" },
-        { MenuEntry.File_SaveAs, "&Save As..." },
-        { MenuEntry.File_Show, "Show in &File Explorer..." },
-        { MenuEntry.File_RecordTAS, "&Record TAS..." },
-        { MenuEntry.File_Quit, "Quit" },
-
-        { MenuEntry.Settings_SendInputs, "&Send Inputs to Celeste" },
-
-        { MenuEntry.View_ShowGameInfo, "Show Game Info" },
-        { MenuEntry.View_ShowSubpixelIndicator, "Show Subpixel Indicator" },
-        { MenuEntry.View_AlwaysOnTop, "Always on Top" },
-        { MenuEntry.View_WrapComments, "Word Wrap Comments" },
-        { MenuEntry.View_ShowFoldingIndicator, "Show Fold Indicators" },
-
-        { MenuEntry.Editor_Cut, "Cut" },
-        { MenuEntry.Editor_Copy, "Copy" },
-        { MenuEntry.Editor_Paste, "Paste" },
-        { MenuEntry.Editor_Undo, "Undo" },
-        { MenuEntry.Editor_Redo, "Redo" },
-        { MenuEntry.Editor_SelectAll, "Select All" },
-        { MenuEntry.Editor_SelectBlock, "Select Block" },
-        { MenuEntry.Editor_Find, "Find..." },
-        { MenuEntry.Editor_GoTo, "Go To..." },
-        { MenuEntry.Editor_ToggleFolding, "Toggle Folding" },
-        { MenuEntry.Editor_DeleteSelectedLines, "Delete Selected Lines" },
-        { MenuEntry.Editor_SetFrameCountToStepAmount, "Set Frame Count to current Step Amount" },
-        { MenuEntry.Editor_InsertRemoveBreakpoint, "Insert / Remove Breakpoint" },
-        { MenuEntry.Editor_InsertRemoveSavestateBreakpoint, "Insert / Remove Savestate Breakpoint" },
-        { MenuEntry.Editor_RemoveAllUncommentedBreakpoints, "Remove All Uncommented Breakpoints" },
-        { MenuEntry.Editor_RemoveAllBreakpoints, "Remove All Breakpoints" },
-        { MenuEntry.Editor_CommentUncommentAllBreakpoints, "Comment / Uncomment All Breakpoints" },
-        { MenuEntry.Editor_CommentUncommentInputs, "Comment / Uncomment Inputs" },
-        { MenuEntry.Editor_CommentUncommentText, "Comment / Uncomment Text" },
-        { MenuEntry.Editor_InsertRoomName, "Insert Room Name" },
-        { MenuEntry.Editor_InsertCurrentTime, "Insert Current In-Game Time" },
-        { MenuEntry.Editor_RemoveAllTimestamps, "Remove All Timestamps" },
-        { MenuEntry.Editor_InsertCurrentPosition, "Insert Current Player Position" },
-        { MenuEntry.Editor_InsertCurrentSpeed, "Insert Current Player Speed" },
-        { MenuEntry.Editor_InsertModInfo, "Insert Mod Info" },
-        { MenuEntry.Editor_InsertConsoleLoadCommand, "Insert Console Load Command" },
-        { MenuEntry.Editor_InsertSimpleConsoleLoadCommand, "Insert Simple Console Load Command" },
-        { MenuEntry.Editor_SwapSelectedLR, "Swap Selected L and R" },
-        { MenuEntry.Editor_SwapSelectedJK, "Swap Selected J and K" },
-        { MenuEntry.Editor_SwapSelectedXC, "Swap Selected X and C" },
-        { MenuEntry.Editor_CombineConsecutiveSameInputs, "Combine Consecutive Same Inputs" },
-        { MenuEntry.Editor_ForceCombineInputFrames, "Force Combine Input Frames" },
-        { MenuEntry.Editor_SplitFrames, "Split Input Frames" },
-        { MenuEntry.Editor_OpenReadFileGoToPlayLine, "Open Read File / Go To Play Line" },
-        { MenuEntry.Editor_OpenAutoCompleteMenu, "Open Auto Complete menu..." },
-        { MenuEntry.Editor_OpenContextActionsMenu, "Open Context Actions menu..." },
-
-        { MenuEntry.ContextActions_InlineReadCommand, "Inline Read-command" },
-        { MenuEntry.ContextActions_InlineRepeatCommand, "Inline Repeat-command" },
-        { MenuEntry.ContextActions_CreateRepeatCommand, "Create Repeat-command" },
-        { MenuEntry.ContextActions_SwapActionsLR, "Swap L and R" },
-        { MenuEntry.ContextActions_SwapActionsJK, "Swap J and K" },
-        { MenuEntry.ContextActions_SwapActionsXC, "Swap X and C" },
-        { MenuEntry.ContextActions_CombineConsecutiveSameInputs, "Combine Consecutive Same Inputs" },
-        { MenuEntry.ContextActions_ForceCombineInputFrames, "Force Combine Input Frames" },
-        { MenuEntry.ContextActions_SplitFrames, "Split Input Frames" },
-        { MenuEntry.ContextActions_OpenReadFile, "Open Read File" },
-        { MenuEntry.ContextActions_GoToPlayLine, "Go To Play Line" },
-
-        { MenuEntry.Status_CopyGameInfoToClipboard, "&Copy Game Info to Clipboard" },
-        { MenuEntry.Status_ReconnectStudioCeleste, "&Reconnect Studio and Celeste" },
-        { MenuEntry.Status_EditCustomInfoTemplate, "&Edit Custom Info Template" },
-        { MenuEntry.Status_ClearWatchEntityInfo, "Clear Watch Entity Info" },
-
-        { MenuEntry.StatusPopout_AlwaysOnTop, "Always on Top" },
-
-        { MenuEntry.Game_Start, "Start" },
-        { MenuEntry.Game_Pause, "Pause" },
-        { MenuEntry.Game_Restart, "Restart" },
-        { MenuEntry.Game_FrameAdvance, "Advance Frame" },
-    };
     private static readonly Dictionary<MenuEntryCategory, MenuEntry[]> Categories = new() {
         { MenuEntryCategory.File, [
             MenuEntry.File_New, MenuEntry.File_Open, MenuEntry.File_OpenPrevious, MenuEntry.File_Save, MenuEntry.File_SaveAs, MenuEntry.File_Show, MenuEntry.File_RecordTAS, MenuEntry.File_Quit] },
@@ -233,13 +579,6 @@ public static class MenuEntryExtensions {
     public static void VerifyData() {
         // Ensures that every entry has all the required data
         foreach (var entry in Enum.GetValues<MenuEntry>()) {
-            if (!DefaultKeyBindings.ContainsKey(entry)) {
-                throw new Exception($"DefaultHotkeys does not contain an entry for '{entry}'");
-            }
-            if (!EntryNames.ContainsKey(entry)) {
-                throw new Exception($"EntryNames does not contain an entry for '{entry}'");
-            }
-
             foreach (var category in Enum.GetValues<MenuEntryCategory>()) {
                 var entries = Categories[category];
                 if (entries.Contains(entry)) {
@@ -267,25 +606,40 @@ public static class MenuEntryExtensions {
         _ => throw new UnreachableException(),
     };
 
-    public static string GetName(this MenuEntry entry) => EntryNames[entry];
+    public static BindableAction Get(this MenuEntry entry) => BindableAction.All[entry];
+    
+    public static string GetName(this MenuEntry entry) => BindableAction.All[entry].EntryName;
+    public static Hotkey GetDefaultHotkey(this MenuEntry entry) => BindableAction.All[entry].DefaultKeyBinding;
+    public static Hotkey GetHotkey(this MenuEntry entry) => Settings.Instance.KeyBindings.TryGetValue(entry, out var shortcut) ? shortcut : GetDefaultHotkey(entry);
 
-    public static Hotkey GetDefaultHotkey(this MenuEntry entry) => Hotkey.Key(DefaultKeyBindings[entry]);
-    public static Hotkey GetHotkey(this MenuEntry entry) => Settings.Instance.KeyBindings.TryGetValue(entry, out var shortcut) ? shortcut : Hotkey.Key(DefaultKeyBindings[entry]);
-
-    public static CheckMenuItem ToCheckbox(this MenuEntry entry) =>
-        new() {
-            Text = EntryNames[entry],
-            Shortcut = Settings.Instance.KeyBindings.TryGetValue(entry, out var shortcut) ? shortcut.KeyOrNone : DefaultKeyBindings[entry],
+    public static CheckMenuItem ToCheckbox(this MenuEntry entry) {
+        var action = entry.Get();
+        return new CheckMenuItem {
+            Text = action.EntryName,
+            Shortcut = Settings.Instance.KeyBindings.TryGetValue(entry, out var shortcut)
+                ? shortcut.KeyOrNone
+                : action.DefaultKeyBinding.KeyOrNone,
         };
-    public static MenuItem ToAction(this MenuEntry entry, Action action) =>
-        MenuUtils.CreateAction(
-            EntryNames[entry],
-            Settings.Instance.KeyBindings.TryGetValue(entry, out var shortcut) ? shortcut.KeyOrNone : DefaultKeyBindings[entry],
-            action);
-    public static MenuItem ToSettingToggle(this MenuEntry entry, string settingName, Action<bool>? onChanged = null) =>
-        MenuUtils.CreateSettingToggle(
-            EntryNames[entry],
+    }
+
+    public static MenuItem ToAction(this MenuEntry entry, Action _todo) {
+        var action = entry.Get();
+        return MenuUtils.CreateAction(
+            action.EntryName,
+            Settings.Instance.KeyBindings.TryGetValue(entry, out var shortcut)
+                ? shortcut.KeyOrNone
+                : action.DefaultKeyBinding.KeyOrNone,
+            action.Action);
+    }
+
+    public static MenuItem ToSettingToggle(this MenuEntry entry, string settingName, Action<bool>? onChanged = null) {
+        var action = entry.Get();
+        return MenuUtils.CreateSettingToggle(
+            action.EntryName,
             settingName,
-            Settings.Instance.KeyBindings.TryGetValue(entry, out var shortcut) ? shortcut.KeyOrNone : DefaultKeyBindings[entry],
+            Settings.Instance.KeyBindings.TryGetValue(entry, out var shortcut)
+                ? shortcut.KeyOrNone
+                : action.DefaultKeyBinding.KeyOrNone,
             onChanged);
+    }
 }
