@@ -7,7 +7,6 @@ using CelesteStudio.Data;
 using CelesteStudio.Dialog;
 using CelesteStudio.Editing;
 using CelesteStudio.Editing.AutoCompletion;
-using CelesteStudio.Util;
 using Eto;
 using Eto.Drawing;
 using Eto.Forms;
