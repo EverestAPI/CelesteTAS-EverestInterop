@@ -17,6 +17,11 @@
         <NoWarn>$(NoWarn);CS0436</NoWarn>
 
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+
+        <!-- Force enables performance profiling in Release mode -->
+        <EnablePerformanceProfiling>false</EnablePerformanceProfiling>
+
+        <DefineConstants Condition="'$(EnablePerformanceProfiling)' == 'true'">PROFILE</DefineConstants>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -47,7 +52,7 @@
         <PackageReference Include="YamlDotNet" Version="13.1.1" PrivateAssets="all" ExcludeAssets="runtime" />
 
         <PackageReference Include="JetBrains.Annotations" Version="2024.2.0" />
-        <PackageReference Include="JetBrains.Profiler.Api" Version="1.4.6" Condition="'$(Configuration)' == 'Debug'" />
+        <PackageReference Include="JetBrains.Profiler.Api" Version="1.4.6" Condition="'$(Configuration)' == 'Debug' or '$(EnablePerformanceProfiling)' == 'true'" />
     </ItemGroup>
 
     <!-- Assemblies -->
@@ -60,9 +65,9 @@
         <Copy SourceFiles="$(OutputPath)ICSharpCode.SharpZipLib.dll" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)MemoryPack.Core.dll" DestinationFolder="..\bin" />
 
-        <Copy SourceFiles="$(OutputPath)JetBrains.Profiler.Api.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
-        <Copy SourceFiles="$(OutputPath)JetBrains.HabitatDetector.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
-        <Copy SourceFiles="$(OutputPath)JetBrains.FormatRipper.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
+        <Copy SourceFiles="$(OutputPath)JetBrains.Profiler.Api.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug' or '$(EnablePerformanceProfiling)' == 'true'" />
+        <Copy SourceFiles="$(OutputPath)JetBrains.HabitatDetector.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug' or '$(EnablePerformanceProfiling)' == 'true'" />
+        <Copy SourceFiles="$(OutputPath)JetBrains.FormatRipper.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug' or '$(EnablePerformanceProfiling)' == 'true'" />
     </Target>
 
     <!-- Assets (use symlinks in debug builds - only on UNIX, since MSBuild is useless) -->

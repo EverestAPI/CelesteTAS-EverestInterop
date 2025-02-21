@@ -1,4 +1,5 @@
-#if DEBUG
+#if DEBUG || PROFILE
+using Celeste.Mod;
 using JetBrains.Profiler.Api;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -28,7 +29,7 @@ public static class Benchmark {
 
         if (lastRunning != Manager.Running && Manager.Controller.HasFastForward) {
             if (Manager.Running) {
-                $"Starting performance profiling at {DateTime.Now}".DebugLog();
+                $"Starting performance profiling at {DateTime.Now}".Log("Profile", outputToCommands: true);
 
                 MeasureProfiler.StartCollectingData();
                 runtimeWatch.Restart();
@@ -36,10 +37,10 @@ public static class Benchmark {
                 runtimeWatch.Stop();
                 MeasureProfiler.SaveData();
 
-                $"Stopping performance profiling at {DateTime.Now}".DebugLog();
-                $" => {runtimeWatch.Elapsed} total".DebugLog();
-                $" => {(Manager.Controller.Inputs.Count > 0 ? runtimeWatch.Elapsed.TotalNanoseconds / Manager.Controller.Inputs.Count : "N/A")} ns/Update".DebugLog();
-                $" => {Manager.Controller.Inputs.Count / runtimeWatch.Elapsed.TotalSeconds} Updates/s ({Manager.Controller.Inputs.Count / runtimeWatch.Elapsed.TotalSeconds / 60.0f}x)".DebugLog();
+                $"Stopping performance profiling at {DateTime.Now}".Log("Profile", outputToCommands: true);
+                $" => {runtimeWatch.Elapsed} total".Log("Profile", outputToCommands: true);
+                $" => {(Manager.Controller.Inputs.Count > 0 ? runtimeWatch.Elapsed.TotalNanoseconds / Manager.Controller.Inputs.Count : "N/A")} ns/Update".Log("Profile", outputToCommands: true);
+                $" => {Manager.Controller.Inputs.Count / runtimeWatch.Elapsed.TotalSeconds} Updates/s ({Manager.Controller.Inputs.Count / runtimeWatch.Elapsed.TotalSeconds / 60.0f}x)".Log("Profile", outputToCommands: true);
             }
         }
 
