@@ -28,7 +28,7 @@ internal readonly struct LuaContext : IDisposable {
             .OnHook(bool (Func<FieldInfo, bool, bool> _, FieldInfo fieldInfo, bool searchStatic) => fieldInfo.IsStatic == searchStatic);
         typeof(NeoLua.LuaType)
             .GetMethodInfo("IsCallableMethod")!
-            .OnHook(bool (Func<MethodInfo, bool, bool> _, MethodInfo methodInfo, bool searchStatic) => methodInfo.IsStatic == searchStatic);
+            .OnHook(bool (Func<MethodInfo, bool, bool> _, MethodInfo methodInfo, bool searchStatic) => (methodInfo.CallingConvention & CallingConventions.VarArgs) == 0 && methodInfo.IsStatic == searchStatic);
 
         using var envStream = typeof(CelesteTasModule).Assembly.GetManifestResourceStream("environment.lua")!;
         using var envReader = new StreamReader(envStream);
