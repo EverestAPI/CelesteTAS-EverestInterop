@@ -1131,6 +1131,14 @@ public sealed class Editor : SkiaDrawable {
                 break;
             }
             default:
+                if (e.IsChar) {
+                    var action = Settings.Instance.KeyBindings
+                        .Where(keybind => keybind.Value is HotkeyChar hotkey && hotkey.C == e.KeyChar)
+                        .Select(keybind => (MenuEntry?)keybind.Key)
+                        .FirstOrDefault();
+                    // TODO: run action
+                }
+                
                 if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _) && CalculationExtensions.TryParse(e.KeyChar) is { } op) {
                     StartCalculation(op);
                     e.Handled = true;
