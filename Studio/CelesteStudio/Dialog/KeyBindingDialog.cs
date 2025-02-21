@@ -9,7 +9,7 @@ using Eto.Forms;
 namespace CelesteStudio.Dialog;
 
 public class KeyBindingDialog : Dialog<bool> {
-    private readonly Dictionary<MenuEntry, Keys> keyBindings = new();
+    private readonly Dictionary<MenuEntry, Hotkey> keyBindings = new();
 
     private char addFrameOp, subFrameOp, mulFrameOp, divFrameOp, setFrameOp;
 

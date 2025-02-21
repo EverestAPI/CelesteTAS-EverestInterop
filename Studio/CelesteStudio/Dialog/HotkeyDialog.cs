@@ -11,8 +11,8 @@ using Eto.Forms;
 
 namespace CelesteStudio.Dialog;
 
-public class HotkeyDialog : Dialog<Keys> {
-    private HotkeyDialog(Keys currentHotkey, Dictionary<MenuEntry, Keys> keyBindings, List<Snippet> snippets) {
+public class HotkeyDialog : Dialog<Hotkey> {
+    private HotkeyDialog(Hotkey currentHotkey, Dictionary<MenuEntry, Hotkey> keyBindings, List<Snippet> snippets) {
         var pressLabel = new Label { Text = "Press any key...", Font = SystemFonts.Bold().WithFontStyle(FontStyle.Bold | FontStyle.Italic) };
 
         Title = "Edit Hotkey";
@@ -22,7 +22,7 @@ public class HotkeyDialog : Dialog<Keys> {
             HorizontalContentAlignment = HorizontalAlignment.Center,
             Items = {
                 pressLabel,
-                new Button((_, _) => Close(Keys.None)) { Text = "Clear" },
+                new Button((_, _) => Close(Hotkey.None)) { Text = "Clear" },
             }
         };
         Topmost = true;
@@ -40,6 +40,8 @@ public class HotkeyDialog : Dialog<Keys> {
                 : mods.ToShortcutString()[..^"None".Length];
         };
         KeyDown += (_, e) => {
+            var newHotkey = Hotkey.FromEvent(e);
+            
             var mods = e.Modifiers;
             if (e.Key is Keys.LeftShift or Keys.RightShift) mods |= Keys.Shift;
             if (e.Key is Keys.LeftControl or Keys.RightControl) mods |= Keys.Control;
@@ -58,18 +60,18 @@ public class HotkeyDialog : Dialog<Keys> {
                 return;
             }
 
-            if (e.KeyData == currentHotkey) {
+            if (newHotkey == currentHotkey) {
                 Close();
                 return;
             }
 
             // Avoid conflicts with other hotkeys
-            var conflictingKeyBinds = keyBindings.Where(pair => pair.Value == e.KeyData).Select(pair => pair.Key).ToArray();
-            var conflictingSnippets = snippets.Where(snippet => snippet.Hotkey == e.KeyData).ToArray();
+            var conflictingKeyBinds = keyBindings.Where(pair => pair.Value == newHotkey).Select(pair => pair.Key).ToArray();
+            var conflictingSnippets = snippets.Where(snippet => snippet.Hotkey == newHotkey).ToArray();
 
             if (conflictingKeyBinds.Any() || conflictingSnippets.Any()) {
                 var msg = new StringBuilder();
-                msg.AppendLine($"This hotkey ({e.KeyData.ToShortcutString()}) is already used for other key bindings / snippets!");
+                msg.AppendLine($"This hotkey ({newHotkey.ToShortcutString()}) is already used for other key bindings / snippets!");
                 if (conflictingKeyBinds.Any()) {
                     msg.AppendLine("The following key bindings already use this hotkey:");
                     foreach (var conflict in conflictingKeyBinds) {
@@ -95,17 +97,17 @@ public class HotkeyDialog : Dialog<Keys> {
                 }
             }
 
-            if (e.KeyData == (Application.Instance.CommonModifier | Keys.Escape)) {
-                Close(Keys.None);
+            if (newHotkey == (Application.Instance.CommonModifier | Keys.Escape)) {
+                Close(Hotkey.None);
             } else {
-                Close(e.KeyData);
+                Close(newHotkey);
             }
         };
 
         Studio.RegisterDialog(this, ParentWindow);
     }
 
-    public static Keys Show(Window parent, Keys currentHotkey, Dictionary<MenuEntry, Keys>? keyBindings, List<Snippet>? snippets) {
+    public static Hotkey Show(Window parent, Hotkey currentHotkey, Dictionary<MenuEntry, Hotkey>? keyBindings, List<Snippet>? snippets) {
         keyBindings ??= Enum.GetValues<MenuEntry>().ToDictionary(entry => entry, entry => entry.GetHotkey());
         snippets ??= Settings.Instance.Snippets;
 
