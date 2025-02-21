@@ -238,27 +238,30 @@ public sealed class GameInfo : Panel {
         base.OnMouseDown(e);
     }
 
+    public void EditCustomInfoTemplate() {
+        Content = editPanel;
+        OnSizeChanged(EventArgs.Empty);
+        infoTemplateArea.Text = CommunicationWrapper.GetCustomInfoTemplate();
+    }
+    public void CopyGameInfoToClipboard() {
+        if (CommunicationWrapper.GetExactGameInfo() is var exactGameInfo && !string.IsNullOrWhiteSpace(exactGameInfo)) {
+            Clipboard.Instance.Clear();
+            Clipboard.Instance.Text = exactGameInfo;
+        }
+    }
+
     public void SetupContextMenu(GameInfoPopout? popout = null) {
-        var editCustomInfoItem = MenuEntry.Status_EditCustomInfoTemplate.ToAction(() => {
-            Content = editPanel;
-            OnSizeChanged(EventArgs.Empty);
-            infoTemplateArea.Text = CommunicationWrapper.GetCustomInfoTemplate();
-        });
+        var editCustomInfoItem = MenuEntry.Status_EditCustomInfoTemplate.ToAction();
         editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
         CommunicationWrapper.ConnectionChanged += () => editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
 
         ContextMenu = new ContextMenu {
             Items  = {
-                MenuEntry.Status_CopyGameInfoToClipboard.ToAction(() => {
-                    if (CommunicationWrapper.GetExactGameInfo() is var exactGameInfo && !string.IsNullOrWhiteSpace(exactGameInfo)) {
-                        Clipboard.Instance.Clear();
-                        Clipboard.Instance.Text = exactGameInfo;
-                    }
-                }),
-                MenuEntry.Status_ReconnectStudioCeleste.ToAction(CommunicationWrapper.ForceReconnect),
+                MenuEntry.Status_CopyGameInfoToClipboard.ToAction(),
+                MenuEntry.Status_ReconnectStudioCeleste.ToAction(),
                 new SeparatorMenuItem(),
                 editCustomInfoItem,
-                MenuEntry.Status_ClearWatchEntityInfo.ToAction(CommunicationWrapper.ClearWatchEntityInfo),
+                MenuEntry.Status_ClearWatchEntityInfo.ToAction(),
             }
         };
 
