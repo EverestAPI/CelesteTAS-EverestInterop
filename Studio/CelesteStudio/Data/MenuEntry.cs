@@ -268,23 +268,24 @@ public static class MenuEntryExtensions {
     };
 
     public static string GetName(this MenuEntry entry) => EntryNames[entry];
-    public static Keys GetDefaultHotkey(this MenuEntry entry) => DefaultKeyBindings[entry];
-    public static Keys GetHotkey(this MenuEntry entry) => Settings.Instance.KeyBindings.TryGetValue(entry, out var shortcut) ? shortcut : DefaultKeyBindings[entry];
+
+    public static Hotkey GetDefaultHotkey(this MenuEntry entry) => Hotkey.Key(DefaultKeyBindings[entry]);
+    public static Hotkey GetHotkey(this MenuEntry entry) => Settings.Instance.KeyBindings.TryGetValue(entry, out var shortcut) ? shortcut : Hotkey.Key(DefaultKeyBindings[entry]);
 
     public static CheckMenuItem ToCheckbox(this MenuEntry entry) =>
         new() {
             Text = EntryNames[entry],
-            Shortcut = Settings.Instance.KeyBindings.TryGetValue(entry, out var shortcut) ? shortcut : DefaultKeyBindings[entry],
+            Shortcut = Settings.Instance.KeyBindings.TryGetValue(entry, out var shortcut) ? shortcut.KeyOrNone : DefaultKeyBindings[entry],
         };
     public static MenuItem ToAction(this MenuEntry entry, Action action) =>
         MenuUtils.CreateAction(
             EntryNames[entry],
-            Settings.Instance.KeyBindings.TryGetValue(entry, out var shortcut) ? shortcut : DefaultKeyBindings[entry],
+            Settings.Instance.KeyBindings.TryGetValue(entry, out var shortcut) ? shortcut.KeyOrNone : DefaultKeyBindings[entry],
             action);
     public static MenuItem ToSettingToggle(this MenuEntry entry, string settingName, Action<bool>? onChanged = null) =>
         MenuUtils.CreateSettingToggle(
             EntryNames[entry],
             settingName,
-            Settings.Instance.KeyBindings.TryGetValue(entry, out var shortcut) ? shortcut : DefaultKeyBindings[entry],
+            Settings.Instance.KeyBindings.TryGetValue(entry, out var shortcut) ? shortcut.KeyOrNone : DefaultKeyBindings[entry],
             onChanged);
 }
