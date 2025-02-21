@@ -129,7 +129,7 @@ public static class Savestates {
 
     public static void LoadState() {
         // Don't load save-states while recording
-        if (TASRecorderInterop.Recording) {
+        if (TASRecorderInterop.IsRecording) {
             return;
         }
 
