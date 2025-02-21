@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using CelesteStudio.Communication;
-using CelesteStudio.Controls;
 using CelesteStudio.Data;
 using CelesteStudio.Dialog;
 using CelesteStudio.Editing;
@@ -333,10 +332,10 @@ public sealed class Studio : Form {
 
     private static MenuItem[] CreateGlobalHotkeys() {
         return [
-            MenuEntry.Game_Start.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.Start)),
-            MenuEntry.Game_Pause.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.Pause)),
-            MenuEntry.Game_Restart.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.Restart)),
-            MenuEntry.Game_FrameAdvance.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.FrameAdvance)),
+            MenuEntry.Game_Start.ToAction(),
+            MenuEntry.Game_Pause.ToAction(),
+            MenuEntry.Game_Restart.ToAction(),
+            MenuEntry.Game_FrameAdvance.ToAction(),
         ];
     }
 
@@ -433,7 +432,7 @@ public sealed class Studio : Form {
         return Path.GetFullPath(dir);
     }
 
-    private void OnNewFile() {
+    public void OnNewFile() {
         if (!ShouldDiscardChanges())
             return;
 
@@ -456,7 +455,7 @@ public sealed class Studio : Form {
         OpenFile(Document.ScratchFile);
     }
 
-    private void OnOpenFile() {
+    public void OnOpenFile() {
         if (!ShouldDiscardChanges())
             return;
 
@@ -503,7 +502,7 @@ public sealed class Studio : Form {
         }
     }
 
-    private void OnSaveFile() {
+    public void OnSaveFile() {
         if (Editor.Document.FilePath == Document.ScratchFile) {
             OnSaveFileAs();
             return;
@@ -513,7 +512,7 @@ public sealed class Studio : Form {
         Title = TitleBarText;
     }
 
-    private void OnSaveFileAs() {
+    public void OnSaveFileAs() {
         var dialog = new SaveFileDialog {
             Filters = { new FileFilter("TAS", ".tas") },
             Directory = new Uri(GetFilePickerDirectory()),
@@ -557,6 +556,31 @@ public sealed class Studio : Form {
         OpenFile(filePath);
     }
 
+    public void RecordTAS() {
+        if (!CommunicationWrapper.Connected) {
+            MessageBox.Show("This feature requires the support of the CelesteTAS mod, please launch the game.", MessageBoxButtons.OK);
+            return;
+        }
+
+        RecordDialog.Show();
+    }
+
+    public void OpenPrevious() {
+        if (!ShouldDiscardChanges()) {
+            return;
+        }
+
+        OpenFile(Settings.Instance.RecentFiles[1]);
+    }
+
+    public void ShowFile() {
+        if (string.IsNullOrEmpty(Editor.Document.FilePath)) {
+            return;
+        }
+
+        ProcessHelper.OpenInDefaultApp(Path.GetDirectoryName(Editor.Document.FilePath)!);
+    }
+
     private MenuBar CreateMenu() {
         const int minDecimals = 2;
         const int maxDecimals = 12;
@@ -565,24 +589,11 @@ public sealed class Studio : Form {
         const float minSlowForwardSpeed = 0.1f;
         const float maxSlowForwardSpeed = 0.9f;
 
-        var recordTasButton = MenuEntry.File_RecordTAS.ToAction(() => {
-            if (!CommunicationWrapper.Connected) {
-                MessageBox.Show("This feature requires the support of the CelesteTAS mod, please launch the game.", MessageBoxButtons.OK);
-                return;
-            }
-
-            RecordDialog.Show();
-        });
+        var recordTasButton = MenuEntry.File_RecordTAS.ToAction();
         recordTasButton.Enabled = CommunicationWrapper.Connected;
 
         // NOTE: Index 0 is the recent files is the current file, so that is skipped
-        var openPreviousFile = MenuEntry.File_OpenPrevious.ToAction(() => {
-            if (!ShouldDiscardChanges()) {
-                return;
-            }
-
-            OpenFile(Settings.Instance.RecentFiles[1]);
-        });
+        var openPreviousFile = MenuEntry.File_OpenPrevious.ToAction();
         openPreviousFile.Enabled = Settings.Instance.RecentFiles.Count > 1;
 
         var recentFilesMenu = new SubMenuItem { Text = "Open &Recent" };
@@ -629,13 +640,7 @@ public sealed class Studio : Form {
         }) { MenuText = "Delete All Files" });
         backupsMenu.Enabled = backupFiles.Length != 0;
 
-        var showFile = MenuEntry.File_Show.ToAction(() => {
-            if (string.IsNullOrEmpty(Editor.Document.FilePath)) {
-                return;
-            }
-
-            ProcessHelper.OpenInDefaultApp(Path.GetDirectoryName(Editor.Document.FilePath)!);
-        });
+        var showFile = MenuEntry.File_Show.ToAction();
         showFile.Enabled = !string.IsNullOrEmpty(Editor.Document.FilePath) && Editor.Document.FilePath != Document.ScratchFile;
 
         // Don't display Settings.SendInputsNonWritable on WPF, since it's not supported there
@@ -659,16 +664,16 @@ public sealed class Studio : Form {
 
         MenuItem[] items = [
             new SubMenuItem { Text = "&File", Items = {
-                MenuEntry.File_New.ToAction(OnNewFile),
+                MenuEntry.File_New.ToAction(),
                 new SeparatorMenuItem(),
-                MenuEntry.File_Open.ToAction(OnOpenFile),
+                MenuEntry.File_Open.ToAction(),
                 openPreviousFile,
                 recentFilesMenu,
                 backupsMenu,
                 showFile,
                 new SeparatorMenuItem(),
-                MenuEntry.File_Save.ToAction(OnSaveFile),
-                MenuEntry.File_SaveAs.ToAction(OnSaveFileAs),
+                MenuEntry.File_Save.ToAction(),
+                MenuEntry.File_SaveAs.ToAction(),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateAction("&Convert to LibTAS Movie..."),
                 new SeparatorMenuItem(),
@@ -768,7 +773,7 @@ public sealed class Studio : Form {
             }},
         ];
 
-        var quitItem = MenuEntry.File_Quit.ToAction(Application.Instance.Quit);
+        var quitItem = MenuEntry.File_Quit.ToAction();
         var homeItem = MenuUtils.CreateAction("Open README...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop"));
         var wikiItem = MenuUtils.CreateAction("Open wiki...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki"));
         var whatsNewItem = MenuUtils.CreateAction("What's new?", Keys.None, ChangelogDialog.Show);

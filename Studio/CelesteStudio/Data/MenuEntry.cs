@@ -1,9 +1,12 @@
+using CelesteStudio.Communication;
+using CelesteStudio.Editing;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using CelesteStudio.Util;
 using Eto.Forms;
+using StudioCommunication;
 
 namespace CelesteStudio.Data;
 
@@ -19,56 +22,56 @@ public record struct BindableAction {
                 Category = MenuEntryCategory.File,
                 EntryName = "&New File",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.N),
-                Action = () => { },
+                Action = () => Studio.Instance.OnNewFile(),
             }
         }, {
             MenuEntry.File_Open, new BindableAction {
                 Category = MenuEntryCategory.File,
                 EntryName = "&Open File...",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.O),
-                Action = () => { },
+                Action = () => Studio.Instance.OnOpenFile(),
             }
         }, {
             MenuEntry.File_OpenPrevious, new BindableAction {
                 Category = MenuEntryCategory.File,
                 EntryName = "Open &Previous File",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.AlternateModifier | Keys.Left),
-                Action = () => { },
+                Action = () => Studio.Instance.OpenPrevious(),
             }
         }, {
             MenuEntry.File_Save, new BindableAction {
                 Category = MenuEntryCategory.File,
                 EntryName = "Save",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.S),
-                Action = () => { },
+                Action = () => Studio.Instance.OnSaveFile(),
             }
         }, {
             MenuEntry.File_SaveAs, new BindableAction {
                 Category = MenuEntryCategory.File,
                 EntryName = "&Save As...",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.S),
-                Action = () => { },
+                Action = () => Studio.Instance.OnSaveFileAs(),
             }
         }, {
             MenuEntry.File_Show, new BindableAction {
                 Category = MenuEntryCategory.File,
                 EntryName = "Show in &File Explorer...",
                 DefaultKeyBinding = Hotkey.None,
-                Action = () => { },
+                Action = () => Studio.Instance.ShowFile(),
             }
         }, {
             MenuEntry.File_RecordTAS, new BindableAction {
                 Category = MenuEntryCategory.File,
                 EntryName = "&Record TAS...",
                 DefaultKeyBinding = Hotkey.None,
-                Action = () => { },
+                Action = () => Studio.Instance.RecordTAS(),
             }
         }, {
             MenuEntry.File_Quit, new BindableAction {
                 Category = MenuEntryCategory.File,
                 EntryName = "Quit",
                 DefaultKeyBinding = Hotkey.None,
-                Action = () => { },
+                Action = () => Application.Instance.Quit(),
             }
         }, {
             MenuEntry.Settings_SendInputs, new BindableAction {
@@ -117,112 +120,112 @@ public record struct BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Cut",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.X),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnCut(),
             }
         }, {
             MenuEntry.Editor_Copy, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Copy",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.C),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnCopy(),
             }
         }, {
             MenuEntry.Editor_Paste, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Paste",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.V),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnPaste(),
             }
         }, {
             MenuEntry.Editor_Undo, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Undo",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Z),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnUndo(),
             }
         }, {
             MenuEntry.Editor_Redo, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Redo",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.Z),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnRedo(),
             }
         }, {
             MenuEntry.Editor_SelectAll, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Select All",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.A),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnSelectAll(),
             }
         }, {
             MenuEntry.Editor_SelectBlock, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Select Block",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.W),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnSelectBlock(),
             }
         }, {
             MenuEntry.Editor_Find, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Find...",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.F),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnFind(),
             }
         }, {
             MenuEntry.Editor_GoTo, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Go To...",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.G),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnGoTo(),
             }
         }, {
             MenuEntry.Editor_ToggleFolding, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Toggle Folding",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Minus),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnToggleFolding(),
             }
         }, {
             MenuEntry.Editor_DeleteSelectedLines, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Delete Selected Lines",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Y),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnDeleteSelectedLines(),
             }
         }, {
             MenuEntry.Editor_SetFrameCountToStepAmount, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Set Frame Count to current Step Amount",
                 DefaultKeyBinding = Hotkey.None,
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnSetFrameCountToStepAmount(),
             }
         }, {
             MenuEntry.Editor_InsertRemoveBreakpoint, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Insert / Remove Breakpoint",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Period),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.InsertOrRemoveText(Editor.UncommentedBreakpointRegex, "***"),
             }
         }, {
             MenuEntry.Editor_InsertRemoveSavestateBreakpoint, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Insert / Remove Savestate Breakpoint",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.Period),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.InsertOrRemoveText(Editor.UncommentedBreakpointRegex, "***S"),
             }
         }, {
             MenuEntry.Editor_RemoveAllUncommentedBreakpoints, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Remove All Uncommented Breakpoints",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.P),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.RemoveLinesMatching(Editor.UncommentedBreakpointRegex),
             }
         }, {
             MenuEntry.Editor_RemoveAllBreakpoints, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Remove All Breakpoints",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.P),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.RemoveLinesMatching(Editor.AllBreakpointRegex),
             }
         }, {
             MenuEntry.Editor_CommentUncommentAllBreakpoints, new BindableAction {
@@ -230,70 +233,70 @@ public record struct BindableAction {
                 EntryName = "Comment / Uncomment All Breakpoints",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier |
                                                Application.Instance.AlternateModifier | Keys.P),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnToggleCommentBreakpoints(),
             }
         }, {
             MenuEntry.Editor_CommentUncommentInputs, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Comment / Uncomment Inputs",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.K),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnToggleCommentInputs(),
             }
         }, {
             MenuEntry.Editor_CommentUncommentText, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Comment / Uncomment Text",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.K),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnToggleCommentInputs(),
             }
         }, {
             MenuEntry.Editor_InsertRoomName, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Insert Room Name",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.R),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnInsertRoomName(),
             }
         }, {
             MenuEntry.Editor_InsertCurrentTime, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Insert Current In-Game Time",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.T),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnInsertTime(),
             }
         }, {
             MenuEntry.Editor_RemoveAllTimestamps, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Remove All Timestamps",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.T),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.RemoveLinesMatching(Editor.TimestampRegex),
             }
         }, {
             MenuEntry.Editor_InsertCurrentPosition, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Insert Current Player Position",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnInsertPosition(),
             }
         }, {
             MenuEntry.Editor_InsertCurrentSpeed, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Insert Current Player Speed",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnInsertSpeed(),
             }
         }, {
             MenuEntry.Editor_InsertModInfo, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Insert Mod Info",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnInsertModInfo(),
             }
         }, {
             MenuEntry.Editor_InsertConsoleLoadCommand, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Insert Console Load Command",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.R),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnInsertConsoleLoadCommand(),
             }
         }, {
             MenuEntry.Editor_InsertSimpleConsoleLoadCommand, new BindableAction {
@@ -301,7 +304,7 @@ public record struct BindableAction {
                 EntryName = "Insert Simple Console Load Command",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier |
                                                Application.Instance.AlternateModifier | Keys.R),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OnInsertSimpleConsoleLoadCommand(),
             }
         }, {
             MenuEntry.Editor_SwapSelectedLR, new BindableAction {
@@ -357,14 +360,14 @@ public record struct BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Open Auto Complete menu...",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Space),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OpenAutoComplete(),
             }
         }, {
             MenuEntry.Editor_OpenContextActionsMenu, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Open Context Actions menu...",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.AlternateModifier | Keys.Enter),
-                Action = () => { },
+                Action = () => Studio.Instance.Editor.OpenContextActions(),
             }
         }, {
             MenuEntry.ContextActions_InlineReadCommand, new BindableAction {
@@ -448,28 +451,28 @@ public record struct BindableAction {
                 Category = MenuEntryCategory.Status,
                 EntryName = "&Copy Game Info to Clipboard",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.C),
-                Action = () => { },
+                Action = () => Studio.Instance.GameInfo.CopyGameInfoToClipboard(),
             }
         }, {
             MenuEntry.Status_ReconnectStudioCeleste, new BindableAction {
                 Category = MenuEntryCategory.Status,
                 EntryName = "&Reconnect Studio and Celeste",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.D),
-                Action = () => { },
+                Action = CommunicationWrapper.ForceReconnect,
             }
         }, {
             MenuEntry.Status_EditCustomInfoTemplate, new BindableAction {
                 Category = MenuEntryCategory.Status,
                 EntryName = "&Edit Custom Info Template",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => Studio.Instance.GameInfo.EditCustomInfoTemplate(),
             }
         }, {
             MenuEntry.Status_ClearWatchEntityInfo, new BindableAction {
                 Category = MenuEntryCategory.Status,
                 EntryName = "Clear Watch Entity Info",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = CommunicationWrapper.ClearWatchEntityInfo,
             }
         }, {
             MenuEntry.StatusPopout_AlwaysOnTop, new BindableAction {
@@ -483,28 +486,28 @@ public record struct BindableAction {
                 Category = MenuEntryCategory.GameHotkeys,
                 EntryName = "Start",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => CommunicationWrapper.SendHotkey(HotkeyID.Start),
             }
         }, {
             MenuEntry.Game_Pause, new BindableAction {
                 Category = MenuEntryCategory.GameHotkeys,
                 EntryName = "Pause",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => CommunicationWrapper.SendHotkey(HotkeyID.Pause),
             }
         }, {
             MenuEntry.Game_Restart, new BindableAction {
                 Category = MenuEntryCategory.GameHotkeys,
                 EntryName = "Restart",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => CommunicationWrapper.SendHotkey(HotkeyID.Restart),
             }
         }, {
             MenuEntry.Game_FrameAdvance, new BindableAction {
                 Category = MenuEntryCategory.GameHotkeys,
                 EntryName = "Advance Frame",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => CommunicationWrapper.SendHotkey(HotkeyID.FrameAdvance),
             }
         },
     };
@@ -622,7 +625,7 @@ public static class MenuEntryExtensions {
         };
     }
 
-    public static MenuItem ToAction(this MenuEntry entry, Action _todo) {
+    public static MenuItem ToAction(this MenuEntry entry) {
         var action = entry.Get();
         return MenuUtils.CreateAction(
             action.EntryName,
