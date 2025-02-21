@@ -14,7 +14,6 @@ public record struct BindableAction {
     public required MenuEntryCategory Category;
     public required string EntryName;
     public required Hotkey DefaultKeyBinding;
-    public required Action Action;
 
     public static readonly Dictionary<MenuEntry, BindableAction> All = new() {
         {
@@ -78,42 +77,42 @@ public record struct BindableAction {
                 Category = MenuEntryCategory.Settings,
                 EntryName = "&Send Inputs to Celeste",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.D),
-                Action = () => { },
+                Action = () => { }, // TODO settings toggle supports for char shortcuts
             }
         }, {
             MenuEntry.View_ShowGameInfo, new BindableAction {
                 Category = MenuEntryCategory.View,
                 EntryName = "Show Game Info",
                 DefaultKeyBinding = Hotkey.None,
-                Action = () => { },
+                Action = () => { }, // TODO remove?
             }
         }, {
             MenuEntry.View_ShowSubpixelIndicator, new BindableAction {
                 Category = MenuEntryCategory.View,
                 EntryName = "Show Subpixel Indicator",
                 DefaultKeyBinding = Hotkey.None,
-                Action = () => { },
+                Action = () => { }, // TODO settings toggle supports for char shortcuts
             }
         }, {
             MenuEntry.View_AlwaysOnTop, new BindableAction {
                 Category = MenuEntryCategory.View,
                 EntryName = "Always on Top",
                 DefaultKeyBinding = Hotkey.None,
-                Action = () => { },
+                Action = () => { }, // TODO settings toggle supports for char shortcuts
             }
         }, {
             MenuEntry.View_WrapComments, new BindableAction {
                 Category = MenuEntryCategory.View,
                 EntryName = "Word Wrap Comments",
                 DefaultKeyBinding = Hotkey.None,
-                Action = () => { },
+                Action = () => { }, // TODO settings toggle supports for char shortcuts
             }
         }, {
             MenuEntry.View_ShowFoldingIndicator, new BindableAction {
                 Category = MenuEntryCategory.View,
                 EntryName = "Show Fold Indicators",
                 DefaultKeyBinding = Hotkey.None,
-                Action = () => { },
+                Action = () => { }, // TODO settings toggle supports for char shortcuts
             }
         }, {
             MenuEntry.Editor_Cut, new BindableAction {
@@ -311,49 +310,49 @@ public record struct BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Swap Selected L and R",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => { }, // is a context action
             }
         }, {
             MenuEntry.Editor_SwapSelectedJK, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Swap Selected J and K",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => { }, // is a context action
             }
         }, {
             MenuEntry.Editor_SwapSelectedXC, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Swap Selected X and C",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => { }, // is a context action
             }
         }, {
             MenuEntry.Editor_CombineConsecutiveSameInputs, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Combine Consecutive Same Inputs",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.L),
-                Action = () => { },
+                Action = () => { }, // is a context action
             }
         }, {
             MenuEntry.Editor_ForceCombineInputFrames, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Force Combine Input Frames",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.L),
-                Action = () => { },
+                Action = () => { }, // is a context action
             }
         }, {
             MenuEntry.Editor_SplitFrames, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Split Input Frames",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => { }, // is a context action
             }
         }, {
             MenuEntry.Editor_OpenReadFileGoToPlayLine, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Open Read File / Go To Play Line",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => { }, // TODO: remove?
             }
         }, {
             MenuEntry.Editor_OpenAutoCompleteMenu, new BindableAction {
@@ -374,77 +373,77 @@ public record struct BindableAction {
                 Category = MenuEntryCategory.ContextActions,
                 EntryName = "Inline Read-command",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => { }, // is a context action
             }
         }, {
             MenuEntry.ContextActions_InlineRepeatCommand, new BindableAction {
                 Category = MenuEntryCategory.ContextActions,
                 EntryName = "Inline Repeat-command",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => { }, // is a context action
             }
         }, {
             MenuEntry.ContextActions_CreateRepeatCommand, new BindableAction {
                 Category = MenuEntryCategory.ContextActions,
                 EntryName = "Create Repeat-command",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => { }, // is a context action
             }
         }, {
             MenuEntry.ContextActions_SwapActionsLR, new BindableAction {
                 Category = MenuEntryCategory.ContextActions,
                 EntryName = "Swap L and R",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => { }, // is a context action
             }
         }, {
             MenuEntry.ContextActions_SwapActionsJK, new BindableAction {
                 Category = MenuEntryCategory.ContextActions,
                 EntryName = "Swap J and K",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => { }, // is a context action
             }
         }, {
             MenuEntry.ContextActions_SwapActionsXC, new BindableAction {
                 Category = MenuEntryCategory.ContextActions,
                 EntryName = "Swap X and C",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => { }, // is a context action
             }
         }, {
             MenuEntry.ContextActions_CombineConsecutiveSameInputs, new BindableAction {
                 Category = MenuEntryCategory.ContextActions,
                 EntryName = "Combine Consecutive Same Inputs",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.L),
-                Action = () => { },
+                Action = () => { }, // is a context action
             }
         }, {
             MenuEntry.ContextActions_ForceCombineInputFrames, new BindableAction {
                 Category = MenuEntryCategory.ContextActions,
                 EntryName = "Force Combine Input Frames",
                 DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.L),
-                Action = () => { },
+                Action = () => { }, // is a context action
             }
         }, {
             MenuEntry.ContextActions_SplitFrames, new BindableAction {
                 Category = MenuEntryCategory.ContextActions,
                 EntryName = "Split Input Frames",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => { }, // is a context action
             }
         }, {
             MenuEntry.ContextActions_OpenReadFile, new BindableAction {
                 Category = MenuEntryCategory.ContextActions,
                 EntryName = "Open Read File",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => { }, // is a context action
             }
         }, {
             MenuEntry.ContextActions_GoToPlayLine, new BindableAction {
                 Category = MenuEntryCategory.ContextActions,
                 EntryName = "Go To Play Line",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => { }, // is a context action
             }
         }, {
             MenuEntry.Status_CopyGameInfoToClipboard, new BindableAction {
@@ -479,7 +478,7 @@ public record struct BindableAction {
                 Category = MenuEntryCategory.StatusPopout,
                 EntryName = "Always on Top",
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { },
+                Action = () => { }, // TODO: make this bindable?
             }
         }, {
             MenuEntry.Game_Start, new BindableAction {
@@ -511,6 +510,8 @@ public record struct BindableAction {
             }
         },
     };
+
+    public required Action Action;
 }
 
 // ReSharper disable InconsistentNaming
