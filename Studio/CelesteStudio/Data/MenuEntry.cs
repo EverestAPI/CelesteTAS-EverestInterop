@@ -306,55 +306,6 @@ public record struct BindableAction {
                 Action = () => Studio.Instance.Editor.OnInsertSimpleConsoleLoadCommand(),
             }
         }, {
-            MenuEntry.Editor_SwapSelectedLR, new BindableAction {
-                Category = MenuEntryCategory.Editor,
-                EntryName = "Swap Selected L and R",
-                DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { }, // is a context action
-            }
-        }, {
-            MenuEntry.Editor_SwapSelectedJK, new BindableAction {
-                Category = MenuEntryCategory.Editor,
-                EntryName = "Swap Selected J and K",
-                DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { }, // is a context action
-            }
-        }, {
-            MenuEntry.Editor_SwapSelectedXC, new BindableAction {
-                Category = MenuEntryCategory.Editor,
-                EntryName = "Swap Selected X and C",
-                DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { }, // is a context action
-            }
-        }, {
-            MenuEntry.Editor_CombineConsecutiveSameInputs, new BindableAction {
-                Category = MenuEntryCategory.Editor,
-                EntryName = "Combine Consecutive Same Inputs",
-                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.L),
-                Action = () => { }, // is a context action
-            }
-        }, {
-            MenuEntry.Editor_ForceCombineInputFrames, new BindableAction {
-                Category = MenuEntryCategory.Editor,
-                EntryName = "Force Combine Input Frames",
-                DefaultKeyBinding = Hotkey.Key(Application.Instance.CommonModifier | Keys.Shift | Keys.L),
-                Action = () => { }, // is a context action
-            }
-        }, {
-            MenuEntry.Editor_SplitFrames, new BindableAction {
-                Category = MenuEntryCategory.Editor,
-                EntryName = "Split Input Frames",
-                DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { }, // is a context action
-            }
-        }, {
-            MenuEntry.Editor_OpenReadFileGoToPlayLine, new BindableAction {
-                Category = MenuEntryCategory.Editor,
-                EntryName = "Open Read File / Go To Play Line",
-                DefaultKeyBinding = Hotkey.Key(Keys.None),
-                Action = () => { }, // TODO: remove?
-            }
-        }, {
             MenuEntry.Editor_OpenAutoCompleteMenu, new BindableAction {
                 Category = MenuEntryCategory.Editor,
                 EntryName = "Open Auto Complete menu...",
@@ -527,8 +478,6 @@ public enum MenuEntry {
     Editor_DeleteSelectedLines, Editor_SetFrameCountToStepAmount,
     Editor_InsertRemoveBreakpoint, Editor_InsertRemoveSavestateBreakpoint, Editor_RemoveAllUncommentedBreakpoints, Editor_RemoveAllBreakpoints, Editor_CommentUncommentAllBreakpoints, Editor_CommentUncommentInputs, Editor_CommentUncommentText,
     Editor_InsertRoomName, Editor_InsertCurrentTime, Editor_RemoveAllTimestamps, Editor_InsertCurrentPosition, Editor_InsertCurrentSpeed, Editor_InsertModInfo, Editor_InsertConsoleLoadCommand, Editor_InsertSimpleConsoleLoadCommand,
-    Editor_SwapSelectedLR, Editor_SwapSelectedJK, Editor_SwapSelectedXC, Editor_CombineConsecutiveSameInputs, Editor_ForceCombineInputFrames, Editor_SplitFrames,
-    Editor_OpenReadFileGoToPlayLine,
     Editor_OpenAutoCompleteMenu, Editor_OpenContextActionsMenu,
 
     ContextActions_InlineReadCommand, ContextActions_InlineRepeatCommand, ContextActions_CreateRepeatCommand, ContextActions_SwapActionsLR, ContextActions_SwapActionsJK, ContextActions_SwapActionsXC,
@@ -562,8 +511,6 @@ public static class MenuEntryExtensions {
             MenuEntry.Editor_DeleteSelectedLines, MenuEntry.Editor_SetFrameCountToStepAmount,
             MenuEntry.Editor_InsertRemoveBreakpoint, MenuEntry.Editor_InsertRemoveSavestateBreakpoint, MenuEntry.Editor_RemoveAllUncommentedBreakpoints, MenuEntry.Editor_RemoveAllBreakpoints, MenuEntry.Editor_CommentUncommentAllBreakpoints, MenuEntry.Editor_CommentUncommentInputs, MenuEntry.Editor_CommentUncommentText,
             MenuEntry.Editor_InsertRoomName, MenuEntry.Editor_InsertCurrentTime, MenuEntry.Editor_RemoveAllTimestamps, MenuEntry.Editor_InsertCurrentPosition, MenuEntry.Editor_InsertCurrentSpeed, MenuEntry.Editor_InsertModInfo, MenuEntry.Editor_InsertConsoleLoadCommand, MenuEntry.Editor_InsertSimpleConsoleLoadCommand,
-            MenuEntry.Editor_SwapSelectedLR, MenuEntry.Editor_SwapSelectedJK, MenuEntry.Editor_SwapSelectedXC, MenuEntry.Editor_CombineConsecutiveSameInputs, MenuEntry.Editor_ForceCombineInputFrames, MenuEntry.Editor_SplitFrames,
-            MenuEntry.Editor_OpenReadFileGoToPlayLine,
             MenuEntry.Editor_OpenAutoCompleteMenu, MenuEntry.Editor_OpenContextActionsMenu] },
 
         { MenuEntryCategory.ContextActions, [
@@ -583,6 +530,11 @@ public static class MenuEntryExtensions {
     public static void VerifyData() {
         // Ensures that every entry has all the required data
         foreach (var entry in Enum.GetValues<MenuEntry>()) {
+
+            if (!BindableAction.All.ContainsKey(entry)) {
+                throw new Exception($"{entry} is missing from BindableAction.all");
+            }
+            
             foreach (var category in Enum.GetValues<MenuEntryCategory>()) {
                 var entries = Categories[category];
                 if (entries.Contains(entry)) {
