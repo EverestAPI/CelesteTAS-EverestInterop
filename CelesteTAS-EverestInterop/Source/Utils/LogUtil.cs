@@ -52,14 +52,12 @@ internal static class LogUtil {
     }
 
     public static void ConsoleLog(this object? text, LogLevel logLevel = LogLevel.Verbose) {
-        var color = logLevel switch {
-            LogLevel.Warn => Color.Yellow,
-            LogLevel.Error => Color.Red,
-            _ => Color.Cyan
-        };
-
         try {
-            Engine.Commands?.Log(text?.ToString() ?? "null", color);
+            Engine.Commands?.Log(text?.ToString() ?? "null", logLevel switch {
+                LogLevel.Warn => Color.Yellow,
+                LogLevel.Error => Color.Red,
+                _ => Color.Cyan
+            });
         } catch (Exception) {
             // ignored
         }

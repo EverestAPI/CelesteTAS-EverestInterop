@@ -483,4 +483,60 @@ public static class InfoCustom {
     }
 
     #endregion
+
+#if DEBUG || PROFILE
+    [MonocleCommand("benchmark_custom_info", "Benchmark Custom Info performance (CelesteTAS)")]
+    public static void CmdBenchmark(int iterCount = 100) {
+        // Test a template focused on target-queries, on Lua code and on both
+        const string queryTemplate = """
+                                     SID: {Session.Area.SID} ({Session.MapData.Filename})
+                                     PlayMode: {Celeste.PlayMode}
+                                     
+                                     JumpThruPos: {JumpThru.Position=} | {JumpThru.X=} : {Player.X} # {Level.Wind=} ; {JumpThru.Y=}
+                                     JumpThruPos: ||{JumpThru.Position=} | {JumpThru.X=} : {Player.X} # {Level.Wind=} ; {JumpThru.Y=}||
+                                     TimeActive: {Level.TimeActive}
+                                     """;
+        const string luaTemplate =   """
+                                     Float position: [[if not player then return 0 end; return math.floor((player.PositionRemainder.x*360+0.5)%360)]]/360, [[if not player then return 0 end; return math.floor(((player.Position.x+player.PositionRemainder.x)*360+0.5)%540)]]/540, [[if not player then return 0 end; oldfloat = float; subp = player.PositionRemainder.x*360%1;if subp < 0.5 then float = math.floor((subp)*3000000) else float = math.floor((subp-1)*3000000) end; return float]]/3mil
+                                     Air manip (65s): x - [[if not player then return 0 end; if level.Paused then return manip65 end; oldmanip65 = manip65; pos5 = math.floor((player.PositionRemainder.x*360+0.5)%5); manip65 = math.floor(((player.Position.x+player.PositionRemainder.x)*360%540*5-21*pos5+0.5)%108); val = manip65.."/108 (+"..pos5.."/5)"; return val]], Δx - [[if not player or not oldmanip65 then return 0 end; ans = manip65 - oldmanip65; return (ans-54)%108-54]] (+[[if not player then return 0 end; return math.floor((player.Speed.x/60%1*360+0.5)%5)]]/5)
+                                     Float speed: [[if not player then return 0 end; subp = player.Speed.x/60%1; return math.floor(subp*360+0.5)]]/360, [[if not player then return 0 end; subp = player.Speed.x/60%1*360%1;if subp < 0.5 then return math.floor((subp)*3000000) else return math.floor((subp-1)*3000000) end]]/3mil
+                                     Float velocity: [[if not player or not oldfloat then return 0 end; return float - oldfloat]]/3mil
+                                     """;
+        const string bothTemplate = $"""
+                                     {queryTemplate}
+                                     {luaTemplate}
+                                     """;
+
+        $"Starting benchmark for 'Custom Info' with {iterCount} iterations...".Log("Profile", outputToCommands: true);
+        var sw = Stopwatch.StartNew();
+        BenchmarkTemplate("Target-Query", queryTemplate, iterCount);
+        BenchmarkTemplate("Lua Code", luaTemplate, iterCount);
+        BenchmarkTemplate("Both", bothTemplate, iterCount);
+        sw.Stop();
+        "".Log("Profile", outputToCommands: true);
+        $"Benchmark completed in {sw.Elapsed}".Log("Profile", outputToCommands: true);
+        return;
+
+        static void BenchmarkTemplate(string name, string template, int iterCount) {
+            "".Log("Profile", outputToCommands: true);
+            $"    Profiling template '{name}'...".Log("Profile", outputToCommands: true);
+
+            var sw = Stopwatch.StartNew();
+            for (int i = 0; i < iterCount; i++) {
+                _ = ParseTemplate(template);
+            }
+            sw.Stop();
+            $"    => Parsing: {sw.Elapsed.TotalMilliseconds / iterCount}ms / {sw.Elapsed.TotalNanoseconds / iterCount}ns ({sw.Elapsed} total)".Log("Profile", outputToCommands: true);
+
+            var components = ParseTemplate(template);
+
+            sw.Restart();
+            for (int i = 0; i < iterCount; i++) {
+                _ = EvaluateTemplate(components, 2, forceAllowCodeExecution: true);
+            }
+            sw.Stop();
+            $"    => Evaluating: {sw.Elapsed.TotalMilliseconds / iterCount}ms / {sw.Elapsed.TotalNanoseconds / iterCount}ns ({sw.Elapsed} total)".Log("Profile", outputToCommands: true);
+        }
+    }
+#endif
 }
