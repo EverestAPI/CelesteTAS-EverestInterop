@@ -47,8 +47,7 @@ public static class HitboxMenu {
 
     public static void AddSubMenuDescription(TextMenu menu, bool inGame) {
         if (inGame) {
-            subMenuItem.AddDescription(menu, "Hitbox Color Description 2".ToDialogText());
-            subMenuItem.AddDescription(menu, "Hitbox Color Description 1".ToDialogText());
+            subMenuItem.AddDescription(menu, "Hitbox Color Description".ToDialogText());
         }
 
         subMenuItem = null;

@@ -1,153 +1,154 @@
-# ================================== Menu ==================================
-TAS_ENABLED=                    Aktiviert
-TAS_ENABLED_DESCRIPTION=        Aktueller TAS Dateipfad:
-TAS_SHOW_HITBOXES=              Hitboxen
-TAS_HITBOX_COLOR_DESCRIPTION_1= Hitboxfarben können nur im Menu auf dem Titelbildschirm bearbeitet werden
-TAS_HITBOX_COLOR_DESCRIPTION_2= Oder nutze den entity/trigger/platform_hitbox_color Befehl in der Konsole
-TAS_SIMPLIFIED_GRAPHICS=        Vereinfachte Grafik
-TAS_INFO_HUD=                   Info HUD
-TAS_INFO_HUD_DESCRIPTION_1=     Doppeldruücke den Info HUD Hotkey um die HUD ein/aus zu schalten
-TAS_INFO_HUD_DESCRIPTION_2=     Halte den Info HUD Hotkey und Linksklick um die HUD zu verschieben
-TAS_INFO_HUD_DESCRIPTION_3=     Halte den Info HUD Hotkey und linksklicke ein Entity um es zu beobachten
-TAS_ROUND_VALUES=               Werte Runden
-TAS_FORWARD_SPEED=              Wiedergabegeschwindigkeit
-TAS_MORE_OPTIONS=               Mehr Optionen
+# ========================================== Menu ==========================================
+TAS_ENABLED=                            Aktiviert
+TAS_ENABLED_DESCRIPTION=                Aktueller TAS Dateipfad:
+TAS_SHOW_HITBOXES=                      Hitboxen
+TAS_HITBOX_COLOR_DESCRIPTION=           Hitboxfarben können nur im Menu auf dem Titelbildschirm bearbeitet werden{n}
+                                        Oder nutze den entity/trigger/platform_hitbox_color Befehl in der Konsole
+TAS_SIMPLIFIED_GRAPHICS=                Vereinfachte Grafik
+TAS_INFO_HUD=                           Info HUD
+TAS_INFO_HUD_DESCRIPTION=               Doppeldruücke den Info HUD Hotkey um die HUD ein/aus zu schalten{n}
+                                        Halte den Info HUD Hotkey und Linksklick um die HUD zu verschieben{n}
+                                        Halte den Info HUD Hotkey und linksklicke ein Entity um es zu beobachten
+TAS_ROUND_VALUES=                       Werte Runden
+TAS_FORWARD_SPEED=                      Wiedergabegeschwindigkeit
+TAS_MORE_OPTIONS=                       Mehr Optionen
 
-# ================================== Hitbox Submenu ==================================
-TAS_ACTUAL_COLLIDE_HITBOXES=        Tatsächlichte Kollisionshitboxen
-TAS_SHOW_TRIGGER_HITBOXES=          Trigger Hitboxen
-TAS_SHOW_UNLOADED_ROOMS_HITBOXES=   Entladene Raumhitbox
-TAS_SHOW_CAMERA_HITBOXES=           Kamera Hitbox
-TAS_SHOW_CYCLE_HITBOX_COLORS=       Zyklus Hitboxfarben anzeigen
-TAS_SIMPLIFIED_HITBOXES=            Vereinfachte Hitboxen
-TAS_UN_COLLIDABLE_HITBOXES_OPACITY= Nicht-kollidierbare Hitboxdeckkraft
-TAS_ENTITY_HITBOX_COLOR=            Entity Hitboxfarbe
-TAS_TRIGGER_HITBOX_COLOR=           Trigger Hitboxfarbe
-TAS_PLATFORM_HITBOX_COLOR=          Platform Hitboxfarbe
-TAS_CYCLE1_HITBOX_COLOR=            Zyklus 1 Hitboxfarbe
-TAS_CYCLE2_HITBOX_COLOR=            Zyklus 2 Hitboxfarbe
-TAS_CYCLE3_HITBOX_COLOR=            Zyklus 3 Hitboxfarbe
-TAS_CYCLE4_HITBOX_COLOR=            Andere Zyklus Hitboxfarbe
+# ========================================== Hitbox Submenu ==========================================
+TAS_ACTUAL_COLLIDE_HITBOXES=            Tatsächlichte Kollisionshitboxen
+TAS_SHOW_TRIGGER_HITBOXES=              Trigger Hitboxen
+TAS_SHOW_UNLOADED_ROOMS_HITBOXES=       Entladene Raumhitbox
+TAS_SHOW_CAMERA_HITBOXES=               Kamera Hitbox
+TAS_SHOW_CYCLE_HITBOX_COLORS=           Zyklus Hitboxfarben anzeigen
+TAS_SIMPLIFIED_HITBOXES=                Vereinfachte Hitboxen
+TAS_UN_COLLIDABLE_HITBOXES_OPACITY=     Nicht-kollidierbare Hitboxdeckkraft
+TAS_ENTITY_HITBOX_COLOR=                Entity Hitboxfarbe
+TAS_TRIGGER_HITBOX_COLOR=               Trigger Hitboxfarbe
+TAS_PLATFORM_HITBOX_COLOR=              Platform Hitboxfarbe
+TAS_CYCLE1_HITBOX_COLOR=                Zyklus 1 Hitboxfarbe
+TAS_CYCLE2_HITBOX_COLOR=                Zyklus 2 Hitboxfarbe
+TAS_CYCLE3_HITBOX_COLOR=                Zyklus 3 Hitboxfarbe
+TAS_CYCLE4_HITBOX_COLOR=                Andere Zyklus Hitboxfarbe
 
-# ================================== Simplified Graphics Submenu ==================================
-TAS_GAMEPLAY=                     Gameplay
-TAS_LIGHTING=                     Licht
-TAS_BLOOM_BASE=                   Bloombase
-TAS_BLOOM_STRENGTH=               Bloomstärke
-TAS_SPINNER_COLOR=                Spinnerfarbe
-TAS_DUST_SPRITE_EDGE=             Staub-Sprite Kanten
-TAS_SCREEN_WIPE=                  Bildschirmanimation
-TAS_COLOR_GRADE=                  Farbkorrektur
-TAS_SOLID_TILES_STYLE=            Festekachelstil
-TAS_BACKGROUND_TILES=             Hintergrundkachel
-TAS_BACKDROP=                     Hintergrund
-TAS_DECAL=                        Dekorationsobjkete
-TAS_PARTICLE=                     Parktikel
-TAS_DISTORT=                      Verzerrung
-TAS_MINI_TEXT_BOX=                Minitextbox
-TAS_LIGHTNING_STRIKE=             Blitzeinschlag
-TAS_CLUTTERED_ENTITY=             Verdeckendes Entity
-TAS_CLUTTERED_ENTITY_DESCRIPTION= Tentakeln, Gipfelwolken, Augen
-TAS_HUD=                          HUD
-TAS_HUD_DESCRIPTION=              Sprechicon, Vogeltutorial und macher Text
-TAS_WAVED_EDGE=                   Wabernde Kanten
-TAS_SPIKES=                       Stacheln
+# ========================================== Simplified Graphics Submenu ==========================================
+TAS_GAMEPLAY=                           Gameplay
+TAS_LIGHTING=                           Licht
+TAS_BLOOM_BASE=                         Bloombase
+TAS_BLOOM_STRENGTH=                     Bloomstärke
+TAS_SPINNER_COLOR=                      Spinnerfarbe
+TAS_DUST_SPRITE_EDGE=                   Staub-Sprite Kanten
+TAS_SCREEN_WIPE=                        Bildschirmanimation
+TAS_COLOR_GRADE=                        Farbkorrektur
+TAS_SOLID_TILES_STYLE=                  Festekachelstil
+TAS_BACKGROUND_TILES=                   Hintergrundkachel
+TAS_BACKDROP=                           Hintergrund
+TAS_DECAL=                              Dekorationsobjkete
+TAS_PARTICLE=                           Parktikel
+TAS_DISTORT=                            Verzerrung
+TAS_MINI_TEXT_BOX=                      Minitextbox
+TAS_LIGHTNING_STRIKE=                   Blitzeinschlag
+TAS_CLUTTERED_ENTITY=                   Verdeckendes Entity
+TAS_CLUTTERED_ENTITY_DESCRIPTION=       Tentakeln, Gipfelwolken, Augen
+TAS_HUD=                                HUD
+TAS_HUD_DESCRIPTION=                    Sprechicon, Vogeltutorial und macher Text
+TAS_WAVED_EDGE=                         Wabernde Kanten
+TAS_SPIKES=                             Stacheln
 
-# ================================== Info HUD ==================================
-TAS_INFO_GAME=                             Spielinfo
-TAS_INFO_TAS_INPUT=                        TAS Eingabe
-TAS_INFO_SUBPIXEL_INDICATOR=               Subpixelanzeige
-TAS_INFO_CUSTOM=                           Benutzerdefinite Information
-TAS_INFO_COPY_CUSTOM_TEMPLATE=             Kopiere Benutzerdefinite Infovorlage in Zwischenablage
-TAS_INFO_SET_CUSTOM_TEMPLATE=              Setze Benutzerdefinite Infovorlage aus Zwischenablage
-TAS_INFO_WATCH_ENTITY_HUD_TYPE=            Entity Beobachtungsinformation (HUD)
-TAS_INFO_WATCH_ENTITY_STUDIO_TYPE=         Entity Beobachtungsinformation (Studio)
-TAS_INFO_WATCH_ENTITY_NONE=                Keine
-TAS_INFO_WATCH_ENTITY_POSITION=            Position
-TAS_INFO_WATCH_ENTITY_DECLARED_ONLY=       Nur Deklariert
-TAS_INFO_WATCH_ENTITY_ALL=                 Alle
-TAS_INFO_WATCH_ENTITY_LOG_TO_CONSOLE=	   Gebe Entityinformation in Konsole aus
-TAS_INFO_TEXT_SIZE=                        Textgröße
-TAS_INFO_SUBPIXEL_INDICATOR_SIZE=          Subpixelanzeigegröße
-TAS_INFO_OPACITY=                          Deckkraft
-TAS_INFO_MASKED_OPACITY=                   Verdeckende Deckkraft
+# ========================================== Info HUD ==========================================
+TAS_INFO_GAME=                          Spielinfo
+TAS_INFO_TAS_INPUT=                     TAS Eingabe
+TAS_INFO_SUBPIXEL_INDICATOR=            Subpixelanzeige
+TAS_INFO_CUSTOM=                        Benutzerdefinite Information
+TAS_INFO_COPY_CUSTOM_TEMPLATE=          Kopiere Benutzerdefinite Infovorlage in Zwischenablage
+TAS_INFO_SET_CUSTOM_TEMPLATE=           Setze Benutzerdefinite Infovorlage aus Zwischenablage
+TAS_INFO_WATCH_ENTITY_HUD_TYPE=         Entity Beobachtungsinformation (HUD)
+TAS_INFO_WATCH_ENTITY_STUDIO_TYPE=      Entity Beobachtungsinformation (Studio)
+TAS_INFO_WATCH_ENTITY_NONE=             Keine
+TAS_INFO_WATCH_ENTITY_POSITION=         Position
+TAS_INFO_WATCH_ENTITY_DECLARED_ONLY=    Nur Deklariert
+TAS_INFO_WATCH_ENTITY_ALL=              Alle
+TAS_INFO_WATCH_ENTITY_LOG_TO_CONSOLE=   Gebe Entityinformation in Konsole aus
+TAS_INFO_TEXT_SIZE=                     Textgröße
+TAS_INFO_SUBPIXEL_INDICATOR_SIZE=       Subpixelanzeigegröße
+TAS_INFO_OPACITY=                       Deckkraft
+TAS_INFO_MASKED_OPACITY=                Verdeckende Deckkraft
 
-# ================================== Info HUD Options ==================================
-TAS_INFO_HUD_OPTIONS_OFF=         Aus
-TAS_INFO_HUD_OPTIONS_HUD_ONLY=    Nur HUD
-TAS_INFO_HUD_OPTIONS_STUDIO_ONLY= Nur Studio
-TAS_INFO_HUD_OPTIONS_BOTH=        Beide
+# ========================================== Info HUD Options ==========================================
+TAS_INFO_HUD_OPTIONS_OFF=               Aus
+TAS_INFO_HUD_OPTIONS_HUD_ONLY=          Nur HUD
+TAS_INFO_HUD_OPTIONS_STUDIO_ONLY=       Nur Studio
+TAS_INFO_HUD_OPTIONS_BOTH=              Beide
 
-# ================================== Round Values ==================================
-TAS_POSITION_DECIMALS=            Nachkommastellen für Position
-TAS_SPEED_DECIMALS=               Nachkommastellen für Tempo
-TAS_VELOCITY_DECIMALS=            Nachkommastellen für Geschwindigkeit
-TAS_ANGLE_DECIMALS=               Nachkommastellen für Winkel
-TAS_CUSTOM_INFO_DECIMALS=         Nachkommastellen für Benutzerdefinite Informationen
-TAS_SUBPIXEL_INDICATOR_DECIMALS=  Nachkommastellen für Subpixelanzeige
-TAS_SPEED_UNIT=                   Tempoeinheit
-TAS_VELOCITY_UNIT=                Geschwindigkeitseinheit
-TAS_PIXEL_PER_SECOND=             Pixel/Sekunde
-TAS_PIXEL_PER_FRAME=              Pixel/Frame
+# ========================================== Round Values ==========================================
+TAS_POSITION_DECIMALS=                  Nachkommastellen für Position
+TAS_SPEED_DECIMALS=                     Nachkommastellen für Tempo
+TAS_VELOCITY_DECIMALS=                  Nachkommastellen für Geschwindigkeit
+TAS_ANGLE_DECIMALS=                     Nachkommastellen für Winkel
+TAS_CUSTOM_INFO_DECIMALS=               Nachkommastellen für Benutzerdefinite Informationen
+TAS_SUBPIXEL_INDICATOR_DECIMALS=        Nachkommastellen für Subpixelanzeige
+TAS_SPEED_UNIT=                         Tempoeinheit
+TAS_VELOCITY_UNIT=                      Geschwindigkeitseinheit
+TAS_PIXEL_PER_SECOND=                   Pixel/Sekunde
+TAS_PIXEL_PER_FRAME=                    Pixel/Frame
 
-# ================================== Forward Speed Submenu ==================================
-TAS_FAST_FORWARD_SPEED=       Schnelle Wiedergabegeschwindigkeit
-TAS_SLOW_FORWARD_SPEED=       Langsame Wiedergabegeschwindigkeit
+# ========================================== Forward Speed Submenu ==========================================
+TAS_FAST_FORWARD_SPEED=                 Schnelle Wiedergabegeschwindigkeit
+TAS_SLOW_FORWARD_SPEED=                 Langsame Wiedergabegeschwindigkeit
 
-# ================================== Hotkeys Submenu ==================================
-TAS_HOTKEYS=             Hotkeys
-TAS_HOTKEYS_DESCRIPTION= Wenn mehrere Tasten einem Hotkey zugewiesen sind, bilden diese eine Tastenkombination
+# ========================================== Hotkeys Submenu ==========================================
+TAS_HOTKEYS=                            Hotkeys
+TAS_HOTKEYS_DESCRIPTION=                Wenn mehrere Tasten einem Hotkey zugewiesen sind, bilden diese eine Tastenkombination
 
-# ================================== More Options Submenu ==================================
-TAS_CENTER_CAMERA=                    Zentriere Kamera
-TAS_CENTER_CAMERA_HORIZONTALLY_ONLY=  Nur horizontal Zentrierte Kamera
-TAS_AUTO_ENABLE_EXCAMERADYNAMICS=     Aktiviere ExCameraDynamics für Zentrierte Kamera
-TAS_EXCAMERADYNAMICS_DESCRIPTION=     BEDENKTE: Du must das Level neustarten nachdem dies ausgeschaltet wurde, {n}damit herausgezoomte Hitbox funktionieren.
-TAS_RESTORE_SETTINGS=                 Stelle alle Einstellungen nach TAS-Ende wieder her
-TAS_LAUNCH_STUDIO_AT_BOOT=            Öffne Studio bei Spielstart
-TAS_ATTEMPT_TO_CONNECT_TO_STUDIO=     Versuche mit Studio zu verbinden
-TAS_SHOW_STUDIO_UPDATE_BANNER=        Zeige Studio Aktuallisierungsbanner
-TAS_OPEN_CONSOLE_IN_TAS=              Erlaube die Konsole in einem TAS zu öffnen
-TAS_BETTER_INVINCIBILITY=             Verbesserte Unbesiegbarkeit
-TAS_BETTER_INVINCIBLE_DESCRIPTION=    Wenn man "Set Invincible true" ausführt, kann man weiterhin nicht sterben, jedoch vermeidet Gameplayveränderungen wie auf der Toteszone zu springen,{n}
-                                      um versehentliche TAS-Desyncs to vermeiden. Wird nur angewendet solange eine TAS aktiv ist.
-TAS_HIDE_FREEZE_FRAMES=               Verstecke Freeze-Frames im TAS
-TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_1= Wenn ein Freeze-Frame ausgelöst wird, wird dieser übersprungen ohne diesen anzuzeigen.
-TAS_HIDE_FREEZE_FRAMES_DESCRIPTION_2= Wird nur angewendet solange eine TAS aktiv ist.
-TAS_IGNORE_GC_COLLECT=                Ignoriere GC Collect während Vorspulen
-TAS_IGNORE_GC_COLLECT_DESCRIPTION_1=  Verschnellert das Vorspulen von langen TASen,
-TAS_IGNORE_GC_COLLECT_DESCRIPTION_2=  erhöht jedoch den Arbeitsspeicherverbrauch
+# ========================================== More Options Submenu ==========================================
+TAS_CENTER_CAMERA=                      Zentriere Kamera
+TAS_CENTER_CAMERA_HORIZONTALLY_ONLY=    Nur horizontal Zentrierte Kamera
+TAS_AUTO_ENABLE_EXCAMERADYNAMICS=       Nutze Extended Camera Dynamics für freie Kamera
+TAS_EXCAMERADYNAMICS_DESCRIPTION_A=     Die Mod 'Extended Camera Dynamics' ist für dieses Feature benötigt
+TAS_EXCAMERADYNAMICS_DESCRIPTION_B=     Du must das Level neustarten nachdem dies ausgeschaltet wurde,{n}damit herausgezoomte Hitbox funktionieren.
+TAS_RESTORE_SETTINGS=                   Stelle alle Einstellungen nach TAS-Ende wieder her
+TAS_LAUNCH_STUDIO_AT_BOOT=              Öffne Studio bei Spielstart
+TAS_ATTEMPT_TO_CONNECT_TO_STUDIO=       Versuche mit Studio zu verbinden
+TAS_SHOW_STUDIO_UPDATE_BANNER=          Zeige Studio Aktuallisierungsbanner
+TAS_OPEN_CONSOLE_IN_TAS=                Erlaube die Konsole in einem TAS zu öffnen
+TAS_BETTER_INVINCIBILITY=               Verbesserte Unbesiegbarkeit
+TAS_BETTER_INVINCIBLE_DESCRIPTION=      Wenn man "Set Invincible true" ausführt, kann man weiterhin nicht sterben, jedoch vermeidet Gameplayveränderungen wie auf der Toteszone zu springen,{n}
+                                        um versehentliche TAS-Desyncs to vermeiden. Wird nur angewendet solange eine TAS aktiv ist.
+TAS_HIDE_FREEZE_FRAMES=                 Verstecke Freeze-Frames im TAS
+TAS_HIDE_FREEZE_FRAMES_DESCRIPTION=     Wenn ein Freeze-Frame ausgelöst wird, wird dieser übersprungen ohne diesen anzuzeigen.{n}
+                                        Wird nur angewendet solange eine TAS aktiv ist.
+TAS_IGNORE_GC_COLLECT=                  Ignoriere GC Collect während Vorspulen
+TAS_IGNORE_GC_COLLECT_DESCRIPTION=      Verschnellert das Vorspulen von langen TASen,{n}
+                                        erhöht jedoch den Arbeitsspeicherverbrauch
 
-# ================================== Hotkey Config ==================================
-TAS_KEY_START_STOP=           Start/Stop
-TAS_KEY_RESTART=              Neustart
-TAS_KEY_FAST_FORWARD=         Vorspulen
-TAS_KEY_FAST_FORWARD_COMMENT= Zum nächstem Label Vorspulen
-TAS_KEY_SLOW_FORWARD=         Langsame Wiedergabe
-TAS_KEY_FRAME_ADVANCE=        Nächster Frame
-TAS_KEY_PAUSE_RESUME=         Pause/Wiedergabe
-TAS_KEY_HITBOXES=             Hitboxen ein/ausschalten
-TAS_KEY_TRIGGER_HITBOXES=     Triggerhitboxen ein/ausschalten
-TAS_KEY_SIMPLIFIED_GRAPHICS=  Vereinfachte Grafik ein/ausschalten
-TAS_KEY_CENTER_CAMERA=        Zentrierte Kamera ein/ausschalten
-TAS_KEY_LOCK_CAMERA=          Zentrierte Kamera sperren
-TAS_KEY_SAVE_STATE=           Speicherpunkt im TAS erstellen
-TAS_KEY_CLEAR_STATE=          Speicherpunkt im TAS löschen
-TAS_KEY_INFO_HUD=             Info HUD
-TAS_KEY_FREE_CAMERA=          Freie Kamera
+# ========================================== Hotkey Config ==========================================
+TAS_KEY_START_STOP=                     TAS Starten/Stoppen
+TAS_KEY_RESTART=                        TAS Neustarten
+TAS_KEY_FAST_FORWARD=                   TAS Vorspulen
+TAS_KEY_FAST_FORWARD_COMMENT=           TAS zum nächstem Label Vorspulen
+TAS_KEY_SLOW_FORWARD=                   Langsame TAS Wiedergabe
+TAS_KEY_FRAME_ADVANCE=                  Nächster Frame im TAS
+TAS_KEY_PAUSE_RESUME=                   TAS Pausieren/Wiedergeben
+TAS_KEY_HITBOXES=                       Hitboxen ein/ausschalten
+TAS_KEY_TRIGGER_HITBOXES=               Triggerhitboxen ein/ausschalten
+TAS_KEY_SIMPLIFIED_GRAPHICS=            Vereinfachte Grafik ein/ausschalten
+TAS_KEY_CENTER_CAMERA=                  Zentrierte Kamera ein/ausschalten
+TAS_KEY_LOCK_CAMERA=                    Zentrierte Kamera sperren
+TAS_KEY_SAVE_STATE=                     Speicherpunkt im TAS erstellen
+TAS_KEY_CLEAR_STATE=                    Speicherpunkt im TAS löschen
+TAS_KEY_INFO_HUD=                       Info HUD
+TAS_KEY_FREE_CAMERA=                    Freie Kamera
 
-# ================================== Option Values ==================================
-TAS_DEFAULT=                  Standard
-TAS_HIDE=                     Verstecken
-TAS_SIMPLIFY=                 Vereinfachen
-TAS_RED=                      Rot
-TAS_GREEN=                    Grün
-TAS_BLUE=                     Blau
-TAS_YELLOW=                   Gelb
-TAS_PURPLE=                   Lila
-TAS_WHITE=                    Weiß
-TAS_BLACK=                    Schwarz
-TAS_TRANSPARENT=              Transparent
-TAS_OFF=                      AUS
-TAS_OVERRIDE=                 Überschreiben
-TAS_APPEND=                   Anhängen
+# ========================================== Option Values ==========================================
+TAS_DEFAULT=                            Standard
+TAS_HIDE=                               Verstecken
+TAS_SIMPLIFY=                           Vereinfachen
+TAS_RED=                                Rot
+TAS_GREEN=                              Grün
+TAS_BLUE=                               Blau
+TAS_YELLOW=                             Gelb
+TAS_PURPLE=                             Lila
+TAS_WHITE=                              Weiß
+TAS_BLACK=                              Schwarz
+TAS_TRANSPARENT=                        Transparent
+TAS_OFF=                                AUS
+TAS_OVERRIDE=                           Überschreiben
+TAS_APPEND=                             Anhängen
