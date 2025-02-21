@@ -121,7 +121,7 @@ public sealed class Studio : Form {
         Migrator.ApplyPreLoadMigrations();
 
 #if DEBUG
-        MenuEntryExtensions.VerifyData();
+        BindableAction.VerifyData();
 #endif
 
         Settings.Load();

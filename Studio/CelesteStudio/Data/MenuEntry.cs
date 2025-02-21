@@ -14,6 +14,7 @@ public record struct BindableAction {
     public required MenuEntryCategory Category;
     public required string EntryName;
     public required Hotkey DefaultKeyBinding;
+    public required Action Action;
 
     public static readonly Dictionary<MenuEntry, BindableAction> All = new() {
         {
@@ -462,7 +463,15 @@ public record struct BindableAction {
         },
     };
 
-    public required Action Action;
+#if DEBUG
+    public static void VerifyData() {
+        foreach (var entry in Enum.GetValues<MenuEntry>()) {
+            if (!BindableAction.All.ContainsKey(entry)) {
+                throw new Exception($"{entry} is missing from BindableAction.all");
+            }
+        }
+    }
+#endif
 }
 
 // ReSharper disable InconsistentNaming
@@ -493,62 +502,10 @@ public enum MenuEntry {
 public enum MenuEntryCategory { File, Settings, View, Editor, ContextActions, Status, StatusPopout, GameHotkeys }
 
 public static class MenuEntryExtensions {
-    private static readonly Dictionary<MenuEntryCategory, MenuEntry[]> Categories = new() {
-        { MenuEntryCategory.File, [
-            MenuEntry.File_New, MenuEntry.File_Open, MenuEntry.File_OpenPrevious, MenuEntry.File_Save, MenuEntry.File_SaveAs, MenuEntry.File_Show, MenuEntry.File_RecordTAS, MenuEntry.File_Quit] },
-
-        { MenuEntryCategory.Settings, [
-            MenuEntry.Settings_SendInputs] },
-
-        { MenuEntryCategory.View, [
-            MenuEntry.View_ShowGameInfo, MenuEntry.View_ShowSubpixelIndicator, MenuEntry.View_AlwaysOnTop, MenuEntry.View_WrapComments, MenuEntry.View_ShowFoldingIndicator] },
-
-        { MenuEntryCategory.Editor, [
-            MenuEntry.Editor_Cut, MenuEntry.Editor_Copy, MenuEntry.Editor_Paste,
-            MenuEntry.Editor_Undo, MenuEntry.Editor_Redo,
-            MenuEntry.Editor_SelectAll, MenuEntry.Editor_SelectBlock,
-            MenuEntry.Editor_Find, MenuEntry.Editor_GoTo, MenuEntry.Editor_ToggleFolding,
-            MenuEntry.Editor_DeleteSelectedLines, MenuEntry.Editor_SetFrameCountToStepAmount,
-            MenuEntry.Editor_InsertRemoveBreakpoint, MenuEntry.Editor_InsertRemoveSavestateBreakpoint, MenuEntry.Editor_RemoveAllUncommentedBreakpoints, MenuEntry.Editor_RemoveAllBreakpoints, MenuEntry.Editor_CommentUncommentAllBreakpoints, MenuEntry.Editor_CommentUncommentInputs, MenuEntry.Editor_CommentUncommentText,
-            MenuEntry.Editor_InsertRoomName, MenuEntry.Editor_InsertCurrentTime, MenuEntry.Editor_RemoveAllTimestamps, MenuEntry.Editor_InsertCurrentPosition, MenuEntry.Editor_InsertCurrentSpeed, MenuEntry.Editor_InsertModInfo, MenuEntry.Editor_InsertConsoleLoadCommand, MenuEntry.Editor_InsertSimpleConsoleLoadCommand,
-            MenuEntry.Editor_OpenAutoCompleteMenu, MenuEntry.Editor_OpenContextActionsMenu] },
-
-        { MenuEntryCategory.ContextActions, [
-            MenuEntry.ContextActions_InlineReadCommand, MenuEntry.ContextActions_InlineRepeatCommand, MenuEntry.ContextActions_CreateRepeatCommand, MenuEntry.ContextActions_SwapActionsLR, MenuEntry.ContextActions_SwapActionsJK, MenuEntry.ContextActions_SwapActionsXC,
-            MenuEntry.ContextActions_CombineConsecutiveSameInputs, MenuEntry.ContextActions_ForceCombineInputFrames, MenuEntry.ContextActions_SplitFrames, MenuEntry.ContextActions_OpenReadFile, MenuEntry.ContextActions_GoToPlayLine] },
-
-        { MenuEntryCategory.Status, [
-            MenuEntry.Status_CopyGameInfoToClipboard, MenuEntry.Status_ReconnectStudioCeleste,
-            MenuEntry.Status_EditCustomInfoTemplate, MenuEntry.Status_ClearWatchEntityInfo] },
-
-        { MenuEntryCategory.StatusPopout, [MenuEntry.StatusPopout_AlwaysOnTop] },
-
-        { MenuEntryCategory.GameHotkeys, [MenuEntry.Game_Start, MenuEntry.Game_Pause, MenuEntry.Game_Restart, MenuEntry.Game_FrameAdvance] },
-    };
-
-#if DEBUG
-    public static void VerifyData() {
-        // Ensures that every entry has all the required data
-        foreach (var entry in Enum.GetValues<MenuEntry>()) {
-
-            if (!BindableAction.All.ContainsKey(entry)) {
-                throw new Exception($"{entry} is missing from BindableAction.all");
-            }
-            
-            foreach (var category in Enum.GetValues<MenuEntryCategory>()) {
-                var entries = Categories[category];
-                if (entries.Contains(entry)) {
-                    goto NextIter;
-                }
-            }
-
-            throw new Exception($"Entry '{entry}' is not assigned to a category");
-
-            NextIter:;
-        }
-    }
-#endif
-
+    private static readonly Dictionary<MenuEntryCategory, MenuEntry[]> Categories = BindableAction.All
+        .GroupBy(action => action.Value.Category, action => action.Key)
+        .ToDictionary(grouping => grouping.Key, g => g.ToArray());
+    
     public static MenuEntry[] GetEntries(this MenuEntryCategory category) => Categories[category];
     public static string GetName(this MenuEntryCategory category) => category switch {
         MenuEntryCategory.File => "File",
