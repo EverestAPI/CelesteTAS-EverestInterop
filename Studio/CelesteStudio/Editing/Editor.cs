@@ -954,46 +954,9 @@ public sealed class Editor : SkiaDrawable {
         }
 
         // Forward hotkeys from menu entries / snippets
-        if (e.Key != Keys.None) {
-            // Check for menu items
-            var items = ContextMenu.Items
-                .Concat(Studio.Instance.GameInfo.ContextMenu.Items)
-                .Concat(Studio.Instance.Menu.Items)
-                .Concat(Studio.Instance.GlobalHotkeys);
-            foreach (var item in items) {
-                if (item.Shortcut != e.KeyData) {
-                    continue;
-                }
-
-                item.PerformClick();
-                Recalc();
-                e.Handled = true;
-                return;
-            }
-
-            // Handle context actions
-            foreach (var contextAction in contextActions) {
-                if (contextAction.Entry.GetHotkey() == e.KeyData && contextAction.Check() is { } action) {
-                    action.OnUse();
-                    Recalc();
-                    ScrollCaretIntoView();
-
-                    e.Handled = true;
-                    return;
-                }
-            }
-
-            // Try to paste snippets
-            foreach (var snippet in Settings.Instance.Snippets) {
-                if (snippet.Enabled && snippet.Hotkey == e.KeyData) {
-                    InsertQuickEdit(snippet.Insert);
-                    Recalc();
-                    ScrollCaretIntoView();
-
-                    e.Handled = true;
-                    return;
-                }
-            }
+        if (CheckShortcuts(Hotkey.FromEvent(e))) {
+            e.Handled = true;
+            return;
         }
 
         switch (e.Key) {
@@ -1125,14 +1088,6 @@ public sealed class Editor : SkiaDrawable {
                 break;
             }
             default:
-                if (e.IsChar) {
-                    var action = Settings.Instance.KeyBindings
-                        .Where(keybind => keybind.Value is HotkeyChar hotkey && hotkey.C == e.KeyChar)
-                        .Select(keybind => (MenuEntry?)keybind.Key)
-                        .FirstOrDefault();
-                    // TODO: run action
-                }
-                
                 if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _) && CalculationExtensions.TryParse(e.KeyChar) is { } op) {
                     StartCalculation(op);
                     e.Handled = true;
@@ -1159,6 +1114,56 @@ public sealed class Editor : SkiaDrawable {
         }
 
         Recalc();
+    }
+
+    private bool CheckShortcuts(Hotkey hotkey) {
+        // Check for menu items
+        if (hotkey is HotkeyNative hotkeyNative) {
+            var items = ContextMenu.Items
+                .Concat(Studio.Instance.GameInfo.ContextMenu.Items)
+                .Concat(Studio.Instance.Menu.Items)
+                .Concat(Studio.Instance.GlobalHotkeys);
+            foreach (var item in items) {
+                if (item.Shortcut == hotkeyNative.Keys) {
+                    item.PerformClick();
+                    Recalc();
+                    return true;
+                }
+            }
+        } else if (hotkey is HotkeyChar) {
+            foreach (var pair in BindableAction.All) {
+                var (entry, binding) = pair;
+                if (entry.GetHotkey() == hotkey) {
+                    binding.Action();
+                    Recalc();
+                    return true;
+                }
+            }
+        }
+
+        // Handle context actions
+        foreach (var contextAction in contextActions) {
+            if (contextAction.Entry.GetHotkey() == hotkey && contextAction.Check() is { } action) {
+                action.OnUse();
+                Recalc();
+                ScrollCaretIntoView();
+
+                return true;
+            }
+        }
+
+        // Try to paste snippets
+        foreach (var snippet in Settings.Instance.Snippets) {
+            if (snippet.Enabled && snippet.Hotkey == hotkey) {
+                InsertQuickEdit(snippet.Insert);
+                Recalc();
+                ScrollCaretIntoView();
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected override void OnKeyUp(KeyEventArgs e) {
@@ -2020,6 +2025,10 @@ public sealed class Editor : SkiaDrawable {
 
     protected override void OnTextInput(TextInputEventArgs e) {
         if (e.Text.Length == 0 || char.IsControl(e.Text[0])) {
+            return;
+        }
+
+        if (e.Text.Length == 1 && CheckShortcuts(Hotkey.Char(e.Text[0]))) {
             return;
         }
 
