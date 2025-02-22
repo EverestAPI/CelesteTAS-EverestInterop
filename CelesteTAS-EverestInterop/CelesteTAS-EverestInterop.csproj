@@ -56,11 +56,6 @@
         <PackageReference Include="JetBrains.Profiler.Api" Version="1.4.6" Condition="'$(Configuration)' == 'Debug' or '$(EnablePerformanceProfiling)' == 'true'" />
     </ItemGroup>
 
-    <!-- Embedded Resources -->
-    <ItemGroup>
-        <EmbeddedResource Include="Source\Lua\environment.lua" LogicalName="environment.lua"/>
-    </ItemGroup>
-
     <!-- Assemblies -->
     <Target Name="CopyAssemblies" AfterTargets="Build">
         <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="..\bin" />

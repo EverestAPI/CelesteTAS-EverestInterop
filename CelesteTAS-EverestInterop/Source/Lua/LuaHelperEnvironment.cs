@@ -1,24 +1,29 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Celeste;
 using Celeste.Mod;
 using JetBrains.Annotations;
 using Monocle;
 using System.Diagnostics.CodeAnalysis;
-using TAS.EverestInterop.InfoHUD;
 using TAS.InfoHUD;
 using TAS.Input.Commands;
 using TAS.Utils;
 
 namespace TAS.Lua;
 
-/// Provides helper methods for usage in Lua scripts
-public static class LuaHelpers {
+/// Lua environment with TAS-specific helper methods
+internal class LuaHelperEnvironment(NeoLua.Lua lua) : NeoLua.LuaGlobal(lua) {
+
+    /// Logs a message
+    [NeoLua.LuaMember("log"), UsedImplicitly]
+    private static void Log(object? message, string? tag) {
+        Logger.Info(LuaToString(message), tag ?? "CelesteTAS/Lua");
+    }
 
     /// Resolves the first entity which matches the specified target-query, e.g. "Player" or "Celeste.Player"
-    [UsedImplicitly]
+    /// Example: getEntity("Player"), getEntity("Celeste.Player"), getEntity("DustStaticSpinner[s1:12]")
+    [NeoLua.LuaMember("getEntity"), UsedImplicitly]
     public static Entity? GetEntity(string targetQuery) {
         if (TryGetEntityTypeWithId(targetQuery, out var type, out var entityId)) {
             return (Entity?) TargetQuery.ResolveTypeInstances(type, [], entityId)!.FirstOrDefault();
@@ -28,7 +33,8 @@ public static class LuaHelpers {
     }
 
     /// Resolves all entities which match the specified target-query, e.g. "Player" or "Celeste.Player"
-    [UsedImplicitly]
+    /// Example: getEntities("Player"), getEntities("Celeste.Player"), getEntities("CustomSpinner@VivHelper")
+    [NeoLua.LuaMember("getEntities"), UsedImplicitly]
     public static List<Entity> GetEntities(string targetQuery) {
         if (TryGetEntityTypeWithId(targetQuery, out var type, out var entityId)) {
             return TargetQuery.ResolveTypeInstances(type, [], entityId)!.Cast<Entity>().ToList();
@@ -38,7 +44,7 @@ public static class LuaHelpers {
     }
 
     /// Gets the value of a (private) field / property
-    [UsedImplicitly]
+    [NeoLua.LuaMember("getValue"), UsedImplicitly]
     public static object? GetValue(object? instanceOrTargetQuery, string memberName) {
         if (!TryGetInstance(instanceOrTargetQuery, out var type, out object? instance)) {
             $"Failed to get instance for '{instance}".Log("Lua", EvalLuaCommand.LogToConsole, LogLevel.Error);
@@ -70,7 +76,7 @@ public static class LuaHelpers {
     }
 
     /// Sets the value of a (private) field / property
-    [UsedImplicitly]
+    [NeoLua.LuaMember("setValue"), UsedImplicitly]
     public static void SetValue(object? instanceOrTargetQuery, string memberName, object? value) {
         if (!TryGetInstance(instanceOrTargetQuery, out var type, out object? instance)) {
             $"Failed to get instance for '{instance}".Log("Lua", EvalLuaCommand.LogToConsole, LogLevel.Error);
@@ -103,7 +109,7 @@ public static class LuaHelpers {
     }
 
     /// Invokes a (private) method
-    [UsedImplicitly]
+    [NeoLua.LuaMember("invokeMethod"), UsedImplicitly]
     public static object? InvokeMethod(object? instanceOrTargetQuery, string methodName, params object?[] parameters) {
         if (!TryGetInstance(instanceOrTargetQuery, out var type, out object? instance)) {
             $"Failed to get instance for '{instance}".Log("Lua", EvalLuaCommand.LogToConsole, LogLevel.Error);
@@ -138,7 +144,7 @@ public static class LuaHelpers {
     }
 
     /// Resolves the enum value for an ordinal or name
-    [UsedImplicitly]
+    [NeoLua.LuaMember("getEnum"), UsedImplicitly]
     public static object? GetEnum(string enumTargetQuery, object value) {
         if (TargetQuery.ResolveBaseTypes(enumTargetQuery.Split('.'), out _, out _, out _) is { } types && types.IsNotEmpty() &&
             types.FirstOrDefault(t => t.IsEnum) is { } type) {
@@ -158,17 +164,36 @@ public static class LuaHelpers {
         return null;
     }
 
-    /// Returns the current level
-    [UsedImplicitly]
-    public static Level GetLevel() {
-        return Engine.Scene.GetLevel();
-    }
+    /// Provides the current scene
+    [NeoLua.LuaMember("scene"), UsedImplicitly]
+    public static Scene Scene => Engine.Scene;
 
-    /// Returns the current session
-    [UsedImplicitly]
-    public static Session GetSession() {
-        return Engine.Scene.GetSession();
-    }
+    /// Provides the current level
+    [NeoLua.LuaMember("level"), UsedImplicitly]
+    public static Level Level => Engine.Scene.GetLevel();
+
+    /// Provides the current session
+    [NeoLua.LuaMember("session"), UsedImplicitly]
+    public static Session Session => Engine.Scene.GetSession();
+
+    /// Provides the current player
+    [NeoLua.LuaMember("player"), UsedImplicitly]
+    public static Player Player => Engine.Scene.GetPlayer();
+
+    #region Legacy
+
+    [Obsolete("Use level instead"), NeoLua.LuaMember("getLevel"), UsedImplicitly]
+    public static Level GetLevel() => Engine.Scene.GetLevel();
+
+    [Obsolete("Use session instead"), NeoLua.LuaMember("getSession"), UsedImplicitly]
+    public static Session GetSession() => Engine.Scene.GetSession();
+
+    [Obsolete("Use cast(int, value) instead"), NeoLua.LuaMember("toInt"), UsedImplicitly]
+    public static int ToInt(long value) => (int) value;
+    [Obsolete("Use cast(float, value) instead"), NeoLua.LuaMember("toFloat"), UsedImplicitly]
+    public static float ToFloat(double value) => (float) value;
+
+    #endregion
 
     private static bool TryGetInstance(object? instanceOrTargetQuery, [NotNullWhen(true)] out Type? type, out object? instance) {
         if (instanceOrTargetQuery is string targetQuery) {

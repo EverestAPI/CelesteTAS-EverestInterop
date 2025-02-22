@@ -1,5 +1,4 @@
 using JetBrains.Annotations;
-using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication;
 using System;
@@ -49,22 +48,42 @@ public static class InfoCustom {
     /// Returns the parsed info for the current template
     [Obsolete("Use InfoCustom.ParseTemplate() once and call InfoCustom.EvaluateTemplate() with the parsed components to render")]
     public static IEnumerable<string> ParseTemplate(IEnumerable<string> template, int decimals, bool forceAllowCodeExecution = false) {
-        var components = ParseTemplate(string.Join('\n', template));
-        return [EvaluateTemplate(components, decimals, forceAllowCodeExecution)];
+        var parsedTemplate = ParseTemplate(string.Join('\n', template));
+        return [EvaluateTemplate(parsedTemplate, decimals, forceAllowCodeExecution)];
     }
 
     #region Parsing
 
-    public abstract record TemplateComponent;
+    /// Opaque handle for a parsed template
+    [PublicAPI]
+    public class Template : IDisposable {
+        internal TemplateComponent[] Components;
+
+        internal NeoLua.Lua Lua;
+        internal NeoLua.LuaTable Environment;
+
+        internal Template(TemplateComponent[] components, NeoLua.Lua lua, NeoLua.LuaTable environment) {
+            Components = components;
+
+            Lua = lua;
+            Environment = environment;
+        }
+        ~Template() => Dispose();
+
+        public void Dispose() {
+            GC.SuppressFinalize(this);
+            Lua.Dispose();
+        }
+    }
+
+    internal abstract record TemplateComponent;
 
     /// Raw text
     private record TextComponent(string Text) : TemplateComponent;
     /// Target-query
     private record QueryComponent(TargetQuery.Parsed Query, string Prefix, ValueFormatter? Formatter = null) : TemplateComponent;
     /// Lua code
-    private record LuaComponent(LuaContext Context) : TemplateComponent {
-        ~LuaComponent() => Context.Dispose();
-    }
+    private record LuaComponent(NeoLua.LuaChunk Chunk) : TemplateComponent;
     /// Table
     private record TableComponent : TemplateComponent {
         public int ComponentCount { get; set; } = 0;
@@ -72,13 +91,18 @@ public static class InfoCustom {
 
     /// Parses a custom Info HUD template into individual components, which can later be evaluated with <see cref="EvaluateTemplate"/>
     [PublicAPI]
-    public static TemplateComponent[] ParseTemplate(string template) {
+    public static Template ParseTemplate(string template) {
         List<TemplateComponent> components = [];
-        PopulateComponents(template, components);
+        var lua = new NeoLua.Lua();
+        var environment = lua.CreateEnvironment<LuaHelperEnvironment>();
+        environment.DefineFunction("stashValue", StashLuaValue);
+        environment.DefineFunction("restoreValue", RestoreLuaValue);
 
-        return components.ToArray();
+        PopulateComponents(template, components, lua);
 
-        static void PopulateComponents(string template, List<TemplateComponent> components) {
+        return new Template(components.ToArray(), lua, environment);
+
+        static void PopulateComponents(string template, List<TemplateComponent> components, NeoLua.Lua lua) {
             Match? lastMatch = null;
 
             while (true) {
@@ -140,18 +164,18 @@ public static class InfoCustom {
                 } else if (currMatch == nextLuaMatch) {
                     string code = currMatch.Groups[1].Value;
 
-                    var ctx = LuaContext.Compile(code, "CustomInfo");
-                    if (ctx.Failure) {
-                        components.Add(new TextComponent($"<Invalid Lua code: {ctx.Error}>"));
+                    var chunkResult = LuaContext.CompileChunk(lua, code, "CustomInfo");
+                    if (chunkResult.Failure) {
+                        components.Add(new TextComponent($"<Invalid Lua code: {chunkResult.Error}>"));
                     } else {
-                        components.Add(new LuaComponent(ctx));
+                        components.Add(new LuaComponent(chunkResult));
                     }
                 } else if (currMatch == nextTableMatch) {
                     var table = new TableComponent();
                     components.Add(table);
 
                     int startComponentCount = components.Count + 1;
-                    PopulateComponents(nextTableMatch.Groups[1].Value, components);
+                    PopulateComponents(nextTableMatch.Groups[1].Value, components, lua);
                     table.ComponentCount = components.Count - startComponentCount;
                 }
             }
@@ -171,12 +195,12 @@ public static class InfoCustom {
 
     /// Evaluates a parsed template into a string for the current values
     [PublicAPI]
-    public static string EvaluateTemplate(TemplateComponent[] components, int decimals, bool forceAllowCodeExecution = false) {
+    public static string EvaluateTemplate(Template template, int decimals, bool forceAllowCodeExecution = false) {
         infoBuilder.Clear();
 
         // Format components
-        for (int i = 0; i < components.Length; i++) {
-            switch (components[i]) {
+        for (int i = 0; i < template.Components.Length; i++) {
+            switch (template.Components[i]) {
                 case TextComponent text: {
                     infoBuilder.Append(text.Text);
                     continue;
@@ -234,7 +258,7 @@ public static class InfoCustom {
                         infoBuilder.Append("<Cannot safely evaluate Lua code during EnforceLegal>");
                     }
 
-                    var result = lua.Context.Execute();
+                    var result = LuaContext.ExecuteChunk(lua.Chunk, template.Environment);
                     if (result.Failure) {
                         infoBuilder.Append($"<Lua error: {result.Error.Message}>");
                     } else {
@@ -265,7 +289,7 @@ public static class InfoCustom {
                     // Collect data
                     int endIdx = i + table.ComponentCount;
                     for (; i <= endIdx; i++) {
-                        switch (components[i + 1]) {
+                        switch (template.Components[i + 1]) {
                             case TextComponent text: {
                                 resultBuilder.Append(text.Text);
                                 continue;
@@ -275,7 +299,7 @@ public static class InfoCustom {
                                     resultBuilder.Append("<Cannot safely evaluate Lua code during EnforceLegal>");
                                 }
 
-                                var result = lua.Context.Execute();
+                                var result = LuaContext.ExecuteChunk(lua.Chunk, template.Environment);
                                 if (result.Failure) {
                                     resultBuilder.Append($"<Lua error: {result.Error.Message}>");
                                 } else {
@@ -502,6 +526,27 @@ public static class InfoCustom {
         };
     }
 
+    private static Dictionary<string, object> currValueStorage = new(), nextValueStorage = new();
+
+    /// Stashes the value under the specified key, to be restored on the next frame
+    private static void StashLuaValue(string key, object? value) {
+        if (value == null) {
+            return;
+        }
+
+        nextValueStorage[key] = value;
+    }
+    /// Restores a stashed value of the previous frame. Returns <c>null</c> if there is no value available
+    private static object? RestoreLuaValue(string key) {
+        return currValueStorage.GetValueOrDefault(key);
+    }
+
+    internal static void AdvanceValueStorage() {
+        // Swap for next frame
+        (currValueStorage, nextValueStorage) = (nextValueStorage, currValueStorage);
+        nextValueStorage.Clear();
+    }
+
     #endregion
 
 #if DEBUG || PROFILE
@@ -519,7 +564,7 @@ public static class InfoCustom {
         const string luaTemplate =   """
                                      Float position: [[if not player then return 0 end; return math.floor((player.PositionRemainder.X*360+0.5)%360)]]/360, [[if not player then return 0 end; return math.floor(((player.Position.X+player.PositionRemainder.X)*360+0.5)%540)]]/540, [[if not player then return 0 end; oldfloat = float; subp = player.PositionRemainder.X*360%1;if subp < 0.5 then float = math.floor((subp)*3000000) else float = math.floor((subp-1)*3000000) end; return float]]/3mil
                                      Air manip (65s): x - [[if not player then return 0 end; if level.Paused then return manip65 end; oldmanip65 = manip65; pos5 = math.floor((player.PositionRemainder.X*360+0.5)%5); manip65 = math.floor(((player.Position.x+player.PositionRemainder.X)*360%540*5-21*pos5+0.5)%108); val = manip65.."/108 (+"..pos5.."/5)"; return val]], Δx - [[if not player or not oldmanip65 then return 0 end; ans = manip65 - oldmanip65; return (ans-54)%108-54]] (+[[if not player then return 0 end; return math.floor((player.Speed.x/60%1*360+0.5)%5)]]/5)
-                                     Float speed: [[if not player then return 0 end; subp = player.Speed.x/60%1; return math.floor(subp*360+0.5)]]/360, [[if not player then return 0 end; subp = player.Speed.x/60%1*360%1;if subp < 0.5 then return math.floor((subp)*3000000) else return math.floor((subp-1)*3000000) end]]/3mil
+                                     Float speed: [[if not player then return 0 end; subp = player.Speed.X/60%1; return math.floor(subp*360+0.5)]]/360, [[if not player then return 0 end; subp = player.Speed.X/60%1*360%1;if subp < 0.5 then return math.floor((subp)*3000000) else return math.floor((subp-1)*3000000) end]]/3mil
                                      Float velocity: [[if not player or not oldfloat then return 0 end; return float - oldfloat]]/3mil
                                      """;
         const string bothTemplate = $"""

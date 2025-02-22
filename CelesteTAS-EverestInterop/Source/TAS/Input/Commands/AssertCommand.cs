@@ -31,7 +31,7 @@ public static class AssertCommand {
         EndWith,   NotEndWith,
     }
 
-    private readonly record struct AssertData(string Expected, InfoCustom.TemplateComponent[] ActualComponents, AssertCondition Condition, string? FailureMessage);
+    private readonly record struct AssertData(string Expected, InfoCustom.Template ActualTemplate, AssertCondition Condition, string? FailureMessage);
 
     private static readonly Dictionary<int, List<AssertData>> asserts = new();
 
@@ -60,15 +60,15 @@ public static class AssertCommand {
                 AbortTas($"{prefix}Lack of actual value");
             }
 
-            var components = InfoCustom.ParseTemplate(args[2]);
-            asserts.AddToKey(Manager.Controller.CurrentParsingFrame, new AssertData(args[1], components, condition, args.Length >= 4 ? args[3] : null));
+            var template = InfoCustom.ParseTemplate(args[2]);
+            asserts.AddToKey(Manager.Controller.CurrentParsingFrame, new AssertData(args[1], template, condition, args.Length >= 4 ? args[3] : null));
         } else {
             if (!asserts.TryGetValue(Manager.Controller.CurrentFrameInTas, out var currentAssets)) {
                 return;
             }
 
             foreach (var assert in currentAssets) {
-                string actual = InfoCustom.EvaluateTemplate(assert.ActualComponents, 0, forceAllowCodeExecution: true);
+                string actual = InfoCustom.EvaluateTemplate(assert.ActualTemplate, 0, forceAllowCodeExecution: true);
 
                 switch (assert.Condition) {
                     case AssertCondition.Equal: {

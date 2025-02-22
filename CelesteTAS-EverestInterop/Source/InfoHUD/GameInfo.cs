@@ -1,7 +1,6 @@
 using Celeste;
 using Celeste.Mod;
 using JetBrains.Annotations;
-using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication;
 using StudioCommunication.Util;
@@ -182,9 +181,10 @@ public static class GameInfo {
         sessionData.Reset();
 
         if (customInfoTemplateHash != TasSettings.InfoCustomTemplate.GetHashCode()) {
-            customInfoComponents.Reset();
+            customInfoTemplate.Reset();
         }
 
+        InfoCustom.AdvanceValueStorage();
         customInfo.Reset();
         customInfoExact.Reset();
         customInfoExactForceAllowCodeExecution.Reset();
@@ -224,7 +224,7 @@ public static class GameInfo {
     private static LazyValue<(string RoomName, string ChapterTime)?> sessionData = new(QuerySessionData);
 
     private static int customInfoTemplateHash = int.MaxValue;
-    private static LazyValue<InfoCustom.TemplateComponent[]> customInfoComponents = new(QueryCustomInfoComponents);
+    private static LazyValue<InfoCustom.Template> customInfoTemplate = new(ParseCustomInfoTemplate);
 
     private static LazyValue<string> customInfo = new(QueryDisplayCustomInfo);
     private static LazyValue<string> customInfoExact = new(QueryExactCustomInfo);
@@ -385,14 +385,14 @@ public static class GameInfo {
         return null;
     }
 
-    private static InfoCustom.TemplateComponent[] QueryCustomInfoComponents() {
+    private static InfoCustom.Template ParseCustomInfoTemplate() {
         customInfoTemplateHash = TasSettings.InfoCustomTemplate.GetHashCode();
         return InfoCustom.ParseTemplate(TasSettings.InfoCustomTemplate);
     }
 
-    private static string QueryDisplayCustomInfo() => InfoCustom.EvaluateTemplate(customInfoComponents.Value, TasSettings.CustomInfoDecimals);
-    private static string QueryExactCustomInfo() => InfoCustom.EvaluateTemplate(customInfoComponents.Value, GameSettings.MaxDecimals);
-    private static string QueryExactCustomInfoForceAllowCodeExecution() => InfoCustom.EvaluateTemplate(customInfoComponents.Value, GameSettings.MaxDecimals, forceAllowCodeExecution: true);
+    private static string QueryDisplayCustomInfo() => InfoCustom.EvaluateTemplate(customInfoTemplate.Value, TasSettings.CustomInfoDecimals);
+    private static string QueryExactCustomInfo() => InfoCustom.EvaluateTemplate(customInfoTemplate.Value, GameSettings.MaxDecimals);
+    private static string QueryExactCustomInfoForceAllowCodeExecution() => InfoCustom.EvaluateTemplate(customInfoTemplate.Value, GameSettings.MaxDecimals, forceAllowCodeExecution: true);
 
     private const string PositionPrefix      = "Pos:   ";
     private const string SpeedPrefix         = "Speed: ";

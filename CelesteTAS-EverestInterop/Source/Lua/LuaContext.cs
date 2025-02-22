@@ -18,8 +18,6 @@ namespace TAS.Lua;
 /// Compiled Lua code which can be executed
 internal readonly struct LuaContext : IDisposable {
 
-    private static string EnvironmentCode = null!;
-
     [Load]
     private static void Load() {
         // Remove '.IsPublic' check to allow accessing non-public members
@@ -29,11 +27,6 @@ internal readonly struct LuaContext : IDisposable {
         typeof(NeoLua.LuaType)
             .GetMethodInfo("IsCallableMethod")!
             .OnHook(bool (Func<MethodInfo, bool, bool> _, MethodInfo methodInfo, bool searchStatic) => (methodInfo.CallingConvention & CallingConventions.VarArgs) == 0 && methodInfo.IsStatic == searchStatic);
-
-        using var envStream = typeof(CelesteTasModule).Assembly.GetManifestResourceStream("environment.lua")!;
-        using var envReader = new StreamReader(envStream);
-
-        EnvironmentCode = envReader.ReadToEnd();
     }
 
     private readonly NeoLua.Lua lua;
@@ -43,6 +36,7 @@ internal readonly struct LuaContext : IDisposable {
     private LuaContext(NeoLua.Lua lua, NeoLua.LuaChunk chunk, NeoLua.LuaTable environment) {
         this.lua = lua;
         this.chunk = chunk;
+
         this.environment = environment;
     }
     public void Dispose() {
@@ -50,29 +44,44 @@ internal readonly struct LuaContext : IDisposable {
     }
 
     /// Compiles Lua text code into an executable context
-    public static Result<LuaContext, string> Compile(string code, string? name = null) {
-        try {
-            var lua = new NeoLua.Lua();
-            var chunk = lua.CompileChunk(EnvironmentCode + code, name ?? "CelesteTAS_LuaContext", new NeoLua.LuaCompileOptions { DebugEngine = NeoLua.LuaExceptionDebugger.Default } );
-            var environment = lua.CreateEnvironment();
+    public static Result<LuaContext, string> Compile(string code, string name = "CelesteTAS_LuaContext") {
+        var lua = new NeoLua.Lua();
+        var chunkResult = CompileChunk(lua, code, name);
+        if (chunkResult.Failure) {
+            return Result<LuaContext, string>.Fail(chunkResult.Error);
+        }
+        var environment = lua.CreateEnvironment<LuaHelperEnvironment>();
 
-            return Result<LuaContext, string>.Ok(new LuaContext(lua, chunk, environment));
+        return Result<LuaContext, string>.Ok(new LuaContext(lua, chunkResult, environment));
+    }
+
+    /// Compiles Lua text code into an executable chunk
+    public static Result<NeoLua.LuaChunk, string> CompileChunk(NeoLua.Lua lua, string code, string name = "CelesteTAS_LuaContext") {
+        try {
+            var chunk = lua.CompileChunk(code, name, new NeoLua.LuaCompileOptions { DebugEngine = NeoLua.LuaExceptionDebugger.Default } );
+            return Result<NeoLua.LuaChunk, string>.Ok(chunk);
         } catch (NeoLua.LuaException ex) {
             ex.LogException("Lua compilation error");
-            return Result<LuaContext, string>.Fail(ex.Message); // Stacktrace isn't useful for the user
+            return Result<NeoLua.LuaChunk, string>.Fail(ex.Message); // Stacktrace isn't useful for the user
         } catch (Exception ex) {
-            return Result<LuaContext, string>.Fail($"Unexpected error: {ex.Message}");
+            return Result<NeoLua.LuaChunk, string>.Fail($"Unexpected error: {ex.Message}");
         }
     }
 
     /// Executes the compiled Lua code
-    public Result<IEnumerable<object?>, (string Message, string? Stacktrace)> Execute() {
+    public Result<IEnumerable<object?>, (string Message, string? Stacktrace)> Execute() => ExecuteChunk(chunk, environment);
+
+    /// Executes the compiled Lua code
+    public static Result<IEnumerable<object?>, (string Message, string? Stacktrace)> ExecuteChunk(NeoLua.LuaChunk chunk, NeoLua.LuaTable environment) {
         try {
             var result = chunk.Run(environment, null);
-            return Result<IEnumerable<object?>, (string Message, string? Stacktrace)>.Ok(
-                result.Values
-                    // Level is an IEnumerable<Entity>, but we don't want to format it like that
-                .SelectMany(value => value is not Level && value is IEnumerable<object?> enumerable ? enumerable : [value]));
+
+            // Flatten returned collection
+            if (result.Count == 1 && result[0] != null && (result[0].GetType().IsArray || result[0].GetType().IsAssignableTo(typeof(IList)))) {
+                return Result<IEnumerable<object?>, (string Message, string? Stacktrace)>.Ok((IEnumerable<object?>) result[0]);
+            }
+
+            return Result<IEnumerable<object?>, (string Message, string? Stacktrace)>.Ok(result.Values);
         } catch (NeoLua.LuaException ex) {
             ex.LogException("Lua execution error");
             return Result<IEnumerable<object?>, (string Message, string? Stacktrace)>.Fail((ex.Message, ex.StackTrace));
