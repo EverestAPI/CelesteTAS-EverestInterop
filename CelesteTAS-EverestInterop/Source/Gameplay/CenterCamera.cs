@@ -18,7 +18,6 @@ internal static class CenterCamera {
     private static void Load() {
         On.Monocle.Engine.RenderCore += On_Engine_RenderCore;
         On.Monocle.Commands.Render += On_Commands_Render;
-        On.Celeste.Level.Render += On_Level_Render;
 
 #if DEBUG
         cameraOffset = Engine.Instance.GetDynamicDataInstance().Get<Vector2?>("CelesteTAS_CameraOffset") ?? Vector2.Zero;
@@ -31,7 +30,6 @@ internal static class CenterCamera {
     private static void Unload() {
         On.Monocle.Engine.RenderCore -= On_Engine_RenderCore;
         On.Monocle.Commands.Render -= On_Commands_Render;
-        On.Celeste.Level.Render -= On_Level_Render;
 
 #if DEBUG
         Engine.Instance.GetDynamicDataInstance().Set("CelesteTAS_CameraOffset", cameraOffset);
@@ -45,21 +43,10 @@ internal static class CenterCamera {
         orig(self);
         RestoreCamera();
     }
-
-    // Commands check which entity was clicked, which is dependant on the current camera
     private static void On_Commands_Render(On.Monocle.Commands.orig_Render orig, Monocle.Commands self) {
         AdjustCamera();
         orig(self);
         RestoreCamera();
-    }
-
-    private static void On_Level_Render(On.Celeste.Level.orig_Render orig, Level self) {
-        orig(self);
-
-        // Show cursor for dragging camera
-        if (TasSettings.CenterCamera && !Hotkeys.InfoHud.Check && MouseInput.Right.Check) {
-            InfoMouse.DrawCursor(MouseInput.Position);
-        }
     }
 
     // Disable "Zoom Level" Extended Variant while using center camera, to avoid it causing issues with rendering

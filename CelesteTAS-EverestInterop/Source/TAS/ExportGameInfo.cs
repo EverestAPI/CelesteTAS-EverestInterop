@@ -122,25 +122,26 @@ public static class ExportGameInfo {
                 return;
             }
 
-            string time = GameInfo.GetChapterTime(level);
+            string time = InfoHUD.GameInfo.FormatTime(level.Session.Time);
             string pos = player.ToSimplePositionString(GetDecimals(TasSettings.PositionDecimals, GameSettings.MaxDecimals));
             string speed = player.Speed.ToSimpleString(GetDecimals(TasSettings.SpeedDecimals, GameSettings.MaxDecimals));
-            string statuses = GameInfo.GetStatuses(level, player);
-            GameInfo.GetAdjustedLiftBoost(player, out string liftBoost);
-            if (liftBoost.IsNotEmpty()) {
-                if (statuses.IsEmpty()) {
-                    statuses = liftBoost;
-                } else {
-                    statuses += $"\t{liftBoost}";
-                }
-            }
+            // FIXME
+            // string statuses = GameInfo.GetStatuses(level, player);
+            // GameInfo.GetAdjustedLiftBoost(player, out string liftBoost);
+            // if (liftBoost.IsNotEmpty()) {
+            //     if (statuses.IsEmpty()) {
+            //         statuses = liftBoost;
+            //     } else {
+            //         statuses += $"\t{liftBoost}";
+            //     }
+            // }
+            //
+            // statuses += $"\t[{level.Session.Level}]";
 
-            statuses += $"\t[{level.Session.Level}]";
-
-            output = string.Join("\t",
-                inputFrame.Line + 1, $"{controller.CurrentFrameInInput}/{inputFrame}", controller.CurrentFrameInTas, time, pos, speed,
-                PlayerStates.GetCurrentStateName(player),
-                statuses);
+            // output = string.Join("\t",
+            //     inputFrame.Line + 1, $"{controller.CurrentFrameInInput}/{inputFrame}", controller.CurrentFrameInTas, time, pos, speed,
+            //     PlayerStates.GetCurrentStateName(player),
+            //     statuses);
 
             foreach (string typeName in trackedEntities.Keys) {
                 List<Entity> entities = trackedEntities[typeName].Invoke();
@@ -149,8 +150,8 @@ public static class ExportGameInfo {
                 }
 
                 foreach (Entity entity in entities) {
-                    output +=
-                        $"\t{typeName}: {entity.ToSimplePositionString(GetDecimals(TasSettings.PositionDecimals, GameSettings.MaxDecimals))}";
+                    // output +=
+                    //     $"\t{typeName}: {entity.ToSimplePositionString(GetDecimals(TasSettings.PositionDecimals, GameSettings.MaxDecimals))}";
                 }
             }
 
@@ -177,7 +178,7 @@ public static class ExportGameInfo {
                 sceneName);
         }
 
-        streamWriter?.WriteLine(output);
+        // streamWriter?.WriteLine(output);
         streamWriter?.Flush();
     }
 

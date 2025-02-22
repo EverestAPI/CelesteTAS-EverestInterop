@@ -22,6 +22,7 @@ using InfoMouse = TAS.InfoHUD.InfoMouse;
 
 namespace TAS;
 
+[Obsolete("Use TAS.InfoHUD.GameInfo", error: true)]
 public static class GameInfo {
     private static readonly GetDelegate<Level, float> LevelUnpauseTimer = FastReflection.CreateGetDelegate<Level, float>("unpauseTimer");
 
@@ -134,25 +135,25 @@ public static class GameInfo {
     private static int FramesPerGameSecond => (int) Math.Round(1 / Engine.RawDeltaTime / Engine.TimeRateB);
     private static int FramesPerRealSecond => (int) Math.Round(1 / Engine.RawDeltaTime);
 
-    [Load]
-    private static void Load() {
-        On.Monocle.Engine.Update += EngineOnUpdate;
-        On.Monocle.Scene.AfterUpdate += SceneOnAfterUpdate;
-        Everest.Events.Level.OnTransitionTo += LevelOnOnTransitionTo;
-        On.Celeste.Level.Update += LevelOnUpdate;
-        typeof(Player)
-            .GetMethodInfo(nameof(Player.DashCoroutine))!
-            .GetStateMachineTarget()!
-            .IlHook(PlayerOnDashCoroutine);
-    }
-
-    [Unload]
-    private static void Unload() {
-        On.Monocle.Engine.Update -= EngineOnUpdate;
-        On.Monocle.Scene.AfterUpdate -= SceneOnAfterUpdate;
-        Everest.Events.Level.OnTransitionTo -= LevelOnOnTransitionTo;
-        On.Celeste.Level.Update -= LevelOnUpdate;
-    }
+    // [Load]
+    // private static void Load() {
+    //     On.Monocle.Engine.Update += EngineOnUpdate;
+    //     On.Monocle.Scene.AfterUpdate += SceneOnAfterUpdate;
+    //     Everest.Events.Level.OnTransitionTo += LevelOnOnTransitionTo;
+    //     On.Celeste.Level.Update += LevelOnUpdate;
+    //     typeof(Player)
+    //         .GetMethodInfo(nameof(Player.DashCoroutine))!
+    //         .GetStateMachineTarget()!
+    //         .IlHook(PlayerOnDashCoroutine);
+    // }
+    //
+    // [Unload]
+    // private static void Unload() {
+    //     On.Monocle.Engine.Update -= EngineOnUpdate;
+    //     On.Monocle.Scene.AfterUpdate -= SceneOnAfterUpdate;
+    //     Everest.Events.Level.OnTransitionTo -= LevelOnOnTransitionTo;
+    //     On.Celeste.Level.Update -= LevelOnUpdate;
+    // }
 
     private static void PlayerOnDashCoroutine(ILContext il) {
         ILCursor ilCursor = new(il);

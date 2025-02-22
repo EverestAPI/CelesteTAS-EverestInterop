@@ -46,7 +46,7 @@ internal static class MetadataCommands {
     [DisableRun]
     private static void UpdateFileTime() {
         if (TasStartInfo != null && SaveData.Instance != null && !Manager.Controller.CanPlayback) {
-            UpdateAllMetadata("FileTime", _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartInfo.Value.FileTimeTicks));
+            UpdateAllMetadata("FileTime", _ => InfoHUD.GameInfo.FormatTime(SaveData.Instance.Time - TasStartInfo.Value.FileTimeTicks));
         }
 
         TasStartInfo = null;
@@ -57,7 +57,7 @@ internal static class MetadataCommands {
             return;
         }
 
-        UpdateAllMetadata("ChapterTime", _ => GameInfo.GetChapterTime(level));
+        UpdateAllMetadata("ChapterTime", _ => InfoHUD.GameInfo.FormatTime(level.Session.Time));
     }
 
     public static void UpdateRecordCount(InputController inputController) {
@@ -94,7 +94,7 @@ internal static class MetadataCommands {
         }
 
         UpdateAllMetadata("MidwayFileTime",
-            _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartInfo.Value.FileTimeTicks),
+            _ => InfoHUD.GameInfo.FormatTime(SaveData.Instance.Time - TasStartInfo.Value.FileTimeTicks),
             command => Manager.Controller.CurrentCommands.Contains(command));
     }
 
@@ -105,7 +105,7 @@ internal static class MetadataCommands {
         }
 
         UpdateAllMetadata("MidwayChapterTime",
-            _ => GameInfo.GetChapterTime(level),
+            _ => InfoHUD.GameInfo.FormatTime(level.Session.Time),
             command => Manager.Controller.CurrentCommands.Contains(command));
     }
 

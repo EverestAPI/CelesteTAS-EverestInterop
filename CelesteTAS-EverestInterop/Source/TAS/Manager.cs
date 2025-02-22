@@ -341,8 +341,8 @@ public static class Manager {
             tasStates = 0,
             // TODO: Avoid string.Join and just iterate info blocks
             GameInfo = string.Join("\n\n", InfoHUD.GameInfo.Query(InfoHUD.GameInfo.Target.Studio)),
-            LevelName = GameInfo.LevelName,
-            ChapterTime = GameInfo.ChapterTime,
+            LevelName = InfoHUD.GameInfo.RoomName,
+            ChapterTime = InfoHUD.GameInfo.ChapterTime,
             ShowSubpixelIndicator = TasSettings.InfoSubpixelIndicator && Engine.Scene is Level or Emulator,
         };
 

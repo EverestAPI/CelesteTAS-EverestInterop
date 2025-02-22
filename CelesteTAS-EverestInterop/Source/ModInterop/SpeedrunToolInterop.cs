@@ -39,6 +39,8 @@ public static class SpeedrunToolInterop {
     private static bool disallowUnsafeInput;
     private static Random? auraRandom;
     private static bool betterInvincible = false;
+    private static SubpixelPosition lastPosition;
+    private static int transitionFrames;
 
     [Initialize]
     private static void Initialize() {
@@ -93,6 +95,8 @@ public static class SpeedrunToolInterop {
             disallowUnsafeInput = SafeCommand.DisallowUnsafeInput;
             auraRandom = DesyncFixer.AuraHelperSharedRandom.DeepCloneShared();
             betterInvincible = Manager.Running && BetterInvincible.Invincible;
+            lastPosition = InfoHUD.GameInfo.lastPosition;
+            transitionFrames = InfoHUD.GameInfo.transitionFrames;
         }
 
         static void OnLoad(Dictionary<Type, Dictionary<string, object>> savedValues, Level level) {
@@ -117,6 +121,8 @@ public static class SpeedrunToolInterop {
             SafeCommand.DisallowUnsafeInput = disallowUnsafeInput;
             DesyncFixer.AuraHelperSharedRandom = auraRandom!.DeepCloneShared();
             BetterInvincible.Invincible = Manager.Running && betterInvincible;
+            InfoHUD.GameInfo.lastPosition = lastPosition;
+            InfoHUD.GameInfo.transitionFrames = transitionFrames;
         }
 
         static void OnClear() {

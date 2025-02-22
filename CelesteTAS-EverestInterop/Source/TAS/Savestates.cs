@@ -16,14 +16,6 @@ namespace TAS;
 
 /// Handles saving / loading game state with SpeedrunTool
 public static class Savestates {
-    // These fields can't just be pulled from the current frame and therefore need to be saved too
-    private static readonly Dictionary<FieldInfo, object?> SavedGameInfo = new() {
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPos)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastDiff)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerPos)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerDiff)), null},
-    };
-
     private static bool savedByBreakpoint;
     private static int savedChecksum;
     private static InputController? savedController;
@@ -123,7 +115,6 @@ public static class Savestates {
         savedByBreakpoint = byBreakpoint;
         savedChecksum = Manager.Controller.CalcChecksum(Manager.Controller.CurrentFrameInTas);
         savedController = Manager.Controller.Clone();
-        SaveGameInfo();
         SetTasState();
     }
 
@@ -145,7 +136,6 @@ public static class Savestates {
                     StateManager.Instance.LoadState();
                     Manager.Controller.CopyProgressFrom(savedController);
 
-                    LoadGameInfo();
                     UpdateStudio();
                     SetTasState();
                 }
@@ -157,30 +147,11 @@ public static class Savestates {
 
     public static void ClearState() {
         StateManager.Instance.ClearState();
-        ClearGameInfo();
         savedByBreakpoint = false;
         savedChecksum = -1;
         savedController = null;
 
         UpdateStudio();
-    }
-
-    private static void SaveGameInfo() {
-        foreach (FieldInfo fieldInfo in SavedGameInfo.Keys.ToList()) {
-            SavedGameInfo[fieldInfo] = fieldInfo.GetValue(null);
-        }
-    }
-
-    private static void LoadGameInfo() {
-        foreach (FieldInfo fieldInfo in SavedGameInfo.Keys.ToList()) {
-            fieldInfo.SetValue(null, SavedGameInfo[fieldInfo]);
-        }
-    }
-
-    private static void ClearGameInfo() {
-        foreach (FieldInfo fieldInfo in SavedGameInfo.Keys.ToList()) {
-            SavedGameInfo[fieldInfo] = null;
-        }
     }
 
     private static void SetTasState() {
@@ -192,7 +163,6 @@ public static class Savestates {
     }
 
     private static void UpdateStudio() {
-        GameInfo.Update();
         Manager.SendStudioState();
     }
 }

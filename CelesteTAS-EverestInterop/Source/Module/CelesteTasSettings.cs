@@ -315,7 +315,6 @@ public class CelesteTasSettings : EverestModuleSettings {
         get => StudioShared.PositionDecimals;
         set {
             StudioShared.PositionDecimals = Calc.Clamp(value, GameSettings.MinDecimals, GameSettings.MaxDecimals);
-            GameInfo.Update();
             SyncSettings();
         }
     }
@@ -324,7 +323,6 @@ public class CelesteTasSettings : EverestModuleSettings {
         get => StudioShared.SpeedDecimals;
         set {
             StudioShared.SpeedDecimals = Calc.Clamp(value, GameSettings.MinDecimals, GameSettings.MaxDecimals);
-            GameInfo.Update();
             SyncSettings();
         }
     }
@@ -333,7 +331,6 @@ public class CelesteTasSettings : EverestModuleSettings {
         get => StudioShared.VelocityDecimals;
         set {
             StudioShared.VelocityDecimals = Calc.Clamp(value, GameSettings.MinDecimals, GameSettings.MaxDecimals);
-            GameInfo.Update();
             SyncSettings();
         }
     }
@@ -342,7 +339,6 @@ public class CelesteTasSettings : EverestModuleSettings {
         get => StudioShared.AngleDecimals;
         set {
             StudioShared.AngleDecimals = Calc.Clamp(value, GameSettings.MinDecimals, GameSettings.MaxDecimals);
-            GameInfo.Update();
             SyncSettings();
         }
     }
@@ -351,7 +347,6 @@ public class CelesteTasSettings : EverestModuleSettings {
         get => StudioShared.CustomInfoDecimals;
         set {
             StudioShared.CustomInfoDecimals = Calc.Clamp(value, GameSettings.MinDecimals, GameSettings.MaxDecimals);
-            GameInfo.Update();
             SyncSettings();
         }
     }
@@ -360,7 +355,6 @@ public class CelesteTasSettings : EverestModuleSettings {
         get => StudioShared.WatchEntityDecimals;
         set {
             StudioShared.WatchEntityDecimals = Calc.Clamp(value, GameSettings.MinDecimals, GameSettings.MaxDecimals);
-            GameInfo.Update();
             SyncSettings();
         }
     }
@@ -369,7 +363,6 @@ public class CelesteTasSettings : EverestModuleSettings {
         get => StudioShared.SubpixelIndicatorDecimals;
         set {
             StudioShared.SubpixelIndicatorDecimals = Calc.Clamp(value, 1, GameSettings.MaxDecimals);
-            GameInfo.Update();
             SyncSettings();
         }
     }
@@ -378,7 +371,6 @@ public class CelesteTasSettings : EverestModuleSettings {
         get => StudioShared.SpeedUnit;
         set {
             StudioShared.SpeedUnit = value;
-            GameInfo.Update();
             SyncSettings();
         }
     }
@@ -386,7 +378,6 @@ public class CelesteTasSettings : EverestModuleSettings {
         get => StudioShared.VelocityUnit;
         set {
             StudioShared.VelocityUnit = value;
-            GameInfo.Update();
             SyncSettings();
         }
     }

@@ -60,14 +60,12 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 LogVerbose($"Received message SetCustomInfoTemplate: '{customInfoTemplate}'");
 
                 TasSettings.InfoCustomTemplate = customInfoTemplate;
-                GameInfo.Update();
                 break;
 
             case MessageID.ClearWatchEntityInfo:
                 LogVerbose("Received message ClearWatchEntityInfo");
 
                 InfoWatchEntity.ClearWatchEntities();
-                GameInfo.Update();
                 break;
 
             case MessageID.RecordTAS:

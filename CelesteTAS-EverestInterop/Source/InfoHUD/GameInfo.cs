@@ -20,6 +20,9 @@ namespace TAS.InfoHUD;
 public static class GameInfo {
     public enum Target { InGameHud, Studio, ExactInfo }
 
+    internal static string RoomName => sessionData.Value is { } session ? session.RoomName : string.Empty;
+    internal static string ChapterTime => sessionData.Value is { } session ? session.ChapterTime : string.Empty;
+
     /// Fetches the info for the current frame
     /// May **not** be called during scene.Update! Only before or after Update.
     [PublicAPI]
@@ -230,8 +233,8 @@ public static class GameInfo {
     private static LazyValue<string> customInfoExactForceAllowCodeExecution = new(QueryExactCustomInfoForceAllowCodeExecution);
 
     // Data which needs to be tracked, because it'll be used in the next frame
-    private static SubpixelPosition preUpdatePosition, lastPosition;
-    private static int transitionFrames;
+    internal static SubpixelPosition preUpdatePosition, lastPosition;
+    internal static int transitionFrames;
 
     // Kept to reduce allocations
     private static readonly StringBuilder builder = new();
@@ -494,19 +497,19 @@ public static class GameInfo {
 
         return name;
     }
-    private static string FormatTime(long ticks) {
+    public static string FormatTime(long ticks) {
         var timeSpan = TimeSpan.FromTicks(ticks);
         long frames = ticks / Engine.RawDeltaTime.SecondsToTicks();
 
         return $"{timeSpan.ShortGameplayFormat()}({frames})";
     }
 
-    private static float ConvertSpeedUnit(float speed, SpeedUnit unit) {
+    public static float ConvertSpeedUnit(float speed, SpeedUnit unit) {
         return unit == SpeedUnit.PixelPerSecond
             ? speed * Engine.TimeRateB
             : speed * Engine.RawDeltaTime * Engine.TimeRateB;
     }
-    private static Vector2 ConvertSpeedUnit(Vector2 speed, SpeedUnit unit) {
+    public static Vector2 ConvertSpeedUnit(Vector2 speed, SpeedUnit unit) {
         return unit == SpeedUnit.PixelPerSecond
             ? speed * Engine.TimeRateB
             : speed * Engine.RawDeltaTime * Engine.TimeRateB;
