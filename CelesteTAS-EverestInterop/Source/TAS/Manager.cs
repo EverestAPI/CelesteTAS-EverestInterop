@@ -12,6 +12,7 @@ using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Input;
 using TAS.Input.Commands;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -218,6 +219,13 @@ public static class Manager {
             return;
         }
 
+        if (TASRecorderInterop.IsRecording) {
+            // Force recording at 1x playback
+            NextState = State.Running;
+            PlaybackSpeed = 1.0f;
+            return;
+        }
+
         switch (CurrState) {
             case State.Running:
                 if (Hotkeys.PauseResume.Pressed || Hotkeys.FrameAdvance.Pressed) {
@@ -305,6 +313,10 @@ public static class Manager {
 
     /// Determine if current TAS file is a draft
     private static bool IsDraft() {
+        if (TASRecorderInterop.IsRecording) {
+            return false;
+        }
+
         // Require any FileTime or ChapterTime, alternatively MidwayFileTime or MidwayChapterTime at the end for the TAS to be counted as finished
         return Controller.Commands.Values
             .SelectMany(commands => commands)
