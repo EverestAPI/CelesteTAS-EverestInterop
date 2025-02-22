@@ -181,7 +181,7 @@ public static class InfoHud {
 
         string FormatInputFrame(InputFrame inputFrame) {
             return
-                $"{(inputFrame.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - inputFrame.Frames.ToString().Length)}{inputFrame}";
+                $"{(inputFrame.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - inputFrame.Frames.ToString().Length)}{inputFrame.ToString().TrimStart()}";
         }
 
         if (previous != null) {

@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using TAS.Gameplay;
+using TAS.Input;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
@@ -32,14 +33,9 @@ public static class GameInfo {
 #endif
         switch (target) {
             case Target.InGameHud: {
-                yield return TAS.GameInfo.HudInfo;
-                yield return "===";
-
-                // TODO:
-                // if (TasSettings.InfoTasInput) {
-                //     WriteTasInput(stringBuilder);
-                // }
-
+                if (TasSettings.InfoTasInput && tasInput.Value is { } input && !string.IsNullOrEmpty(input)) {
+                    yield return input;
+                }
                 if (TasSettings.InfoGame && levelStatus.Value is { } status && sessionData.Value is { } session) {
                     yield return $"{status}\n[{session.RoomName}] Timer: {session.ChapterTime}";
                 }
@@ -66,7 +62,7 @@ public static class GameInfo {
             }
 
             case Target.Studio: {
-                if (TasSettings.InfoGame && levelStatus.Value is { } status && sessionData.Value is { } session) {
+                if (levelStatus.Value is { } status && sessionData.Value is { } session) {
                     yield return $"{status}\n[{session.RoomName}] Timer: {session.ChapterTime}";
                 }
                 if (InfoMouse.Info.Value is { } infoMouse) {
@@ -178,6 +174,7 @@ public static class GameInfo {
             levelStatusExact.Reset();
         }
 
+        tasInput.Reset();
         sessionData.Reset();
 
         if (customInfoTemplateHash != TasSettings.InfoCustomTemplate.GetHashCode()) {
@@ -219,6 +216,8 @@ public static class GameInfo {
     }
 
     // Caches of calculations for the current frame
+    private static LazyValue<string?> tasInput = new(QueryTasInput);
+
     private static LazyValue<string?> levelStatus = new(QueryDisplayLevelStatus);
     private static LazyValue<string?> levelStatusExact = new(QueryExactLevelStatus);
     private static LazyValue<(string RoomName, string ChapterTime)?> sessionData = new(QuerySessionData);
@@ -236,6 +235,52 @@ public static class GameInfo {
 
     // Kept to reduce allocations
     private static readonly StringBuilder builder = new();
+
+    private static string? QueryTasInput() {
+        var controller = Manager.Controller;
+        var inputs = controller.Inputs;
+
+        if (!Manager.Running || controller.CurrentFrameInTas < 0 || controller.CurrentFrameInTas >= inputs.Count) {
+            return null;
+        }
+
+        // The current input is the next executed input, but we want the previously executed input
+        var current = controller.Current;
+        if (controller.CurrentFrameInTas >= 1 && current != controller.Previous) {
+            current = controller.Previous!;
+        }
+
+        var previous = current.Previous;
+        var next = current.Next;
+
+        // Align all visible inputs
+        int maxLine = Math.Max(current.Line, Math.Max(previous?.Line ?? 0, next?.Line ?? 0)) + 1;
+        int maxLineLen = maxLine.Digits();
+
+        int maxFrames = Math.Max(current.Frames, Math.Max(previous?.Frames ?? 0, next?.Frames ?? 0));
+        int maxFramesLen = maxFrames.Digits();
+
+        builder.Clear();
+
+        if (previous != null) {
+            builder.AppendLine(FormatInput(previous));
+        }
+
+        string currentStr = FormatInput(current);
+        int currFrameLen = controller.CurrentFrameInInput.Digits();
+        int inputWidth = Math.Max(20, currentStr.Length + currFrameLen + 2);
+        builder.AppendLine($"{currentStr.PadRight(inputWidth - currFrameLen)}{controller.CurrentFrameInInput}{current.RepeatString}");
+
+        if (next != null) {
+            builder.AppendLine(FormatInput(next));
+        }
+
+        return builder.TrimEnd().ToString();
+
+        string FormatInput(InputFrame input) {
+            return $"{(input.Line + 1).ToString().PadLeft(maxLineLen)}: {new string(' ', maxFramesLen - input.Frames.Digits())}{input.ToString().TrimStart()}";
+        }
+    }
 
     private static string? QueryDisplayLevelStatus() => QueryLevelStatus(exact: false);
     private static string? QueryExactLevelStatus() => QueryLevelStatus(exact: true);
@@ -449,19 +494,19 @@ public static class GameInfo {
 
         return name;
     }
-    public static string FormatTime(long ticks) {
+    private static string FormatTime(long ticks) {
         var timeSpan = TimeSpan.FromTicks(ticks);
         long frames = ticks / Engine.RawDeltaTime.SecondsToTicks();
 
         return $"{timeSpan.ShortGameplayFormat()}({frames})";
     }
 
-    public static float ConvertSpeedUnit(float speed, SpeedUnit unit) {
+    private static float ConvertSpeedUnit(float speed, SpeedUnit unit) {
         return unit == SpeedUnit.PixelPerSecond
             ? speed * Engine.TimeRateB
             : speed * Engine.RawDeltaTime * Engine.TimeRateB;
     }
-    public static Vector2 ConvertSpeedUnit(Vector2 speed, SpeedUnit unit) {
+    private static Vector2 ConvertSpeedUnit(Vector2 speed, SpeedUnit unit) {
         return unit == SpeedUnit.PixelPerSecond
             ? speed * Engine.TimeRateB
             : speed * Engine.RawDeltaTime * Engine.TimeRateB;
