@@ -129,6 +129,19 @@ public sealed class Editor : SkiaDrawable {
     private Point scrollablePosition;
     private Size scrollableSize;
 
+    private const int offscreenLinePadding = 3;
+    
+    // Only expand width of line numbers for actually visible digits
+    private int lastVisibleLineNumberDigits = -1;
+    private int VisibleLineNumberDigits {
+        get {
+            int bottomVisualRow = (int)((scrollablePosition.Y + scrollableSize.Height) / Font.LineHeight()) + offscreenLinePadding;
+            int bottomRow = Math.Min(Document.Lines.Count - 1, GetActualRow(bottomVisualRow));
+
+            return bottomRow.Digits();
+        }
+    }
+
     private readonly PixelLayout pixelLayout = new();
     private readonly PopupMenu autoCompleteMenu = new();
     private readonly PopupMenu contextActionsMenu = new();
@@ -256,6 +269,14 @@ public sealed class Editor : SkiaDrawable {
         // Need to redraw the line numbers when scrolling horizontally
         scrollable.Scroll += (_, _) => {
             scrollablePosition = scrollable.ScrollPosition;
+
+            // Only update if required
+            int newVisibleDigits = VisibleLineNumberDigits;
+            if (lastVisibleLineNumberDigits != newVisibleDigits) {
+                lastVisibleLineNumberDigits = newVisibleDigits;
+                Recalc();
+            }
+
             Invalidate();
         };
         scrollable.SizeChanged += (_, _) => {
@@ -632,16 +653,19 @@ public sealed class Editor : SkiaDrawable {
         // Clear invalid foldings
         Document.RemoveAnchorsIf(anchor => anchor.UserData is CollapseAnchorData && foldings.All(fold => fold.MinRow != anchor.Row));
 
+
         // Calculate line numbers width
         const float foldButtonPadding = 5.0f;
         bool hasFoldings = Settings.Instance.ShowFoldIndicators && foldings.Count != 0;
+        int visibleDigits = VisibleLineNumberDigits;
+
         // Only when the alignment is to the left, the folding indicator can fit into the existing space
         float foldingWidth = !hasFoldings ? 0.0f : Settings.Instance.LineNumberAlignment switch {
              LineNumberAlignment.Left => Font.CharWidth() * (foldings[^1].MinRow.Digits() + 1) + foldButtonPadding,
-             LineNumberAlignment.Right => Font.CharWidth() * (Document.Lines.Count.Digits() + 1) + foldButtonPadding,
+             LineNumberAlignment.Right => Font.CharWidth() * (visibleDigits + 1) + foldButtonPadding,
              _ => throw new UnreachableException(),
         };
-        textOffsetX = Math.Max(foldingWidth, Font.CharWidth() * Document.Lines.Count.Digits()) + LineNumberPadding * 3.0f;
+        textOffsetX = Math.Max(foldingWidth, Font.CharWidth() * visibleDigits) + LineNumberPadding * 3.0f;
 
         const float paddingRight = 50.0f;
         const float paddingBottom = 100.0f;
@@ -730,6 +754,10 @@ public sealed class Editor : SkiaDrawable {
         FileRefactor.FormatLines(lines, rows, StyleConfig.Current.ForceCorrectCommandCasing, StyleConfig.Current.CommandArgumentSeparator);
 
         foreach (int row in rows) {
+            if (row == Document.Caret.Row) {
+                continue;
+            }
+
             Document.ReplaceLine(row, lines[row]);
         }
     }
@@ -2013,6 +2041,23 @@ public sealed class Editor : SkiaDrawable {
         if (TryParseAndFormatActionLine(Document.Caret.Row, out actionLine) && e.Text.Length == 1) {
             ClearQuickEdits();
 
+            if (CalculationExtensions.TryParse(typedCharacter) is { } op) {
+                if (calculationState != null) {
+                    // Cancel with same operation again
+                    if (op == calculationState.Operator && calculationState.Operand.Length == 0) {
+                        calculationState = null;
+                        Invalidate();
+                        return;
+                    }
+
+                    CommitCalculation();
+                }
+
+                StartCalculation(op);
+                Invalidate();
+                return;
+            }
+
             line = Document.Lines[Document.Caret.Row];
             leadingSpaces = line.Length - line.TrimStart().Length;
 
@@ -2498,7 +2543,18 @@ public sealed class Editor : SkiaDrawable {
 
     private void OnFind() {
         if (!Document.Selection.Empty) {
-            lastFindQuery = Document.GetSelectedText();
+            var min = Document.Selection.Min;
+            var max = Document.Selection.Max;
+
+            // Clamp to current line
+            if (min < new CaretPosition(Document.Caret.Row, 0)) {
+                min = new CaretPosition(Document.Caret.Row, 0);
+            }
+            if (max > new CaretPosition(Document.Caret.Row, Document.Lines[Document.Caret.Row].Length)) {
+                max = new CaretPosition(Document.Caret.Row, Document.Lines[Document.Caret.Row].Length);
+            }
+
+            lastFindQuery = Document.GetTextInRange(min, max);
         }
 
         FindDialog.Show(this, ref lastFindQuery, ref lastFindMatchCase);
@@ -2619,6 +2675,8 @@ public sealed class Editor : SkiaDrawable {
             minRow = maxRow = Document.Caret.Row;
         }
 
+        int oldCol = Document.Caret.Col;
+
         for (int row = minRow; row <= maxRow; row++) {
             string line = Document.Lines[row];
             string lineTrimmed = line.TrimStart();
@@ -2657,6 +2715,12 @@ public sealed class Editor : SkiaDrawable {
             }
         }
 
+        // Jump to next line for single-line edits
+        if (minRow == maxRow && minRow == Document.Caret.Row && Document.Selection.Empty) {
+            Document.Caret.Col = oldCol;
+            Document.Caret.Row = Math.Min(Document.Lines.Count - 1, Document.Caret.Row + 1);
+        }
+
         // Clamp new column
         Document.Selection.Start.Col = Math.Clamp(Document.Selection.Start.Col, 0, Document.Lines[Document.Selection.Start.Row].Length);
         Document.Selection.End.Col = Math.Clamp(Document.Selection.End.Col, 0, Document.Lines[Document.Selection.End.Row].Length);
@@ -2685,6 +2749,8 @@ public sealed class Editor : SkiaDrawable {
             }
         }
 
+        int oldCol = Document.Caret.Col;
+
         for (int row = minRow; row <= maxRow; row++) {
             string line = Document.Lines[row];
 
@@ -2710,6 +2776,12 @@ public sealed class Editor : SkiaDrawable {
                 if (row == Document.Caret.Row)
                     Document.Caret.Col++;
             }
+        }
+
+        // Jump to next line for single-line edits
+        if (minRow == maxRow && minRow == Document.Caret.Row && Document.Selection.Empty) {
+            Document.Caret.Col = oldCol;
+            Document.Caret.Row = Math.Min(Document.Lines.Count - 1, Document.Caret.Row + 1);
         }
 
         // Clamp new column
@@ -3382,8 +3454,6 @@ public sealed class Editor : SkiaDrawable {
         // To be reused below. Kinda annoying how C# handles out parameter conflicts
         WrapEntry wrap;
 
-        const int offscreenLinePadding = 3;
-
         int topVisualRow = (int)(scrollablePosition.Y / Font.LineHeight()) - offscreenLinePadding;
         int bottomVisualRow = (int)((scrollablePosition.Y + scrollableSize.Height) / Font.LineHeight()) + offscreenLinePadding;
         int topRow = Math.Max(0, GetActualRow(topVisualRow));
@@ -3628,7 +3698,7 @@ public sealed class Editor : SkiaDrawable {
                 if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Left) {
                     canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding, yPos + Font.Offset(), Font, fillPaint);
                 } else if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Right) {
-                    float ident = Font.CharWidth() * (Document.Lines.Count.Digits() - (row + 1).Digits());
+                    float ident = Font.CharWidth() * (bottomRow - (row + 1).Digits());
                     canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding + ident, yPos + Font.Offset(), Font, fillPaint);
                 }
 

@@ -48,21 +48,10 @@ public static class Savestates {
                                    savedController != null &&
                                    savedController.FilePath == Manager.Controller.FilePath;
 
-    [Load]
-    private static void Load() {
-        if (SpeedrunToolInterop.Installed) {
-            SpeedrunToolInterop.AddSaveLoadAction();
-        }
-    }
-
     [Unload]
     private static void Unload() {
         if (IsSaved_Safe) {
             ClearState();
-        }
-
-        if (SpeedrunToolInterop.Installed) {
-            SpeedrunToolInterop.ClearSaveLoadAction();
         }
     }
 
@@ -140,7 +129,7 @@ public static class Savestates {
 
     public static void LoadState() {
         // Don't load save-states while recording
-        if (TASRecorderInterop.Recording) {
+        if (TASRecorderInterop.IsRecording) {
             return;
         }
 

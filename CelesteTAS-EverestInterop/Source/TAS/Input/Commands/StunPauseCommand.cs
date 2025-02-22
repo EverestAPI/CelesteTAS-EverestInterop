@@ -75,7 +75,7 @@ public static class StunPauseCommand {
     [Initialize]
     private static void Initialize() {
         // Hook after CycleHitboxColor.Load, so that the grouping color does not change
-        using (new DetourConfigContext(new DetourConfig("CelesteTAS", before: ["*"])).Use()) {
+        using (new DetourConfigContext(new DetourConfig("CelesteTAS", priority: int.MaxValue)).Use()) {
             On.Monocle.Scene.BeforeUpdate += DoublePauses;
         }
     }

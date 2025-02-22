@@ -80,7 +80,9 @@ public sealed class CommunicationAdapterStudio(
                 break;
 
             case MessageID.RecordingFailed:
-                // TODO
+                var reason = (RecordingFailedReason) reader.ReadByte();
+
+                Application.Instance.AsyncInvoke(() => RecordingFailedDialog.Show(reason));
                 break;
 
             case MessageID.GameDataResponse:

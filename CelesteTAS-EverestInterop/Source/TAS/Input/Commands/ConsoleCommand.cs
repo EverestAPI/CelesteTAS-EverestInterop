@@ -88,7 +88,7 @@ public static class ConsoleCommand {
 
     [Load]
     private static void Load() {
-        typeof(Level).GetMethod(nameof(Level.orig_LoadLevel)).IlHook(HookLevelOrigLoadLevel);
+        typeof(Level).GetMethodInfo(nameof(Level.orig_LoadLevel)).IlHook(HookLevelOrigLoadLevel);
         On.Celeste.Player.IntroRespawnEnd += PlayerOnIntroRespawnEnd;
         IL.Celeste.NPC06_Theo_Plateau.Awake += NPC06_Theo_PlateauOnAwake;
         On.Celeste.Level.End += LevelOnEnd;

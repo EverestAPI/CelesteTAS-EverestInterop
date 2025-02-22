@@ -11,16 +11,16 @@ using GameInput = Celeste.Input;
 
 namespace TAS.Playback;
 
-/// Main hooks for allowing for TAS playback
+/// Main hooks allowing for TAS playback
 internal static class Core {
     [Load]
     private static void Load() {
-        using (new DetourConfigContext(new DetourConfig("CelesteTAS", before: ["*"])).Use()) {
+        using (new DetourConfigContext(new DetourConfig("CelesteTAS", priority: int.MaxValue)).Use()) {
             On.Celeste.Celeste.Update += On_Celeste_Update;
             IL.Monocle.Engine.Update += IL_Engine_Update;
 
             typeof(GameInput)
-                .GetMethod(nameof(GameInput.UpdateGrab))!
+                .GetMethodInfo(nameof(GameInput.UpdateGrab))!
                 .SkipMethod(IsPaused);
 
             // The original mod makes the MInput.Update call conditional and invokes UpdateInputs afterwards.
@@ -44,27 +44,31 @@ internal static class Core {
     }
 
     private static float elapsedTime = 0.0f;
-    private static DateTime lastMetaUpdate = DateTime.UtcNow;
+    private static readonly float playbackDeltaTime = (float) TimeSpan.FromTicks(166667L).TotalSeconds; // Usually equal to Engine.RawDeltaTime, but some mods change that value
 
     private static void On_Celeste_Update(On.Celeste.Celeste.orig_Update orig, Celeste.Celeste self, GameTime gameTime) {
-        if (!TasSettings.Enabled || !Manager.Running) {
+        if (!TasSettings.Enabled) {
+            orig(self, gameTime);
+            return;
+        }
+        if (!Manager.Running) {
             Manager.UpdateMeta();
             orig(self, gameTime);
             return;
         }
 
-        elapsedTime += Manager.PlaybackSpeed * Engine.RawDeltaTime;
+        elapsedTime += Manager.PlaybackSpeed * playbackDeltaTime;
 
         Manager.UpdateMeta();
-        lastMetaUpdate = DateTime.UtcNow;
+        var lastMetaUpdate = DateTime.UtcNow;
 
-        while (elapsedTime >= Engine.RawDeltaTime) {
+        while (elapsedTime >= playbackDeltaTime) {
             orig(self, gameTime);
-            elapsedTime -= Engine.RawDeltaTime;
+            elapsedTime -= playbackDeltaTime;
 
             // Call UpdateMeta every real-time frame
             var now = DateTime.UtcNow;
-            if ((now - lastMetaUpdate).TotalSeconds > Engine.RawDeltaTime) {
+            if ((now - lastMetaUpdate).TotalSeconds > playbackDeltaTime) {
                 // We need to manually poll FNA events, since we don't return to the FNA game-loop while fast-forwarding
                 var game = Engine.Instance;
                 FNAPlatform.PollEvents(game, ref game.currentAdapter, game.textInputControlDown, ref game.textInputSuppress);

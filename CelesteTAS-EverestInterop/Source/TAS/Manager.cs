@@ -7,10 +7,12 @@ using Celeste.Pico8;
 using JetBrains.Annotations;
 using Monocle;
 using StudioCommunication;
-using System.Runtime.InteropServices.ComTypes;
+using System.Threading.Tasks;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.Input;
+using TAS.Input.Commands;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -21,6 +23,10 @@ public class EnableRunAttribute : Attribute;
 
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
 public class DisableRunAttribute : Attribute;
+
+/// Causes the method to be called every real-time frame, even if a TAS is currently running / paused
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+public class UpdateMetaAttribute : Attribute;
 
 /// Main controller, which manages how the TAS is played back
 public static class Manager {
@@ -41,6 +47,7 @@ public static class Manager {
     private static void Initialize() {
         AttributeUtils.CollectAllMethods<EnableRunAttribute>();
         AttributeUtils.CollectAllMethods<DisableRunAttribute>();
+        AttributeUtils.CollectAllMethods<UpdateMetaAttribute>();
     }
 
     public static bool Running => CurrState != State.Disabled;
@@ -62,7 +69,7 @@ public static class Manager {
 
         // Stop TAS to avoid blocking reload
         typeof(AssetReloadHelper)
-            .GetMethodInfo(nameof(AssetReloadHelper.Do))
+            .GetMethodInfo(nameof(AssetReloadHelper.Do), [typeof(string), typeof(Func<bool, Task>), typeof(bool), typeof(bool)])!
             .HookBefore(DisableRun);
     }
 
@@ -135,12 +142,12 @@ public static class Manager {
             NextState = State.Running;
         }
 
-        if (!Controller.CanPlayback) {
+        Controller.AdvanceFrame(out bool couldPlayback);
+
+        if (!couldPlayback) {
             DisableRun();
             return;
         }
-
-        Controller.AdvanceFrame();
 
         // Auto-pause at end of drafts
         if (!Controller.CanPlayback && IsDraft()) {
@@ -152,6 +159,26 @@ public static class Manager {
             Controller.NextLabelFastForward = null;
             NextState = State.Paused;
         }
+
+        // Prevent executing unsafe actions unless explicitly allowed
+        if (SafeCommand.DisallowUnsafeInput && Controller.CurrentFrameInTas > 1) {
+            // Only allow specific scenes
+            if (Engine.Scene is not (Level or LevelLoader or LevelExit or Emulator or LevelEnter)) {
+                DisableRun();
+            }
+            // Disallow modifying options
+            else if (Engine.Scene is Level level && level.Tracker.GetEntity<TextMenu>() is { } menu) {
+                var item = menu.Items.FirstOrDefault();
+
+                if (item is TextMenu.Header { Title: { } title }
+                    && (title == Dialog.Clean("OPTIONS_TITLE") || title == Dialog.Clean("MENU_VARIANT_TITLE")
+                        || Dialog.Has("MODOPTIONS_EXTENDEDVARIANTS_PAUSEMENU_BUTTON") && title == Dialog.Clean("MODOPTIONS_EXTENDEDVARIANTS_PAUSEMENU_BUTTON").ToUpperInvariant())
+                    || item is TextMenuExt.HeaderImage { Image: "menu/everest" }
+                ) {
+                    DisableRun();
+                }
+            }
+        }
     }
 
     /// Updates everything around the TAS itself, like hotkeys, studio-communication, etc.
@@ -162,9 +189,14 @@ public static class Manager {
 
         Hotkeys.UpdateMeta();
         Savestates.UpdateMeta();
-        ConsoleEnhancements.UpdateMeta();
+        AttributeUtils.Invoke<UpdateMetaAttribute>();
 
         SendStudioState();
+
+        // Pending EnableRun/DisableRun. Prevent overwriting
+        if (Running && NextState == State.Disabled || !Running && NextState != State.Disabled) {
+            return;
+        }
 
         // Check if the TAS should be enabled / disabled
         if (Hotkeys.StartStop.Pressed) {
@@ -184,6 +216,13 @@ public static class Manager {
 
         if (Running && Hotkeys.FastForwardComment.Pressed) {
             Controller.FastForwardToNextLabel();
+            return;
+        }
+
+        if (TASRecorderInterop.IsRecording) {
+            // Force recording at 1x playback
+            NextState = State.Running;
+            PlaybackSpeed = 1.0f;
             return;
         }
 
@@ -274,6 +313,10 @@ public static class Manager {
 
     /// Determine if current TAS file is a draft
     private static bool IsDraft() {
+        if (TASRecorderInterop.IsRecording) {
+            return false;
+        }
+
         // Require any FileTime or ChapterTime, alternatively MidwayFileTime or MidwayChapterTime at the end for the TAS to be counted as finished
         return Controller.Commands.Values
             .SelectMany(commands => commands)
@@ -317,14 +360,21 @@ public static class Manager {
 
     [Monocle.Command("dump_tas", "Dumps the parsed TAS file into the console (CelesteTAS)"), UsedImplicitly]
     private static void CmdDumpTas() {
-        // Pretend to start a TAS. so that AbortTas detection works
-        NextState = State.Running;
-        Controller.RefreshInputs(forceRefresh: true);
-        if (NextState == State.Disabled) {
-            "TAS contains errors. Cannot dump to console".ConsoleLog(LogLevel.Error);
-            return;
+        if (Controller.NeedsReload) {
+            if (Running) {
+                "Cannot dump TAS file while running it with unparsed changes".Log(LogLevel.Error);
+                return;
+            }
+
+            // Pretend to start a TAS. so that AbortTas detection works
+            NextState = State.Running;
+            Controller.RefreshInputs(forceRefresh: true);
+            if (NextState == State.Disabled) {
+                "TAS contains errors. Cannot dump to console".ConsoleLog(LogLevel.Error);
+                return;
+            }
+            NextState = State.Disabled;
         }
-        NextState = State.Disabled;
 
         $"TAS file dump for '{Controller.FilePath}':".Log();
 

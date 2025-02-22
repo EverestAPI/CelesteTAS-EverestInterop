@@ -16,9 +16,9 @@ public static class GunCommand {
     }
 
     private static readonly Lazy<PropertyInfo> GunInputCursorPosition =
-        new(() => ModUtils.GetType("Guneline", "Guneline.GunInput")?.GetProperty("CursorPosition"));
+        new(() => ModUtils.GetType("Guneline", "Guneline.GunInput")?.GetPropertyInfo("CursorPosition"));
 
-    private static readonly Lazy<MethodInfo> GunlineGunshot = new(() => ModUtils.GetType("Guneline", "Guneline.Guneline")?.GetMethod("Gunshot"));
+    private static readonly Lazy<MethodInfo> GunlineGunshot = new(() => ModUtils.GetType("Guneline", "Guneline.Guneline")?.GetMethodInfo("Gunshot"));
 
     // Gun, x, y
     [TasCommand("Gun", LegalInFullGame = false, MetaDataProvider = typeof(Meta))]

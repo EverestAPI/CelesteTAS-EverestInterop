@@ -50,33 +50,33 @@ public static class InfoMouse {
         }
 
         if (Engine.Scene is Level level) {
-            mouseWorldPosition = level.MouseToWorld(MouseButtons.Position);
+            mouseWorldPosition = level.MouseToWorld(MouseInput.Position);
         } else {
             mouseWorldPosition = null;
         }
 
         InfoWatchEntity.CheckMouseButtons();
 
-        DrawCursor(MouseButtons.Position);
+        DrawCursor(MouseInput.Position);
         MoveInfoHud();
     }
 
     private static void MoveInfoHud() {
-        if (MouseButtons.Left.Pressed) {
-            startDragPosition = MouseButtons.Position;
+        if (MouseInput.Left.Pressed) {
+            startDragPosition = MouseInput.Position;
         }
 
-        if (startDragPosition != null && !MouseButtons.Left.Check) {
-            if (Math.Abs((int) (MouseButtons.Position.X - startDragPosition.Value.X)) > 0.1f ||
-                Math.Abs((int) (MouseButtons.Position.Y - startDragPosition.Value.Y)) > 0.1f) {
+        if (startDragPosition != null && !MouseInput.Left.Check) {
+            if (Math.Abs((int) (MouseInput.Position.X - startDragPosition.Value.X)) > 0.1f ||
+                Math.Abs((int) (MouseInput.Position.Y - startDragPosition.Value.Y)) > 0.1f) {
                 CelesteTasModule.Instance.SaveSettings();
             }
 
             startDragPosition = null;
         }
 
-        if (startDragPosition != null && MouseButtons.Left.Check) {
-            TasSettings.InfoPosition += MouseButtons.Position - MouseButtons.LastPosition;
+        if (startDragPosition != null && MouseInput.Left.Check) {
+            TasSettings.InfoPosition += MouseInput.PositionDelta;
         }
     }
 
@@ -195,12 +195,12 @@ internal class SelectedAreaEntity : Entity {
             return;
         }
 
-        if (MouseButtons.Right.Pressed) {
-            start = level.MouseToWorld(MouseButtons.Position);
+        if (MouseInput.Right.Pressed) {
+            start = level.MouseToWorld(MouseInput.Position);
         }
 
         if (start != null) {
-            Vector2 end = level.MouseToWorld(MouseButtons.Position);
+            Vector2 end = level.MouseToWorld(MouseInput.Position);
             left = (int) Math.Min(start.Value.X, end.X);
             right = (int) Math.Max(start.Value.X, end.X);
             top = (int) Math.Min(start.Value.Y, end.Y);
@@ -208,11 +208,11 @@ internal class SelectedAreaEntity : Entity {
             width = right - left + 1;
             height = bottom - top + 1;
 
-            if (IsDragging && MouseButtons.Right.Check) {
+            if (IsDragging && MouseInput.Right.Check) {
                 Draw.HollowRect(left, top, width, height, Color.Yellow);
             }
 
-            if (MouseButtons.Right.Released) {
+            if (MouseInput.Right.Released) {
                 if (IsDragging) {
                     TextInput.SetClipboardText(ToString());
                 }

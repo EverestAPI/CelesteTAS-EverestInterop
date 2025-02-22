@@ -60,9 +60,9 @@ public sealed class Studio : Form {
     private ThemeEditor? themeEditorForm;
 
     private string TitleBarText => Editor.Document.FilePath == Document.ScratchFile
-        ? $"<Scratch> - Studio {Version}"
+        ? $"Studio {Version} - <Scratch>"
         // Hide username inside title bar
-        : $"{Editor.Document.FileName}{(Editor.Document.Dirty ? "*" : string.Empty)} - Studio {Version}   {Editor.Document.FilePath.Replace(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "~")}";
+        : $"Studio {Version} - {(Editor.Document.Dirty ? "*" : string.Empty)}{Editor.Document.FileName}    {Editor.Document.FilePath.Replace(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "~")}";
 
     /// Size of scroll bars, depending on the current platform
     public static int ScrollBarSize {
@@ -629,6 +629,15 @@ public sealed class Studio : Form {
         }) { MenuText = "Delete All Files" });
         backupsMenu.Enabled = backupFiles.Length != 0;
 
+        var showFile = MenuEntry.File_Show.ToAction(() => {
+            if (string.IsNullOrEmpty(Editor.Document.FilePath)) {
+                return;
+            }
+
+            ProcessHelper.OpenInDefaultApp(Path.GetDirectoryName(Editor.Document.FilePath)!);
+        });
+        showFile.Enabled = !string.IsNullOrEmpty(Editor.Document.FilePath) && Editor.Document.FilePath != Document.ScratchFile;
+
         // Don't display Settings.SendInputsNonWritable on WPF, since it's not supported there
         var inputSendingMenu = new SubMenuItem { Text = "&Input Sending", Items = {
                 MenuUtils.CreateSettingToggle("On Inputs", nameof(Settings.SendInputsOnActionLines)),
@@ -656,6 +665,7 @@ public sealed class Studio : Form {
                 openPreviousFile,
                 recentFilesMenu,
                 backupsMenu,
+                showFile,
                 new SeparatorMenuItem(),
                 MenuEntry.File_Save.ToAction(OnSaveFile),
                 MenuEntry.File_SaveAs.ToAction(OnSaveFileAs),
@@ -719,6 +729,7 @@ public sealed class Studio : Form {
                 new SeparatorMenuItem(),
                 MenuUtils.CreateGameSettingToggle("&Center Camera", nameof(GameSettings.CenterCamera)),
                 MenuUtils.CreateGameSettingToggle("Center Camera Horizontally Only", nameof(GameSettings.CenterCameraHorizontallyOnly)),
+                MenuUtils.CreateGameSettingToggle("Enable ExCameraDynamics for Center Camera", nameof(GameSettings.EnableExCameraDynamicsForCenterCamera)),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateGameSettingToggle("&Info HUD", nameof(GameSettings.InfoHud)),
                 MenuUtils.CreateGameSettingToggle("TAS Input Info", nameof(GameSettings.InfoTasInput)),

@@ -21,38 +21,49 @@ public enum CalculationOperator {
 
 public static class CalculationExtensions {
     public static CalculationOperator? TryParse(char c) {
-        return c switch {
-            '+' => CalculationOperator.Add,
-            '-' => CalculationOperator.Sub,
-            '*' => CalculationOperator.Mul,
-            '/' => CalculationOperator.Div,
-            '=' => CalculationOperator.Set,
-            _ => null
-        };
+        if (c == char.MaxValue) {
+            return null;
+        }
+
+        if (c == Settings.Instance.AddFrameOperationChar) {
+            return CalculationOperator.Add;
+        }
+        if (c == Settings.Instance.SubFrameOperationChar) {
+            return CalculationOperator.Sub;
+        }
+        if (c == Settings.Instance.MulFrameOperationChar) {
+            return CalculationOperator.Mul;
+        }
+        if (c == Settings.Instance.DivFrameOperationChar) {
+            return CalculationOperator.Div;
+        }
+        if (c == Settings.Instance.SetFrameOperationChar) {
+            return CalculationOperator.Set;
+        }
+
+        return null;
     }
     public static char Char(this CalculationOperator op) {
         return op switch {
-            CalculationOperator.Add => '+',
-            CalculationOperator.Sub => '-',
-            CalculationOperator.Mul => '*',
-            CalculationOperator.Div => '/',
-            CalculationOperator.Set => '=',
+            CalculationOperator.Add => Settings.Instance.AddFrameOperationChar,
+            CalculationOperator.Sub => Settings.Instance.SubFrameOperationChar,
+            CalculationOperator.Mul => Settings.Instance.MulFrameOperationChar,
+            CalculationOperator.Div => Settings.Instance.DivFrameOperationChar,
+            CalculationOperator.Set => Settings.Instance.SetFrameOperationChar,
             _ => throw new UnreachableException(),
         };
     }
 
-    public static int Apply(this CalculationOperator op, int value, int operand) {
-        return op switch {
-            CalculationOperator.Add => value + operand,
-            CalculationOperator.Sub => value - operand,
-            CalculationOperator.Mul => value * operand,
-            CalculationOperator.Div => value / operand,
+    public static ActionLine Apply(this CalculationOperator op, ActionLine actionLine, int operand) {
+        int newFrames = op switch {
+            CalculationOperator.Add => actionLine.FrameCount + operand,
+            CalculationOperator.Sub => actionLine.FrameCount - operand,
+            CalculationOperator.Mul => actionLine.FrameCount * operand,
+            CalculationOperator.Div => actionLine.FrameCount / operand,
             CalculationOperator.Set => operand,
             _ => throw new UnreachableException(),
         };
-    }
-    public static ActionLine Apply(this CalculationOperator op, ActionLine actionLine, int operand) {
-        int newFrames = op.Apply(actionLine.FrameCount, operand);
+
         return actionLine with { FrameCount = Math.Clamp(newFrames, 0, ActionLine.MaxFrames) };
     }
 }

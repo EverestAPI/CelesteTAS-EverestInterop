@@ -22,8 +22,9 @@ namespace TAS.ModInterop;
 public static class SpeedrunToolInterop {
     public static bool Installed { get; private set; }
 
-    private static object saveLoadAction;
-    private static Dictionary<Entity, EntityData> savedEntityData;
+    private static object? saveLoadAction;
+
+    private static Dictionary<Entity, EntityData>? savedEntityData;
     private static int groupCounter;
     private static bool simulatePauses;
     private static bool pauseOnCurrentFrame;
@@ -31,23 +32,51 @@ public static class SpeedrunToolInterop {
     private static int waitingFrames;
     private static StunPauseCommand.StunPauseMode? localMode;
     private static StunPauseCommand.StunPauseMode? globalModeRuntime;
-    private static HashSet<Keys> pressKeys;
-    private static long? tasStartFileTime;
+    private static HashSet<Keys>? pressKeys;
+    private static (long, int)? tasStartInfo;
     private static MouseState mouseState;
-    private static Dictionary<Follower, bool> followers;
+    private static Dictionary<Follower, bool>? followers;
     private static bool disallowUnsafeInput;
-    private static Random auraRandom;
+    private static Random? auraRandom;
     private static bool betterInvincible = false;
 
-    [Load]
-    private static void Load() {
+    [Initialize]
+    private static void Initialize() {
         Installed = ModUtils.IsInstalled("SpeedrunTool");
-        Everest.Events.AssetReload.OnBeforeReload += _ => Installed = false;
-        Everest.Events.AssetReload.OnAfterReload += _ => Installed = ModUtils.IsInstalled("SpeedrunTool");
+        Everest.Events.AssetReload.OnBeforeReload += _ => {
+            if (Installed) {
+                ClearSaveLoadAction();
+            }
+
+            Installed = false;
+        };
+        Everest.Events.AssetReload.OnAfterReload += _ => {
+            Installed = ModUtils.IsInstalled("SpeedrunTool");
+
+            if (Installed) {
+                AddSaveLoadAction();
+            }
+        };
+
+        if (Installed) {
+            AddSaveLoadAction();
+        }
+    }
+    [Unload]
+    private static void Unload() {
+        if (Installed) {
+            ClearSaveLoadAction();
+        }
     }
 
-    public static void AddSaveLoadAction() {
-        Action<Dictionary<Type, Dictionary<string, object>>, Level> save = (_, _) => {
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void AddSaveLoadAction() {
+        saveLoadAction = new SaveLoadAction(OnSave, OnLoad, OnClear);
+        SaveLoadAction.Add((SaveLoadAction) saveLoadAction);
+
+        return;
+
+        static void OnSave(Dictionary<Type, Dictionary<string, object>> savedValues, Level level) {
             savedEntityData = EntityDataHelper.CachedEntityData.DeepCloneShared();
             InfoWatchEntity.WatchedEntities_Save = InfoWatchEntity.WatchedEntities.DeepCloneShared();
             groupCounter = CycleHitboxColor.GroupCounter;
@@ -58,15 +87,16 @@ public static class SpeedrunToolInterop {
             localMode = StunPauseCommand.LocalMode;
             globalModeRuntime = StunPauseCommand.GlobalModeRuntime;
             pressKeys = PressCommand.PressKeys.DeepCloneShared();
-            tasStartFileTime = MetadataCommands.TasStartFileTime;
+            tasStartInfo = MetadataCommands.TasStartInfo.DeepCloneShared();
             mouseState = MouseCommand.CurrentState;
             followers = HitboxSimplified.Followers.DeepCloneShared();
             disallowUnsafeInput = SafeCommand.DisallowUnsafeInput;
             auraRandom = DesyncFixer.AuraHelperSharedRandom.DeepCloneShared();
             betterInvincible = Manager.Running && BetterInvincible.Invincible;
-        };
-        Action<Dictionary<Type, Dictionary<string, object>>, Level> load = (_, _) => {
-            EntityDataHelper.CachedEntityData = savedEntityData.DeepCloneShared();
+        }
+
+        static void OnLoad(Dictionary<Type, Dictionary<string, object>> savedValues, Level level) {
+            EntityDataHelper.CachedEntityData = savedEntityData!.DeepCloneShared();
             InfoWatchEntity.WatchedEntities = InfoWatchEntity.WatchedEntities_Save.DeepCloneShared();
             CycleHitboxColor.GroupCounter = groupCounter;
             StunPauseCommand.SimulatePauses = simulatePauses;
@@ -76,42 +106,30 @@ public static class SpeedrunToolInterop {
             StunPauseCommand.LocalMode = localMode;
             StunPauseCommand.GlobalModeRuntime = globalModeRuntime;
             PressCommand.PressKeys.Clear();
-            foreach (Keys keys in pressKeys) {
+            foreach (var keys in pressKeys!) {
                 PressCommand.PressKeys.Add(keys);
             }
 
-            MetadataCommands.TasStartFileTime = tasStartFileTime;
+            MetadataCommands.TasStartInfo = tasStartInfo.DeepCloneShared();
             MouseCommand.CurrentState = mouseState;
-            HitboxSimplified.Followers = followers.DeepCloneShared();
+            HitboxSimplified.Followers = followers!.DeepCloneShared();
             SafeCommand.DisallowUnsafeInput = disallowUnsafeInput;
-            DesyncFixer.AuraHelperSharedRandom = auraRandom.DeepCloneShared();
+            DesyncFixer.AuraHelperSharedRandom = auraRandom!.DeepCloneShared();
             BetterInvincible.Invincible = Manager.Running && betterInvincible;
-        };
-        Action clear = () => {
+        }
+
+        static void OnClear() {
             savedEntityData = null;
             pressKeys = null;
             followers = null;
             InfoWatchEntity.WatchedEntities_Save.Clear();
             auraRandom = null;
             betterInvincible = false;
-        };
-
-        ConstructorInfo constructor = typeof(SaveLoadAction).GetConstructors()[0];
-        Type delegateType = constructor.GetParameters()[0].ParameterType;
-
-        saveLoadAction = constructor.Invoke(new object[] {
-                save.Method.CreateDelegate(delegateType, save.Target),
-                load.Method.CreateDelegate(delegateType, load.Target),
-                clear,
-                null,
-                null
-            }
-        );
-        SaveLoadAction.Add((SaveLoadAction) saveLoadAction);
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void ClearSaveLoadAction() {
+    private static void ClearSaveLoadAction() {
         if (saveLoadAction != null) {
             SaveLoadAction.Remove((SaveLoadAction) saveLoadAction);
         }

@@ -21,6 +21,7 @@ public partial class GameSettings {
 
     public bool CenterCamera = false;
     public bool CenterCameraHorizontallyOnly = false;
+    public bool EnableExCameraDynamicsForCenterCamera = true;
 
     public bool InfoHud = false;
     public bool InfoGame = true;

@@ -189,7 +189,7 @@ public static class StudioHelper {
             // Keep "Celeste Studio.toml" for the settings to be migrated by Studio v3
 
             // Display migration (Studio v3 was never launched since the v2 .exe still existed)
-            string path = Path.GetTempFileName();
+            string path = Path.Combine(StudioDirectory, "migration_notice.txt");
             string text =
                 """
                 === Celeste TAS Studio v3 - Migration notice ===
@@ -206,6 +206,10 @@ public static class StudioHelper {
                     If possible, try to update to at least Windows 10, otherwise it is recommended to continue using Celeste Studio v2 with the latest CelesteTAS v3.39.x in the mean time. (You can find the legacy releases here: https://github.com/psyGamer/CelesteTAS-EverestInterop/releases) 
                     (Note Only major bugs will be fixed in that version! No features will be backported!)
                 """;
+
+            if (!Directory.Exists(StudioDirectory)) {
+                Directory.CreateDirectory(StudioDirectory);
+            }
 
             File.WriteAllText(path, text);
             ProcessHelper.OpenInDefaultApp(path);
@@ -301,9 +305,10 @@ public static class StudioHelper {
         }
 
         // Install to another directory and only delete the old install once it was successful
-        if (!Directory.Exists(TempStudioInstallDirectory)) {
-            Directory.CreateDirectory(TempStudioInstallDirectory);
+        if (Directory.Exists(TempStudioInstallDirectory)) {
+            Directory.Delete(TempStudioInstallDirectory, recursive: true);
         }
+        Directory.CreateDirectory(TempStudioInstallDirectory);
 
         // Extract
         $"Extracting {DownloadPath} into {TempStudioInstallDirectory}".Log();

@@ -13,6 +13,7 @@ using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Gameplay;
 using TAS.Input;
+using TAS.ModInterop;
 using TAS.Utils;
 
 namespace TAS.Module;
@@ -43,6 +44,14 @@ internal static class CelesteTasMenu {
                 TasSettings.CenterCamera = value));
             subMenu.Add(new TextMenu.OnOff("Center Camera Horizontally Only".ToDialogText(), TasSettings.CenterCameraHorizontallyOnly).Change(value =>
                 TasSettings.CenterCameraHorizontallyOnly = value));
+            TextMenu.Item autoEnableExCameraDynamicsItem;
+            subMenu.Add(autoEnableExCameraDynamicsItem = new TextMenu.OnOff("Auto Enable ExCameraDynamics".ToDialogText(), TasSettings.EnableExCameraDynamicsForCenterCamera).Change(value =>
+                TasSettings.EnableExCameraDynamicsForCenterCamera = value));
+            if (ExCameraDynamicsInterop.Installed) {
+                subMenu.AddDescription(menu, autoEnableExCameraDynamicsItem, "ExCameraDynamics Description B".ToDialogText(), Color.Red);
+            } else {
+                subMenu.AddDescription(menu, autoEnableExCameraDynamicsItem, "ExCameraDynamics Description A".ToDialogText(), Color.Red);
+            }
             subMenu.Add(new TextMenu.OnOff("Restore Settings".ToDialogText(), TasSettings.RestoreSettings).Change(value =>
                 TasSettings.RestoreSettings = value));
             subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), TasSettings.LaunchStudioAtBoot).Change(value => {
@@ -68,21 +77,17 @@ internal static class CelesteTasMenu {
             TextMenu.Item hideFreezeFramesItem;
             subMenu.Add(hideFreezeFramesItem = new TextMenu.OnOff("Hide Freeze Frames".ToDialogText(), TasSettings.HideFreezeFrames).Change(value =>
                 TasSettings.HideFreezeFrames = value));
-            subMenu.AddDescription(menu, hideFreezeFramesItem, "Hide Freeze Frames Description 1".ToDialogText());
-            subMenu.AddDescription(menu, hideFreezeFramesItem, "Hide Freeze Frames Description 2".ToDialogText());
-            subMenu.Add(new TextMenu.OnOff("Mod 9D Lighting".ToDialogText(), TasSettings.Mod9DLighting).Change(value =>
-                TasSettings.Mod9DLighting = value));
+            subMenu.AddDescription(menu, hideFreezeFramesItem, "Hide Freeze Frames Description".ToDialogText());
             TextMenu.Item ignoreGcItem;
             subMenu.Add(ignoreGcItem = new TextMenu.OnOff("Ignore GC Collect".ToDialogText(), TasSettings.IgnoreGcCollect).Change(value =>
                 TasSettings.IgnoreGcCollect = value));
-            subMenu.AddDescription(menu, ignoreGcItem, "Ignore GC Collect Description 1".ToDialogText());
-            subMenu.AddDescription(menu, ignoreGcItem, "Ignore GC Collect Description 2".ToDialogText());
+            subMenu.AddDescription(menu, ignoreGcItem, "Ignore GC Collect Description".ToDialogText());
         });
     }
 
-    public static void AddDescription(this TextMenuExt.SubMenu subMenu, TextMenu containingMenu, TextMenu.Item subMenuItem, string description) {
+    public static void AddDescription(this TextMenuExt.SubMenu subMenu, TextMenu containingMenu, TextMenu.Item subMenuItem, string description, Color? color = null) {
         TextMenuExt.EaseInSubHeaderExt descriptionText = new(description, false, containingMenu) {
-            TextColor = Color.Gray,
+            TextColor = color ?? Color.Gray,
             HeightExtra = 0f
         };
 

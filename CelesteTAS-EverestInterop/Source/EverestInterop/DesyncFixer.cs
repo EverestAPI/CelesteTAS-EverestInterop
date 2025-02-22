@@ -25,16 +25,24 @@ public static class DesyncFixer {
     [Initialize]
     private static void Initialize() {
         Dictionary<MethodInfo, int> methods = new() {
-            {typeof(Debris).GetMethod(nameof(Debris.orig_Init)), 1},
-            {typeof(Debris).GetMethod(nameof(Debris.Init), new[] {typeof(Vector2), typeof(char), typeof(bool)}), 1},
-            {typeof(Debris).GetMethod(nameof(Debris.BlastFrom)), 1},
+            {typeof(Debris).GetMethodInfo(nameof(Debris.orig_Init))!, 1},
+            {typeof(Debris).GetMethodInfo(nameof(Debris.Init), [typeof(Vector2), typeof(char), typeof(bool)])!, 1},
+            {typeof(Debris).GetMethodInfo(nameof(Debris.BlastFrom))!, 1},
         };
 
-        foreach (Type type in ModUtils.GetTypes()) {
-            if (type.Name.EndsWith("Debris") && type.GetMethodInfo("Init") is {IsStatic: false} method) {
+        foreach (var type in ModUtils.GetTypes()) {
+            if (!type.Name.EndsWith("Debris")) {
+                continue;
+            }
+
+            foreach (var method in type.GetAllMethodInfos()) {
+                if (method.Name != "Init" || method.IsStatic) {
+                    continue;
+                }
+
                 int index = 1;
-                foreach (ParameterInfo parameterInfo in method.GetParameters()) {
-                    if (parameterInfo.ParameterType == typeof(Vector2)) {
+                foreach (var param in method.GetParameters()) {
+                    if (param.ParameterType == typeof(Vector2)) {
                         methods[method] = index;
                         break;
                     }
@@ -49,7 +57,7 @@ public static class DesyncFixer {
         }
 
         if (ModUtils.GetModule("DeadzoneConfig")?.GetType() is { } deadzoneConfigModuleType) {
-            deadzoneConfigModuleType.GetMethod("OnInputInitialize").SkipMethod(SkipDeadzoneConfig);
+            deadzoneConfigModuleType.GetMethodInfo("OnInputInitialize").SkipMethod(SkipDeadzoneConfig);
         }
 
         if (ModUtils.GetType("StrawberryJam2021", "Celeste.Mod.StrawberryJam2021.Entities.CustomAscendManager") is { } ascendManagerType) {
@@ -63,17 +71,17 @@ public static class DesyncFixer {
 
         if (ModUtils.GetType("AuraHelper", "AuraHelper.Lantern") is { } auraLanternType) {
             auraLanternType.GetConstructor(new Type[] { typeof(Vector2), typeof(string), typeof(int) })?.IlHook(SetupAuraHelperRandom);
-            auraLanternType.GetMethod("Update")?.IlHook(FixAuraEntityDesync);
-            ModUtils.GetType("AuraHelper", "AuraHelper.Generator")?.GetMethod("Update")?.IlHook(FixAuraEntityDesync);
+            auraLanternType.GetMethodInfo("Update")?.IlHook(FixAuraEntityDesync);
+            ModUtils.GetType("AuraHelper", "AuraHelper.Generator")?.GetMethodInfo("Update")?.IlHook(FixAuraEntityDesync);
         }
     }
 
     [Load]
     private static void Load() {
-        typeof(DreamMirror).GetMethod("Added").HookAfter<DreamMirror>(FixDreamMirrorDesync);
+        typeof(DreamMirror).GetMethodInfo("Added").HookAfter<DreamMirror>(FixDreamMirrorDesync);
         typeof(CS03_Memo.MemoPage).GetConstructors()[0].HookAfter<CS03_Memo.MemoPage>(FixMemoPageCrash);
-        typeof(FinalBoss).GetMethod("Added").HookAfter<FinalBoss>(FixFinalBossDesync);
-        typeof(Entity).GetMethod("Update").HookAfter(AfterEntityUpdate);
+        typeof(FinalBoss).GetMethodInfo("Added").HookAfter<FinalBoss>(FixFinalBossDesync);
+        typeof(Entity).GetMethodInfo("Update").HookAfter(AfterEntityUpdate);
         typeof(AscendManager).GetMethodInfo("Routine").GetStateMachineTarget().IlHook(MakeRngConsistent);
 
         // System.IndexOutOfRangeException: Index was outside the bounds of the array.

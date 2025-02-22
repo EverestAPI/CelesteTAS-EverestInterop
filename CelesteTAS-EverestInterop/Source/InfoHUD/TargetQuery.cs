@@ -9,12 +9,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using TAS.EverestInterop;
 using TAS.Input.Commands;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
-namespace TAS.EverestInterop;
+namespace TAS.InfoHUD;
 
 /// Contains all the logic for getting data from a target-query
 public static class TargetQuery {
@@ -65,18 +66,18 @@ public static class TargetQuery {
             return;
         }
 
-        (var results, bool success, string errorMessage) = GetMemberValues(query);
-        if (!success) {
-            errorMessage.ConsoleLog(LogLevel.Error);
+        var result = GetMemberValues(query);
+        if (result.Failure) {
+            result.Error.ConsoleLog(LogLevel.Error);
             return;
         }
 
-        if (results.Count == 0) {
+        if (result.Value.Count == 0) {
             "No instances found".ConsoleLog(LogLevel.Error);
-        } else if (results.Count == 1) {
-            results[0].Value.ConsoleLog();
+        } else if (result.Value.Count == 1) {
+            result.Value[0].Value.ConsoleLog();
         } else {
-            foreach ((object? value, object? baseInstance) in results) {
+            foreach ((object? value, object? baseInstance) in result.Value) {
                 if (baseInstance is Entity entity &&
                     entity.GetEntityData()?.ToEntityId().ToString() is { } id)
                 {
@@ -89,15 +90,16 @@ public static class TargetQuery {
     }
 
     /// Parses a target-query and returns the results for that
-    public static (List<(object? Value, object? BaseInstance)> Results, bool Success, string ErrorMessage) GetMemberValues(string query, bool forceAllowCodeExecution = false) {
+    /// A single BaseInstance == null entry is returned for static contexts
+    public static Result<List<(object? Value, object? BaseInstance)>, string> GetMemberValues(string query, bool forceAllowCodeExecution = false) {
         string[] queryArgs = query.Split('.');
 
         var baseTypes = ResolveBaseTypes(queryArgs, out string[] memberArgs, out var componentTypes, out var entityId);
         if (baseTypes.IsEmpty()) {
-            return ([(null, null)], Success: false, ErrorMessage: $"Failed to find base type for target-query '{query}'");
+            return Result<List<(object? Value, object? BaseInstance)>, string>.Fail($"Failed to find base type for target-query '{query}'");
         }
         if (memberArgs.IsEmpty()) {
-            return ([(null, null)], Success: false, ErrorMessage: "No members specified");
+            return Result<List<(object? Value, object? BaseInstance)>, string>.Fail("No members specified");
         }
 
         List< (object? Value, object? BaseInstance)> allResults = [];
@@ -105,34 +107,35 @@ public static class TargetQuery {
             var instances = ResolveTypeInstances(baseType, componentTypes, entityId);
 
             if (componentTypes.IsEmpty()) {
-                if (!ProcessType(baseType, out string errorMessage)) {
-                    return (Results: [], Success: false, ErrorMessage: errorMessage);
+                if (ProcessType(baseType).CheckFailure(out string? error)) {
+                    return Result<List<(object? Value, object? BaseInstance)>, string>.Fail(error);
                 }
             } else {
                 foreach (var componentType in componentTypes) {
-                    if (!ProcessType(componentType, out string errorMessage)) {
-                        return (Results: [], Success: false, ErrorMessage: errorMessage);
+                    if (ProcessType(componentType).CheckFailure(out string? error)) {
+                        return Result<List<(object? Value, object? BaseInstance)>, string>.Fail(error);
                     }
                 }
             }
+            continue;
 
-            bool ProcessType(Type type, out string errorMessage) {
-                (var values, bool success, errorMessage) = ResolveMemberValues(type, instances, memberArgs, forceAllowCodeExecution);
-                if (!success) {
-                    return false;
+            VoidResult<string> ProcessType(Type type) {
+                var result = ResolveMemberValues(type, instances, memberArgs, forceAllowCodeExecution);
+                if (result.Failure) {
+                    return VoidResult<string>.Fail(result.Error);
                 }
 
-                if (instances.IsEmpty()) {
-                    allResults.Add((values[0], null));
+                if (instances == null) {
+                    allResults.Add((result.Value[0], null));
                 } else {
-                    allResults.AddRange(values.Select((value, i) => (value, (object?)instances[i])));
+                    allResults.AddRange(result.Value.Select((value, i) => (value, (object?)instances[i])));
                 }
 
-                return true;
+                return VoidResult<string>.Ok;
             }
         }
 
-        return (allResults, Success: true, ErrorMessage: string.Empty);
+        return Result<List<(object? Value, object? BaseInstance)>, string>.Ok(allResults);
     }
 
     /// Parses the first part of a query into types and an optional EntityID
@@ -212,7 +215,8 @@ public static class TargetQuery {
     }
 
     /// Resolves a type into all applicable instances of it
-    public static List<object> ResolveTypeInstances(Type type, List<Type> componentTypes, EntityID? entityId) {
+    /// Returns null for types which are always in a static context
+    public static List<object>? ResolveTypeInstances(Type type, List<Type> componentTypes, EntityID? entityId) {
         if (type == typeof(Settings)) {
             return [Settings.Instance];
         }
@@ -274,159 +278,172 @@ public static class TargetQuery {
         }
 
         // Nothing found
-        return [];
+        return null;
     }
 
     /// Recursively resolves the type of the specified members
-    public static (Type Type, bool Success) ResolveMemberType(Type baseType, string[] memberArgs) {
+    public static Result<Type, string> ResolveMemberType(Type baseType, string[] memberArgs) {
         var typeStack = new Stack<Type>();
 
         var currentType = baseType;
         foreach (string member in memberArgs) {
             typeStack.Push(currentType);
 
-            if (currentType.GetFieldInfo(member) is { } field) {
+            if (currentType.GetFieldInfo(member, logFailure: false) is { } field) {
                 currentType = field.FieldType;
                 continue;
             }
-            if (currentType.GetPropertyInfo(member) is { } property && property.GetMethod != null) {
+            if (currentType.GetPropertyInfo(member, logFailure: false) is { } property && property.GetMethod != null) {
                 currentType = property.PropertyType;
                 continue;
             }
 
             // Unable to recurse further
-            return (currentType, Success: false);
+            return Result<Type, string>.Fail($"Cannot find field / property '{member}' on type {currentType}");
         }
 
         // Special case for Actor / Platform positions, since they use subpixels
         if (memberArgs[^1] is nameof(Entity.X) or nameof(Entity.Y)) {
             var entityType = typeof(Entity);
-            if (typeStack.Count >= 1) {
-                // "Entity.X"
-                entityType = typeStack.Pop();
-            } else if (typeStack.Count >= 2 && memberArgs[^2] is nameof(Entity.Position)) {
+            if (typeStack.Count >= 2 && memberArgs[^2] is nameof(Entity.Position)) {
                 // "Entity.Position.X"
                 _ = typeStack.Pop();
+                entityType = typeStack.Pop();
+            } else if (typeStack.Count >= 1) {
+                // "Entity.X"
                 entityType = typeStack.Pop();
             }
 
             if (entityType.IsSameOrSubclassOf(typeof(Actor)) || entityType.IsSameOrSubclassOf(typeof(Platform))) {
-                return (typeof(SubpixelComponent), Success: true);
+                return Result<Type, string>.Ok(typeof(SubpixelComponent));
             }
         } else if (memberArgs[^1] is nameof(Entity.Position)) {
             // "Entity.Position"
             var entityType = typeStack.Pop();
 
             if (entityType.IsSameOrSubclassOf(typeof(Actor)) || entityType.IsSameOrSubclassOf(typeof(Platform))) {
-                return (typeof(SubpixelPosition), Success: true);
+                return Result<Type, string>.Ok(typeof(SubpixelPosition));
             }
         }
 
-        return (currentType, Success: true);
+        return Result<Type, string>.Ok(currentType);
     }
 
     /// Recursively resolves a method for the specified members
-    public static (MethodInfo? Method, bool Success) ResolveMemberMethod(Type baseType, string[] memberArgs) {
+    public static Result<MethodInfo, string> ResolveMemberMethod(Type baseType, string[] memberArgs) {
         var currentType = baseType;
         for (int i = 0; i < memberArgs.Length - 1; i++) {
             string member = memberArgs[i];
 
-            if (currentType.GetFieldInfo(member) is { } field) {
+            if (currentType.GetFieldInfo(member, logFailure: false) is { } field) {
                 currentType = field.FieldType;
                 continue;
             }
 
-            if (currentType.GetPropertyInfo(member) is { } property && property.GetMethod != null) {
+            if (currentType.GetPropertyInfo(member, logFailure: false) is { } property && property.GetMethod != null) {
                 currentType = property.PropertyType;
                 continue;
             }
 
             // Unable to recurse further
-            return (null, Success: false);
+            return Result<MethodInfo, string>.Fail($"Failed to find field / property '{member}' on type '{currentType}'");
         }
 
         // Find method
-        if (currentType.GetMethodInfo(memberArgs[^1]) is { } method) {
-            return (method, Success: true);
+        if (currentType.GetMethodInfo(memberArgs[^1], logFailure: false) is { } method) {
+            return Result<MethodInfo, string>.Ok(method);
         }
 
         // Couldn't find the method
-        return (null, Success: true);
+        return Result<MethodInfo, string>.Fail($"Failed to find method '{memberArgs[^1]}' on type '{currentType}'");
     }
 
     /// Recursively resolves the value of the specified members
-    public static (object? Value, bool Success, string ErrorMessage) ResolveMemberValue(Type baseType, object? baseObject, string[] memberArgs, bool forceAllowCodeExecution = false) {
+    public static Result<object?, string> ResolveMemberValue(Type baseType, object? baseObject, string[] memberArgs, bool forceAllowCodeExecution = false) {
         var currentType = baseType;
         var currentObject = baseObject;
         foreach (string member in memberArgs) {
             try {
-                if (currentType.GetFieldInfo(member) is { } field) {
-                    currentType = field.FieldType;
+                if (currentType.GetFieldInfo(member, logFailure: false) is { } field) {
                     if (field.IsStatic) {
                         currentObject = field.GetValue(null);
                     } else {
                         if (currentObject == null) {
+                            if (currentType == baseType) {
+                                return Result<object?, string>.Fail($"Cannot access instance field '{member}' in a static context");
+                            }
+
                             // Propagate null
-                            return (Value: null, Success: true, ErrorMessage: "");
+                            return Result<object?, string>.Ok(null);
                         }
 
                         currentObject = field.GetValue(currentObject);
                     }
+                    currentType = field.FieldType;
+
                     continue;
                 }
-                if (currentType.GetPropertyInfo(member) is { } property && property.GetMethod != null) {
+                if (currentType.GetPropertyInfo(member, logFailure: false) is { } property && property.GetMethod != null) {
                     if (PreventCodeExecution && !forceAllowCodeExecution) {
-                        return (Value: null, Success: false, ErrorMessage: $"Cannot safely get property '{member}' during EnforceLegal");
+                        return Result<object?, string>.Fail($"Cannot safely get property '{member}' during EnforceLegal");
                     }
 
-                    currentType = property.PropertyType;
                     if (property.IsStatic()) {
                         currentObject = property.GetValue(null);
                     } else {
                         if (currentObject == null) {
+                            if (currentType == baseType) {
+                                return Result<object?, string>.Fail($"Cannot access instance property '{member}' in a static context");
+                            }
+
                             // Propagate null
-                            return (Value: null, Success: true, ErrorMessage: "");
+                            return Result<object?, string>.Ok(null);
                         }
 
                         currentObject = property.GetValue(currentObject);
                     }
+                    currentType = property.PropertyType;
+
                     continue;
                 }
             } catch (Exception ex) {
-                // Something went wrong
-                return (currentObject, Success: false, ErrorMessage: ex.Message);
+                return Result<object?, string>.Fail($"Unknown exception: {ex}");
             }
 
-            // Unable to recurse further
-            return (currentObject, Success: false, ErrorMessage: $"Cannot find field / property '{member}' on type {currentType}");
+            return Result<object?, string>.Fail($"Cannot find field / property '{member}' on type {currentType}");
         }
 
-        return (currentObject, Success: true, ErrorMessage: "");
+        return Result<object?, string>.Ok(currentObject);
     }
 
     /// Recursively resolves the value of the specified members for multiple instances at once
-    public static (List<object?> Values, bool Success, string ErrorMessage) ResolveMemberValues(Type baseType, List<object> baseObjects, string[] memberArgs, bool forceAllowCodeExecution = false) {
-        if (baseObjects.IsEmpty()) {
-            (object? result, bool success, string errorMessage) = ResolveMemberValue(baseType, null, memberArgs, forceAllowCodeExecution);
-            return ([result], success, errorMessage);
-        } else {
-            List<object?> values = new(capacity: baseObjects.Count);
-
-            foreach (object obj in baseObjects) {
-                (object? result, bool success, string errorMessage) = ResolveMemberValue(baseType, obj, memberArgs, forceAllowCodeExecution);
-
-                if (!success) {
-                    return (Values: [], Success: false, errorMessage);
-                }
-                values.Add(result);
+    public static Result<List<object?>, string> ResolveMemberValues(Type baseType, List<object>? baseObjects, string[] memberArgs, bool forceAllowCodeExecution = false) {
+        if (baseObjects == null) {
+            // Static target context
+            var result = ResolveMemberValue(baseType, null, memberArgs, forceAllowCodeExecution);
+            if (result.Failure) {
+                return Result<List<object?>, string>.Fail(result.Error);
             }
 
-            return (values, Success: true, ErrorMessage: "");
+            return Result<List<object?>, string>.Ok([result.Value]);
         }
+
+        List<object?> values = new(capacity: baseObjects.Count);
+
+        foreach (object obj in baseObjects) {
+            var result = ResolveMemberValue(baseType, obj, memberArgs, forceAllowCodeExecution);
+            if (result.Failure) {
+                return Result<List<object?>, string>.Fail(result.Error);
+            }
+
+            values.Add(result.Value);
+        }
+
+        return Result<List<object?>, string>.Ok(values);
     }
 
     /// Recursively resolves the value of the specified members
-    public static bool SetMemberValue(Type baseType, object? baseObject, object? value, string[] memberArgs) {
+    public static VoidResult<string> SetMemberValue(Type baseType, object? baseObject, object? value, string[] memberArgs) {
         var typeStack = new Stack<Type>();
         var objectStack = new Stack<object?>();
 
@@ -439,38 +456,54 @@ public static class TargetQuery {
             string member = memberArgs[i];
 
             try {
-                if (currentType.GetFieldInfo(member) is { } field) {
-                    currentType = field.FieldType;
+                if (currentType.GetFieldInfo(member, logFailure: false) is { } field) {
                     if (field.IsStatic) {
                         currentObject = field.GetValue(null);
                     } else {
+                        if (currentObject == null) {
+                            if (currentType == baseType) {
+                                return VoidResult<string>.Fail($"Cannot access instance field '{member}' in a static context");
+                            }
+
+                            // Propagate null
+                            return VoidResult<string>.Ok;
+                        }
+
                         currentObject = field.GetValue(currentObject);
                     }
+                    currentType = field.FieldType;
 
                     continue;
                 }
 
-                if (currentType.GetPropertyInfo(member) is { } property && property.SetMethod != null) {
+                if (currentType.GetPropertyInfo(member, logFailure: false) is { } property && property.SetMethod != null) {
                     if (PreventCodeExecution) {
-                        return false; // Cannot safely invoke methods during EnforceLegal
+                        return VoidResult<string>.Fail($"Cannot safely set property '{member}' during EnforceLegal");
                     }
 
-                    currentType = property.PropertyType;
                     if (property.IsStatic()) {
                         currentObject = property.GetValue(null);
                     } else {
+                        if (currentObject == null) {
+                            if (currentType == baseType) {
+                                return VoidResult<string>.Fail($"Cannot access instance property '{member}' in a static context");
+                            }
+
+                            // Propagate null
+                            return VoidResult<string>.Ok;
+                        }
+
                         currentObject = property.GetValue(currentObject);
                     }
+                    currentType = property.PropertyType;
 
                     continue;
                 }
-            } catch (Exception) {
-                // Something went wrong
-                return false;
+            } catch (Exception ex) {
+                return VoidResult<string>.Fail($"Unknown exception: {ex}");
             }
 
-            // Unable to recurse further
-            return false;
+            return VoidResult<string>.Fail($"Cannot find field / property '{member}' on type {currentType}");
         }
 
         // Set the value
@@ -498,7 +531,7 @@ public static class TargetQuery {
                         remainder.Y = subpixelValue.Remainder;
                     }
                     actor.movementCounter = remainder;
-                    return true;
+                    return VoidResult<string>.Ok;
                 } else if (entityObject is Platform platform) {
                     var subpixelValue = (SubpixelComponent) value!;
 
@@ -511,7 +544,7 @@ public static class TargetQuery {
                         remainder.Y = subpixelValue.Remainder;
                     }
                     platform.movementCounter = remainder;
-                    return true;
+                    return VoidResult<string>.Ok;
                 }
             } else if (memberArgs[^1] is nameof(Entity.Position)) {
                 if (currentObject is Actor actor) {
@@ -519,23 +552,32 @@ public static class TargetQuery {
 
                     actor.Position = new(subpixelValue.X.Position, subpixelValue.Y.Position);
                     actor.movementCounter = new(subpixelValue.X.Remainder, subpixelValue.Y.Remainder);
-                    return true;
+                    return VoidResult<string>.Ok;
                 } else if (currentObject is Platform platform) {
                     var subpixelValue = (SubpixelPosition) value!;
 
                     platform.Position = new(subpixelValue.X.Position, subpixelValue.Y.Position);
                     platform.movementCounter = new(subpixelValue.X.Remainder, subpixelValue.Y.Remainder);
-                    return true;
+                    return VoidResult<string>.Ok;
                 }
             }
 
-            if (currentType.GetFieldInfo(memberArgs[^1]) is { } field) {
+            if (currentType.GetFieldInfo(memberArgs[^1], logFailure: false) is { } field) {
                 if (field.IsStatic) {
                     field.SetValue(null, value);
                 } else {
+                    if (currentObject == null) {
+                        if (currentType == baseType) {
+                            return VoidResult<string>.Fail($"Cannot access instance field '{memberArgs[^1]}' in a static context");
+                        }
+
+                        // Propagate null
+                        return VoidResult<string>.Ok;
+                    }
+
                     field.SetValue(currentObject, value);
                 }
-            } else if (currentType.GetPropertyInfo(memberArgs[^1]) is { } property && property.SetMethod != null) {
+            } else if (currentType.GetPropertyInfo(memberArgs[^1], logFailure: false) is { } property && property.SetMethod != null) {
                 // Special case to support binding custom keys
                 if (property.PropertyType == typeof(ButtonBinding) && !PreventCodeExecution && property.GetValue(currentObject) is ButtonBinding binding) {
                     var nodes = binding.Button.Nodes;
@@ -582,32 +624,37 @@ public static class TargetQuery {
                                         nodes.AddRange(data.KeyboardKeys.Select(_ => new VirtualButton.MouseMiddleButton()));
                                         break;
                                     case MInput.MouseData.MouseButtons.XButton1 or MInput.MouseData.MouseButtons.XButton2:
-                                        // TODO: Error message
-                                        // AbortTas("X1 and X2 are not supported before Everest adding mouse support");
-                                        return false;
+                                        return VoidResult<string>.Fail("X1 and X2 are not supported before Everest adding mouse support");
                                 }
                             }
                         }
                     }
-                    return true;
+                    return VoidResult<string>.Ok;
                 }
 
                 if (PreventCodeExecution) {
-                    return false; // Cannot safely invoke methods during EnforceLegal
+                    return VoidResult<string>.Fail($"Cannot safely set property '{memberArgs[^1]}' during EnforceLegal");
                 }
 
                 if (property.IsStatic()) {
                     property.SetValue(null, value);
                 } else {
+                    if (currentObject == null) {
+                        if (currentType == baseType) {
+                            return VoidResult<string>.Fail($"Cannot access instance field '{memberArgs[^1]}' in a static context");
+                        }
+
+                        // Propagate null
+                        return VoidResult<string>.Ok;
+                    }
+
                     property.SetValue(currentObject, value);
                 }
             } else {
-                // Couldn't find the last member
-                return false;
+                return VoidResult<string>.Fail($"Cannot find field / property '{memberArgs[^1]}' on type {currentType}");
             }
-        } catch (Exception) {
-            // Something went wrong
-            return false;
+        } catch (Exception ex) {
+            return VoidResult<string>.Fail($"Unknown exception: {ex}");
         }
 
         // Recurse back up to properly set value-types
@@ -619,15 +666,15 @@ public static class TargetQuery {
             string member = memberArgs[i];
 
             try {
-                if (currentType.GetFieldInfo(member) is { } field) {
+                if (currentType.GetFieldInfo(member, logFailure: false) is { } field) {
                     if (field.IsStatic) {
                         field.SetValue(null, value);
                     } else {
                         field.SetValue(currentObject, value);
                     }
-                } else if (currentType.GetPropertyInfo(member) is { } property && property.SetMethod != null) {
+                } else if (currentType.GetPropertyInfo(member, logFailure: false) is { } property && property.SetMethod != null) {
                     if (PreventCodeExecution) {
-                        return false; // Cannot safely invoke methods during EnforceLegal
+                        return VoidResult<string>.Fail($"Cannot safely set property '{member}' during EnforceLegal");
                     }
 
                     if (property.IsStatic()) {
@@ -636,30 +683,30 @@ public static class TargetQuery {
                         property.SetValue(currentObject, value);
                     }
                 }
-            } catch (Exception) {
-                // Something went wrong
-                return false;
+            } catch (Exception ex) {
+                return VoidResult<string>.Fail($"Unknown exception: {ex}");
             }
         }
 
-        return true;
+        return VoidResult<string>.Ok;
     }
 
     /// Recursively resolves the value of the specified members for multiple instances at once
-    public static bool SetMemberValues(Type baseType, List<object> baseObjects, object? value, string[] memberArgs) {
-        if (baseObjects.IsEmpty()) {
+    public static VoidResult<string> SetMemberValues(Type baseType, List<object>? baseObjects, object? value, string[] memberArgs) {
+        if (baseObjects == null) {
+            // Static target context
             return SetMemberValue(baseType, null, value, memberArgs);
-        } else {
-            return baseObjects
-                .Select(obj => SetMemberValue(baseType, obj, value, memberArgs))
-                .All(success => success);
         }
+
+        return baseObjects
+            .Select(obj => SetMemberValue(baseType, obj, value, memberArgs))
+            .Aggregate(VoidResult<string>.AggregateError);
     }
 
     /// Recursively resolves the value of the specified members
-    public static bool InvokeMemberMethod(Type baseType, object? baseObject, object?[] parameters, string[] memberArgs) {
+    public static VoidResult<string> InvokeMemberMethod(Type baseType, object? baseObject, object?[] parameters, string[] memberArgs) {
         if (PreventCodeExecution) {
-            return false; // Cannot safely invoke methods during EnforceLegal
+            return VoidResult<string>.Fail("Cannot safely invoke methods during EnforceLegal");
         }
 
         var currentType = baseType;
@@ -668,68 +715,91 @@ public static class TargetQuery {
             string member = memberArgs[i];
 
             try {
-                if (currentType.GetFieldInfo(member) is { } field) {
-                    currentType = field.FieldType;
+                if (currentType.GetFieldInfo(member, logFailure: false) is { } field) {
                     if (field.IsStatic) {
                         currentObject = field.GetValue(null);
                     } else {
+                        if (currentObject == null) {
+                            if (currentType == baseType) {
+                                return VoidResult<string>.Fail($"Cannot access instance field '{member}' in a static context");
+                            }
+
+                            // Propagate null
+                            return VoidResult<string>.Ok;
+                        }
+
                         currentObject = field.GetValue(currentObject);
                     }
+                    currentType = field.FieldType;
 
                     continue;
                 }
 
-                if (currentType.GetPropertyInfo(member) is { } property && property.SetMethod != null) {
-                    if (PreventCodeExecution) {
-                        return false; // Cannot safely invoke methods during EnforceLegal
-                    }
-
-                    currentType = property.PropertyType;
+                if (currentType.GetPropertyInfo(member, logFailure: false) is { } property && property.SetMethod != null) {
                     if (property.IsStatic()) {
                         currentObject = property.GetValue(null);
                     } else {
+                        if (currentObject == null) {
+                            if (currentType == baseType) {
+                                return VoidResult<string>.Fail($"Cannot access property field '{member}' in a static context");
+                            }
+
+                            // Propagate null
+                            return VoidResult<string>.Ok;
+                        }
+
                         currentObject = property.GetValue(currentObject);
                     }
+                    currentType = property.PropertyType;
 
                     continue;
                 }
-            } catch (Exception) {
-                // Something went wrong
-                return false;
+            } catch (Exception ex) {
+                return VoidResult<string>.Fail($"Unknown exception: {ex}");
             }
 
             // Unable to recurse further
-            return false;
+            return VoidResult<string>.Fail($"Cannot find field / property '{member}' on type {currentType}");
         }
 
         // Invoke the method
         try {
-            if (currentType.GetMethodInfo(memberArgs[^1]) is { } method) {
+            if (currentType.GetMethodInfo(memberArgs[^1], logFailure: false) is { } method) {
                 if (method.IsStatic) {
                     method.Invoke(null, parameters);
                 } else {
+                    if (currentObject == null) {
+                        if (currentType == baseType) {
+                            return VoidResult<string>.Fail($"Cannot access property field '{memberArgs[^1]}' in a static context");
+                        }
+
+                        // Propagate null
+                        return VoidResult<string>.Ok;
+                    }
+
                     method.Invoke(currentObject, parameters);
                 }
-                return true;
+
+                return VoidResult<string>.Ok;
             }
-        } catch (Exception) {
-            // Something went wrong
-            return false;
+        } catch (Exception ex) {
+            return VoidResult<string>.Fail($"Unknown exception: {ex}");
         }
 
-        // Couldn't find the method
-        return false;
+        // Unable to recurse further
+        return VoidResult<string>.Fail($"Cannot find field / property '{memberArgs[^1]}' on type {currentType}");
     }
 
     /// Recursively resolves the value of the specified members for multiple instances at once
-    public static bool InvokeMemberMethods(Type baseType, List<object> baseObjects, object?[] parameters, string[] memberArgs) {
-        if (baseObjects.IsEmpty()) {
+    public static VoidResult<string> InvokeMemberMethods(Type baseType, List<object>? baseObjects, object?[] parameters, string[] memberArgs) {
+        if (baseObjects == null) {
+            // Static target context
             return InvokeMemberMethod(baseType, null, parameters, memberArgs);
-        } else {
-            return baseObjects
-                .Select(obj => InvokeMemberMethod(baseType, obj, parameters, memberArgs))
-                .All(success => success);
         }
+
+        return baseObjects
+            .Select(obj => InvokeMemberMethod(baseType, obj, parameters, memberArgs))
+            .Aggregate(VoidResult<string>.AggregateError);
     }
 
     /// Data-class to hold parsed ButtonBinding data, before it being set
@@ -739,7 +809,7 @@ public static class TargetQuery {
     }
 
     /// Resolves the value arguments into the specified types if possible
-    public static (object?[] Values, bool Success, string ErrorMessage) ResolveValues(string[] valueArgs, Type[] targetTypes) {
+    public static Result<object?[], string> ResolveValues(string[] valueArgs, Type[] targetTypes) {
         var values = new object?[targetTypes.Length];
         int index = 0;
 
@@ -751,18 +821,18 @@ public static class TargetQuery {
             try {
                 if (arg.Contains('.') && !float.TryParse(arg, out _)) {
                     // The value is a target-query, which needs to be resolved
-                    (var results, bool success, string errorMessage) = GetMemberValues(arg);
-                    if (!success) {
-                        return ([], Success: false, ErrorMessage: errorMessage);
+                    var result = GetMemberValues(arg);
+                    if (result.Failure) {
+                        return Result<object?[], string>.Fail(result.Error);
                     }
-                    if (results.Count != 1) {
-                        return ([], Success: false, ErrorMessage: $"Target-query '{arg}' for type '{targetType}' needs to resolve to exactly 1 value! Got {results.Count}");
+                    if (result.Value.Count != 1) {
+                        return Result<object?[], string>.Fail($"Target-query '{arg}' for type '{targetType}' needs to resolve to exactly 1 value! Got {result.Value.Count}");
                     }
-                    if (results[0].Value != null && !results[0].Value!.GetType().IsSameOrSubclassOf(targetType)) {
-                        return ([], Success: false, ErrorMessage: $"Expected type '{targetType}' for target-query '{arg}'! Got {results[0].GetType()}");
+                    if (result.Value[0].Value != null && !result.Value[0].Value!.GetType().IsSameOrSubclassOf(targetType)) {
+                        return Result<object?[], string>.Fail($"Expected type '{targetType}' for target-query '{arg}'! Got {result.Value[0].GetType()}");
                     }
 
-                    values[index++] = results[0].Value;
+                    values[index++] = result.Value[0].Value;
                     continue;
                 }
 
@@ -812,7 +882,7 @@ public static class TargetQuery {
                     } else if (Enum.TryParse<Keys>(arg, ignoreCase: true, out var key)) {
                         data.KeyboardKeys.Add(key);
                     } else {
-                        return ([], Success: false, ErrorMessage: $"'{arg}' is not a valid keyboard key or mouse button");
+                        return Result<object?[], string>.Fail($"'{arg}' is not a valid keyboard key or mouse button");
                     }
 
                     values[index++] = data;
@@ -824,7 +894,7 @@ public static class TargetQuery {
                         values[index++] = value;
                         continue;
                     } else {
-                        return ([], Success: false, ErrorMessage: $"'{arg}' is not a valid enum state for '{targetType.FullName}'");
+                        return Result<object?[], string>.Fail($"'{arg}' is not a valid enum state for '{targetType.FullName}'");
                     }
                 }
 
@@ -835,10 +905,10 @@ public static class TargetQuery {
 
                 values[index++] = Convert.ChangeType(arg, targetType);
             } catch (Exception ex) {
-                return ([], Success: false, ErrorMessage: $"Failed to resolve value for type '{targetType}': {ex}");
+                return Result<object?[], string>.Fail($"Failed to resolve value for type '{targetType}': {ex}");
             }
         }
 
-        return (values, Success: true, ErrorMessage: string.Empty);
+        return Result<object?[], string>.Ok(values);
     }
 }

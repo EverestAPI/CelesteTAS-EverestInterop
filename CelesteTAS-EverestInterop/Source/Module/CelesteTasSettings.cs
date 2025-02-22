@@ -9,8 +9,9 @@ using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.Gameplay.Hitboxes;
-using TAS.Utils;
+using TAS.ModInterop;
 using YamlDotNet.Serialization;
+using Camera = TAS.Gameplay.CenterCamera;
 
 namespace TAS.Module;
 
@@ -426,6 +427,8 @@ public class CelesteTasSettings : EverestModuleSettings {
         set {
             StudioShared.CenterCamera = value;
             SyncSettings();
+
+            Camera.Toggled();
         }
     }
     [YamlIgnore]
@@ -442,7 +445,15 @@ public class CelesteTasSettings : EverestModuleSettings {
         }
     }
 
-    public bool RestoreSettings { get; set; } = false;
+    public bool EnableExCameraDynamicsForCenterCamera {
+        get => ExCameraDynamicsInterop.Installed && StudioShared.EnableExCameraDynamicsForCenterCamera;
+        set {
+            StudioShared.EnableExCameraDynamicsForCenterCamera = value;
+            SyncSettings();
+        }
+    }
+
+    public bool RestoreSettings { get; set; } = true;
     public bool LaunchStudioAtBoot { get; set; } = false;
     public bool ShowStudioUpdateBanner { get; set; } = true;
 
@@ -464,7 +475,6 @@ public class CelesteTasSettings : EverestModuleSettings {
     }
 
     public bool HideFreezeFrames { get; set; } = false;
-    public bool Mod9DLighting { get; set; } = false;
     public bool IgnoreGcCollect { get; set; } = true;
 
     #endregion

@@ -159,7 +159,7 @@ public static class FastForwardBoost {
     private static void SkipUpdateMethod(ILContext il) {
         ILCursor ilCursor = new(il);
         Instruction start = ilCursor.Next;
-        ilCursor.Emit(OpCodes.Call, typeof(Manager).GetProperty(nameof(Manager.FastForwarding), BindingFlags.Public | BindingFlags.Static)!.GetMethod);
+        ilCursor.Emit(OpCodes.Call, typeof(Manager).GetPropertyInfo(nameof(Manager.FastForwarding), BindingFlags.Public | BindingFlags.Static)!.GetMethod);
         ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
     }
 

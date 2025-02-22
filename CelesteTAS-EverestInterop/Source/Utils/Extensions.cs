@@ -7,6 +7,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Celeste;
+using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Utils;
@@ -92,272 +93,401 @@ internal static class FastReflection {
     }
 }
 
+/// Provides improved runtime-reflection utilities
 internal static class ReflectionExtensions {
-    internal const BindingFlags InstanceAnyVisibility =
-        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+    internal const BindingFlags InstanceAnyVisibility = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+    internal const BindingFlags StaticAnyVisibility = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+    internal const BindingFlags StaticInstanceAnyVisibility = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+    internal const BindingFlags InstanceAnyVisibilityDeclaredOnly = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
-    internal const BindingFlags StaticAnyVisibility =
-        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+    private readonly record struct MemberKey(Type Type, string Name);
+    private readonly record struct AllMemberKey(Type Type, BindingFlags BindingFlags);
+    private readonly record struct MethodKey(Type Type, string Name, long ParameterHash);
 
-    internal const BindingFlags StaticInstanceAnyVisibility =
-        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+    private static readonly ConcurrentDictionary<MemberKey, MemberInfo?> CachedMemberInfos = new();
+    private static readonly ConcurrentDictionary<MemberKey, FieldInfo?> CachedFieldInfos = new();
+    private static readonly ConcurrentDictionary<MemberKey, PropertyInfo?> CachedPropertyInfos = new();
+    private static readonly ConcurrentDictionary<MethodKey, MethodInfo?> CachedMethodInfos = new();
+    private static readonly ConcurrentDictionary<MemberKey, EventInfo?> CachedEventInfos = new();
 
-    internal const BindingFlags InstanceAnyVisibilityDeclaredOnly =
-        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+    private static readonly ConcurrentDictionary<MemberKey, MethodInfo?> CachedGetMethodInfos = new();
+    private static readonly ConcurrentDictionary<MemberKey, MethodInfo?> CachedSetMethodInfos = new();
 
-    private static readonly object[] NullArgs = {null};
-
-    // ReSharper disable UnusedMember.Local
-    private record struct MemberKey(Type Type, string Name) {
-        public readonly Type Type = Type;
-        public readonly string Name = Name;
-    }
-
-    private record struct AllMemberKey(Type Type, BindingFlags BindingFlags) {
-        public readonly Type Type = Type;
-        public readonly BindingFlags BindingFlags = BindingFlags;
-    }
-
-    private record struct MethodKey(Type Type, string Name, long Types) {
-        public readonly Type Type = Type;
-        public readonly string Name = Name;
-        public readonly long Types = Types;
-    }
-    // ReSharper restore UnusedMember.Local
-
-    private static readonly ConcurrentDictionary<MemberKey, MemberInfo> CachedMemberInfos = new();
-    private static readonly ConcurrentDictionary<MemberKey, FieldInfo> CachedFieldInfos = new();
-    private static readonly ConcurrentDictionary<MemberKey, PropertyInfo> CachedPropertyInfos = new();
-    private static readonly ConcurrentDictionary<MethodKey, MethodInfo> CachedMethodInfos = new();
-    private static readonly ConcurrentDictionary<MemberKey, MethodInfo> CachedGetMethodInfos = new();
-    private static readonly ConcurrentDictionary<MemberKey, MethodInfo> CachedSetMethodInfos = new();
     private static readonly ConcurrentDictionary<AllMemberKey, IEnumerable<FieldInfo>> CachedAllFieldInfos = new();
     private static readonly ConcurrentDictionary<AllMemberKey, IEnumerable<PropertyInfo>> CachedAllPropertyInfos = new();
+    private static readonly ConcurrentDictionary<AllMemberKey, IEnumerable<MethodInfo>> CachedAllMethodInfos = new();
 
-    public static MemberInfo GetMemberInfo(this Type type, string name, BindingFlags bindingAttr = StaticInstanceAnyVisibility) {
+    /// Resolves the target member on the type, caching the result
+    public static MemberInfo? GetMemberInfo(this Type type, string name, BindingFlags bindingFlags = StaticInstanceAnyVisibility, bool logFailure = true) {
         var key = new MemberKey(type, name);
         if (CachedMemberInfos.TryGetValue(key, out var result)) {
             return result;
         }
 
+        var currentType = type;
         do {
-            result = type.GetMember(name, bindingAttr).FirstOrDefault();
-        } while (result == null && (type = type.BaseType) != null);
+            result = currentType.GetMember(name, bindingFlags).FirstOrDefault();
+            currentType = currentType.BaseType;
+        } while (result == null && currentType != null);
+
+        if (result == null && logFailure) {
+            $"Failed to find member '{name}' on type '{type}'".Log(LogLevel.Error);
+        }
 
         return CachedMemberInfos[key] = result;
     }
 
-    public static FieldInfo GetFieldInfo(this Type type, string name, BindingFlags bindingAttr = StaticInstanceAnyVisibility) {
+    /// Resolves the target field on the type, caching the result
+    public static FieldInfo? GetFieldInfo(this Type type, string name, BindingFlags bindingFlags = StaticInstanceAnyVisibility, bool logFailure = true) {
         var key = new MemberKey(type, name);
         if (CachedFieldInfos.TryGetValue(key, out var result)) {
             return result;
         }
 
+        var currentType = type;
         do {
-            result = type.GetField(name, bindingAttr);
-        } while (result == null && (type = type.BaseType) != null);
+            result = currentType.GetField(name, bindingFlags);
+            currentType = currentType.BaseType;
+        } while (result == null && currentType != null);
+
+        if (result == null && logFailure) {
+            $"Failed to find field '{name}' on type '{type}'".Log(LogLevel.Error);
+        }
 
         return CachedFieldInfos[key] = result;
     }
 
-    public static PropertyInfo GetPropertyInfo(this Type type, string name, BindingFlags bindingAttr = StaticInstanceAnyVisibility) {
+    /// Resolves the target property on the type, caching the result
+    public static PropertyInfo? GetPropertyInfo(this Type type, string name, BindingFlags bindingFlags = StaticInstanceAnyVisibility, bool logFailure = true) {
         var key = new MemberKey(type, name);
         if (CachedPropertyInfos.TryGetValue(key, out var result)) {
             return result;
         }
 
+        var currentType = type;
         do {
-            result = type.GetProperty(name, bindingAttr);
-        } while (result == null && (type = type.BaseType) != null);
+            result = currentType.GetProperty(name, bindingFlags);
+            currentType = currentType.BaseType;
+        } while (result == null && currentType != null);
+
+        if (result == null && logFailure) {
+            $"Failed to find property '{name}' on type '{type}'".Log(LogLevel.Error);
+        }
 
         return CachedPropertyInfos[key] = result;
     }
 
-    public static MethodInfo GetMethodInfo(this Type type, string name, Type[] types = null, BindingFlags bindingAttr = StaticInstanceAnyVisibility) {
-        var key = new MethodKey(type, name, types.GetCustomHashCode());
-        if (CachedMethodInfos.TryGetValue(key, out MethodInfo result)) {
+    /// Resolves the target method on the type, with the specific parameter types, caching the result
+    public static MethodInfo? GetMethodInfo(this Type type, string name, Type?[]? parameterTypes = null, BindingFlags bindingFlags = StaticInstanceAnyVisibility, bool logFailure = true) {
+        var key = new MethodKey(type, name, parameterTypes.GetCustomHashCode());
+        if (CachedMethodInfos.TryGetValue(key, out var result)) {
             return result;
         }
 
+        var currentType = type;
         do {
-            MethodInfo[] methodInfos = type.GetMethods(bindingAttr);
-            result = methodInfos.FirstOrDefault(info =>
-                info.Name == name && types?.SequenceEqual(info.GetParameters().Select(i => i.ParameterType)) != false);
-        } while (result == null && (type = type.BaseType) != null);
+            if (parameterTypes != null) {
+                foreach (var method in currentType.GetAllMethodInfos(bindingFlags)) {
+                    if (method.Name != name) {
+                        continue;
+                    }
+
+                    var parameters = method.GetParameters();
+                    if (parameters.Length != parameterTypes.Length) {
+                        continue;
+                    }
+
+                    for (int i = 0; i < parameters.Length; i++) {
+                        // Treat a null type as a wild card
+                        if (parameterTypes[i] != null && parameterTypes[i] != parameters[i].ParameterType) {
+                            goto NextMethod;
+                        }
+                    }
+
+                    if (result != null) {
+                        // "Amphibious" matches on different types indicate overrides. Choose the "latest" method
+                        if (result.DeclaringType != null && result.DeclaringType != method.DeclaringType) {
+                            if (method.DeclaringType!.IsSubclassOf(result.DeclaringType)) {
+                                result = method;
+                            }
+                        } else {
+                            if (logFailure) {
+                                $"Method '{name}' with parameters ({string.Join<Type?>(", ", parameterTypes)}) on type '{type}' is ambiguous between '{result}' and '{method}'".Log(LogLevel.Error);
+                            }
+                            result = null;
+                            break;
+                        }
+                    } else {
+                        result = method;
+                    }
+
+                    NextMethod:;
+                }
+            } else {
+                result = currentType.GetMethod(name, bindingFlags);
+            }
+            currentType = currentType.BaseType;
+        } while (result == null && currentType != null);
+
+        if (result == null && logFailure) {
+            if (parameterTypes == null) {
+                $"Failed to find method '{name}' on type '{type}'".Log(LogLevel.Error);
+            } else {
+                $"Failed to find method '{name}' with parameters ({string.Join<Type?>(", ", parameterTypes)}) on type '{type}'".Log(LogLevel.Error);
+            }
+        }
 
         return CachedMethodInfos[key] = result;
     }
 
-    public static MethodInfo GetGetMethod(this Type type, string propertyName, BindingFlags bindingAttr = StaticInstanceAnyVisibility) {
-        var key = new MemberKey(type, propertyName);
+    /// Resolves the target event on the type, with the specific parameter types, caching the result
+    public static EventInfo? GetEventInfo(this Type type, string name, BindingFlags bindingFlags = StaticInstanceAnyVisibility) {
+        var key = new MemberKey(type, name);
+        if (CachedEventInfos.TryGetValue(key, out var result)) {
+            return result;
+        }
+
+        var currentType = type;
+        do {
+            result = currentType.GetEvent(name, bindingFlags);
+            currentType = currentType.BaseType;
+        } while (result == null && currentType != null);
+
+        if (result == null) {
+            $"Failed to find event '{name}' on type '{type}'".Log(LogLevel.Error);
+        }
+
+        return CachedEventInfos[key] = result;
+    }
+
+    /// Resolves the target get-method of the property on the type, caching the result
+    public static MethodInfo? GetGetMethod(this Type type, string name, BindingFlags bindingFlags = StaticInstanceAnyVisibility) {
+        var key = new MemberKey(type, name);
         if (CachedGetMethodInfos.TryGetValue(key, out var result)) {
             return result;
         }
 
-        do {
-            result = type.GetPropertyInfo(propertyName, bindingAttr)?.GetGetMethod(true);
-        } while (result == null && (type = type.BaseType) != null);
+        result = type.GetPropertyInfo(name, bindingFlags)?.GetGetMethod(nonPublic: true);
+        if (result == null) {
+            $"Failed to find get-method of property '{name}' on type '{type}'".Log(LogLevel.Error);
+        }
 
         return CachedGetMethodInfos[key] = result;
     }
 
-    public static MethodInfo GetSetMethod(this Type type, string propertyName, BindingFlags bindingAttr = StaticInstanceAnyVisibility) {
-        var key = new MemberKey(type, propertyName);
+    /// Resolves the target set-method of the property on the type, caching the result
+    public static MethodInfo? GetSetMethod(this Type type, string name, BindingFlags bindingFlags = StaticInstanceAnyVisibility) {
+        var key = new MemberKey(type, name);
         if (CachedSetMethodInfos.TryGetValue(key, out var result)) {
             return result;
         }
 
-        do {
-            result = type.GetPropertyInfo(propertyName, bindingAttr)?.GetSetMethod(true);
-        } while (result == null && (type = type.BaseType) != null);
+        result = type.GetPropertyInfo(name, bindingFlags)?.GetSetMethod(nonPublic: true);
+        if (result == null) {
+            $"Failed to find set-method of property '{name}' on type '{type}'".Log(LogLevel.Error);
+        }
 
         return CachedSetMethodInfos[key] = result;
     }
 
-    public static IEnumerable<FieldInfo> GetAllFieldInfos(this Type type, bool includeStatic = false) {
-        BindingFlags bindingFlags = InstanceAnyVisibilityDeclaredOnly;
-        if (includeStatic) {
-            bindingFlags |= BindingFlags.Static;
-        }
+    /// Resolves all fields of the type, caching the result
+    public static IEnumerable<FieldInfo> GetAllFieldInfos(this Type type, BindingFlags bindingFlags = InstanceAnyVisibility) {
+        bindingFlags |= BindingFlags.DeclaredOnly;
 
         var key = new AllMemberKey(type, bindingFlags);
         if (CachedAllFieldInfos.TryGetValue(key, out var result)) {
             return result;
         }
 
-        HashSet<FieldInfo> hashSet = new();
-        while (type != null && type.IsSubclassOf(typeof(object))) {
-            IEnumerable<FieldInfo> fieldInfos = type.GetFields(bindingFlags);
+        HashSet<FieldInfo> allFields = [];
 
-            foreach (FieldInfo fieldInfo in fieldInfos) {
-                hashSet.Add(fieldInfo);
-            }
+        var currentType = type;
+        while (currentType != null && currentType.IsSubclassOf(typeof(object))) {
+            allFields.AddRange(currentType.GetFields(bindingFlags));
 
-            type = type.BaseType;
+            currentType = currentType.BaseType;
         }
 
-        CachedAllFieldInfos[key] = hashSet;
-        return hashSet;
+        return CachedAllFieldInfos[key] = allFields;
     }
 
-    public static IEnumerable<PropertyInfo> GetAllProperties(this Type type, bool includeStatic = false) {
-        BindingFlags bindingFlags = InstanceAnyVisibilityDeclaredOnly;
-        if (includeStatic) {
-            bindingFlags |= BindingFlags.Static;
-        }
+    /// Resolves all properties of the type, caching the result
+    public static IEnumerable<PropertyInfo> GetAllPropertyInfos(this Type type, BindingFlags bindingFlags = InstanceAnyVisibility) {
+        bindingFlags |= BindingFlags.DeclaredOnly;
 
         var key = new AllMemberKey(type, bindingFlags);
         if (CachedAllPropertyInfos.TryGetValue(key, out var result)) {
             return result;
         }
 
-        HashSet<PropertyInfo> hashSet = new();
-        while (type != null && type.IsSubclassOf(typeof(object))) {
-            IEnumerable<PropertyInfo> properties = type.GetProperties(bindingFlags);
-            foreach (PropertyInfo fieldInfo in properties) {
-                hashSet.Add(fieldInfo);
-            }
+        HashSet<PropertyInfo> allProperties = [];
 
-            type = type.BaseType;
+        var currentType = type;
+        while (currentType != null && currentType.IsSubclassOf(typeof(object))) {
+            allProperties.AddRange(currentType.GetProperties(bindingFlags));
+
+            currentType = currentType.BaseType;
         }
 
-        CachedAllPropertyInfos[key] = hashSet;
-        return hashSet;
+        return CachedAllPropertyInfos[key] = allProperties;
     }
 
-    public static T GetFieldValue<T>(this object obj, string name) {
-        object result = obj.GetType().GetFieldInfo(name)?.GetValue(obj);
-        if (result == null) {
+    /// Resolves all methods of the type, caching the result
+    public static IEnumerable<MethodInfo> GetAllMethodInfos(this Type type, BindingFlags bindingFlags = InstanceAnyVisibility) {
+        bindingFlags |= BindingFlags.DeclaredOnly;
+
+        var key = new AllMemberKey(type, bindingFlags);
+        if (CachedAllMethodInfos.TryGetValue(key, out var result)) {
+            return result;
+        }
+
+        HashSet<MethodInfo> allMethods = [];
+
+        var currentType = type;
+        while (currentType != null && currentType.IsSubclassOf(typeof(object))) {
+            allMethods.AddRange(currentType.GetMethods(bindingFlags));
+
+            currentType = currentType.BaseType;
+        }
+
+        return CachedAllMethodInfos[key] = allMethods;
+    }
+
+    /// Gets the value of the instance field on the object
+    public static T? GetFieldValue<T>(this object obj, string name) {
+        if (obj.GetType().GetFieldInfo(name, InstanceAnyVisibility) is not { } field) {
             return default;
-        } else {
-            return (T) result;
         }
+
+        return (T?) field.GetValue(obj);
     }
 
-    public static T GetFieldValue<T>(this Type type, string name) {
-        object result = type.GetFieldInfo(name)?.GetValue(null);
-        if (result == null) {
+    /// Gets the value of the static field on the type
+    public static T? GetFieldValue<T>(this Type type, string name) {
+        if (type.GetFieldInfo(name, StaticAnyVisibility) is not { } field) {
             return default;
-        } else {
-            return (T) result;
         }
+
+        return (T?) field.GetValue(null);
     }
 
-    public static void SetFieldValue(this object obj, string name, object value) {
-        obj.GetType().GetFieldInfo(name)?.SetValue(obj, value);
+    /// Sets the value of the instance field on the object
+    public static void SetFieldValue(this object obj, string name, object? value) {
+        if (obj.GetType().GetFieldInfo(name, InstanceAnyVisibility) is not { } field) {
+            return;
+        }
+
+        field.SetValue(obj, value);
     }
 
-    public static void SetFieldValue(this Type type, string name, object value) {
-        type.GetFieldInfo(name)?.SetValue(null, value);
+    /// Sets the value of the static field on the type
+    public static void SetFieldValue(this Type type, string name, object? value) {
+        if (type.GetFieldInfo(name, StaticAnyVisibility) is not { } field) {
+            return;
+        }
+
+        field.SetValue(null, value);
     }
 
-    public static T GetPropertyValue<T>(this object obj, string name) {
-        object result = obj.GetType().GetPropertyInfo(name)?.GetValue(obj, null);
-        if (result == null) {
+    /// Gets the value of the instance property on the object
+    public static T? GetPropertyValue<T>(this object obj, string name) {
+        if (obj.GetType().GetPropertyInfo(name, InstanceAnyVisibility) is not { } property) {
             return default;
-        } else {
-            return (T) result;
         }
-    }
-
-    public static T GetPropertyValue<T>(Type type, string name) {
-        object result = type.GetPropertyInfo(name)?.GetValue(null, null);
-        if (result == null) {
+        if (!property.CanRead) {
+            $"Property '{name}' on type '{obj.GetType()}' is not readable".Log(LogLevel.Error);
             return default;
-        } else {
-            return (T) result;
         }
+
+        return (T?) property.GetValue(obj);
     }
 
-    public static void SetPropertyValue(this object obj, string name, object value) {
-        if (obj.GetType().GetPropertyInfo(name) is {CanWrite: true} propertyInfo) {
-            propertyInfo.SetValue(obj, value, null);
-        }
-    }
-
-    public static void SetPropertyValue(this Type type, string name, object value) {
-        if (type.GetPropertyInfo(name) is {CanWrite: true} propertyInfo) {
-            propertyInfo.SetValue(null, value, null);
-        }
-    }
-
-    private static T InvokeMethod<T>(object obj, Type type, string name, params object[] parameters) {
-        parameters ??= NullArgs;
-        object result = type.GetMethodInfo(name)?.Invoke(obj, parameters);
-        if (result == null) {
+    /// Gets the value of the static property on the type
+    public static T? GetPropertyValue<T>(this Type type, string name) {
+        if (type.GetPropertyInfo(name, StaticAnyVisibility) is not { } property) {
             return default;
-        } else {
-            return (T) result;
         }
+        if (!property.CanRead) {
+            $"Property '{name}' on type '{type}' is not readable".Log(LogLevel.Error);
+            return default;
+        }
+
+        return (T?) property.GetValue(null);
     }
 
-    public static T InvokeMethod<T>(this object obj, string name, params object[] parameters) {
-        return InvokeMethod<T>(obj, obj.GetType(), name, parameters);
+    /// Sets the value of the instance property on the object
+    public static void SetPropertyValue(this object obj, string name, object? value) {
+        if (obj.GetType().GetPropertyInfo(name, InstanceAnyVisibility) is not { } property) {
+            return;
+        }
+        if (!property.CanWrite) {
+            $"Property '{name}' on type '{obj.GetType()}' is not writable".Log(LogLevel.Error);
+            return;
+        }
+
+        property.SetValue(obj, value);
     }
 
-    public static T InvokeMethod<T>(this Type type, string name, params object[] parameters) {
-        return InvokeMethod<T>(null, type, name, parameters);
+    /// Sets the value of the static property on the type
+    public static void SetPropertyValue(this Type type, string name, object? value) {
+        if (type.GetPropertyInfo(name, StaticAnyVisibility) is not { } property) {
+            return;
+        }
+        if (!property.CanWrite) {
+            $"Property '{name}' on type '{type}' is not writable".Log(LogLevel.Error);
+            return;
+        }
+
+        property.SetValue(null, value);
     }
 
-    public static void InvokeMethod(this object obj, string name, params object[] parameters) {
-        InvokeMethod<object>(obj, obj.GetType(), name, parameters);
+    /// Invokes the instance method on the type
+    public static void InvokeMethod(this object obj, string name, params object?[]? parameters) {
+        if (obj.GetType().GetMethodInfo(name, parameters?.Select(param => param?.GetType()).ToArray(), InstanceAnyVisibility) is not { } method) {
+            return;
+        }
+
+        method.Invoke(obj, parameters);
     }
 
-    public static void InvokeMethod(this Type type, string name, params object[] parameters) {
-        InvokeMethod<object>(null, type, name, parameters);
+    /// Invokes the static method on the type
+    public static void InvokeMethod(this Type type, string name, params object?[]? parameters) {
+        if (type.GetMethodInfo(name, parameters?.Select(param => param?.GetType()).ToArray(), StaticAnyVisibility) is not { } method) {
+            return;
+        }
+
+        method.Invoke(null, parameters);
+    }
+
+    /// Invokes the instance method on the type, returning the result
+    public static T? InvokeMethod<T>(this object obj, string name, params object?[]? parameters) {
+        if (obj.GetType().GetMethodInfo(name, parameters?.Select(param => param?.GetType()).ToArray(), InstanceAnyVisibility) is not { } method) {
+            return default;
+        }
+
+        return (T?) method.Invoke(obj, parameters);
+    }
+
+    /// Invokes the static method on the type, returning the result
+    public static T? InvokeMethod<T>(this Type type, string name, params object?[]? parameters) {
+        if (type.GetMethodInfo(name, parameters?.Select(param => param?.GetType()).ToArray(), StaticAnyVisibility) is not { } method) {
+            return default;
+        }
+
+        return (T?) method.Invoke(null, parameters);
     }
 }
 
 internal static class HashCodeExtensions {
-    public static long GetCustomHashCode<T>(this IEnumerable<T> enumerable) {
+    public static long GetCustomHashCode<T>(this IEnumerable<T>? enumerable) {
         if (enumerable == null) {
             return 0;
         }
 
         unchecked {
             long hash = 17;
-            foreach (T item in enumerable) {
-                hash = hash * -1521134295 + EqualityComparer<T>.Default.GetHashCode(item);
+            foreach (var item in enumerable) {
+                hash = hash * -1521134295 + EqualityComparer<T>.Default.GetHashCode(item!);
             }
 
             return hash;
@@ -705,7 +835,7 @@ internal static class CloneUtil<T> {
     private static readonly Func<T, object> Clone;
 
     static CloneUtil() {
-        MethodInfo cloneMethod = typeof(T).GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic);
+        MethodInfo cloneMethod = typeof(T).GetMethodInfo("MemberwiseClone", parameterTypes: null, BindingFlags.Instance | BindingFlags.NonPublic);
         Clone = (Func<T, object>) cloneMethod.CreateDelegate(typeof(Func<T, object>));
     }
 
@@ -735,7 +865,7 @@ internal static class CloneUtil {
             throw new ArgumentException("object to and from must be the same type");
         }
 
-        foreach (PropertyInfo propertyInfo in to.GetType().GetAllProperties()) {
+        foreach (PropertyInfo propertyInfo in to.GetType().GetAllPropertyInfos()) {
             if (propertyInfo.GetGetMethod(true) == null || propertyInfo.GetSetMethod(true) == null) {
                 continue;
             }

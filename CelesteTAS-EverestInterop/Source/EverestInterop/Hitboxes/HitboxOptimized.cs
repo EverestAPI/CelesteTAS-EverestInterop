@@ -35,22 +35,21 @@ public static class HitboxOptimized {
         }
 
         typeof(Puffer).GetMethodInfo("Explode").HookBefore<Puffer>(self => pufferPushRadius.Add(new Circle(40f, self.X, self.Y)));
-        typeof(Puffer).GetMethod("Render").IlHook((cursor, context) => {
+        typeof(Puffer).GetMethodInfo("Render").IlHook((cursor, context) => {
             if (cursor.TryGotoNext(i => i.MatchLdloc(out _), i => i.MatchLdcI4(28))) {
                 cursor.Index++;
                 cursor.EmitDelegate(HidePufferWhiteLine);
             }
         });
 
-        if (ModUtils.GetType("CrystallineHelper", "vitmod.CustomPuffer") is { } customPufferType &&
-            customPufferType.CreateGetDelegate<Entity, Circle>("pushRadius") is { } getPushRadius) {
-            customPufferType.GetMethodInfo("Explode")
-                .HookBefore<Entity>(self => pufferPushRadius.Add(new Circle(getPushRadius.Invoke(self).Radius, self.X, self.Y)));
+        if (ModUtils.GetType("CrystallineHelper", "vitmod.CustomPuffer") is { } customPufferType) {
+            customPufferType.GetMethodInfo("Explode")?
+                .HookBefore<Entity>(self => pufferPushRadius.Add(new Circle(self.GetFieldValue<Circle>("pushRadius")!.Radius, self.X, self.Y)));
             // its debug render also needs optimize
             // but i have no good idea, so i put it aside
         }
 
-        using (new DetourConfigContext(new DetourConfig("CelesteTAS", before: ["*"])).Use()) {
+        using (new DetourConfigContext(new DetourConfig("CelesteTAS", priority: int.MaxValue)).Use()) {
             On.Monocle.Entity.DebugRender += ModDebugRender;
         }
     }

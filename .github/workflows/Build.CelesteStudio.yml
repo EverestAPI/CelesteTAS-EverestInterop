@@ -7,10 +7,25 @@ on:
         required: true
         type: string
         default: Release
+    outputs:
+      windows_cache_key:
+        value: ${{ jobs.cache.outputs.windows_cache_key }}
+      linux_cache_key:
+        value: ${{ jobs.cache.outputs.linux_cache_key }}
+      macos_cache_key:
+        value: ${{ jobs.cache.outputs.macos_cache_key }}
+      windows_cache_hit:
+        value: ${{ jobs.cache.outputs.windows_cache_hit }}
+      linux_cache_hit:
+        value: ${{ jobs.cache.outputs.linux_cache_hit }}
+      macos_cache_hit:
+        value: ${{ jobs.cache.outputs.macos_cache_hit }}
 
 jobs:
   cache:
+    name: Cache
     runs-on: ubuntu-latest
+
     outputs:
       windows_cache_key: ${{ steps.compute-key.outputs.windows_key }}
       linux_cache_key: ${{ steps.compute-key.outputs.linux_key }}
@@ -26,9 +41,9 @@ jobs:
       - name: Compute cache keys
         id: compute-key
         run: |
-          echo "windows_key=CelesteStudio-Windows-${{ inputs.build-cfg }}-$(git log -1 --format='%H' -- StudioCommunication Studio/CelesteStudio Studio/CelesteStudio.WPF)" >> $GITHUB_OUTPUT
-          echo "linux_key=CelesteStudio-Linux-${{ inputs.build-cfg }}-$(git log -1 --format='%H' -- StudioCommunication Studio/CelesteStudio Studio/CelesteStudio.GTK)" >> $GITHUB_OUTPUT
-          echo "macos_key=CelesteStudio-macOS-${{ inputs.build-cfg }}-$(git log -1 --format='%H' -- StudioCommunication Studio/CelesteStudio Studio/CelesteStudio.Mac)" >> $GITHUB_OUTPUT
+          echo "windows_key=CelesteStudio-Windows-${{ inputs.build-cfg }}-$(find StudioCommunication Studio/CelesteStudio Studio/CelesteStudio.WPF -type f -exec sha256sum {} + | sort | sha256sum | awk '{print $1}')" >> $GITHUB_OUTPUT
+          echo "linux_key=CelesteStudio-Linux-${{ inputs.build-cfg }}-$(find StudioCommunication Studio/CelesteStudio Studio/CelesteStudio.GTK -type f -exec sha256sum {} + | sort | sha256sum | awk '{print $1}')" >> $GITHUB_OUTPUT
+          echo "macos_key=CelesteStudio-macOS-${{ inputs.build-cfg }}-$(find StudioCommunication Studio/CelesteStudio Studio/CelesteStudio.Mac -type f -exec sha256sum {} + | sort | sha256sum | awk '{print $1}')" >> $GITHUB_OUTPUT
 
       - name: Check Windows cache
         id: check-windows
@@ -77,6 +92,7 @@ jobs:
           path: CelesteStudio-macos-arm64.zip
 
   build-windows:
+    name: Windows
     runs-on: windows-latest
 
     needs: cache
@@ -135,6 +151,7 @@ jobs:
           path: CelesteStudio-windows-x64.zip
 
   build-linux:
+    name: Linux
     runs-on: ubuntu-latest
 
     needs: cache
@@ -193,6 +210,7 @@ jobs:
           path: CelesteStudio-linux-x64.zip
 
   build-mac:
+    name: macOS
     runs-on: macos-13
 
     needs: cache

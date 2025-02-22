@@ -59,7 +59,7 @@ public static class HitboxSimplified {
         }
 
         ModUtils.GetType("FemtoHelper", "CustomMoonCreature")
-            ?.GetMethod("DebugRender")
+            ?.GetMethodInfo("DebugRender")
             ?.SkipMethod(IsSimplifiedHitboxes);
     }
 

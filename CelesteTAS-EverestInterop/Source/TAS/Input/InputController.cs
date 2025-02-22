@@ -146,19 +146,27 @@ public class InputController {
     }
 
     /// Moves the controller 1 frame forward, updating inputs and triggering commands
-    public void AdvanceFrame() {
+    public void AdvanceFrame(out bool couldPlayback) {
         RefreshInputs();
 
+        couldPlayback = CanPlayback;
+
         foreach (var command in CurrentCommands) {
-            if (command.Attribute.ExecuteTiming.Has(ExecuteTiming.Runtime) &&
-                (!EnforceLegalCommand.EnabledWhenRunning || command.Attribute.LegalInFullGame))
-            {
+            if (command.Attribute.ExecuteTiming.Has(ExecuteTiming.Runtime)
+                && (!EnforceLegalCommand.EnabledWhenRunning || command.Attribute.LegalInFullGame)
+            ) {
                 command.Invoke();
             }
 
-            // SaveAndQuitReenter inserts inputs, so we can't continue executing the commands
-            // It already handles the moving of all following commands
-            if (command.Attribute.Name == "SaveAndQuitReenter") break;
+            // These commands insert new inputs dynamically
+            // Since the generated inputs might've changed, the current position in the TAS need to be updated appropriately
+            if (command.Attribute.Name is "SaveAndQuitReenter" or "SelectCampaign") {
+                var newCommand = Commands.Values
+                    .SelectMany(cmds => cmds)
+                    .FirstOrDefault(cmd => cmd.FileLine == command.FileLine && cmd.FilePath == command.FilePath);
+
+                CurrentFrameInTas = newCommand.Frame;
+            }
         }
 
         if (!CanPlayback) {
@@ -231,6 +239,7 @@ public class InputController {
                 Commands[commandParsingFrame] = commands = new List<Command>();
             }
             commands.Add(command);
+            command.Setup();
 
             if (command.Is("Play")) {
                 // Workaround for the 'Play' command:
@@ -303,6 +312,7 @@ public class InputController {
     public void Clear() {
         Inputs.Clear();
         Commands.Clear();
+        Comments.Clear();
         FastForwards.Clear();
         FastForwardLabels.Clear();
 

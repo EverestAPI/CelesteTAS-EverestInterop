@@ -23,11 +23,14 @@ on:
 
 jobs:
   build-studio:
+    name: Build Celeste Studio
     uses: ./.github/workflows/Build.CelesteStudio.yml
     with:
       build-cfg: Debug
 
   build-celestetas:
+    name: Build CelesteTAS
+
     runs-on: ubuntu-latest
     needs: build-studio
 
@@ -51,6 +54,27 @@ jobs:
           mv CelesteStudio-linux-x64/CelesteStudio-linux-x64.zip .
           mv CelesteStudio-macos-x64/CelesteStudio-macos-x64.zip .
           mv CelesteStudio-macos-arm64/CelesteStudio-macos-arm64.zip .
+
+      - name: Cache Windows build
+        if: ${{ needs.build-studio.outputs.windows_cache_hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: CelesteStudio-windows-x64.zip
+          key: ${{ needs.build-studio.outputs.windows_cache_key }}
+      - name: Cache Linux build
+        if: ${{ needs.build-studio.outputs.linux_cache_hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: CelesteStudio-linux-x64.zip
+          key: ${{ needs.build-studio.outputs.linux_cache_key }}
+      - name: Cache macOS build
+        if: ${{ needs.build-studio.outputs.macos_cache_hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            CelesteStudio-macos-x64.zip
+            CelesteStudio-macos-arm64.zip
+          key: ${{ needs.build-studio.outputs.macos_cache_key }}
 
       - name: Fill-in download info
         run: |
