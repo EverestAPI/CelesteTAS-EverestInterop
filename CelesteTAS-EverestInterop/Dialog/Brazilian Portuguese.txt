@@ -6,9 +6,9 @@ TAS_HITBOX_COLOR_DESCRIPTION=           A cor da Hitbox pode apenas ser editado 
                                         Ou use o comando entity/trigger/plataform_hitbox_color no seu console
 TAS_SIMPLIFIED_GRAPHICS=                Gráficos Simplificados
 TAS_INFO_HUD=                           HUD de Informações
-TAS_INFO_HUD_DESCRIPTION=               Aperte duas vezes o botão do HUD de informações para ativar ou desativá-lo{n}
-                                        Segure a hotkey do HUD de Informações e clique-esquerdo para agarrar e soltá-lo{n}
-                                        Segure o botão de HUD de informações e depois clique-esquerdo para observar a entidade
+TAS_INFO_HUD_DESCRIPTION=               Aperte duas vezes o atalho de HUD de Informações para ativar/desativá-lo{n}
+                                        Segure o atalho do HUD de Informações e dê clique-esquerdo nele para movê-lo pela tela{n}
+                                        Segure o atalho de HUD de informações e dê clique-esquerdo para observar a entidade.
 TAS_ROUND_VALUES=                       Arrendondar Valores
 TAS_FORWARD_SPEED=                      Velocidade de Avanço
 TAS_MORE_OPTIONS=                       Mais Opções
@@ -100,10 +100,11 @@ TAS_HOTKEYS_DESCRIPTION=                Realizar a bind de múltiplas teclas par
 
 # ========================================== More Options Submenu ==========================================
 TAS_CENTER_CAMERA=                      Centralizar Câmera
-TAS_CENTER_CAMERA_HORIZONTALLY_ONLY=    Centralizar Câmera Apenas Horizontalmente
+TAS_CENTER_CAMERA_HORIZONTALLY_ONLY=    Centralizar Câmera apenas Horizontalmente
 TAS_AUTO_ENABLE_EXCAMERADYNAMICS=       Ativar 'Extended Camera Dynamics' para o Centralizar Câmera
-TAS_EXCAMERADYNAMICS_DESCRIPTION=       NOTA: Você precisará reiniciar o nível após desativá-lo para que hitboxes com menor zoom funcionem.
-TAS_RESTORE_SETTINGS=                   Restaurar Todas as Opções quando o TAS Parar
+TAS_EXCAMERADYNAMICS_DESCRIPTION_A=     O mod “Extended Camera Dynamics” é necessário para habilitar essa opção
+TAS_EXCAMERADYNAMICS_DESCRIPTION_B=     Você deverá reiniciar o nível após desabilitar esta opção para que as Hitboxes funcionem em Zoom diminuído 
+TAS_RESTORE_SETTINGS=                   Restaurar configurações após o TAS Parar
 TAS_LAUNCH_STUDIO_AT_BOOT=              Lançar Studio ao Iniciar Jogo
 TAS_ATTEMPT_TO_CONNECT_TO_STUDIO=       Tentar se Conectar ao Studio
 TAS_SHOW_STUDIO_UPDATE_BANNER=          Mostrar Faixa de Update do Studio
@@ -118,18 +119,18 @@ TAS_IGNORE_GC_COLLECT_DESCRIPTION=      Beneficia o Avanço Rápido para TASses 
                                         mas aumentará o uso de memória e poderá causar erro de falta de memória
 
 # ========================================== Hotkey Config ==========================================
-TAS_KEY_START_STOP=                     Iniciar/Parar
-TAS_KEY_RESTART=                        Reiniciar
-TAS_KEY_FAST_FORWARD=                   Avanço Rápido
-TAS_KEY_FAST_FORWARD_COMMENT=           Avanço Rápido ao Próximo Comentário
-TAS_KEY_SLOW_FORWARD=                   Avanço Lento
-TAS_KEY_FRAME_ADVANCE=                  Avanço de Frame
-TAS_KEY_PAUSE_RESUME=                   Pausar/Resumir
-TAS_KEY_HITBOXES=                       Hitboxes
-TAS_KEY_TRIGGER_HITBOXES=               Hitboxes de Trigger
-TAS_KEY_SIMPLIFIED_GRAPHICS=            Gráficos Simplificados
-TAS_KEY_CENTER_CAMERA=                  Centralizar Câmera
-TAS_KEY_LOCK_CAMERA=                    Travar Câmera
+TAS_KEY_START_STOP=                     Iniciar/Pausar TAS
+TAS_KEY_RESTART=                        Reiniciar TAS
+TAS_KEY_FAST_FORWARD=                   Avanço Rápido de TAS
+TAS_KEY_FAST_FORWARD_COMMENT=           Avançar TAS para o próximo marcador
+TAS_KEY_SLOW_FORWARD=                   Desacelerar TAS
+TAS_KEY_FRAME_ADVANCE=                  Avançar Frame do TAS
+TAS_KEY_PAUSE_RESUME=                   Pausar/Retomar TAS
+TAS_KEY_HITBOXES=                       Ativar/Desativar Hitboxes
+TAS_KEY_TRIGGER_HITBOXES=               Ativar/Desativar Hitboxes de Trigger
+TAS_KEY_SIMPLIFIED_GRAPHICS=            Ativar/Desativar Gráficos Simplificados
+TAS_KEY_CENTER_CAMERA=                  Ativar/Desativar Câmera Central
+TAS_KEY_LOCK_CAMERA=                    Fixar Câmera Central
 TAS_KEY_SAVE_STATE=                     Save State no TAS
 TAS_KEY_CLEAR_STATE=                    Clear State no TAS
 TAS_KEY_INFO_HUD=                       HUD de Informações
