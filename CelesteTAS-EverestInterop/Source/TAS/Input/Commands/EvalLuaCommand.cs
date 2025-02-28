@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using TAS.Lua;
 using TAS.Module;
+using TAS.InfoHUD;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -109,12 +110,16 @@ internal static class EvalLuaCommand {
     [TasCommand(CommandName, LegalInFullGame = false, ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime, MetaDataProvider = typeof(Meta))]
     private static void EvalLua(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         if (Command.Parsing) {
-            if (commandLine.Arguments.Length != 1) {
+            // Support [[ Lua Code ]] syntax, like Custom Info
+            string code = InfoCustom.LuaRegex.Replace(string.Join(commandLine.ArgumentSeparator, commandLine.Arguments), match => match.Groups[1].Value);
+            
+            if (string.IsNullOrWhiteSpace(code)) {
                 AbortTas("Expected Lua code");
                 return;
             }
+            
 
-            var ctx = LuaContext.Compile(string.Join(commandLine.ArgumentSeparator, commandLine.Arguments), CommandName);
+            var ctx = LuaContext.Compile(code, CommandName);
             if (ctx.Failure) {
                 AbortTas($"Invalid Lua code: {ctx.Error}");
                 return;

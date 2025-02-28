@@ -34,7 +34,7 @@ public static class InfoCustom {
 
     private static readonly Regex TargetQueryRegex = new(@"\{(.*?)\}", RegexOptions.Compiled);
     private static readonly Regex TableRegex = new(@"\|\|(.*?)\|\|", RegexOptions.Compiled);
-    private static readonly Regex LuaRegex = new(@"\[\[(.+?)\]\]", RegexOptions.Compiled);
+    internal static readonly Regex LuaRegex = new(@"\[\[(.+?)\]\]", RegexOptions.Compiled);
 
     /// Should return true if the value was successfully formatted, otherwise false
     private delegate bool ValueFormatter(object? value, int decimals, out string formattedValue);

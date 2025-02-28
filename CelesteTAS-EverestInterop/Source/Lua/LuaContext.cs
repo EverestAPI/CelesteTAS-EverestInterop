@@ -17,6 +17,13 @@ namespace TAS.Lua;
 
 /// Compiled Lua code which can be executed
 internal readonly struct LuaContext : IDisposable {
+    private const string Prologue = """
+                                    const System typeof clr.System
+                                    const Celeste typeof clr.Celeste
+                                    const Monocle typeof clr.Monocle
+                                    const Vector2 typeof clr.Microsoft.Xna.Framework.Vector2
+
+                                    """;
 
     [Load]
     private static void Load() {
@@ -58,7 +65,7 @@ internal readonly struct LuaContext : IDisposable {
     /// Compiles Lua text code into an executable chunk
     public static Result<NeoLua.LuaChunk, string> CompileChunk(NeoLua.Lua lua, string code, string name = "CelesteTAS_LuaContext") {
         try {
-            var chunk = lua.CompileChunk(code, name, new NeoLua.LuaCompileOptions { DebugEngine = NeoLua.LuaExceptionDebugger.Default } );
+            var chunk = lua.CompileChunk(Prologue + code, name, new NeoLua.LuaCompileOptions { DebugEngine = NeoLua.LuaExceptionDebugger.Default } );
             return Result<NeoLua.LuaChunk, string>.Ok(chunk);
         } catch (NeoLua.LuaException ex) {
             ex.LogException("Lua compilation error");
