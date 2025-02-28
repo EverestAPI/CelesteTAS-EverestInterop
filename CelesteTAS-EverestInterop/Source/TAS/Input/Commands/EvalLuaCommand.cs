@@ -114,7 +114,7 @@ internal static class EvalLuaCommand {
                 return;
             }
 
-            var ctx = LuaContext.Compile(commandLine.Arguments[0], CommandName);
+            var ctx = LuaContext.Compile(string.Join(commandLine.ArgumentSeparator, commandLine.Arguments), CommandName);
             if (ctx.Failure) {
                 AbortTas($"Invalid Lua code: {ctx.Error}");
                 return;
