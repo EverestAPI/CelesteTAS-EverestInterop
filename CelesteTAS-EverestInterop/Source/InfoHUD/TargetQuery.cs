@@ -17,6 +17,13 @@ using TAS.Utils;
 
 namespace TAS.InfoHUD;
 
+// By default, target queries can only access static members. By providing an `IInstanceResolver`,
+// you can make it so that `Player` resolves to all instances of the player entity in the level.
+internal interface IInstanceResolver {
+    public bool CanResolve(Type type);
+    List<object>? Resolve(Type type, List<Type> componentTypes, EntityID? entityId);
+}
+
 /// Contains all the logic for getting data from a target-query
 public static class TargetQuery {
     /// Prevents invocations of methods / execution of Lua code in the Custom Info
@@ -26,7 +33,18 @@ public static class TargetQuery {
     private static readonly Dictionary<string, (List<Type> Types, List<Type> ComponentTypes, EntityID? EntityID)> baseTypeCache = [];
 
     /// Searches for the target type, optional target assembly, optional component type, optional component assembly, and optional EntityID
+    /// e.g. `Type@Assembly:Component@Assembly[RoomName:EntityId]`
     private static readonly Regex BaseTypeRegex = new(@"^([\w.]+)(@(?:[^.:\[\]\n]*))?(?::(\w+))?(@(?:[^.:\[\]\n]*))?(?:\[(.+):(\d+)\])?$", RegexOptions.Compiled);
+
+    private static IInstanceResolver[] typeInstanceResolvers = [
+        new GlobalInstanceResolver<Settings>(Settings.Instance),
+        new GlobalInstanceResolver<SaveData>(SaveData.Instance),
+        new GlobalInstanceResolver<Assists>(Assists.Default),
+        new EverestSettingsInstanceResolver(),
+        new ComponentInstanceResolver(),
+        new EntityInstanceResolver(),
+        new SceneInstanceResolver(),
+    ];
 
     [Initialize]
     private static void CollectAllTypes() {
@@ -217,68 +235,9 @@ public static class TargetQuery {
     /// Resolves a type into all applicable instances of it
     /// Returns null for types which are always in a static context
     public static List<object>? ResolveTypeInstances(Type type, List<Type> componentTypes, EntityID? entityId) {
-        if (type == typeof(Settings)) {
-            return [Settings.Instance];
-        }
-        if (type == typeof(SaveData)) {
-            return [Settings.Instance];
-        }
-        if (type == typeof(Assists)) {
-            return [Settings.Instance];
-        }
-
-        if (type.IsSameOrSubclassOf(typeof(EverestModuleSettings))) {
-            return Everest.Modules.FirstOrDefault(mod => mod.SettingsType == type) is { } module ? [module._Settings] : [];
-        }
-
-        if (type.IsSameOrSubclassOf(typeof(Entity))) {
-            IEnumerable<Entity> entityInstances;
-            if (Engine.Scene.Tracker.Entities.TryGetValue(type, out var entities)) {
-                entityInstances = entities
-                    .Where(e => entityId == null || e.GetEntityData()?.ToEntityId().Key == entityId.Value.Key);
-            } else {
-                entityInstances = Engine.Scene.Entities
-                    .Where(e => e.GetType().IsSameOrSubclassOf(type) && (entityId == null || e.GetEntityData()?.ToEntityId().Key == entityId.Value.Key));
-            }
-
-            if (componentTypes.IsEmpty()) {
-                return entityInstances
-                    .Select(e => (object) e)
-                    .ToList();
-            } else {
-                return entityInstances
-                    .SelectMany(e => e.Components.Where(c => componentTypes.Any(componentType => c.GetType().IsSameOrSubclassOf(componentType))))
-                    .Select(c => (object) c)
-                    .ToList();
-            }
-        }
-
-        if (type.IsSameOrSubclassOf(typeof(Component))) {
-            IEnumerable<Component> componentInstances;
-            if (Engine.Scene.Tracker.Components.TryGetValue(type, out var components)) {
-                componentInstances = components;
-            } else {
-                componentInstances = Engine.Scene.Entities
-                    .SelectMany(e => e.Components)
-                    .Where(c => c.GetType().IsSameOrSubclassOf(type));
-            }
-
-            return componentInstances
-                .Select(c => (object) c)
-                .ToList();
-        }
-
-        if (Engine.Scene is Level level) {
-            if (type == typeof(Session)) {
-                return [level.Session];
-            }
-        }
-        if (Engine.Scene.GetType() == type) {
-            return [Engine.Scene];
-        }
-
-        // Nothing found
-        return null;
+        return typeInstanceResolvers
+            .Select(resolver => resolver.CanResolve(type) ? resolver.Resolve(type, componentTypes, entityId) : null)
+            .FirstOrDefault(instances => instances != null);
     }
 
     /// Recursively resolves the type of the specified members
