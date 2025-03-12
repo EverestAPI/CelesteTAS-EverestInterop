@@ -185,13 +185,6 @@ public sealed class Settings {
     [TomlProperty("KeyBindings")]
     private Dictionary<string, Hotkey> _keyBindings { get; set; } = new();
 
-    // Frame operations
-    public char AddFrameOperationChar { get; set; } = '+';
-    public char SubFrameOperationChar { get; set; } = '-';
-    public char MulFrameOperationChar { get; set; } = '*';
-    public char DivFrameOperationChar { get; set; } = '/';
-    public char SetFrameOperationChar { get; set; } = '=';
-
     public bool AutoBackupEnabled { get; set; } = true;
     public int AutoBackupRate { get; set; } = 1;
     public int AutoBackupCount { get; set; } = 100;

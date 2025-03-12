@@ -336,6 +336,11 @@ public sealed class Studio : Form {
             MenuEntry.Game_Pause.ToAction(),
             MenuEntry.Game_Restart.ToAction(),
             MenuEntry.Game_FrameAdvance.ToAction(),
+            MenuEntry.FrameOperation_Add.ToAction(),
+            MenuEntry.FrameOperation_Sub.ToAction(),
+            MenuEntry.FrameOperation_Mul.ToAction(),
+            MenuEntry.FrameOperation_Div.ToAction(),
+            MenuEntry.FrameOperation_Set.ToAction(),
         ];
     }
 

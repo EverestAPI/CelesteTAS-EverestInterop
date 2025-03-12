@@ -11,20 +11,12 @@ namespace CelesteStudio.Dialog;
 public class KeyBindingDialog : Dialog<bool> {
     private readonly Dictionary<MenuEntry, Hotkey> keyBindings = new();
 
-    private char addFrameOp, subFrameOp, mulFrameOp, divFrameOp, setFrameOp;
-
     private KeyBindingDialog() {
         var list = new StackLayout {
             MinimumSize = new Size(500, 0),
             Padding = 10,
             Spacing = 10,
         };
-
-        addFrameOp = Settings.Instance.AddFrameOperationChar;
-        subFrameOp = Settings.Instance.SubFrameOperationChar;
-        mulFrameOp = Settings.Instance.MulFrameOperationChar;
-        divFrameOp = Settings.Instance.DivFrameOperationChar;
-        setFrameOp = Settings.Instance.SetFrameOperationChar;
 
         foreach (var category in Enum.GetValues<MenuEntryCategory>()) {
             var layout = new DynamicLayout {
@@ -68,85 +60,6 @@ public class KeyBindingDialog : Dialog<bool> {
                 Content = layout,
                 Padding = 10,
             });
-
-            // Append custom "Frame Operations" settings
-            if (category == MenuEntryCategory.Editor) {
-                var frameOpLayout = new DynamicLayout {
-                    DefaultSpacing = new Size(15, 5),
-                    Padding = new Padding(0, 0, 0, 10),
-                };
-                frameOpLayout.BeginVertical();
-
-                foreach (var op in Enum.GetValues<CalculationOperator>()) {
-                    frameOpLayout.BeginHorizontal();
-
-                    var charBox = new TextBox {
-                        Font = SystemFonts.Bold(),
-                        Width = 150,
-
-                        MaxLength = 1,
-                        Text = op switch {
-                            CalculationOperator.Add => addFrameOp == char.MaxValue ? string.Empty : addFrameOp.ToString(),
-                            CalculationOperator.Sub => subFrameOp == char.MaxValue ? string.Empty : subFrameOp.ToString(),
-                            CalculationOperator.Mul => mulFrameOp == char.MaxValue ? string.Empty : mulFrameOp.ToString(),
-                            CalculationOperator.Div => divFrameOp == char.MaxValue ? string.Empty : divFrameOp.ToString(),
-                            CalculationOperator.Set => setFrameOp == char.MaxValue ? string.Empty : setFrameOp.ToString(),
-                            _ => throw new ArgumentOutOfRangeException()
-                        },
-                    };
-                    charBox.TextChanged += (_, _) => {
-                        char c = charBox.Text.Length == 0 ? char.MaxValue : char.ToUpper(charBox.Text[0]);
-
-                        string text = c == char.MaxValue ? string.Empty : c.ToString();
-                        if (charBox.Text != text) {
-                            charBox.Text = text;
-                        }
-
-                        switch (op) {
-                            case CalculationOperator.Add:
-                                addFrameOp = c;
-                                break;
-                            case CalculationOperator.Sub:
-                                subFrameOp = c;
-                                break;
-                            case CalculationOperator.Mul:
-                                mulFrameOp = c;
-                                break;
-                            case CalculationOperator.Div:
-                                divFrameOp = c;
-                                break;
-                            case CalculationOperator.Set:
-                                setFrameOp = c;
-                                break;
-                            default:
-                                throw new ArgumentOutOfRangeException();
-                        }
-                    };
-
-                    frameOpLayout.BeginVertical();
-                    frameOpLayout.AddSpace();
-                    frameOpLayout.Add(new Label { Text = op switch {
-                        CalculationOperator.Add => "Add",
-                        CalculationOperator.Sub => "Subtract",
-                        CalculationOperator.Mul => "Multiply",
-                        CalculationOperator.Div => "Divide",
-                        CalculationOperator.Set => "Set",
-                        _ => throw new ArgumentOutOfRangeException()
-                    }, Width = 300 });
-                    frameOpLayout.AddSpace();
-                    frameOpLayout.EndVertical();
-
-                    frameOpLayout.Add(charBox);
-
-                    frameOpLayout.EndHorizontal();
-                }
-
-                list.Items.Add(new GroupBox {
-                    Text = "Frame Operations",
-                    Content = frameOpLayout,
-                    Padding = 10,
-                });
-            }
         }
 
         Title = "Edit Key Bindings";
@@ -178,12 +91,6 @@ public class KeyBindingDialog : Dialog<bool> {
                 Settings.Instance.KeyBindings[entry] = hotkey;
             }
         }
-
-        Settings.Instance.AddFrameOperationChar = dialog.addFrameOp;
-        Settings.Instance.SubFrameOperationChar = dialog.subFrameOp;
-        Settings.Instance.MulFrameOperationChar = dialog.mulFrameOp;
-        Settings.Instance.DivFrameOperationChar = dialog.divFrameOp;
-        Settings.Instance.SetFrameOperationChar = dialog.setFrameOp;
 
         Settings.OnKeyBindingsChanged();
         Settings.Save();

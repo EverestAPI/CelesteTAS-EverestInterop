@@ -460,6 +460,41 @@ public record struct BindableAction {
                 DefaultKeyBinding = Hotkey.Key(Keys.None),
                 Action = () => CommunicationWrapper.SendHotkey(HotkeyID.FrameAdvance),
             }
+        }, {
+            MenuEntry.FrameOperation_Add, new BindableAction {
+                Category = MenuEntryCategory.FrameOps,
+                EntryName = "Add",
+                DefaultKeyBinding = Hotkey.Char('+'),
+                Action = () => Studio.Instance.Editor.OnFrameOp(CalculationOperator.Add),
+            }
+        }, {
+            MenuEntry.FrameOperation_Sub, new BindableAction {
+                Category = MenuEntryCategory.FrameOps,
+                EntryName = "Subtract",
+                DefaultKeyBinding = Hotkey.Char('-'),
+                Action = () => Studio.Instance.Editor.OnFrameOp(CalculationOperator.Sub),
+            }
+        }, {
+            MenuEntry.FrameOperation_Mul, new BindableAction {
+                Category = MenuEntryCategory.FrameOps,
+                EntryName = "Multiply",
+                DefaultKeyBinding = Hotkey.Char('*'),
+                Action = () => Studio.Instance.Editor.OnFrameOp(CalculationOperator.Mul),
+            }
+        }, {
+            MenuEntry.FrameOperation_Div, new BindableAction {
+                Category = MenuEntryCategory.FrameOps,
+                EntryName = "Divide",
+                DefaultKeyBinding = Hotkey.Char('/'),
+                Action = () => Studio.Instance.Editor.OnFrameOp(CalculationOperator.Div),
+            }
+        }, {
+            MenuEntry.FrameOperation_Set, new BindableAction {
+                Category = MenuEntryCategory.FrameOps,
+                EntryName = "Set",
+                DefaultKeyBinding = Hotkey.Char('+'),
+                Action = () => Studio.Instance.Editor.OnFrameOp(CalculationOperator.Set),
+            }
         },
     };
 
@@ -498,8 +533,10 @@ public enum MenuEntry {
     StatusPopout_AlwaysOnTop,
 
     Game_Start, Game_Restart, Game_FrameAdvance, Game_Pause,
+    
+    FrameOperation_Add, FrameOperation_Sub, FrameOperation_Mul, FrameOperation_Div, FrameOperation_Set,
 }
-public enum MenuEntryCategory { File, Settings, View, Editor, ContextActions, Status, StatusPopout, GameHotkeys }
+public enum MenuEntryCategory { File, Settings, View, Editor, FrameOps, ContextActions, Status, StatusPopout, GameHotkeys}
 
 public static class MenuEntryExtensions {
     private static readonly Dictionary<MenuEntryCategory, MenuEntry[]> Categories = BindableAction.All
@@ -512,6 +549,7 @@ public static class MenuEntryExtensions {
         MenuEntryCategory.Settings => "Settings",
         MenuEntryCategory.View => "View",
         MenuEntryCategory.Editor => "Editor",
+        MenuEntryCategory.FrameOps => "Frame Operations",
         MenuEntryCategory.ContextActions => "Context Actions",
         MenuEntryCategory.Status => "Game Info",
         MenuEntryCategory.StatusPopout => "Game Info Popout",

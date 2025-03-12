@@ -947,15 +947,15 @@ public sealed class Editor : SkiaDrawable {
             }
         }
 
-        if (calculationState != null) {
-            CalculationHandleKey(e);
-            Invalidate();
-            return;
-        }
-
         // Forward hotkeys from menu entries / snippets
         if (CheckShortcuts(Hotkey.FromEvent(e))) {
             e.Handled = true;
+            return;
+        }
+
+        if (calculationState != null) {
+            CalculationHandleKey(e);
+            Invalidate();
             return;
         }
 
@@ -1088,11 +1088,6 @@ public sealed class Editor : SkiaDrawable {
                 break;
             }
             default:
-                if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _) && CalculationExtensions.TryParse(e.KeyChar) is { } op) {
-                    StartCalculation(op);
-                    e.Handled = true;
-                }
-
                 // macOS will make a beep sounds when the event isn't handled
                 // ..that also means OnTextInput won't be called..
                 if (Eto.Platform.Instance.IsMac) {
@@ -1237,29 +1232,15 @@ public sealed class Editor : SkiaDrawable {
                 e.Handled = true;
                 return;
             }
-        }
-
-        if (CalculationExtensions.TryParse(e.KeyChar) is { } op) {
-            // Cancel with same operation again
-            if (op == calculationState.Operator && calculationState.Operand.Length == 0) {
-                calculationState = null;
-                e.Handled = true;
-                return;
-            }
-
-            CommitCalculation();
-            StartCalculation(op);
-            e.Handled = true;
-        } else {
             // Allow A-Z to be handled by the action line editing
-            if (e.Key is >= Keys.A and <= Keys.Z) {
+            case >= Keys.A and <= Keys.Z: {
                 calculationState = null;
                 e.Handled = false;
                 return;
             }
-
-            e.Handled = false;
         }
+
+        e.Handled = false;
     }
 
     private void CommitCalculation(int stealFrom = 0) {
@@ -2061,23 +2042,6 @@ public sealed class Editor : SkiaDrawable {
         // If it's an action line, handle it ourselves
         if (TryParseAndFormatActionLine(Document.Caret.Row, out actionLine) && e.Text.Length == 1) {
             ClearQuickEdits();
-
-            if (CalculationExtensions.TryParse(typedCharacter) is { } op) {
-                if (calculationState != null) {
-                    // Cancel with same operation again
-                    if (op == calculationState.Operator && calculationState.Operand.Length == 0) {
-                        calculationState = null;
-                        Invalidate();
-                        return;
-                    }
-
-                    CommitCalculation();
-                }
-
-                StartCalculation(op);
-                Invalidate();
-                return;
-            }
 
             line = Document.Lines[Document.Caret.Row];
             leadingSpaces = line.Length - line.TrimStart().Length;
@@ -2942,6 +2906,23 @@ public sealed class Editor : SkiaDrawable {
             if (Document.Selection.End.Row >= row)
                 Document.Selection.End.Row--;
         }
+    }
+
+    public void OnFrameOp(CalculationOperator op) {
+        if (calculationState != null) {
+            // Cancel with same operation again
+            if (op == calculationState.Operator && calculationState.Operand.Length == 0) {
+                calculationState = null;
+                Invalidate();
+                return;
+            }
+
+            CommitCalculation();
+            StartCalculation(op);
+        }
+
+        StartCalculation(op);
+        Invalidate();
     }
 
     #endregion
