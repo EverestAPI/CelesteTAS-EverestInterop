@@ -23,14 +23,14 @@ public class CelesteTasModule : EverestModule {
         AttributeUtils.CollectOwnMethods<InitializeAttribute>();
     }
 
-    public static CelesteTasModule Instance { get; private set; }
+    public static CelesteTasModule Instance { get; private set; } = null!;
 
     public override Type SettingsType => typeof(CelesteTasSettings);
 
     public override void Initialize() {
         AttributeUtils.Invoke<InitializeAttribute>();
 
-        // required run after TasCommandAttribute.CollectMethods()
+        // required to be run after TasCommandAttribute.CollectMethods()
         if (TasSettings.AttemptConnectStudio) {
             CommunicationWrapper.Start();
         }

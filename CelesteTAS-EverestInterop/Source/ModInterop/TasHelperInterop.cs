@@ -10,10 +10,10 @@ internal static class TasHelperInterop {
     private static bool loaded;
 
     public static HashSet<Entity> GetUnimportantTriggers() {
-        return loaded ? TasHelperImport.GetUnimportantTriggers() : new HashSet<Entity>();
+        return loaded ? TasHelperImport.GetUnimportantTriggers!() : [];
     }
 
-    public static bool InPrediction => loaded ? TasHelperImport.InPrediciton() : false;
+    public static bool InPrediction => loaded && TasHelperImport.InPrediciton!();
 
     [Initialize]
     private static void Initialize() {
@@ -24,9 +24,9 @@ internal static class TasHelperInterop {
     [ModImportName("TASHelper")]
     private static class TasHelperImport {
 
-        public static Func<HashSet<Entity>> GetUnimportantTriggers;
+        public static Func<HashSet<Entity>>? GetUnimportantTriggers = null;
 
-        public static Func<bool> InPrediciton;
+        public static Func<bool>? InPrediciton = null;
     }
 }
 

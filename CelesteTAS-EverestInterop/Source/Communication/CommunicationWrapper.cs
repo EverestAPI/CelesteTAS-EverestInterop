@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Celeste.Mod;
 using StudioCommunication;
+using System.Diagnostics.CodeAnalysis;
 using TAS.EverestInterop;
 using TAS.Input;
 using TAS.Module;
@@ -11,8 +12,9 @@ namespace TAS.Communication;
 
 public static class CommunicationWrapper {
 
+    [MemberNotNullWhen(true, nameof(comm))]
     public static bool Connected => comm is { Connected: true };
-    private static CommunicationAdapterCeleste comm;
+    private static CommunicationAdapterCeleste? comm;
 
     [Load]
     private static void Load() {

@@ -1,12 +1,9 @@
-using System;
-using System.Collections.Generic;
 using System.Reflection;
 using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.Core;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
-using MonoMod.Utils;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
@@ -116,7 +113,7 @@ public static class BindingHelper {
         if (origKbTextInput.HasValue) {
             GameInput.Initialize();
             CoreModule.Settings.UseKeyboardForTextInput = origKbTextInput.Value;
-            MInput.GamePads[GameInput.Gamepad].Attached = origAttached.Value;
+            MInput.GamePads[GameInput.Gamepad].Attached = origAttached!.Value;
             origKbTextInput = null;
             origAttached = null;
         }

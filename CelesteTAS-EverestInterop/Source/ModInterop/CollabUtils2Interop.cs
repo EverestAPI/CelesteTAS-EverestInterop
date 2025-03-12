@@ -12,6 +12,6 @@ internal static class CollabUtils2Interop {
 
     [ModExportName("CollabUtils2.LobbyHelper")]
     public static class Lobby {
-        public static Func<string, bool>? IsCollabLevelSet;
+        public static Func<string, bool>? IsCollabLevelSet = null;
     }
 }

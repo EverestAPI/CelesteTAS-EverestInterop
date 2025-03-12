@@ -27,7 +27,7 @@ public static class LuaHelpers {
     [UsedImplicitly]
     public static Entity? GetEntity(string targetQuery) {
         if (TryGetEntityTypeWithId(targetQuery, out var type, out var entityId)) {
-            return (Entity?) TargetQuery.ResolveTypeInstances(type, [], entityId).FirstOrDefault();
+            return (Entity?) TargetQuery.ResolveTypeInstances(type, [], entityId)?.FirstOrDefault();
         } else {
             return null;
         }
@@ -37,7 +37,7 @@ public static class LuaHelpers {
     [UsedImplicitly]
     public static List<Entity> GetEntities(string targetQuery) {
         if (TryGetEntityTypeWithId(targetQuery, out var type, out var entityId)) {
-            return TargetQuery.ResolveTypeInstances(type, [], entityId).Cast<Entity>().ToList();
+            return TargetQuery.ResolveTypeInstances(type, [], entityId)?.Cast<Entity>()?.ToList() ?? [];
         } else {
             return [];
         }
@@ -167,13 +167,13 @@ public static class LuaHelpers {
 
     /// Returns the current level
     [UsedImplicitly]
-    public static Level GetLevel() {
+    public static Level? GetLevel() {
         return Engine.Scene.GetLevel();
     }
 
     /// Returns the current session
     [UsedImplicitly]
-    public static Session GetSession() {
+    public static Session? GetSession() {
         return Engine.Scene.GetSession();
     }
 
@@ -192,7 +192,7 @@ public static class LuaHelpers {
         if (instanceOrTargetQuery is string targetQuery) {
             if (TargetQuery.ResolveBaseTypes(targetQuery.Split('.'), out _, out _, out _) is { } types && types.IsNotEmpty()) {
                 type = types[0];
-                instance = TargetQuery.ResolveTypeInstances(types[0], [], EntityID.None).FirstOrDefault();
+                instance = TargetQuery.ResolveTypeInstances(types[0], [], EntityID.None)?.FirstOrDefault();
                 return true;
             } else {
                 type = null;

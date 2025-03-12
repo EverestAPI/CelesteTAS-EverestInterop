@@ -12,7 +12,7 @@ public static class DisableAchievements {
 
         // Before hooking Stats.Increment, check if the method is empty.
         // Hooking empty methods causes issues on Linux versions notably, and Stats.Increment is empty in non-Steam versions of the game.
-        using (DynamicMethodDefinition statsDmd = new(typeof(Stats).GetMethodInfo("Increment"))) {
+        using (DynamicMethodDefinition statsDmd = new(typeof(Stats).GetMethodInfo("Increment")!)) {
             int instructionCount = statsDmd.Definition.Body.Instructions.Count;
             if (instructionCount > 1) {
                 // the method has more than a lonely "ret", so hook it.
@@ -22,7 +22,7 @@ public static class DisableAchievements {
 
         // Before hooking Achievements.Register, check the size of the method.
         // If it is 4 instructions long, hooking it is unnecessary and even causes issues.
-        using (DynamicMethodDefinition statsDmd = new(typeof(Achievements).GetMethodInfo("Register"))) {
+        using (DynamicMethodDefinition statsDmd = new(typeof(Achievements).GetMethodInfo("Register")!)) {
             int instructionCount = statsDmd.Definition.Body.Instructions.Count;
             if (instructionCount > 4) {
                 On.Celeste.Achievements.Register += Achievements_Register;

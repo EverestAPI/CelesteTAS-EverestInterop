@@ -14,7 +14,7 @@ using TAS.Utils;
 namespace TAS.EverestInterop.InfoHUD;
 
 public static class InfoHud {
-    private static EaseInSubMenu subMenuItem;
+    private static EaseInSubMenu? subMenuItem;
     public static Vector2 Size { get; private set; }
 
     [Load]

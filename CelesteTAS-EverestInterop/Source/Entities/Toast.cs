@@ -17,7 +17,7 @@ public class DashCollision() : Component(active: false, visible: false) {
 internal class Toast : Entity {
     private const int Padding = 25;
     private const float DefaultDuration = 2f;
-    private string message;
+    private string message = "";
     private readonly float duration;
     private float alpha;
     private float unEasedAlpha;

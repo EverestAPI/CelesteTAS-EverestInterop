@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using Celeste;
 using Celeste.Mod;
-using Celeste.Mod.Core;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using MonoMod.Cil;
@@ -19,15 +18,15 @@ public static class ConsoleEnhancements {
 
     [Initialize]
     private static void InitializeHelperMethods() {
-        AllModNames.Add(ModUtils.VanillaAssembly.FullName, "Celeste");
+        AllModNames.Add(ModUtils.VanillaAssembly.FullName!, "Celeste");
         foreach (EverestModule module in Everest.Modules) {
             if (module is NullModule) {
                 continue;
             }
 
-            string key = module.GetType().Assembly.FullName;
+            string key = module.GetType().Assembly.FullName!;
             if (!AllModNames.ContainsKey(key)) {
-                AllModNames.Add(key, module.Metadata?.Name);
+                AllModNames.Add(key, module.Metadata.Name);
             }
         }
     }
@@ -94,14 +93,14 @@ public static class ConsoleEnhancements {
     }
 
     private static string ShowExtraInfo(string text, object xObj, object yObj) {
-        Level level = Engine.Scene as Level;
+        Level level = (Engine.Scene as Level)!;
         int x = (int) xObj;
         int y = (int) yObj;
         int worldX = (int) Math.Round(x + level.LevelOffset.X);
         int worldY = (int) Math.Round(y + level.LevelOffset.Y);
 
         if (MouseInput.Left.Pressed) {
-            Entity clickedEntity = InfoWatchEntity.FindClickedEntity();
+            Entity? clickedEntity = InfoWatchEntity.FindClickedEntity();
             if (clickedEntity != null) {
                 Type type = clickedEntity.GetType();
                 clickedEntityInfo = "\n entity type: ";
@@ -134,8 +133,8 @@ public static class ConsoleEnhancements {
 
     public static string GetModName(Type type) {
         // tells you where that weird entity/trigger comes from
-        if (AllModNames.TryGetValue(type.Assembly.FullName, out string modName)) {
-            if (modName == "Celeste" && type.FullName.StartsWith("Celeste.Mod.")) {
+        if (AllModNames.TryGetValue(type.Assembly.FullName!, out string? modName)) {
+            if (modName == "Celeste" && type.FullName!.StartsWith("Celeste.Mod.")) {
                 modName = "Everest";
             }
 

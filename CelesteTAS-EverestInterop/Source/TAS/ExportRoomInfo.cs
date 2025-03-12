@@ -6,7 +6,6 @@ using Celeste;
 using Monocle;
 using StudioCommunication;
 using TAS.Input;
-using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
 
@@ -19,9 +18,9 @@ public static class ExportRoomInfo {
         public bool HasArguments => true;
     }
 
-    private static StreamWriter streamWriter;
+    private static StreamWriter? streamWriter;
     private static bool exporting;
-    private static string lastRoomName;
+    private static string? lastRoomName;
     private static readonly List<RoomInfo> roomInfos = new();
 
     [Load]
@@ -41,8 +40,8 @@ public static class ExportRoomInfo {
             return;
         }
 
-        Session session = Engine.Scene.GetSession();
-        string roomName = session?.Level;
+        Session? session = Engine.Scene.GetSession();
+        string? roomName = session?.Level;
 
         if (Engine.Scene is Level {Completed: true} level) {
             if (roomInfos.LastOrDefault() is {RoomName: { }} lastRoomInfo) {
@@ -132,7 +131,7 @@ public static class ExportRoomInfo {
         }
 
         foreach (RoomInfo roomInfo in roomInfos) {
-            streamWriter.WriteLine(roomInfo);
+            streamWriter!.WriteLine(roomInfo);
         }
     }
 
@@ -142,7 +141,7 @@ public static class ExportRoomInfo {
         public long? EnterRoomFileTime;
         public long? LeaveRoomChapterTime;
         public long? LeaveRoomFileTime;
-        public string RoomName;
+        public string? RoomName;
 
         private string ChapterName {
             get {
@@ -174,10 +173,10 @@ public static class ExportRoomInfo {
                 return string.Empty;
             }
 
-            List<string> values = new() {
+            List<string?> values = [
                 ChapterName,
                 RoomName,
-            };
+            ];
 
             if (EnterRoomChapterTime != null && LeaveRoomChapterTime != null) {
                 values.Add(FormatTime(LeaveRoomChapterTime - EnterRoomChapterTime));

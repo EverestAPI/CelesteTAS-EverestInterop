@@ -33,7 +33,7 @@ public static class HideGameplay {
         // Branch after calling Begin.
         c = new ILCursor(il).Goto(0);
         // GotoNext skips c.Next
-        if (!c.Next.MatchCall(typeof(GameplayRenderer), "Begin")) {
+        if (!c.Next!.MatchCall(typeof(GameplayRenderer), "Begin")) {
             c.GotoNext(i => i.MatchCall(typeof(GameplayRenderer), "Begin"));
         }
 

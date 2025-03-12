@@ -15,10 +15,10 @@ public static class GunCommand {
         public bool HasArguments => true;
     }
 
-    private static readonly Lazy<PropertyInfo> GunInputCursorPosition =
+    private static readonly Lazy<PropertyInfo?> GunInputCursorPosition =
         new(() => ModUtils.GetType("Guneline", "Guneline.GunInput")?.GetPropertyInfo("CursorPosition"));
 
-    private static readonly Lazy<MethodInfo> GunlineGunshot = new(() => ModUtils.GetType("Guneline", "Guneline.Guneline")?.GetMethodInfo("Gunshot"));
+    private static readonly Lazy<MethodInfo?> GunelineGunshot = new(() => ModUtils.GetType("Guneline", "Guneline.Guneline")?.GetMethodInfo("Gunshot"));
 
     // Gun, x, y
     [TasCommand("Gun", LegalInFullGame = false, MetaDataProvider = typeof(Meta))]
@@ -32,11 +32,11 @@ public static class GunCommand {
             && float.TryParse(args[1], out float y)
             && Engine.Scene.Tracker.GetEntity<Player>() is { } player
             && GunInputCursorPosition.Value != null
-            && GunlineGunshot.Value != null
+            && GunelineGunshot.Value != null
            ) {
             Vector2 pos = new(x, y);
             GunInputCursorPosition.Value.SetValue(null, pos);
-            GunlineGunshot.Value.Invoke(null, new object[] {player, pos, Facings.Left});
+            GunelineGunshot.Value.Invoke(null, new object[] {player, pos, Facings.Left});
         }
     }
 }
