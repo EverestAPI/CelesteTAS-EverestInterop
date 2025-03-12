@@ -185,7 +185,7 @@ public static class SetCommand {
                     IsSettableType(property.FieldType))
                 {
                     bool done = IsFinalTarget(property.FieldType);
-                    yield return new CommandAutoCompleteEntry { Name = done ? property.Name : $"{property.Name}.", Extra = property.FieldType.CSharpName(), IsDone = done };
+                    yield return new CommandAutoCompleteEntry { Name = property.Name, Extra = property.FieldType.CSharpName(), IsDone = done };
                 }
             }
         }
