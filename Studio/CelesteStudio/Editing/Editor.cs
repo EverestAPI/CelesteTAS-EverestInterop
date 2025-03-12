@@ -2640,6 +2640,8 @@ public sealed class Editor : SkiaDrawable {
     private void OnDeleteSelectedLines() {
         using var __ = Document.Update();
 
+        ActivePopupMenu = null;
+
         int minRow = Document.Selection.Min.Row;
         int maxRow = Document.Selection.Max.Row;
         if (Document.Selection.Empty) {
