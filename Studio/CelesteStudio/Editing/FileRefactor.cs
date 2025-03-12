@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace CelesteStudio.Editing;
 
@@ -421,7 +422,7 @@ public static class FileRefactor {
                     }
                 }
 
-                FileCache[e.FullPath] = await File.ReadAllLinesAsync(e.FullPath).ConfigureAwait(false);
+                FileCache[e.FullPath] = await ReadFileWithRetryAsync(e.FullPath).ConfigureAwait(false);
             } catch (Exception ex) {
                 Console.WriteLine($"Failed to update file cache for '{e.FullPath}'");
                 Console.WriteLine(ex);
@@ -429,6 +430,18 @@ public static class FileRefactor {
                 FileCache.Remove(e.FullPath);
             }
         }
+    }
+
+    private static async Task<string[]> ReadFileWithRetryAsync(string path, int maxRetries = 3, int delayMs = 10) {
+        for (int i = 0; i < maxRetries; i++) {
+            try {
+                return await File.ReadAllLinesAsync(path).ConfigureAwait(false);
+            } catch (IOException) {
+                await Task.Delay(delayMs).ConfigureAwait(false);
+            }
+        }
+
+        throw new IOException($"Failed to read file {path} after {maxRetries} retries.");
     }
 
     #endregion
