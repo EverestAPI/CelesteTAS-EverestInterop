@@ -37,7 +37,8 @@ public class KeyBindingDialog : Dialog<bool> {
                     Width = 150,
                 };
                 hotkeyButton.Click += (_, _) => {
-                    hotkey = HotkeyDialog.Show(this, hotkey, keyBindings, null);
+                    var action = entry.Get();
+                    hotkey = HotkeyDialog.Show(this, hotkey, keyBindings, null, action.preferTextHotkey);
 
                     keyBindings[entry] = hotkey;
                     hotkeyButton.Text = hotkey.ToShortcutString();

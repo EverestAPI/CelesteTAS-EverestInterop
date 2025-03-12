@@ -15,11 +15,12 @@ public class HotkeyDialog : Dialog<Hotkey> {
     private Dictionary<MenuEntry, Hotkey> keyBindings;
     private List<Snippet> snippets;
     private TextControl pressLabel;
-    
-    private HotkeyDialog(Hotkey currentHotkey, Dictionary<MenuEntry, Hotkey> keyBindings, List<Snippet> snippets) {
+
+    private HotkeyDialog(Hotkey currentHotkey, Dictionary<MenuEntry, Hotkey> keyBindings, List<Snippet> snippets, bool preferTextHotkey) {
         this.keyBindings = keyBindings;
         this.snippets = snippets;
-        pressLabel = new Label { Text = "Press any key...", Font = SystemFonts.Bold().WithFontStyle(FontStyle.Bold | FontStyle.Italic) };
+        pressLabel = new Label
+            { Text = "Press any key...", Font = SystemFonts.Bold().WithFontStyle(FontStyle.Bold | FontStyle.Italic) };
 
         Title = "Edit Hotkey";
         Content = new StackLayout {
@@ -47,7 +48,12 @@ public class HotkeyDialog : Dialog<Hotkey> {
         };
         KeyDown += (_, e) => {
             var newHotkey = Hotkey.FromEvent(e);
-            
+
+            if (preferTextHotkey && newHotkey is HotkeyNative) {
+                // fall back to TextInput
+                return;
+            }
+
             var mods = e.Modifiers;
             if (e.Key is Keys.LeftShift or Keys.RightShift) mods |= Keys.Shift;
             if (e.Key is Keys.LeftControl or Keys.RightControl) mods |= Keys.Control;
@@ -124,10 +130,11 @@ public class HotkeyDialog : Dialog<Hotkey> {
         }
     }
 
-    public static Hotkey Show(Window parent, Hotkey currentHotkey, Dictionary<MenuEntry, Hotkey>? keyBindings, List<Snippet>? snippets) {
+    public static Hotkey Show(Window parent, Hotkey currentHotkey, Dictionary<MenuEntry, Hotkey>? keyBindings,
+        List<Snippet>? snippets, bool preferTextHotkey) {
         keyBindings ??= Enum.GetValues<MenuEntry>().ToDictionary(entry => entry, entry => entry.GetHotkey());
         snippets ??= Settings.Instance.Snippets;
 
-        return new HotkeyDialog(currentHotkey, keyBindings, snippets).ShowModal(parent);
+        return new HotkeyDialog(currentHotkey, keyBindings, snippets, preferTextHotkey).ShowModal(parent);
     }
 }

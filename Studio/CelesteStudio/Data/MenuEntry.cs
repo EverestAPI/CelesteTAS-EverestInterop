@@ -15,6 +15,7 @@ public record struct BindableAction {
     public required string EntryName;
     public required Hotkey DefaultKeyBinding;
     public required Action Action;
+    public bool preferTextHotkey;
 
     public static readonly Dictionary<MenuEntry, BindableAction> All = new() {
         {
@@ -465,6 +466,7 @@ public record struct BindableAction {
                 Category = MenuEntryCategory.FrameOps,
                 EntryName = "Add",
                 DefaultKeyBinding = Hotkey.Char('+'),
+                preferTextHotkey = true,
                 Action = () => Studio.Instance.Editor.OnFrameOp(CalculationOperator.Add),
             }
         }, {
@@ -472,6 +474,7 @@ public record struct BindableAction {
                 Category = MenuEntryCategory.FrameOps,
                 EntryName = "Subtract",
                 DefaultKeyBinding = Hotkey.Char('-'),
+                preferTextHotkey = true,
                 Action = () => Studio.Instance.Editor.OnFrameOp(CalculationOperator.Sub),
             }
         }, {
@@ -479,6 +482,7 @@ public record struct BindableAction {
                 Category = MenuEntryCategory.FrameOps,
                 EntryName = "Multiply",
                 DefaultKeyBinding = Hotkey.Char('*'),
+                preferTextHotkey = true,
                 Action = () => Studio.Instance.Editor.OnFrameOp(CalculationOperator.Mul),
             }
         }, {
@@ -486,6 +490,7 @@ public record struct BindableAction {
                 Category = MenuEntryCategory.FrameOps,
                 EntryName = "Divide",
                 DefaultKeyBinding = Hotkey.Char('/'),
+                preferTextHotkey = true,
                 Action = () => Studio.Instance.Editor.OnFrameOp(CalculationOperator.Div),
             }
         }, {
@@ -493,6 +498,7 @@ public record struct BindableAction {
                 Category = MenuEntryCategory.FrameOps,
                 EntryName = "Set",
                 DefaultKeyBinding = Hotkey.Char('+'),
+                preferTextHotkey = true,
                 Action = () => Studio.Instance.Editor.OnFrameOp(CalculationOperator.Set),
             }
         },
