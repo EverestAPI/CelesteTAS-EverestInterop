@@ -43,7 +43,7 @@ public struct ActionLine() {
         actionLine = default;
         actionLine.CustomBindings = new HashSet<char>();
 
-#if NETCOREAPP
+#if NET5_0_OR_GREATER
         string[] tokens = line.Trim().Split(Delimiter, StringSplitOptions.TrimEntries);
 #else
         string[] tokens = line.Trim().Split(Delimiter).Select(token => token.Trim()).ToArray();

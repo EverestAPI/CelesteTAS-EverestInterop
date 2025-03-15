@@ -54,7 +54,7 @@ public static class BinaryHelper {
             case short v:
                 writer.Write(v);
                 return;
-            #if NETCOREAPP
+            #if NET5_0_OR_GREATER
             case Half v:
                 writer.Write(v);
                 return;
@@ -115,7 +115,7 @@ public static class BinaryHelper {
             return reader.ReadSByte();
         if (type == typeof(short))
             return reader.ReadInt16();
-        #if NETCOREAPP
+        #if NET5_0_OR_GREATER
         if (type == typeof(Half))
             return reader.ReadHalf();
         #endif

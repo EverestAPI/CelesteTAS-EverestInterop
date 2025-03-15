@@ -1,10 +1,6 @@
-﻿#if !NETCOREAPP
+﻿#if !NET7_0_OR_GREATER
 using System;
 using System.IO;
-
-namespace System.Runtime.CompilerServices {
-    class IsExternalInit { }
-}
 
 namespace StudioCommunication {
     public static class NetStandardPolyfill {
@@ -41,5 +37,11 @@ namespace StudioCommunication {
             return count;
         }
     }
+}
+#endif
+
+#if !NET5_0_OR_GREATER
+namespace System.Runtime.CompilerServices {
+    class IsExternalInit { }
 }
 #endif

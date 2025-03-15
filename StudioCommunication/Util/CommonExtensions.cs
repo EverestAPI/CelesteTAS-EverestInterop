@@ -45,7 +45,7 @@ public ref struct LineIterator(ReadOnlySpan<char> text) {
     }
 }
 
-#if NETCOREAPP
+#if NET7_0_OR_GREATER
 public static class NumberExtensions {
     public static T Mod<T>(this T x, T m) where T : INumber<T> => (x % m + m) % m;
 }
@@ -68,7 +68,7 @@ public static class StringExtensions {
         }
     }
 
-#if NETCOREAPP
+#if NET7_0_OR_GREATER
     private static readonly string[] sizeSuffixes = ["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
     public static (string Amount, string Suffix) HumanReadableBytes<T>(this T value, int decimals = 1) where T : INumber<T>
     {
