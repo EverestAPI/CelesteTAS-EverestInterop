@@ -25,7 +25,7 @@ namespace TAS.Input.Commands;
 internal class NamespaceComparer : IComparer<(string Name, Type Type)> {
     public int Compare((string Name, Type Type) x, (string Name, Type Type) y) {
         if (x.Type.Namespace == null || y.Type.Namespace == null) {
-            return 0;
+            return StringComparer.Ordinal.Compare(x.Name, y.Name);
         }
 
         int namespaceCompare = CompareNamespace(x.Type.Namespace, y.Type.Namespace);
