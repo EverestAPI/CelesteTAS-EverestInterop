@@ -185,10 +185,10 @@ public static class StudioHelper {
             File.Exists(Path.Combine(Everest.PathGame, "Celeste Studio.toml"))
         ) {
             // Keep "Celeste Studio.toml" for the settings to be migrated by Studio v3
-)
+
             // Display migration (Studio v3 was never launched since the v2 .exe still existed)
             string path = Path.Combine(StudioDirectory, "migration_notice.txt");
-            string text =
+            const string text =
                 """
                 === Celeste TAS Studio v3 - Migration notice ===
                  
