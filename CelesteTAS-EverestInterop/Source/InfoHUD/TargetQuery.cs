@@ -221,10 +221,10 @@ public static class TargetQuery {
             return [Settings.Instance];
         }
         if (type == typeof(SaveData)) {
-            return [Settings.Instance];
+            return [SaveData.Instance];
         }
         if (type == typeof(Assists)) {
-            return [Settings.Instance];
+            return [SaveData.Instance.Assists];
         }
 
         if (type.IsSameOrSubclassOf(typeof(EverestModuleSettings))) {
