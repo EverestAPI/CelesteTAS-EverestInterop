@@ -57,6 +57,7 @@ public sealed class Studio : Form {
 
     private JadderlineForm? jadderlineForm;
     private FeatherlineForm? featherlineForm;
+    private RadelineSimForm? radelineSimForm;
     private ThemeEditor? themeEditorForm;
 
     private string TitleBarText => Editor.Document.FilePath == Document.ScratchFile
@@ -296,6 +297,9 @@ public sealed class Studio : Form {
         }
         if (Instance.featherlineForm != null) {
             Instance.featherlineForm.GotFocus += Refocus;
+        }
+        if (Instance.radelineSimForm != null) {
+            Instance.radelineSimForm.GotFocus += Refocus;
         }
 
         bool wasTopmost = Instance.Topmost;
@@ -764,6 +768,11 @@ public sealed class Studio : Form {
                     featherlineForm ??= new();
                     featherlineForm.Show();
                     featherlineForm.Closed += (_, _) => featherlineForm = null;
+                }),
+                MenuUtils.CreateAction("&Radeline Simulator", Keys.None, () => {
+                    radelineSimForm ??= new();
+                    radelineSimForm.Show();
+                    radelineSimForm.Closed += (_, _) => radelineSimForm = null;
                 }),
             }},
         ];
