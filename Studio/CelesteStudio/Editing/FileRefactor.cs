@@ -162,6 +162,7 @@ public static class FileRefactor {
 
                 LockFile(file);
                 string[] lines = ReadLines(file);
+                bool changed = false;
 
                 for (int row = 0; row < lines.Length; row++) {
                     string line = lines[row];
@@ -188,9 +189,12 @@ public static class FileRefactor {
                     }
 
                     lines[row] = commandLine.ToString();
+                    changed = true;
                 }
 
-                WriteLines(file, lines);
+                if (changed) {
+                    WriteLines(file, lines);
+                }
                 UnlockFile(file);
             }
 
@@ -198,6 +202,7 @@ public static class FileRefactor {
             {
                 LockFile(filePath);
                 string[] lines = ReadLines(filePath);
+                bool changed = false;
 
                 for (int row = 0; row < lines.Length; row++) {
                     string line = lines[row];
@@ -215,9 +220,12 @@ public static class FileRefactor {
                     }
 
                     lines[row] = commandLine.ToString();
+                    changed = true;
                 }
 
-                WriteLines(filePath, lines);
+                if (changed) {
+                    WriteLines(filePath, lines);
+                }
                 UnlockFile(filePath);
             }
 
