@@ -47,7 +47,7 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
         const int rowWidth = 200;
 
         // General config
-        projectRoot = FileRefactor.FindProjectRoot(Studio.Instance.Editor.Document.FilePath);
+        projectRoot = FileRefactor.FindProjectRoot(Studio.Instance.Editor.Document.FilePath, returnSubmodules: true);
         string projectConfigPath = Path.Combine(projectRoot, StyleConfig.ConfigFile);
 
         var currentConfig = StyleConfig.Load(projectConfigPath);

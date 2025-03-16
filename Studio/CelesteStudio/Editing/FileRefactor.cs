@@ -20,7 +20,7 @@ public static class FileRefactor {
     private static readonly Dictionary<string, string[]> FileCache = [];
     private static readonly HashSet<string> lockedFiles = [];
 
-    private static readonly Dictionary<string, string> projectRootCache = [];
+    private static readonly Dictionary<(string FilePath, bool ReturnFirst), string> projectRootCache = [];
 
     private static readonly Dictionary<string, FileSystemWatcher> watchers = [];
 
@@ -148,7 +148,7 @@ public static class FileRefactor {
             return; // Already has that name
         }
 
-        string projectRoot = FindProjectRoot(filePath);
+        string projectRoot = FindProjectRoot(filePath, returnSubmodules: false);
 
         RefactorSemaphore.Wait();
         Console.WriteLine($"Performing label refactor for '{oldLabel}' => '{newLabel}' file '{filePath}'");
@@ -242,18 +242,22 @@ public static class FileRefactor {
     #region Utilities
 
     /// Locates a probable root directory for the current TAS project
-    public static string FindProjectRoot(string filePath) {
-        if (projectRootCache.TryGetValue(filePath, out string? projectRoot)) {
+    public static string FindProjectRoot(string filePath, bool returnSubmodules) {
+        var cacheKey = (filePath, returnFirst: returnSubmodules);
+        if (projectRootCache.TryGetValue(cacheKey, out string? projectRoot)) {
             return projectRoot;
         }
 
         // 1st approach: Search for a Git repository
         for (string? path = Path.GetDirectoryName(filePath); !string.IsNullOrEmpty(path); path = Path.GetDirectoryName(path)) {
-            if (Directory.Exists(Path.Combine(path, ".git")) &&
-                // Require at least 75% of files in the repo to be TAS files
-                GetTasFilePercentage(path) >= 0.75f)
-            {
-                projectRootCache[filePath] = path;
+            string gitPath = Path.Combine(path, ".git");
+            if (
+                // Search for Git repository, or Git submodule if returnSubmodules is enabled
+                (Directory.Exists(gitPath) || (returnSubmodules && File.Exists(gitPath))) &&
+                // Require at least 75% of files in the repo/submodule to be TAS files
+                GetTasFilePercentage(path) >= 0.75f
+            ) {
+                projectRootCache[cacheKey] = path;
                 return path;
             }
         }
