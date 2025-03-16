@@ -657,6 +657,9 @@ public sealed class Studio : Form {
         autoIndexRoomLabels.Enabled = StyleConfig.Current.RoomLabelIndexing == null;
         commandSeparator.Enabled = StyleConfig.Current.CommandArgumentSeparator == null;
 
+        var openProjectFileFormatter = MenuUtils.CreateAction("&Project File Formatter", Keys.None, ProjectFileFormatterDialog.Show);
+        openProjectFileFormatter.Enabled = Editor.Document.FilePath != Document.ScratchFile;
+
         MenuItem[] items = [
             new SubMenuItem { Text = "&File", Items = {
                 MenuEntry.File_New.ToAction(OnNewFile),
@@ -752,7 +755,7 @@ public sealed class Studio : Form {
                 MenuUtils.CreateGameSettingNumberInput("Slow Forward Speed", nameof(GameSettings.SlowForwardSpeed), minSlowForwardSpeed, maxSlowForwardSpeed, 0.1f),
             }},
             new SubMenuItem { Text = "&Tools", Items = {
-                MenuUtils.CreateAction("&Project File Formatter", Keys.None, ProjectFileFormatterDialog.Show),
+                openProjectFileFormatter,
                 MenuUtils.CreateAction("&Integrate Read Files", Keys.None, OnIntegrateReadFiles),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateAction("&Jadderline", Keys.None, () => {

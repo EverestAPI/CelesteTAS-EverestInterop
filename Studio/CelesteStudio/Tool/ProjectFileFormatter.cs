@@ -1,14 +1,11 @@
-using CelesteStudio.Communication;
 using CelesteStudio.Editing;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
-using StudioCommunication;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
+using Tomlet;
 
 namespace CelesteStudio.Tool;
 
@@ -17,6 +14,8 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
 
     private readonly Button projectRootButton;
     private string projectRoot;
+
+    private readonly CheckBox writeStudioConfig;
 
     private readonly CheckBox editRoomIndices;
     private readonly CheckBox editCommands;
@@ -52,8 +51,8 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
 
         var currentConfig = StyleConfig.Load(projectConfigPath);
 
-        // Only allow changing if a config for the current project isn't present
-        projectRootButton = new Button { Text = projectRoot, Width = 200, Enabled = !File.Exists(projectConfigPath) };
+        // Disallow change at first, unless "Update .studioconfig.toml file" is disabled
+        projectRootButton = new Button { Text = projectRoot, Width = 200, Enabled = false };
         projectRootButton.Click += (_, _) => {
             var dialog = new SelectFolderDialog {
                 Title = "Select project root folder",
@@ -68,9 +67,15 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
             }
         };
 
+        writeStudioConfig = new CheckBox { Width = rowWidth, Checked = true };
+        writeStudioConfig.CheckedChanged += (_, _) => {
+            projectRootButton.Enabled = writeStudioConfig.Checked == false;
+            projectRoot = FileRefactor.FindProjectRoot(Studio.Instance.Editor.Document.FilePath, returnSubmodules: true);
+            projectRootButton.Text = projectRoot;
+        };
+
         // Auto-room-indexing
-        editRoomIndices = new CheckBox { Width = rowWidth, Checked = true };
-        startingIndex = new NumericStepper { MinValue = 0, DecimalPlaces = 0, Width = rowWidth, Value = currentConfig.RoomLabelStartingIndex ?? 0, Enabled = currentConfig.RoomLabelStartingIndex == null };
+        startingIndex = new NumericStepper { MinValue = 0, DecimalPlaces = 0, Width = rowWidth, Value = currentConfig.RoomLabelStartingIndex ?? 0 };
         roomIndexType = new DropDown {
             Items = {
                 new ListItem { Text = "Only current File", Key = nameof(AutoRoomIndexing.CurrentFile) },
@@ -78,13 +83,21 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
             },
             SelectedKey = currentConfig.RoomLabelIndexing?.ToString() ?? nameof(AutoRoomIndexing.CurrentFile),
             Width = rowWidth,
-            Enabled = currentConfig.RoomLabelIndexing == null,
+        };
+        editRoomIndices = new CheckBox { Width = rowWidth, Checked = true };
+        editRoomIndices.CheckedChanged += (_, _) => {
+            startingIndex.Enabled = editRoomIndices.Checked == true;
+            roomIndexType.Enabled = editRoomIndices.Checked == true;
         };
 
         // Command formatting
-        editCommands = new CheckBox { Width = rowWidth, Checked = true };
         forceCorrectCasing = new CheckBox { Width = rowWidth, Checked = true };
-        argumentSeparator = new TextBox { Width = rowWidth, Text = currentConfig.CommandArgumentSeparator ?? ", ", Enabled = currentConfig.CommandArgumentSeparator == null };
+        argumentSeparator = new TextBox { Width = rowWidth, Text = currentConfig.CommandArgumentSeparator ?? ", " };
+        editCommands = new CheckBox { Width = rowWidth, Checked = true };
+        editCommands.CheckedChanged += (_, _) => {
+            forceCorrectCasing.Enabled = editCommands.Checked == true;
+            argumentSeparator.Enabled = editCommands.Checked == true;
+        };
 
         var autoRoomIndexingLayout = new DynamicLayout { DefaultSpacing = new Size(10, 10) };
         {
@@ -113,7 +126,7 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
             commandLayout.Add(argumentSeparator);
         }
 
-        DefaultButton = new Button((_, _) => Format()) { Text = "&Format" };
+        DefaultButton = new Button((_, _) => Format(currentConfig)) { Text = "&Format" };
         AbortButton = new Button((_, _) => Close()) { Text = "&Cancel" };
 
         PositiveButtons.Add(DefaultButton);
@@ -129,6 +142,13 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
                     Orientation = Orientation.Horizontal,
                     VerticalContentAlignment = VerticalAlignment.Center,
                     Items = { new Label { Text = "Select Project Root Folder" }, projectRootButton }
+                },
+
+                new StackLayout {
+                    Spacing = 10,
+                    Orientation = Orientation.Horizontal,
+                    VerticalContentAlignment = VerticalAlignment.Center,
+                    Items = { new Label { Text = "Update .studioconfig.toml file" }, writeStudioConfig }
                 },
 
                 new StackLayout {
@@ -156,7 +176,7 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
         Shown += (_, _) => Location = Studio.Instance.Location + new Point((Studio.Instance.Width - Width) / 2, (Studio.Instance.Height - Height) / 2);
     }
 
-    private void Format() {
+    private void Format(StyleConfig config) {
         string[] files = Directory.GetFiles(projectRoot, "*.tas", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.Hidden });
 
         bool formatRoomIndices = Application.Instance.Invoke(() => editRoomIndices.Checked == true);
@@ -167,6 +187,23 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
 
         bool forceCase = Application.Instance.Invoke(() => forceCorrectCasing.Checked == true);
         string separator = Application.Instance.Invoke(() => argumentSeparator.Text);
+
+        if (writeStudioConfig.Checked == true) {
+            if (formatRoomIndices) {
+                config.RoomLabelStartingIndex = startIndex;
+                config.RoomLabelIndexing = includeReads ? AutoRoomIndexing.IncludeReads : AutoRoomIndexing.CurrentFile;
+            }
+            if (formatCommands) {
+                config.ForceCorrectCommandCasing = forceCase;
+                config.CommandArgumentSeparator = separator;
+            }
+
+            // Write to another file and then move that over, to avoid getting interrupted while writing and corrupting the settings
+            string configPath = Path.Combine(projectRoot, StyleConfig.ConfigFile);
+            string tempPath = configPath + ".tmp";
+            File.WriteAllText(tempPath, TomletMain.DocumentFrom(config).SerializedValue);
+            File.Move(tempPath, configPath, overwrite: true);
+        }
 
         int totalTasks = 0, finishedTasks = 0;
 
