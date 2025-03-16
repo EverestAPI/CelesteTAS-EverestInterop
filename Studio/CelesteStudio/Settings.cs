@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using CelesteStudio.Data;
 using CelesteStudio.Dialog;
 using CelesteStudio.Editing;
 using CelesteStudio.Editing.AutoCompletion;
@@ -28,11 +27,14 @@ public enum GameInfoType { Disabled, Panel, Popout }
 
 public abstract record Hotkey {
     public static Hotkey Key(Keys keys) => new HotkeyNative(keys);
+    public static Hotkey KeyCtrl(Keys keys) => new HotkeyNative(keys | Application.Instance.CommonModifier);
+    public static Hotkey KeyAlt(Keys keys) => new HotkeyNative(keys | Application.Instance.AlternateModifier);
+
     public static Hotkey Char(char c) => new HotkeyChar(c);
     public static Hotkey FromEvent(KeyEventArgs e) => e.Key != Keys.None ? Key(e.KeyData) : Char(e.KeyChar);
 
-    public static Hotkey None = Key(Keys.None);
-    
+    public static readonly Hotkey None = Key(Keys.None);
+
     public string ToShortcutString() {
         return this switch {
             HotkeyChar hotkeyChar => hotkeyChar.C.ToString(),
@@ -44,20 +46,22 @@ public abstract record Hotkey {
         switch (this) {
             case HotkeyChar hotkeyChar:
                 return hotkeyChar.ToString();
+
             case HotkeyNative hotkeyNative:
                 var hotkey = hotkeyNative.Keys;
                 var keys = new List<Keys>();
                 // Swap App and Ctrl on macOS
                 if (hotkey.HasFlag(Keys.Application))
-                    keys.Add(Eto.Platform.Instance.IsMac ? Keys.Control : Keys.Application);
+                    keys.Add(Platform.Instance.IsMac ? Keys.Control : Keys.Application);
                 if (hotkey.HasFlag( Keys.Control))
-                    keys.Add(Eto.Platform.Instance.IsMac ? Keys.Application : Keys.Control);
+                    keys.Add(Platform.Instance.IsMac ? Keys.Application : Keys.Control);
                 if (hotkey.HasFlag(Keys.Alt))
                     keys.Add(Keys.Alt);
                 if (hotkey.HasFlag(Keys.Shift))
                     keys.Add(Keys.Shift);
                 keys.Add(hotkey & Keys.KeyMask);
                 return string.Join(separator, keys);
+
             default:
                 throw new ArgumentOutOfRangeException();
         }
@@ -91,27 +95,24 @@ public abstract record Hotkey {
             hotkey |= Keys.Shift;
 
         return Key(hotkey);
-        
+
     }
 
-    public Keys KeyOrNone => this switch {
+    public Keys KeysOrNone => this switch {
         HotkeyChar => Keys.None,
         HotkeyNative hotkeyNative => hotkeyNative.Keys,
         _ => throw new ArgumentOutOfRangeException(),
     };
-    
-    
-    public static bool operator ==(Hotkey self, Keys key) => self is HotkeyNative hotkey && hotkey.Keys == key;
 
+    public static bool operator ==(Hotkey self, Keys key) => self is HotkeyNative hotkey && hotkey.Keys == key;
     public static bool operator !=(Hotkey self, Keys key) => !(self == key);
 }
 
 public record HotkeyNative(Keys Keys) : Hotkey {
     public override string ToString() => Keys.ToString();
 }
-
 public record HotkeyChar(char C) : Hotkey {
-    public override string ToString() => C.ToString();
+    public override string ToString() => char.ToUpper(C).ToString();
 }
 
 public sealed class Settings {
@@ -178,12 +179,8 @@ public sealed class Settings {
     [TomlDoNotInlineObject]
     public List<Snippet> Snippets { get; set; } = [];
 
-    // Tomlet doesn't support enums as keys...
-    [TomlNonSerialized]
-    public Dictionary<MenuEntry, Hotkey> KeyBindings { get; set; } = new();
     [TomlDoNotInlineObject]
-    [TomlProperty("KeyBindings")]
-    private Dictionary<string, Hotkey> _keyBindings { get; set; } = new();
+    public Dictionary<string, Hotkey> KeyBindings { get; set; } = new();
 
     public bool AutoBackupEnabled { get; set; } = true;
     public int AutoBackupRate { get; set; } = 1;
@@ -299,7 +296,6 @@ public sealed class Settings {
             try {
                 var toml = TomlParser.ParseFile(SettingsPath);
                 Instance = TomletMain.To<Settings>(toml, new TomlSerializerOptions());
-                Instance.KeyBindings = Instance._keyBindings.ToDictionary(pair => Enum.Parse<MenuEntry>(pair.Key), pair => pair.Value);
 
                 // Apply default values if fields are missing in a theme
                 if (toml.TryGetValue(nameof(CustomThemes), out var customThemesValue) && customThemesValue is TomlTable customThemes) {
@@ -381,8 +377,6 @@ public sealed class Settings {
             var dir = Path.GetDirectoryName(SettingsPath)!;
             if (!Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
-
-            Instance._keyBindings = Instance.KeyBindings.ToDictionary(pair => pair.Key.ToString(), pair => pair.Value);
 
             // Write to another file and then move that over, to avoid getting interrupted while writing and corrupting the settings
             var tmpFile = SettingsPath + ".tmp";
@@ -477,13 +471,6 @@ public sealed class Settings {
                 if (tomlValue is not TomlString fontStyle)
                     throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(FontStyle));
                 return Enum.TryParse<FontStyle>(fontStyle.Value, out var style) ? style : FontStyle.None;
-            });
-        TomletMain.RegisterMapper(
-            entry => new TomlString(entry.ToString()),
-            tomlValue => {
-                if (tomlValue is not TomlString entry)
-                    throw new TomlTypeMismatchException(typeof(TomlString), tomlValue.GetType(), typeof(MenuEntry));
-                return Enum.Parse<MenuEntry>(entry.Value);
             });
         TomletMain.RegisterMapper(
             hotkey => new TomlString(hotkey?.ToHotkeyString()),

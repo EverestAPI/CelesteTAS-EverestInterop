@@ -13,6 +13,12 @@ namespace CelesteStudio.Util;
 
 public static class Extensions
 {
+    /// Helper method to modify a value without requiring a variable
+    public static T Apply<T>(this T obj, Action<T> action) {
+        action(obj);
+        return obj;
+    }
+
     public static string[] SplitDocumentLines(this string self, StringSplitOptions options = StringSplitOptions.None) => self.Split(Document.NewLine, options);
 
     public static int Digits(this int self) => Math.Abs(self).ToString().Length;

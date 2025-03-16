@@ -1,15 +1,15 @@
 using System;
 using System.Collections.Generic;
-using CelesteStudio.Data;
-using CelesteStudio.Editing;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
+using System.Linq;
+using Binding = CelesteStudio.Binding;
 
 namespace CelesteStudio.Dialog;
 
 public class KeyBindingDialog : Dialog<bool> {
-    private readonly Dictionary<MenuEntry, Hotkey> keyBindings = new();
+    private readonly Dictionary<Binding.Entry, Hotkey> keyBindings = new();
 
     private KeyBindingDialog() {
         var list = new StackLayout {
@@ -18,46 +18,93 @@ public class KeyBindingDialog : Dialog<bool> {
             Spacing = 10,
         };
 
-        foreach (var category in Enum.GetValues<MenuEntryCategory>()) {
+        const int labelWidth = 300;
+        const int buttonWidth = 150;
+
+        foreach (var category in Enum.GetValues<Binding.Category>()) {
             var layout = new DynamicLayout {
                 DefaultSpacing = new Size(15, 5),
                 Padding = new Padding(0, 0, 0, 10),
             };
             layout.BeginVertical();
-            foreach (var entry in category.GetEntries()) {
-                layout.BeginHorizontal();
+            foreach (var binding in Studio.GetAllStudioBindings().Where(b => b.DisplayCategory == category)) {
+                if (binding.Entries.Length == 1) {
+                    var entry = binding.Entries[0];
+                    var hotkey = Settings.Instance.KeyBindings.GetValueOrDefault(entry.Identifier, entry.DefaultHotkey);
+                    keyBindings.Add(entry, hotkey);
 
-                var hotkey = entry.GetHotkey();
-                keyBindings.Add(entry, hotkey);
+                    var hotkeyButton = new Button {
+                        Text = hotkey.ToShortcutString(),
+                        Font = SystemFonts.Bold(),
+                        Width = buttonWidth,
+                    };
+                    hotkeyButton.Click += (_, _) => {
+                        hotkey = HotkeyDialog.Show(this, hotkey, keyBindings, null, entry.PreferTextHotkey);
 
-                var hotkeyButton = new Button {
-                    Text = hotkey.ToShortcutString(),
-                    ToolTip = "Use the right mouse button to clear a hotkey!",
-                    Font = SystemFonts.Bold(),
-                    Width = 150,
-                };
-                hotkeyButton.Click += (_, _) => {
-                    var action = entry.Get();
-                    hotkey = HotkeyDialog.Show(this, hotkey, keyBindings, null, action.preferTextHotkey);
+                        keyBindings[entry] = hotkey;
+                        hotkeyButton.Text = hotkey.ToShortcutString();
+                    };
 
-                    keyBindings[entry] = hotkey;
-                    hotkeyButton.Text = hotkey.ToShortcutString();
-                };
+                    layout.Add(new StackLayout {
+                        Orientation = Orientation.Horizontal,
+                        Items = { new Label { Text = entry.DisplayName, Width = labelWidth }, hotkeyButton }
+                    });
+                } else {
+                    var subLayout = new DynamicLayout {
+                        DefaultSpacing = new Size(15, 5),
+                        Padding = new Padding(15, 0, 0, 10),
+                    };
+                    subLayout.BeginVertical();
 
-                layout.BeginVertical();
-                layout.AddSpace();
-                layout.Add(new Label { Text = entry.GetName(), Width = 300 });
-                layout.AddSpace();
-                layout.EndVertical();
+                    foreach (var entry in binding.Entries) {
+                        subLayout.BeginHorizontal();
 
-                layout.Add(hotkeyButton);
+                        var hotkey = Settings.Instance.KeyBindings.GetValueOrDefault(entry.Identifier, entry.DefaultHotkey);
+                        keyBindings.Add(entry, hotkey);
 
-                layout.EndHorizontal();
+                        var hotkeyButton = new Button {
+                            Text = hotkey.ToShortcutString(),
+                            Font = SystemFonts.Bold(),
+                            Width = buttonWidth,
+                        };
+                        hotkeyButton.Click += (_, _) => {
+                            hotkey = HotkeyDialog.Show(this, hotkey, keyBindings, null, entry.PreferTextHotkey);
+
+                            keyBindings[entry] = hotkey;
+                            hotkeyButton.Text = hotkey.ToShortcutString();
+                        };
+
+                        subLayout.BeginVertical();
+                        subLayout.AddSpace();
+                        subLayout.Add(new Label { Text = entry.DisplayName, Width = labelWidth - 30 });
+                        subLayout.AddSpace();
+                        subLayout.EndVertical();
+
+                        subLayout.Add(hotkeyButton);
+
+                        subLayout.EndHorizontal();
+                    }
+
+                    subLayout.EndVertical();
+
+                    layout.Add(new Expander { Header = binding.DisplayName, Content = subLayout, Height = 40 });
+                }
             }
             layout.EndVertical();
 
             list.Items.Add(new GroupBox {
-                Text = category.GetName(),
+                Text = category switch {
+                    Binding.Category.File => "File",
+                    Binding.Category.Settings => "Settings",
+                    Binding.Category.View => "View",
+                    Binding.Category.Editor => "Editor",
+                    Binding.Category.FrameOperations => "Frame Operations",
+                    Binding.Category.ContextActions => "Context Actions",
+                    Binding.Category.Status => "Game Info",
+                    Binding.Category.StatusPopout => "Game Info Popout",
+                    Binding.Category.Game => "Additional Game Hotkeys",
+                    _ => throw new ArgumentOutOfRangeException()
+                },
                 Content = layout,
                 Padding = 10,
             });
@@ -82,14 +129,15 @@ public class KeyBindingDialog : Dialog<bool> {
 
     public static void Show() {
         var dialog = new KeyBindingDialog();
-        if (!dialog.ShowModal())
+        if (!dialog.ShowModal()) {
             return;
+        }
 
         // Only save non-default hotkeys
         Settings.Instance.KeyBindings.Clear();
         foreach (var (entry, hotkey) in dialog.keyBindings) {
-            if (entry.GetDefaultHotkey() != hotkey) {
-                Settings.Instance.KeyBindings[entry] = hotkey;
+            if (entry.DefaultHotkey != hotkey) {
+                Settings.Instance.KeyBindings[entry.Identifier] = hotkey;
             }
         }
 

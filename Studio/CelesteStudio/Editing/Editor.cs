@@ -8,7 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using CelesteStudio.Communication;
 using CelesteStudio.Controls;
-using CelesteStudio.Data;
 using CelesteStudio.Dialog;
 using CelesteStudio.Editing.ContextActions;
 using CelesteStudio.Util;
@@ -17,6 +16,7 @@ using Eto.Forms;
 using SkiaSharp;
 using StudioCommunication;
 using StudioCommunication.Util;
+using Binding = CelesteStudio.Binding;
 using WrapLine = (string Line, int Index);
 using WrapEntry = (int StartOffset, (string Line, int Index)[] Lines);
 
@@ -124,6 +124,120 @@ public sealed class Editor : SkiaDrawable {
         }
     }
 
+    public static readonly Regex UncommentedBreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
+    public static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
+    public static readonly Regex AllBreakpointRegex = new(@"^\s*#*\*\*\*", RegexOptions.Compiled);
+    public static readonly Regex TimestampRegex = new(@"^\s*#+\s*(\d+:)?\d{1,2}:\d{2}\.\d{3}\(\d+\)", RegexOptions.Compiled);
+
+    #region Bindings
+
+    private static ActionBinding CreateAction(string identifier, string displayName, Hotkey defaultHotkey, Action<Editor> action)
+        => new(identifier, displayName, Binding.Category.Editor, defaultHotkey, () => action(Studio.Instance.Editor));
+
+    private static readonly ActionBinding Cut = CreateAction("Editor_Cut", "Cut", Hotkey.KeyCtrl(Keys.X), editor => editor.OnCut());
+    private static readonly ActionBinding Copy = CreateAction("Editor_Copy", "Copy", Hotkey.KeyCtrl(Keys.C), editor => editor.OnCopy());
+    private static readonly ActionBinding Paste = CreateAction("Editor_Paste", "Paste", Hotkey.KeyCtrl(Keys.V), editor => editor.OnPaste());
+
+    private static readonly ActionBinding Undo = CreateAction("Editor_Undo", "Undo", Hotkey.KeyCtrl(Keys.Z), editor => editor.OnUndo());
+    private static readonly ActionBinding Redo = CreateAction("Editor_Redo", "Redo", Hotkey.KeyCtrl(Keys.Z | Keys.Shift), editor => editor.OnRedo());
+
+    private static readonly ActionBinding SelectAll = CreateAction("Editor_SelectAll", "Select All", Hotkey.KeyCtrl(Keys.A), editor => editor.OnSelectAll());
+    private static readonly ActionBinding SelectBlock = CreateAction("Editor_Cut", "Select Block", Hotkey.KeyCtrl(Keys.W), editor => editor.OnSelectBlock());
+
+    private static readonly ActionBinding Find = CreateAction("Editor_Find", "Find...", Hotkey.KeyCtrl(Keys.F), editor => editor.OnFind());
+    private static readonly ActionBinding GoTo = CreateAction("Editor_GoTo", "Go To...", Hotkey.KeyCtrl(Keys.G), editor => editor.OnGoTo());
+    private static readonly ActionBinding ToggleFolding = CreateAction("Editor_ToggleFolding", "Toggle Folding", Hotkey.KeyCtrl(Keys.Minus), editor => editor.OnToggleFolding());
+
+    private static readonly ActionBinding DeleteSelectedLines = CreateAction("Editor_DeleteSelectedLines", "Delete Selected Lines", Hotkey.KeyCtrl(Keys.Y), editor => editor.OnDeleteSelectedLines());
+    private static readonly ActionBinding SetFrameCountToStepAmount = CreateAction("Editor_SetFrameCountToStepAmount", "Set Frame Count to current Step Amount", Hotkey.None, editor => editor.OnSetFrameCountToStepAmount());
+
+    private static readonly ActionBinding InsertRemoveBreakpoint = CreateAction("Editor_InsertRemoveBreakpoint", "Insert / Remove Breakpoint", Hotkey.KeyCtrl(Keys.Period), editor => editor.InsertOrRemoveText(UncommentedBreakpointRegex, "***"));
+    private static readonly ActionBinding InsertRemoveSavestateBreakpoint = CreateAction("Editor_InsertRemoveSavestateBreakpoint", "Insert / Remove Savestate Breakpoint", Hotkey.KeyCtrl(Keys.Period | Keys.Shift), editor => editor.InsertOrRemoveText(UncommentedBreakpointRegex, "***S"));
+    private static readonly ActionBinding RemoveAllUncommentedBreakpoints = CreateAction("Editor_RemoveAllUncommentedBreakpoints", "Remove All Uncommented Breakpoints", Hotkey.KeyCtrl(Keys.P), editor => editor.RemoveLinesMatching(UncommentedBreakpointRegex));
+    private static readonly ActionBinding RemoveAllBreakpoints = CreateAction("Editor_RemoveAllBreakpoints", "Remove All Breakpoints", Hotkey.KeyCtrl(Keys.P | Keys.Shift), editor => editor.RemoveLinesMatching(AllBreakpointRegex));
+    private static readonly ActionBinding ToggleCommentBreakpoints = CreateAction("Editor_CommentUncommentAllBreakpoints", "Comment / Uncomment All Breakpoints", Hotkey.KeyCtrl(Keys.P | Application.Instance.AlternateModifier), editor => editor.OnToggleCommentBreakpoints());
+    private static readonly ActionBinding ToggleCommentInputs = CreateAction("Editor_CommentUncommentInputs", "Comment / Uncomment All Breakpoints", Hotkey.KeyCtrl(Keys.K), editor => editor.OnToggleCommentInputs());
+    private static readonly ActionBinding ToggleCommentText = CreateAction("Editor_CommentUncommentText", "Comment / Uncomment All Breakpoints", Hotkey.KeyCtrl(Keys.K | Keys.Shift), editor => editor.OnToggleCommentText());
+
+    private static readonly ActionBinding InsertRoomName = CreateAction("Editor_InsertRoomName", "Insert current Room Name", Hotkey.KeyCtrl(Keys.R), editor => editor.InsertLine($"#lvl_{CommunicationWrapper.LevelName}"));
+    private static readonly ActionBinding InsertChapterTime = CreateAction("Editor_InsertCurrentChapterTime", "Insert current Room Name", Hotkey.KeyCtrl(Keys.R), editor => editor.InsertLine($"#{CommunicationWrapper.ChapterTime}"));
+    private static readonly ActionBinding RemoveAllTimestamps = CreateAction("Editor_RemoveAllTimestamps", "Remove All Timestamps", Hotkey.KeyCtrl(Keys.T | Keys.Shift), editor => editor.RemoveLinesMatching(TimestampRegex));
+
+    private static readonly ActionBinding InsertPlayerPosition = CreateAction("Editor_InsertCurrentPosition", "Insert current Player Position", Hotkey.None, editor => {
+        string xPos = (CommunicationWrapper.PlayerPosition.X + CommunicationWrapper.PlayerPositionRemainder.X).ToFormattedString(CommunicationWrapper.GameSettings.PositionDecimals);
+        string yPos = (CommunicationWrapper.PlayerPosition.Y + CommunicationWrapper.PlayerPositionRemainder.Y).ToFormattedString(CommunicationWrapper.GameSettings.PositionDecimals);
+        editor.InsertLine($"# Pos: {xPos}, {yPos}");
+    });
+    private static readonly ActionBinding InsertPlayerSpeed = CreateAction("Editor_InsertCurrentSpeed", "Insert current Player Speed", Hotkey.None, editor => {
+        string xSpeed = CommunicationWrapper.PlayerSpeed.X.ToFormattedString(CommunicationWrapper.GameSettings.SpeedDecimals);
+        string ySpeed = CommunicationWrapper.PlayerSpeed.Y.ToFormattedString(CommunicationWrapper.GameSettings.SpeedDecimals);
+        editor.InsertLine($"# Speed: {xSpeed}, {ySpeed}");
+    });
+    private static readonly ActionBinding InsertModInfo = CreateAction("Editor_InsertModInfo", "Insert Mod Info", Hotkey.None, editor => {
+        if (CommunicationWrapper.GetModInfo() is var modInfo && !string.IsNullOrWhiteSpace(modInfo)) {
+            editor.InsertLine(modInfo);
+        }
+    });
+    private static readonly ActionBinding InsertConsoleLoadCommand = CreateAction("Editor_InsertConsoleLoadCommand", "Insert Exact \"console load\" Command", Hotkey.None, editor => {
+        if (CommunicationWrapper.GetConsoleCommand(simple: false) is var command && !string.IsNullOrWhiteSpace(command)) {
+            editor.InsertLine(command);
+        }
+    });
+    private static readonly ActionBinding InsertSimpleConsoleLoadCommand = CreateAction("Editor_InsertSimpleConsoleLoadCommand", "Insert Simple \"console load\" Command", Hotkey.None, editor => {
+        if (CommunicationWrapper.GetConsoleCommand(simple: true) is var command && !string.IsNullOrWhiteSpace(command)) {
+            editor.InsertLine(command);
+        }
+    });
+
+    private static readonly ActionBinding OpenAutoCompleteMenu = CreateAction("Editor_OpenAutoCompleteMenu", "Open Auto-Complete Menu...", Hotkey.KeyCtrl(Keys.Space), editor => {
+        editor.UpdateAutoComplete();
+        editor.Recalc();
+    });
+    private static readonly ActionBinding OpenContextActionsMenu = CreateAction("Editor_OpenContextActionsMenu", "Open Context-Actions Menu...", Hotkey.KeyAlt(Keys.Enter), editor => {
+        editor.UpdateAutoComplete();
+        editor.Recalc();
+    });
+
+    private static readonly ActionBinding FrameOperationAdd = new("Editor_FrameOperationAdd", "Add", Binding.Category.FrameOperations, Hotkey.Char('+'), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Add), preferTextHotkey: true);
+    private static readonly ActionBinding FrameOperationSub = new("Editor_FrameOperationSub", "Subtract", Binding.Category.FrameOperations, Hotkey.Char('-'), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Sub), preferTextHotkey: true);
+    private static readonly ActionBinding FrameOperationMul = new("Editor_FrameOperationMul", "Multiply", Binding.Category.FrameOperations, Hotkey.Char('*'), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Mul), preferTextHotkey: true);
+    private static readonly ActionBinding FrameOperationDiv = new("Editor_FrameOperationDiv", "Divide", Binding.Category.FrameOperations, Hotkey.Char('/'), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Div), preferTextHotkey: true);
+    private static readonly ActionBinding FrameOperationSet = new("Editor_FrameOperationSet", "Set", Binding.Category.FrameOperations, Hotkey.Char('='), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Set), preferTextHotkey: true);
+
+    public static readonly Binding[] AllBindings = [
+        Cut, Copy, Paste,
+        Undo, Redo,
+        SelectAll, SelectBlock,
+        Find, GoTo, ToggleFolding,
+        DeleteSelectedLines, SetFrameCountToStepAmount,
+        InsertRemoveBreakpoint, InsertRemoveSavestateBreakpoint, RemoveAllUncommentedBreakpoints, RemoveAllBreakpoints, ToggleCommentBreakpoints, ToggleCommentInputs, ToggleCommentText,
+        InsertRoomName, InsertChapterTime, RemoveAllTimestamps,
+        InsertPlayerPosition, InsertPlayerSpeed, InsertModInfo, InsertConsoleLoadCommand, InsertSimpleConsoleLoadCommand,
+        OpenAutoCompleteMenu, OpenContextActionsMenu,
+        FrameOperationAdd, FrameOperationSub, FrameOperationMul, FrameOperationDiv, FrameOperationSet,
+    ];
+
+    #endregion
+
+    // These should be ordered from most specific to most applicable.
+    public static readonly ContextAction[] ContextActions = [
+        new CombineConsecutiveSameInputs(),
+
+        new SwapActions(Actions.Left, Actions.Right),
+        new SwapActions(Actions.Jump, Actions.Jump2),
+        new SwapActions(Actions.Dash, Actions.Dash2),
+
+        new ForceCombineInputFrames(),
+        new SplitFrames(),
+
+        new CreateRepeatCommand(),
+        new InlineRepeatCommand(),
+        new InlineReadCommand(),
+
+        new UseLineLink(LineLinkType.OpenReadFile),
+        new UseLineLink(LineLinkType.GoToPlayLine),
+    ];
+
     private readonly Scrollable scrollable;
     // These values need to be stored, since WPF doesn't like accessing them directly from the scrollable
     private Point scrollablePosition;
@@ -174,25 +288,6 @@ public sealed class Editor : SkiaDrawable {
     /// Index of the currently fetched entries, to prevent flashing "Loading..." while typing
     private int lastAutoCompleteArgumentIndex = -1;
 
-    // These should be ordered from most specific to most applicable.
-    private readonly ContextAction[] contextActions = [
-        new CombineConsecutiveSameInputs(),
-
-        new SwapActions(Actions.Left, Actions.Right, MenuEntry.ContextActions_SwapActionsLR),
-        new SwapActions(Actions.Jump, Actions.Jump2, MenuEntry.ContextActions_SwapActionsJK),
-        new SwapActions(Actions.Dash, Actions.Dash2, MenuEntry.ContextActions_SwapActionsXC),
-
-        new ForceCombineInputFrames(),
-        new SplitFrames(),
-
-        new CreateRepeat(),
-        new InlineRepeatCommand(),
-        new InlineReadCommand(),
-
-        new UseLineLink(MenuEntry.ContextActions_OpenReadFile),
-        new UseLineLink(MenuEntry.ContextActions_GoToPlayLine),
-    ];
-
     private SKFont Font => FontManager.SKEditorFontRegular;
     private SyntaxHighlighter highlighter;
     private const float LineNumberPadding = 5.0f;
@@ -230,11 +325,6 @@ public sealed class Editor : SkiaDrawable {
     // Retain previous settings from Find-dialog
     private string lastFindQuery = string.Empty;
     private bool lastFindMatchCase = false;
-
-    public static readonly Regex UncommentedBreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
-    public static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
-    public static readonly Regex AllBreakpointRegex = new(@"^\s*#*\*\*\*", RegexOptions.Compiled);
-    public static readonly Regex TimestampRegex = new(@"^\s*#+\s*(\d+:)?\d{1,2}:\d{2}\.\d{3}\(\d+\)", RegexOptions.Compiled);
 
     public Editor(Document document, Scrollable scrollable) {
         this.document = document;
@@ -378,43 +468,44 @@ public sealed class Editor : SkiaDrawable {
 
         ContextMenu CreateMenu() => new() {
             Items = {
-                MenuEntry.Editor_Cut.ToAction(),
-                MenuEntry.Editor_Copy.ToAction(),
-                MenuEntry.Editor_Paste.ToAction(),
+                Cut,
+                Copy,
+                Paste,
                 new SeparatorMenuItem(),
-                MenuEntry.Editor_Undo.ToAction(),
-                MenuEntry.Editor_Redo.ToAction(),
+                Undo,
+                Redo,
                 new SeparatorMenuItem(),
-                MenuEntry.Editor_SelectAll.ToAction(),
-                MenuEntry.Editor_SelectBlock.ToAction(),
+                SelectAll,
+                SelectBlock,
                 new SeparatorMenuItem(),
-                MenuEntry.Editor_Find.ToAction(),
-                MenuEntry.Editor_GoTo.ToAction(),
-                MenuEntry.Editor_ToggleFolding.ToAction(),
+                Find,
+                GoTo,
+                ToggleFolding,
                 new SeparatorMenuItem(),
-                MenuEntry.Editor_DeleteSelectedLines.ToAction(),
-                MenuEntry.Editor_SetFrameCountToStepAmount.ToAction(),
+                DeleteSelectedLines,
+                SetFrameCountToStepAmount,
                 new SeparatorMenuItem(),
-                MenuEntry.Editor_InsertRemoveBreakpoint.ToAction(),
-                MenuEntry.Editor_InsertRemoveSavestateBreakpoint.ToAction(),
-                MenuEntry.Editor_RemoveAllUncommentedBreakpoints.ToAction(),
-                MenuEntry.Editor_RemoveAllBreakpoints.ToAction(),
-                MenuEntry.Editor_CommentUncommentAllBreakpoints.ToAction(),
-                MenuEntry.Editor_CommentUncommentInputs.ToAction(),
-                MenuEntry.Editor_CommentUncommentText.ToAction(),
+                InsertRemoveBreakpoint,
+                InsertRemoveSavestateBreakpoint,
+                RemoveAllUncommentedBreakpoints,
+                RemoveAllBreakpoints,
+                ToggleCommentBreakpoints,
+                ToggleCommentInputs,
+                ToggleCommentText,
                 new SeparatorMenuItem(),
-                MenuEntry.Editor_InsertRoomName.ToAction(),
-                MenuEntry.Editor_InsertCurrentTime.ToAction(),
-                MenuEntry.Editor_RemoveAllTimestamps.ToAction(),
-                MenuEntry.Editor_InsertCurrentPosition.ToAction(),
-                MenuEntry.Editor_InsertCurrentSpeed.ToAction(),
-                MenuEntry.Editor_InsertModInfo.ToAction(),
-                MenuEntry.Editor_InsertConsoleLoadCommand.ToAction(),
-                MenuEntry.Editor_InsertSimpleConsoleLoadCommand.ToAction(),
+                InsertRoomName,
+                InsertChapterTime,
+                RemoveAllTimestamps,
+                new SeparatorMenuItem(),
+                InsertPlayerPosition,
+                InsertPlayerSpeed,
+                InsertModInfo,
+                InsertConsoleLoadCommand,
+                InsertSimpleConsoleLoadCommand,
                 commandsMenu,
                 new SeparatorMenuItem(),
-                MenuEntry.Editor_OpenAutoCompleteMenu.ToAction(),
-                MenuEntry.Editor_OpenContextActionsMenu.ToAction(),
+                OpenAutoCompleteMenu,
+                OpenContextActionsMenu,
             }
         };
 
@@ -948,7 +1039,7 @@ public sealed class Editor : SkiaDrawable {
         }
 
         // Forward hotkeys from menu entries / snippets
-        if (CheckShortcuts(Hotkey.FromEvent(e))) {
+        if (CheckHotkey(Hotkey.FromEvent(e))) {
             e.Handled = true;
             return;
         }
@@ -1111,43 +1202,21 @@ public sealed class Editor : SkiaDrawable {
         Recalc();
     }
 
-    private bool CheckShortcuts(Hotkey hotkey) {
-        // Check for menu items
-        if (hotkey is HotkeyNative hotkeyNative) {
-            var items = ContextMenu.Items
-                .Concat(Studio.Instance.GameInfo.ContextMenu.Items)
-                .Concat(Studio.Instance.Menu.Items)
-                .Concat(Studio.Instance.GlobalHotkeys);
-            foreach (var item in items) {
-                if (item.Shortcut == hotkeyNative.Keys) {
-                    item.PerformClick();
+    private bool CheckHotkey(Hotkey hotkey) {
+        // Handle bindings
+        foreach (var binding in Studio.GetAllStudioBindings()) {
+            foreach (var entry in binding.Entries) {
+                if (Settings.Instance.KeyBindings.GetValueOrDefault(entry.Identifier, entry.DefaultHotkey) == hotkey) {
+                    entry.Action();
                     Recalc();
-                    return true;
-                }
-            }
-        } else if (hotkey is HotkeyChar) {
-            foreach (var pair in BindableAction.All) {
-                var (entry, binding) = pair;
-                if (entry.GetHotkey() == hotkey) {
-                    binding.Action();
-                    Recalc();
+                    ScrollCaretIntoView();
+
                     return true;
                 }
             }
         }
 
-        // Handle context actions
-        foreach (var contextAction in contextActions) {
-            if (contextAction.Entry.GetHotkey() == hotkey && contextAction.Check() is { } action) {
-                action.OnUse();
-                Recalc();
-                ScrollCaretIntoView();
-
-                return true;
-            }
-        }
-
-        // Try to paste snippets
+        // Handle snippets
         foreach (var snippet in Settings.Instance.Snippets) {
             if (snippet.Enabled && snippet.Hotkey == hotkey) {
                 InsertQuickEdit(snippet.Insert);
@@ -1580,12 +1649,14 @@ public sealed class Editor : SkiaDrawable {
     }
 
     private void UpdateContextActions() {
-        contextActionsMenu.Entries = contextActions
+        contextActionsMenu.Entries = ContextActions
             .Select(contextAction => {
+                var hotkey = Settings.Instance.KeyBindings.GetValueOrDefault(contextAction.Identifier, contextAction.DefaultHotkey);
+
                 return contextAction.Check() ?? new PopupMenu.Entry {
-                    DisplayText = contextAction.Entry.GetName(),
-                    SearchText = contextAction.Entry.GetName(),
-                    ExtraText = contextAction.Entry.GetHotkey() != Keys.None ? contextAction.Entry.GetHotkey().ToShortcutString() : string.Empty,
+                    DisplayText = contextAction.DisplayName,
+                    SearchText = contextAction.DisplayName,
+                    ExtraText = hotkey.KeysOrNone != Keys.None ? hotkey.ToShortcutString() : string.Empty,
                     Disabled = true,
                     OnUse = () => {},
                 };
@@ -1869,8 +1940,9 @@ public sealed class Editor : SkiaDrawable {
 
     #region Line Links
 
+    public enum LineLinkType { None, OpenReadFile, GoToPlayLine }
     public record struct LineLinkAnchorData {
-        public required MenuEntry? Entry;
+        public required LineLinkType Type;
         public required Action OnUse;
     }
 
@@ -1937,7 +2009,7 @@ public sealed class Editor : SkiaDrawable {
             MinCol = 0,
             MaxCol = startLinkLength,
             UserData = new LineLinkAnchorData {
-                Entry = MenuEntry.ContextActions_OpenReadFile,
+                Type = LineLinkType.OpenReadFile,
                 OnUse = () => OpenFile(startLabelRow),
             }
         });
@@ -1948,7 +2020,7 @@ public sealed class Editor : SkiaDrawable {
                 MinCol = startLinkLength + commandLine.ArgumentSeparator.Length + 1,
                 MaxCol = startLinkLength + commandLine.ArgumentSeparator.Length + commandLine.Arguments[2].Length,
                 UserData = new LineLinkAnchorData {
-                    Entry = null,
+                    Type = LineLinkType.None,
                     OnUse = () => OpenFile(endLabelRow),
                 }
             });
@@ -1957,7 +2029,7 @@ public sealed class Editor : SkiaDrawable {
         return;
 
         void OpenFile(int? targetRow) {
-            Studio.Instance.OpenFile(fullPath);
+            Studio.Instance.OpenFileInEditor(fullPath);
             if (targetRow is {} caretRow) {
                 Document.Caret.Row = caretRow;
                 Document.Caret.Col = desiredVisualCol = Document.Lines[caretRow].Length;
@@ -1989,7 +2061,7 @@ public sealed class Editor : SkiaDrawable {
             MinCol = 0,
             MaxCol = Document.Lines[row].Length - 1,
             UserData = new LineLinkAnchorData {
-                Entry = MenuEntry.ContextActions_GoToPlayLine,
+                Type = LineLinkType.GoToPlayLine,
                 OnUse = () => {
                     Document.Caret.Row = labelRow;
                     Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
@@ -2009,7 +2081,7 @@ public sealed class Editor : SkiaDrawable {
             return;
         }
 
-        if (e.Text.Length == 1 && CheckShortcuts(Hotkey.Char(e.Text[0]))) {
+        if (e.Text.Length == 1 && CheckHotkey(Hotkey.Char(e.Text[0]))) {
             return;
         }
 
@@ -2776,52 +2848,6 @@ public sealed class Editor : SkiaDrawable {
         Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length);
     }
 
-    public void OnInsertRoomName() {
-        if (CommunicationWrapper.Connected) {
-            InsertLine($"#lvl_{CommunicationWrapper.LevelName}");
-        }
-    }
-
-    public void OnInsertTime() {
-        if (CommunicationWrapper.Connected) {
-            InsertLine($"#{CommunicationWrapper.ChapterTime}");
-        }
-    }
-
-    public void OnInsertPosition() {
-        if (CommunicationWrapper.Connected) {
-            string xPos = (CommunicationWrapper.PlayerPosition.X + CommunicationWrapper.PlayerPositionRemainder.X).ToFormattedString(CommunicationWrapper.GameSettings.PositionDecimals);
-            string yPos = (CommunicationWrapper.PlayerPosition.Y + CommunicationWrapper.PlayerPositionRemainder.Y).ToFormattedString(CommunicationWrapper.GameSettings.PositionDecimals);
-            InsertLine($"# Pos: {xPos}, {yPos}");
-        }
-    }
-
-    public void OnInsertSpeed() {
-        if (CommunicationWrapper.Connected) {
-            string xSpeed = CommunicationWrapper.PlayerSpeed.X.ToFormattedString(CommunicationWrapper.GameSettings.SpeedDecimals);
-            string ySpeed = CommunicationWrapper.PlayerSpeed.Y.ToFormattedString(CommunicationWrapper.GameSettings.SpeedDecimals);
-            InsertLine($"# Speed: {xSpeed}, {ySpeed}");
-        }
-    }
-
-    public void OnInsertModInfo() {
-        if (CommunicationWrapper.GetModInfo() is var modInfo && !string.IsNullOrWhiteSpace(modInfo)) {
-            InsertLine(modInfo);
-        }
-    }
-
-    public void OnInsertConsoleLoadCommand() {
-        if (CommunicationWrapper.GetConsoleCommand(simple: false) is var command && !string.IsNullOrWhiteSpace(command)) {
-            InsertLine(command);
-        }
-    }
-
-    public void OnInsertSimpleConsoleLoadCommand() {
-        if (CommunicationWrapper.GetConsoleCommand(simple: true) is var command && !string.IsNullOrWhiteSpace(command)) {
-            InsertLine(command);
-        }
-    }
-
     private void InsertLine(string text) {
         using var __ = Document.Update();
 
@@ -2909,7 +2935,7 @@ public sealed class Editor : SkiaDrawable {
         }
     }
 
-    public void OnFrameOp(CalculationOperator op) {
+    public void OnFrameOperation(CalculationOperator op) {
         if (calculationState != null) {
             // Cancel with same operation again
             if (op == calculationState.Operator && calculationState.Operand.Length == 0) {

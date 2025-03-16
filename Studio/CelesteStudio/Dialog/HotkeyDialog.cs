@@ -1,25 +1,24 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using CelesteStudio.Data;
 using CelesteStudio.Editing;
 using CelesteStudio.Editing.AutoCompletion;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
+using Binding = CelesteStudio.Binding;
 
 namespace CelesteStudio.Dialog;
 
 public class HotkeyDialog : Dialog<Hotkey> {
-    private Dictionary<MenuEntry, Hotkey> keyBindings;
-    private List<Snippet> snippets;
-    private TextControl pressLabel;
+    private readonly Dictionary<Binding.Entry, Hotkey> keyBindings;
+    private readonly List<Snippet> snippets;
 
-    private HotkeyDialog(Hotkey currentHotkey, Dictionary<MenuEntry, Hotkey> keyBindings, List<Snippet> snippets, bool preferTextHotkey) {
+    private HotkeyDialog(Hotkey currentHotkey, Dictionary<Binding.Entry, Hotkey> keyBindings, List<Snippet> snippets, bool preferTextHotkey) {
         this.keyBindings = keyBindings;
         this.snippets = snippets;
-        pressLabel = new Label
+
+        var pressLabel = new Label
             { Text = "Press any key...", Font = SystemFonts.Bold().WithFontStyle(FontStyle.Bold | FontStyle.Italic) };
 
         Title = "Edit Hotkey";
@@ -47,12 +46,9 @@ public class HotkeyDialog : Dialog<Hotkey> {
                 : mods.ToShortcutString()[..^"None".Length];
         };
         KeyDown += (_, e) => {
-            var newHotkey = Hotkey.FromEvent(e);
-
-            if (preferTextHotkey && newHotkey is HotkeyNative) {
-                // fall back to TextInput
-                return;
-            }
+            var newHotkey = preferTextHotkey && e.KeyChar != char.MaxValue
+                ? Hotkey.Char(e.KeyChar)
+                : Hotkey.FromEvent(e);
 
             var mods = e.Modifiers;
             if (e.Key is Keys.LeftShift or Keys.RightShift) mods |= Keys.Shift;
@@ -101,7 +97,7 @@ public class HotkeyDialog : Dialog<Hotkey> {
             if (conflictingKeyBinds.Any()) {
                 msg.AppendLine("The following key bindings already use this hotkey:");
                 foreach (var conflict in conflictingKeyBinds) {
-                    msg.AppendLine($"    - {conflict.GetName().Replace("&", string.Empty)}");
+                    msg.AppendLine($"    - {conflict.DisplayName.Replace("&", string.Empty)}");
                 }
                 msg.AppendLine(string.Empty);
             }
@@ -130,9 +126,10 @@ public class HotkeyDialog : Dialog<Hotkey> {
         }
     }
 
-    public static Hotkey Show(Window parent, Hotkey currentHotkey, Dictionary<MenuEntry, Hotkey>? keyBindings,
-        List<Snippet>? snippets, bool preferTextHotkey) {
-        keyBindings ??= Enum.GetValues<MenuEntry>().ToDictionary(entry => entry, entry => entry.GetHotkey());
+    public static Hotkey Show(Window parent, Hotkey currentHotkey, Dictionary<Binding.Entry, Hotkey>? keyBindings, List<Snippet>? snippets, bool preferTextHotkey) {
+        keyBindings ??= Studio.GetAllStudioBindings()
+            .SelectMany(binding => binding.Entries)
+            .ToDictionary(entry => entry, entry => Settings.Instance.KeyBindings.GetValueOrDefault(entry.Identifier, entry.DefaultHotkey));
         snippets ??= Settings.Instance.Snippets;
 
         return new HotkeyDialog(currentHotkey, keyBindings, snippets, preferTextHotkey).ShowModal(parent);
