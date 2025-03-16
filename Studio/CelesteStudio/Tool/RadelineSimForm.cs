@@ -17,24 +17,26 @@ public sealed class RadelineSimForm : Form {
 
     private readonly TextArea initialStateBox;
     private readonly TextArea appendKeys;
+    private readonly TextArea log;
     private readonly Button getInitialState;
     private readonly Button run;
     private readonly ProgressBar progressBar;
     private readonly DropDown outputSorting;
     private readonly DropDown axis;
     private readonly DropDown disabledKey;
-    private readonly NumericStepper frameCount;
+    private readonly NumericStepper frames;
     private readonly NumericStepper inputGenerationTime;
     private readonly NumericStepper positionFilterMin;
     private readonly NumericStepper positionFilterMax;
     private readonly NumericStepper goalSpeed;
-    private readonly NumericStepper rngThreshold;
     private readonly NumericStepper rngThresholdSlow;
+    private readonly NumericStepper rngThreshold;
     private readonly CheckBox hideDuplicates;
     private readonly ListBox outputs;
     private readonly Label progressType;
 
-    private InitialState initialState;
+    private static InitialState initialState;
+    private static SimConfig cfg;
 
     public RadelineSimForm() {
         Title = $"Radeline Simulator - v{Version}";
@@ -53,11 +55,12 @@ public sealed class RadelineSimForm : Form {
             }),
         };
 
-        const int rowWidth = 120;
+        const int rowWidth = 180;
         const string positionFilterTooltip = "Only show results within this position range (min and max can be backwards, won't make a difference)";
 
-        initialStateBox = new TextArea { ReadOnly = true, Font = FontManager.StatusFont, Width = 220, Height = 190};
+        initialStateBox = new TextArea { ReadOnly = true, Wrap = true, Font = FontManager.StatusFont, Width = 180, Height = 190};
         getInitialState = new Button((_, _) => SetInitialStateTesting()) { Text = "Get Initial State", Width = 150 };
+        log = new TextArea { ReadOnly = true, Wrap = true, Font = FontManager.StatusFont, Width = rowWidth };
         outputSorting = new DropDown {
             Items = {
                 new ListItem { Text = "Position" },
@@ -85,7 +88,7 @@ public sealed class RadelineSimForm : Form {
             SelectedKey = "Auto",
             Width = rowWidth
         };
-        frameCount = new NumericStepper { Value = 10, MinValue = 1, MaxValue = 200, Width = rowWidth };
+        frames = new NumericStepper { Value = 10, MinValue = 1, MaxValue = 200, Width = rowWidth };
         inputGenerationTime = new NumericStepper { Value = 10, MinValue = 1, MaxValue = 200, Width = rowWidth };
         positionFilterMin = new NumericStepper { DecimalPlaces = CommunicationWrapper.GameSettings.PositionDecimals, Width = rowWidth };
         positionFilterMax = new NumericStepper { DecimalPlaces = CommunicationWrapper.GameSettings.PositionDecimals, Width = rowWidth };
@@ -106,11 +109,12 @@ public sealed class RadelineSimForm : Form {
         layout.BeginVertical();
         layout.BeginHorizontal();
         layout.Add(initialStateBox);
+        layout.Add(log);
         layout.EndBeginHorizontal();
         layout.Add(getInitialState);
         layout.EndBeginHorizontal();
         layout.AddCentered(new Label { Text = "Frames", ToolTip = "Number of frames to simulate" });
-        layout.Add(frameCount);
+        layout.Add(frames);
         layout.EndBeginHorizontal();
         layout.AddCentered(new Label { Text = "Axis" });
         layout.Add(axis);
@@ -176,25 +180,74 @@ public sealed class RadelineSimForm : Form {
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
     }
 
+    private void Log(string message) {
+        log.Text += $"{message}\n";
+    }
+
+    #region Algorithm
+
+    private void Run() {
+        SetupSimConfig();
+
+        if (cfg.DisabledKey == DisabledKey.Auto) {
+            cfg.DisabledKey = DisabledKey.None;
+
+            // do some math to determine if a key can ever affect movement
+            if (cfg.Axis == Axis.X) {
+                // disable holding backwards if speed can't ever drop below zero due to friction
+                bool speedHighEnoughNotGrounded = !initialState.OnGround && Math.Abs(initialState.Speed) > cfg.Frames * 65f / 6f;
+                bool speedHighEnoughGrounded = initialState.OnGround && Math.Abs(initialState.Speed) > cfg.Frames * 50f / 3f;
+
+                if (speedHighEnoughNotGrounded || speedHighEnoughGrounded) {
+                    cfg.DisabledKey = initialState.Speed > 0f ? DisabledKey.L : DisabledKey.R;
+                }
+            } else {
+                // disable jump if past jump peak, or down if can't ever reach fast fall speed
+                if (initialState.Speed > 40f) {
+                    cfg.DisabledKey = DisabledKey.J;
+                } else if (initialState.Speed + cfg.Frames * 15f <= 160) {
+                    cfg.DisabledKey = DisabledKey.D;
+                }
+            }
+        } else {
+            bool cantDisableX = cfg.Axis == Axis.X && cfg.DisabledKey == DisabledKey.J;
+            bool cantDisableY = cfg.Axis == Axis.Y && new[] {DisabledKey.L, DisabledKey.R}.Contains(cfg.DisabledKey);
+
+            if (cantDisableX || cantDisableY) {
+                Log($"Didn't disable {cfg.DisabledKey} key since it wouldn't have been generated anyway");
+                cfg.DisabledKey = DisabledKey.None;
+            }
+        }
+
+        if (cfg.DisabledKey != DisabledKey.None) {
+            Log($"Disabled generating {cfg.DisabledKey} inputs");
+        }
+
+        outputs.Items.Clear();
+        outputs.Items.Add(new ListItem { Text = "(574.000041, 127.500360) 20,J 7,D"});
+        outputs.Items.Add(new ListItem { Text = "(574.000041, 120.000340) 14,J 1 12,J"});
+    }
+
+    // TODO: implement
     private void SetInitialState() {
         if (!CommunicationWrapper.Connected) {
             return;
         }
 
         initialState = new InitialState {
-            Position = (CommunicationWrapper.PlayerPosition.X + CommunicationWrapper.PlayerPositionRemainder.X,
+            Positions = (CommunicationWrapper.PlayerPosition.X + CommunicationWrapper.PlayerPositionRemainder.X,
                 CommunicationWrapper.PlayerPosition.Y + CommunicationWrapper.PlayerPositionRemainder.Y)
         };
 
-        initialState.Position.X += CommunicationWrapper.PlayerPositionRemainder.X;
+        initialState.Positions.X += CommunicationWrapper.PlayerPositionRemainder.X;
 
         initialStateBox.Text = initialState.Position.ToString();
     }
 
     private void SetInitialStateTesting() {
-        initialState = new InitialState() {
-            Position = (160.458372503519f, 67.7499865889549f),
-            Speed = (0f, -15f),
+        initialState = new InitialState {
+            Positions = (160.458372503519f, 67.7499865889549f),
+            Speeds = (0f, -15f),
             OnGround = false,
             Holding = false,
             JumpTimer = 0,
@@ -206,24 +259,45 @@ public sealed class RadelineSimForm : Form {
                                "Dash\n[1]\n\nAutoJump: False\nMaxFall: 160.00\nJumpTimer: 0\nHolding:";
     }
 
-    private void Run() {
-        run.Enabled = false;
-        // run algorithm
-        run.Enabled = true;
-        outputs.Items.Clear();
-        outputs.Items.Add(new ListItem { Text = "(574.000041, 127.500360) 20,J 7,D"});
-        outputs.Items.Add(new ListItem { Text = "(574.000041, 120.000340) 14,J 1 12,J"});
-    }
-
     private void OutputsOnSelectedIndexChanged(object? sender, EventArgs e) {
         var selectedItem = outputs.Items[outputs.SelectedIndex];
         Clipboard.Instance.Clear();
         Clipboard.Instance.Text = selectedItem.Text;
     }
 
+    private void SetupSimConfig() {
+        float positionFilterMinValue = (float) positionFilterMin.Value;
+        float positionFilterMaxValue = (float) positionFilterMax.Value;
+
+        // fix for accidentally backwards order
+        if (positionFilterMinValue > positionFilterMaxValue) {
+            (positionFilterMinValue, positionFilterMaxValue) = (positionFilterMaxValue, positionFilterMinValue);
+        }
+
+        Enum.TryParse(axis.SelectedKey, out Axis axisSelected);
+        Enum.TryParse(disabledKey.SelectedKey, out DisabledKey disabledKeySelected);
+        Enum.TryParse(outputSorting.SelectedKey, out OutputSortingPriority outputSortingPrioritySelected);
+
+        cfg = new SimConfig {
+            Frames = (int) frames.Value,
+            Axis = axisSelected,
+            PositionFilter = (positionFilterMinValue, positionFilterMaxValue),
+            GoalSpeed = (float) goalSpeed.Value,
+            DisabledKey = disabledKeySelected,
+            OutputSortingPriority = outputSortingPrioritySelected,
+            RNGThresholdSlow = (int) rngThresholdSlow.Value,
+            RNGThreshold = (int) rngThreshold.Value,
+            AppendKeys = appendKeys.Text,
+            HideDuplicateInputs = hideDuplicates.Checked!.Value
+        };
+
+        initialState.Position = axisSelected == Axis.X ? initialState.Positions.X : initialState.Positions.Y;
+        initialState.Speed = axisSelected == Axis.X ? initialState.Speeds.X : initialState.Speeds.Y;
+    }
+
     private struct InitialState {
-        public (float X, float Y) Position;
-        public (float X, float Y) Speed;
+        public (float X, float Y) Positions;
+        public (float X, float Y) Speeds;
         // X axis:
         public bool OnGround;
         public bool Holding;
@@ -231,5 +305,27 @@ public sealed class RadelineSimForm : Form {
         public int JumpTimer;
         public bool AutoJump;
         public float MaxFall;
+        // finalized:
+        public float Position;
+        public float Speed;
     }
+
+    private struct SimConfig {
+        public int Frames;
+        public Axis Axis;
+        public (float Min, float Max) PositionFilter;
+        public float GoalSpeed;
+        public DisabledKey DisabledKey;
+        public OutputSortingPriority OutputSortingPriority;
+        public int RNGThresholdSlow;
+        public int RNGThreshold;
+        public string AppendKeys;
+        public bool HideDuplicateInputs;
+    }
+
+    private enum Axis { X, Y }
+    private enum DisabledKey { None, Auto, L, R, J, D }
+    private enum OutputSortingPriority { Position, Speed }
+
+    #endregion
 }
