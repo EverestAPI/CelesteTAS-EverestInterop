@@ -206,8 +206,9 @@ public class Document : IDisposable {
             File.WriteAllText(FilePath, Text);
             Dirty = false;
 
-            if (Settings.Instance.AutoBackupEnabled && !string.IsNullOrWhiteSpace(FilePath))
+            if (Settings.Instance.AutoBackupEnabled && !string.IsNullOrWhiteSpace(FilePath)) {
                 CreateBackup();
+            }
         } catch (Exception e) {
             Console.Error.WriteLine(e);
         }

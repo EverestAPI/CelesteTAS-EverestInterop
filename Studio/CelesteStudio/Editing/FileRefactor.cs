@@ -14,7 +14,7 @@ namespace CelesteStudio.Editing;
 /// Manages refactoring of files, including semantic and stylistic changes
 public static class FileRefactor {
 
-    private static readonly SemaphoreSlim RefactorSemaphore = new(1);
+    public static readonly SemaphoreSlim RefactorSemaphore = new(1);
 
     /// Caches the file contents in lines of external files
     private static readonly Dictionary<string, string[]> FileCache = [];
@@ -73,7 +73,9 @@ public static class FileRefactor {
         // Allows the user to edit labels without them being auto-trimmed
         string untrimmedLabel = string.Empty;
 
+        RefactorSemaphore.Wait();
         LockFile(filePath);
+
         foreach ((string line, int row, string path, _) in IterateLines(filePath, followReadCommands: roomIndexing == AutoRoomIndexing.IncludeReads)) {
             if (RoomLabelRegex.Match(line) is not { Success: true } match) {
                 continue;
@@ -130,8 +132,10 @@ public static class FileRefactor {
                 lines[occurrences[i].Row] = $"#lvl_{writtenLabel} ({i + startingIndex})";
             }
         }
+
         WriteLines(filePath, lines, raiseEvents: false);
         UnlockFile(filePath);
+        RefactorSemaphore.Release();
 
         foreach ((string oldLabel, string newLabel) in refactors) {
             RefactorLabelName(filePath, oldLabel, newLabel);
@@ -376,7 +380,7 @@ public static class FileRefactor {
 
         lock(lockedFiles) {
             if (!lockedFiles.Contains(filePath)) {
-                Console.WriteLine($"File '{filePath}' was modified without being locked");
+                Console.WriteLine($"File '{filePath}' was modified without being locked!");
             }
         }
 
@@ -401,12 +405,20 @@ public static class FileRefactor {
 
     private static void LockFile(string filePath) {
         lock(lockedFiles) {
+            if (lockedFiles.Contains(filePath)) {
+                Console.WriteLine($"File '{filePath}' was locked twice!");
+            }
+
             lockedFiles.Add(filePath);
         }
     }
 
     private static void UnlockFile(string filePath) {
         lock(lockedFiles) {
+            if (!lockedFiles.Contains(filePath)) {
+                Console.WriteLine($"File '{filePath}' was never locked!");
+            }
+
             lockedFiles.Remove(filePath);
         }
     }
