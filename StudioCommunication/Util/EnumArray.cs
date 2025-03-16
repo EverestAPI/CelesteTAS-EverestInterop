@@ -7,7 +7,7 @@ public readonly struct EnumDictionary<TEnum, TValue> where TEnum : struct, Enum 
     private readonly TValue[] data;
     
     public EnumDictionary() {
-        var values = Enum.GetValuesAsUnderlyingType<TEnum>();
+        var values = Enum.GetValues(typeof(TEnum));
         
         long maxIdx = 0;
         foreach (var value in values) {

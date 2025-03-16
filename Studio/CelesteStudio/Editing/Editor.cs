@@ -130,7 +130,7 @@ public sealed class Editor : SkiaDrawable {
     private Size scrollableSize;
 
     private const int offscreenLinePadding = 3;
-    
+
     // Only expand width of line numbers for actually visible digits
     private int lastVisibleLineNumberDigits = -1;
     private int VisibleLineNumberDigits {
@@ -2361,7 +2361,8 @@ public sealed class Editor : SkiaDrawable {
         if (autoSplit || splitLines && !ActionLine.TryParse(line, out _)) {
             if (!Document.Selection.Empty) {
                 RemoveRange(Document.Selection.Min, Document.Selection.Max);
-                Document.Caret.Col = Document.Selection.Min.Col;
+                Document.Caret = Document.Selection.Min;
+                Document.Selection.Clear();
 
                 line = Document.Lines[Document.Caret.Row];
                 lineTrimmedStart = line.TrimStart();

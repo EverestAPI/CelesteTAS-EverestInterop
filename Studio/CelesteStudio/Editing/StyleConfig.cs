@@ -28,7 +28,7 @@ public struct StyleConfig() {
                 return;
             }
 
-            Current = Load(Path.Combine(FileRefactor.FindProjectRoot(document.FilePath), ConfigFile));
+            Current = Load(Path.Combine(FileRefactor.FindProjectRoot(document.FilePath, returnSubmodules: true), ConfigFile));
         };
     }
     public static StyleConfig Load(string configPath) {
