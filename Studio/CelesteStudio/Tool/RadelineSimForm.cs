@@ -196,8 +196,8 @@ public sealed class RadelineSimForm : Form {
             // do some math to determine if a key can ever affect movement
             if (cfg.Axis == Axis.X) {
                 // disable holding backwards if speed can't ever drop below zero due to friction
-                bool speedHighEnoughNotGrounded = !initialState.OnGround && Math.Abs(initialState.Speed) > cfg.Frames * 65f / 6f;
-                bool speedHighEnoughGrounded = initialState.OnGround && Math.Abs(initialState.Speed) > cfg.Frames * 50f / 3f;
+                bool speedHighEnoughNotGrounded = !initialState.OnGround && Math.Abs(initialState.Speed) > cfg.Frames * (65f / 6f);
+                bool speedHighEnoughGrounded = initialState.OnGround && Math.Abs(initialState.Speed) > cfg.Frames * (50f / 3f);
 
                 if (speedHighEnoughNotGrounded || speedHighEnoughGrounded)
                     cfg.DisabledKey = initialState.Speed > 0f ? DisabledKey.L : DisabledKey.R;
@@ -234,19 +234,39 @@ public sealed class RadelineSimForm : Form {
             inputPermutations = BuildInputPermutationsRng();
         }
 
-        progressBarControl.Value = progressBarControl.MaxValue;
         Log($"Generated permutations: {inputPermutations.Count}");
-        outputsControl.Items.Clear();
         UpdateLayout();
 
+        // store as position and speed dicts, for performance
+        var filteredPermutations = new Dictionary<float, Dictionary<float, List<(int frames, string key)>>>();
+        var speeds = new HashSet<float>();
+        var simFunction = SimX;
+        progressBarControl.MaxValue = inputPermutations.Count;
+        Log("Simulating inputs…");
+        int i = 0;
+
+        foreach (var permutation in inputPermutations) {
+            Console.Out.WriteLine(FormatInputPermutation(permutation));
+            var simResult = simFunction(permutation);
+            Console.Out.WriteLine($"({simResult.position}, {simResult.speed})");i++;
+
+            if (i % 1000 == 0) {
+                progressBarControl.Value = i;
+                UpdateLayout();
+            }
+        }
+
+        outputsControl.Items.Clear();
+        i = 0;
+
         foreach (var inputPermutation in inputPermutations) {
-            var inputsDisplay = new StringBuilder("() ");
+            outputsControl.Items.Add(new ListItem { Text = FormatInputPermutation(inputPermutation) });
+            i++;
 
-            foreach (var input in inputPermutation)
-                inputsDisplay.Append($"{input.frames},{input.key.ToUpper()} ");
-
-            outputsControl.Items.Add(new ListItem { Text = inputsDisplay.ToString() });
-            UpdateLayout();
+            if (i == 100) {
+                UpdateLayout();
+                i = 0;
+            }
         }
     }
 
@@ -305,6 +325,42 @@ public sealed class RadelineSimForm : Form {
         return inputPermutations;
     }
 
+    private (float position, float speed) SimX(List<(int frames, string key)> inputs) {
+        float x = initialState.Position;
+        float speedX = initialState.Speed;
+        bool grounded = initialState.OnGround;
+        float mult1 = grounded ? 0.0166667f * 1000f : 0.65f * 0.0166667f * 1000f;
+        float mult2 = grounded ? 0.0166667f * 400f : 0.65f * 0.0166667f * 400f;
+        float max = initialState.Holding ? 70f : 90f;
+
+        foreach (var inputLine in inputs) {
+            foreach (string inputKey in Enumerable.Repeat(inputLine.key, inputLine.frames)) {
+                // celeste code (from Player.NormalUpdate) somewhat loosely simplified
+
+                if (grounded && inputKey.Equals("D"))
+                    speedX = Approach(speedX, 0.0f, 500f * 0.0166667f);
+                else {
+                    // get input first
+                    float moveX = inputKey switch {
+                        "l" => -1f,
+                        "r" => 1f,
+                        _ => 0f
+                    };
+
+                    if (Math.Abs(speedX) <= max || (speedX == 0.0f ? 0.0f : (float)Math.CopySign(1, speedX)) != speedX)
+                        speedX = Approach(speedX, max * moveX, mult1);
+                    else
+                        speedX = Approach(speedX, max * moveX, mult2);
+                }
+
+                // calculate position third
+                x += speedX * 0.0166667f;
+            }
+        }
+
+        return (x, speedX);
+    }
+
     private class ListTupleComparer : IEqualityComparer<List<(int frames, string key)>> {
         public bool Equals(List<(int frames, string key)>? x, List<(int frames, string key)>? y) {
             if (x!.Count != y!.Count)
@@ -331,6 +387,10 @@ public sealed class RadelineSimForm : Form {
             }
         }
     }
+
+    // directly from Monocle.Calc
+    private static float Approach(float val, float target, float maxMove) =>
+        val <= target ? Math.Min(val + maxMove, target) : Math.Max(val - maxMove, target);
 
     // TODO: implement
     private void SetInitialState() {
@@ -413,6 +473,17 @@ public sealed class RadelineSimForm : Form {
             keys.Remove(cfg.DisabledKey.ToString().ToLower());
 
         return keys.ToArray();
+    }
+
+    private string FormatInputPermutation(List<(int frames, string key)> inputPermutation) {
+        var inputsDisplay = new StringBuilder("() ");
+
+        foreach (var input in inputPermutation) {
+            string comma = string.IsNullOrEmpty(input.key) ? "" : ",";
+            inputsDisplay.Append($"{input.frames}{comma}{input.key.ToUpper()} ");
+        }
+
+        return inputsDisplay.ToString();
     }
 
     private struct InitialState {
