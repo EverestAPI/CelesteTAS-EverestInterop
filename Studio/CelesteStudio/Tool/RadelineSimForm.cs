@@ -96,7 +96,7 @@ public sealed class RadelineSimForm : Form {
         rngThresholdControl = new NumericStepper { Value = 20, MinValue = 1, MaxValue = 200, Width = rowWidth };
         rngThresholdSlowControl = new NumericStepper { Value = 14, MinValue = 1, MaxValue = 200, Width = rowWidth };
         appendKeysControl = new TextArea { Font = FontManager.EditorFont, Width = rowWidth, Height = 22};
-        hideDuplicatesControl = new CheckBox { Width = rowWidth };
+        hideDuplicatesControl = new CheckBox { Width = rowWidth, Checked = true };
         outputsControl = new ListBox { Font = FontManager.StatusFont, Width = 500, Height = 500 };
         progressBarControl = new ProgressBar { Width = 300 };
 
@@ -183,8 +183,6 @@ public sealed class RadelineSimForm : Form {
         logControl.ScrollToEnd();
     }
 
-    #region Algorithm
-
     private void Run() {
         SetInitialStateTesting();
         SetupSimConfig();
@@ -240,7 +238,7 @@ public sealed class RadelineSimForm : Form {
         UpdateLayout();
 
         // store as position and speed dicts, for performance
-        var filteredPermutations = new Dictionary<float, Dictionary<float, List<(float position, float speed)>>>();
+        var filteredPermutations = new SortedDictionary<float, Dictionary<float, List<List<(int frames, string key)>>>>();
         var speeds = new HashSet<float>();
         Func<List<(int frames, string key)>, (float position, float speed)> simFunction = cfg.Axis == Axis.X ? SimX : SimY;
         progressBarControl.MaxValue = inputPermutations.Count;
@@ -248,24 +246,79 @@ public sealed class RadelineSimForm : Form {
         int i = 0;
 
         foreach (var permutation in inputPermutations) {
-            Console.Out.WriteLine(FormatInputPermutation(permutation));
             var simResult = simFunction(permutation);
-            Console.Out.WriteLine($"({simResult.position}, {simResult.speed})");i++;
+            i++;
 
             if (i % 1000 == 0) {
                 progressBarControl.Value = i;
                 UpdateLayout();
             }
+
+            // if result within filter range
+            if (simResult.position >= cfg.PositionFilter.Min && simResult.position <= cfg.PositionFilter.Max) {
+                filteredPermutations.TryAdd(simResult.position, []);
+
+                if (filteredPermutations[simResult.position].TryGetValue(simResult.speed, out var prevPermutations)) {
+                    bool appendPermutation = true;
+
+                    if (cfg.HideDuplicateInputs) {
+                        int removedCount = prevPermutations.RemoveAll(prevPermutation => permutation.Count < prevPermutation.Count);
+                        appendPermutation = removedCount != 0;
+                    }
+
+                    if (appendPermutation) {
+                        prevPermutations.Add(permutation);
+                        speeds.Add(simResult.speed);
+                    }
+                } else {
+                    filteredPermutations[simResult.position][simResult.speed] = [permutation];
+                    speeds.Add(simResult.speed);
+                }
+            }
         }
 
+        // memory cleanup 1
+        inputPermutations = [];
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        List<(float position, float speed, List<(int frames, string key)>)> outputPermutations = [];
+
+        // convert optimized dict to sorted list
+        if (cfg.OutputSortingPriority == OutputSortingPriority.Position) {
+            foreach (var positionPair in filteredPermutations) {
+                foreach (var speedPair in positionPair.Value.OrderByDescending(s => Math.Abs(s.Key - cfg.GoalSpeed))) {
+                    foreach (var permutation in speedPair.Value) {
+                        outputPermutations.Add((positionPair.Key, speedPair.Key, permutation));
+                    }
+                }
+            }
+        } else {
+            foreach (var speed in speeds.ToList().OrderByDescending(s => Math.Abs(s - cfg.GoalSpeed))) {
+                foreach (var position in filteredPermutations.Keys) {
+                    if (filteredPermutations[position].TryGetValue(speed, out var permutations)) {
+                        foreach (var permutation in permutations) {
+                            outputPermutations.Add((position, speed, permutation));
+                        }
+                    }
+                }
+            }
+        }
+
+        // memory cleanup 2
+        Log($"Filtered permutations: {outputPermutations.Count}");
         outputsControl.Items.Clear();
+        UpdateLayout();
+        filteredPermutations = [];
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
         i = 0;
 
-        foreach (var inputPermutation in inputPermutations) {
+        // insert results into output window
+        foreach (var inputPermutation in outputPermutations) {
             outputsControl.Items.Add(new ListItem { Text = FormatInputPermutation(inputPermutation) });
             i++;
 
-            if (i == 100) {
+            if (i == 1000) {
                 UpdateLayout();
                 i = 0;
             }
@@ -304,7 +357,7 @@ public sealed class RadelineSimForm : Form {
 
             inputPermutations.Add(inputs);
 
-            if (i - lastReportedProgress > 100000) {
+            if (i - lastReportedProgress > 10000) {
                 lastReportedProgress = i;
                 int elapsedTime = (int) stopwatch.Elapsed.TotalMilliseconds;
                 progressBarControl.Value = elapsedTime;
@@ -494,10 +547,12 @@ public sealed class RadelineSimForm : Form {
         return keys.ToArray();
     }
 
-    private string FormatInputPermutation(List<(int frames, string key)> inputPermutation) {
-        var inputsDisplay = new StringBuilder("() ");
+    private string FormatInputPermutation((float position, float speed, List<(int frames, string key)> inputs) inputPermutation) {
+        string position = inputPermutation.position.ToString("0.000000");
+        string speed = inputPermutation.speed.ToString("0.000000");
+        var inputsDisplay = new StringBuilder($"({position}, {speed}) ");
 
-        foreach (var input in inputPermutation) {
+        foreach (var input in inputPermutation.inputs) {
             string comma = string.IsNullOrEmpty(input.key) ? "" : ",";
             inputsDisplay.Append($"{input.frames}{comma}{input.key.ToUpper()} ");
         }
@@ -567,6 +622,4 @@ public sealed class RadelineSimForm : Form {
     private enum Axis { X, Y }
     private enum DisabledKey { None, Auto, L, R, J, D }
     private enum OutputSortingPriority { Position, Speed }
-
-    #endregion
 }
