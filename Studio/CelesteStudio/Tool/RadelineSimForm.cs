@@ -36,6 +36,7 @@ public sealed class RadelineSimForm : Form {
 
     private static InitialState initialState;
     private static SimConfig cfg;
+    private string[] generatorKeys = [];
 
     public RadelineSimForm() {
         Title = $"Radeline Simulator - v{Version}";
@@ -70,10 +71,10 @@ public sealed class RadelineSimForm : Form {
         };
         axisControl = new DropDown {
             Items = {
-                new ListItem { Text = "X (horizontal)", Key = "x" },
-                new ListItem { Text = "Y (vertical)", Key = "y" }
+                new ListItem { Text = "X (horizontal)", Key = "X" },
+                new ListItem { Text = "Y (vertical)", Key = "Y" }
             },
-            SelectedKey = "x",
+            SelectedKey = "X",
             Width = rowWidth
         };
         disabledKeyControl = new DropDown {
@@ -185,6 +186,7 @@ public sealed class RadelineSimForm : Form {
     #region Algorithm
 
     private void Run() {
+        SetInitialStateTesting();
         SetupSimConfig();
         ICollection<List<(int frames, string key)>> inputPermutations = [];
         progressBarControl.MaxValue = cfg.InputGenerationTime;
@@ -221,7 +223,7 @@ public sealed class RadelineSimForm : Form {
         if (cfg.DisabledKey != DisabledKey.None)
             Log($"Disabled generating {cfg.DisabledKey} inputs");
 
-        int RNGThreshold = GeneratorKeys().Length switch {
+        int RNGThreshold = (generatorKeys = GeneratorKeys()).Length switch {
             3 => cfg.RNGThresholdSlow,
             4 => cfg.RNGThresholdSlow - 2,
             _ => cfg.RNGThreshold
@@ -238,9 +240,9 @@ public sealed class RadelineSimForm : Form {
         UpdateLayout();
 
         // store as position and speed dicts, for performance
-        var filteredPermutations = new Dictionary<float, Dictionary<float, List<(int frames, string key)>>>();
+        var filteredPermutations = new Dictionary<float, Dictionary<float, List<(float position, float speed)>>>();
         var speeds = new HashSet<float>();
-        var simFunction = SimX;
+        Func<List<(int frames, string key)>, (float position, float speed)> simFunction = cfg.Axis == Axis.X ? SimX : SimY;
         progressBarControl.MaxValue = inputPermutations.Count;
         Log("Simulating inputs…");
         int i = 0;
@@ -272,9 +274,8 @@ public sealed class RadelineSimForm : Form {
 
     private HashSet<List<(int frames, string key)>> BuildInputPermutationsRng() {
         var inputPermutations = new HashSet<List<(int frames, string key)>>(new ListTupleComparer());
-        string[] keys = GeneratorKeys();
-        int keysLen = keys.Length;
-        double maxPermutationsDouble = Math.Pow(keys.Length, cfg.Frames);
+        int keysLen = generatorKeys.Length;
+        double maxPermutationsDouble = Math.Pow(generatorKeys.Length, cfg.Frames);
         int maxPermutations = 0;
         bool useMaxPermutations;
         bool brokeFromLoopMax = false;
@@ -297,7 +298,7 @@ public sealed class RadelineSimForm : Form {
             while (frameCounter < cfg.Frames) {
                 int frames = random.Next(1, cfg.Frames - frameCounter + 1);
                 frameCounter += frames;
-                string selectedKey = keys[random.Next(keysLen)];
+                string selectedKey = generatorKeys[random.Next(keysLen)];
                 inputs.Add((frames, selectedKey));
             }
 
@@ -325,7 +326,7 @@ public sealed class RadelineSimForm : Form {
         return inputPermutations;
     }
 
-    private (float position, float speed) SimX(List<(int frames, string key)> inputs) {
+    private static (float position, float speed) SimX(List<(int frames, string key)> inputs) {
         float x = initialState.Position;
         float speedX = initialState.Speed;
         bool grounded = initialState.OnGround;
@@ -337,7 +338,7 @@ public sealed class RadelineSimForm : Form {
             foreach (string inputKey in Enumerable.Repeat(inputLine.key, inputLine.frames)) {
                 // celeste code (from Player.NormalUpdate) somewhat loosely simplified
 
-                if (grounded && inputKey.Equals("D"))
+                if (grounded && inputKey.Equals("d"))
                     speedX = Approach(speedX, 0.0f, 500f * 0.0166667f);
                 else {
                     // get input first
@@ -359,6 +360,54 @@ public sealed class RadelineSimForm : Form {
         }
 
         return (x, speedX);
+    }
+
+    private static (float position, float speed) SimY(List<(int frames, string key)> inputs) {
+        float y = initialState.Position;
+        float speedY = initialState.Speed;
+        float maxFall = initialState.MaxFall;
+        int jumpTimer = initialState.JumpTimer;
+        float mult;
+
+        foreach (var inputLine in inputs) {
+            foreach (string inputKey in Enumerable.Repeat(inputLine.key, inputLine.frames)) {
+                // celeste code (from Player.NormalUpdate) somewhat loosely simplified
+
+                // get input first
+                char moveY = inputKey switch {
+                    "j" => 'j',
+                    "d" => 'd',
+                    _ => '_'
+                };
+
+                // calculate speed second
+                if (moveY == 'd' && speedY >= 160f)
+                    maxFall = Approach(maxFall, 240f, 300f * 0.0166667f);
+                else
+                    maxFall = Approach(maxFall, 160f, 300f * 0.0166667f);
+
+                if (Math.Abs(speedY) <= 40f && (moveY == 'j' || initialState.AutoJump))
+                    mult = 900f * 0.5f * 0.0166667f;
+                else
+                    mult = 900f * 0.0166667f;
+
+                speedY = Approach(speedY, maxFall, mult);
+
+                if (jumpTimer > 0) {
+                    if (moveY == 'j' || initialState.AutoJump)
+                        speedY = Math.Min(speedY, initialState.Speed);
+                    else
+                        jumpTimer = 0;
+                }
+
+                jumpTimer--;
+
+                // calculate position third
+                y += speedY * 0.0166667f;
+            }
+        }
+
+        return (y, speedY);
     }
 
     private class ListTupleComparer : IEqualityComparer<List<(int frames, string key)>> {
@@ -428,6 +477,34 @@ public sealed class RadelineSimForm : Form {
         Clipboard.Instance.Text = selectedItem.Text;
     }
 
+    private static string[] GeneratorKeys() {
+        var keys = new List<string>();
+
+        if (cfg.Axis == Axis.X) {
+            keys.AddRange(["", "l", "r"]);
+
+            if (initialState.OnGround)
+                keys.Add("d");
+        } else
+            keys.AddRange(["", "j", "d"]);
+
+        if (cfg.DisabledKey != DisabledKey.None)
+            keys.Remove(cfg.DisabledKey.ToString().ToLower());
+
+        return keys.ToArray();
+    }
+
+    private string FormatInputPermutation(List<(int frames, string key)> inputPermutation) {
+        var inputsDisplay = new StringBuilder("() ");
+
+        foreach (var input in inputPermutation) {
+            string comma = string.IsNullOrEmpty(input.key) ? "" : ",";
+            inputsDisplay.Append($"{input.frames}{comma}{input.key.ToUpper()} ");
+        }
+
+        return inputsDisplay.ToString();
+    }
+
     private void SetupSimConfig() {
         float positionFilterMinValue = (float) positionFilterMinControl.Value;
         float positionFilterMaxValue = (float) positionFilterMaxControl.Value;
@@ -456,34 +533,6 @@ public sealed class RadelineSimForm : Form {
 
         initialState.Position = axisSelected == Axis.X ? initialState.Positions.X : initialState.Positions.Y;
         initialState.Speed = axisSelected == Axis.X ? initialState.Speeds.X : initialState.Speeds.Y;
-    }
-
-    private static string[] GeneratorKeys() {
-        var keys = new List<string>();
-
-        if (cfg.Axis == Axis.X) {
-            keys.AddRange(["", "l", "r"]);
-
-            if (initialState.OnGround)
-                keys.Add("d");
-        } else
-            keys.AddRange(["", "j", "d"]);
-
-        if (cfg.DisabledKey != DisabledKey.None)
-            keys.Remove(cfg.DisabledKey.ToString().ToLower());
-
-        return keys.ToArray();
-    }
-
-    private string FormatInputPermutation(List<(int frames, string key)> inputPermutation) {
-        var inputsDisplay = new StringBuilder("() ");
-
-        foreach (var input in inputPermutation) {
-            string comma = string.IsNullOrEmpty(input.key) ? "" : ",";
-            inputsDisplay.Append($"{input.frames}{comma}{input.key.ToUpper()} ");
-        }
-
-        return inputsDisplay.ToString();
     }
 
     private struct InitialState {
