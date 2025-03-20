@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using CelesteStudio.Communication;
-using CelesteStudio.Data;
+﻿using CelesteStudio.Communication;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
-using StudioCommunication;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
 
 namespace CelesteStudio.Tool;
 
@@ -282,7 +280,7 @@ public sealed class RadelineSimForm : Form {
         inputPermutations = [];
         GC.Collect();
         GC.WaitForPendingFinalizers();
-        List<(float position, float speed, List<(int frames, string key)>)> outputPermutations = [];
+        List<(float position, float speed, List<(int frames, string key)> inputs)> outputPermutations = [];
 
         // convert optimized dict to sorted list
         if (cfg.OutputSortingPriority == OutputSortingPriority.Position) {
@@ -316,7 +314,7 @@ public sealed class RadelineSimForm : Form {
 
         // insert results into output window
         foreach (var inputPermutation in outputPermutations) {
-            outputsControl.Items.Add(new ListItem { Text = FormatInputPermutation(inputPermutation) });
+            outputsControl.Items.Add(new ListItem { Text = FormatInputPermutation(inputPermutation), Key = FormatInputPermutationCompact(inputPermutation.inputs)});
             i++;
 
             if (i == 1000) {
@@ -324,6 +322,10 @@ public sealed class RadelineSimForm : Form {
                 i = 0;
             }
         }
+
+        outputPermutations = [];
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
     }
 
     private List<List<(int frames, string key)>> BuildInputPermutationsSequential() {
@@ -374,7 +376,7 @@ public sealed class RadelineSimForm : Form {
         bool brokeFromLoopMax = false;
         int lastReportedProgress = 0;
         int i = 0;
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var stopwatch = Stopwatch.StartNew();
         var random = new Random();
         progressBarControl.MaxValue = cfg.InputGenerationTime;
 
@@ -581,7 +583,7 @@ public sealed class RadelineSimForm : Form {
         if (!outputsControl.Items.Any()) { return; }
         var selectedItem = outputsControl.Items[outputsControl.SelectedIndex];
         Clipboard.Instance.Clear();
-        Clipboard.Instance.Text = selectedItem.Text;
+        Clipboard.Instance.Text = selectedItem.Key.Replace(' ', '\n');
     }
 
     private static string[] GeneratorKeys() {
@@ -601,9 +603,15 @@ public sealed class RadelineSimForm : Form {
         return keys.ToArray();
     }
 
-    private string FormatInputPermutation((float position, float speed, List<(int frames, string key)> inputs) inputPermutation) {
+    private static string FormatInputPermutation((float position, float speed, List<(int frames, string key)> inputs) inputPermutation) {
+        string speedFormat = inputPermutation.speed switch {
+            < -10 => "0.00000",
+            > 10 => "0.000000",
+            _ => "0.0000000"
+        };
+
         string position = inputPermutation.position.ToString("0.000000");
-        string speed = inputPermutation.speed.ToString("0.000000");
+        string speed = inputPermutation.speed.ToString(speedFormat);
         var inputsDisplay = new StringBuilder($"({position}, {speed}) ");
 
         foreach (var input in inputPermutation.inputs) {
@@ -612,6 +620,16 @@ public sealed class RadelineSimForm : Form {
         }
 
         return inputsDisplay.ToString();
+    }
+
+    private static string FormatInputPermutationCompact(List<(int frames, string key)> inputs) {
+        var inputsCompact = new StringBuilder();
+
+        foreach (var input in inputs) {
+            inputsCompact.Append($"{input.frames},{input.key} ");
+        }
+
+        return inputsCompact.ToString();
     }
 
     private void SetupSimConfig() {
