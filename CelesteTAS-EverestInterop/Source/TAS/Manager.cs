@@ -336,12 +336,16 @@ public static class Manager {
             CurrentLine = previous?.Line ?? -1,
             CurrentLineSuffix = $"{Controller.CurrentFrameInInput + (previous?.FrameOffset ?? 0)}{previous?.RepeatString ?? ""}",
             CurrentFrameInTas = Controller.CurrentFrameInTas,
-            TotalFrames = Controller.Inputs.Count,
             SaveStateLine = Savestates.StudioHighlightLine,
-            tasStates = 0,
+            PlaybackRunning = CurrState == State.Running,
+
+            FileNeedsReload = Controller.NeedsReload,
+            TotalFrames = Controller.Inputs.Count,
+
             GameInfo = GameInfo.StudioInfo,
             LevelName = GameInfo.LevelName,
             ChapterTime = GameInfo.ChapterTime,
+
             ShowSubpixelIndicator = TasSettings.InfoSubpixelIndicator && Engine.Scene is Level or Emulator,
         };
 

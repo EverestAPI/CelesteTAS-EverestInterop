@@ -298,7 +298,7 @@ public sealed class Editor : SkiaDrawable {
         };
 
         CommunicationWrapper.StateUpdated += (prevState, state) => {
-            if (state.tasStates.HasFlag(States.Enable) && !state.tasStates.HasFlag(States.FrameStep)) {
+            if (!state.FileNeedsReload) {
                 TotalFrameCount = state.TotalFrames;
             }
 
@@ -886,7 +886,6 @@ public sealed class Editor : SkiaDrawable {
                             ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _ );
         bool isComment = lineTrimmed.StartsWith('#');
         bool isTyping = (DateTime.UtcNow - lastModification).TotalSeconds < Settings.Instance.SendInputsTypingTimeout;
-        bool isRunning = CommunicationWrapper.Connected && CommunicationWrapper.TasStates.HasFlag(States.Enable) && !CommunicationWrapper.TasStates.HasFlag(States.FrameStep);
         bool sendInputs =
             (Settings.Instance.SendInputsOnActionLines && isActionLine) ||
             (Settings.Instance.SendInputsOnComments && isComment) ||
@@ -898,7 +897,7 @@ public sealed class Editor : SkiaDrawable {
         }
 
         // Prevent editing file on accident
-        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && isRunning && Settings.Instance.SendInputsDisableWhileRunning) {
+        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.PlaybackRunning && Settings.Instance.SendInputsDisableWhileRunning) {
             e.Handled = true;
             return;
         }
