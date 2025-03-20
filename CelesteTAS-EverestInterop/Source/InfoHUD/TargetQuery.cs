@@ -168,7 +168,7 @@ public static class TargetQuery {
             memberArgs = queryArgs;
             return [typeof(Settings)];
         }
-        if (typeof(SaveData).GetFields().FirstOrDefault(f => f.Name == queryArgs[0]) != null) {
+        if (typeof(SaveData).GetFields().FirstOrDefault(f => f.Name == queryArgs[0]) != null && queryArgs[0] != nameof(SaveData.Assists)) {
             memberArgs = queryArgs;
             return [typeof(SaveData)];
         }
@@ -373,6 +373,7 @@ public static class TargetQuery {
                     continue;
                 }
             } catch (Exception ex) {
+                ex.LogException($"Failed to resolve member '{member}' on type '{currentType}'");
                 return Result<object?, string>.Fail($"Unknown exception: {ex}");
             }
 
@@ -466,6 +467,7 @@ public static class TargetQuery {
                     continue;
                 }
             } catch (Exception ex) {
+                ex.LogException($"Failed to get member '{member}' on type '{currentType}'");
                 return VoidResult<string>.Fail($"Unknown exception: {ex}");
             }
 
@@ -620,6 +622,7 @@ public static class TargetQuery {
                 return VoidResult<string>.Fail($"Cannot find field / property '{memberArgs[^1]}' on type {currentType}");
             }
         } catch (Exception ex) {
+            ex.LogException($"Failed to set member '{memberArgs[^1]}' on type '{currentType}' to value '{value}'");
             return VoidResult<string>.Fail($"Unknown exception: {ex}");
         }
 
@@ -650,6 +653,7 @@ public static class TargetQuery {
                     }
                 }
             } catch (Exception ex) {
+                ex.LogException($"Failed to set member '{member}' on type '{currentType}' to value '{value}' (value-type back-recursion)");
                 return VoidResult<string>.Fail($"Unknown exception: {ex}");
             }
         }
@@ -721,6 +725,7 @@ public static class TargetQuery {
                     continue;
                 }
             } catch (Exception ex) {
+                ex.LogException($"Failed to get member '{member}' on type '{currentType}'");
                 return VoidResult<string>.Fail($"Unknown exception: {ex}");
             }
 
@@ -749,6 +754,7 @@ public static class TargetQuery {
                 return VoidResult<string>.Ok;
             }
         } catch (Exception ex) {
+            ex.LogException($"Failed to invoke method '{memberArgs[^1]}' on type '{currentType}' with parameters ({string.Join(", ", parameters)})");
             return VoidResult<string>.Fail($"Unknown exception: {ex}");
         }
 
@@ -871,6 +877,7 @@ public static class TargetQuery {
 
                 values[index++] = Convert.ChangeType(arg, targetType);
             } catch (Exception ex) {
+                ex.LogException($"Failed to resolve value for type '{targetType}'");
                 return Result<object?[], string>.Fail($"Failed to resolve value for type '{targetType}': {ex}");
             }
         }
