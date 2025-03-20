@@ -533,7 +533,6 @@ public static class SetCommand {
 
     public static void ResetVariants(Assists assists) {
         SaveData.Instance.Assists = assists;
-        HandleSpecialCases(nameof(Assists.DashMode), assists.DashMode);
         HandleSpecialCases(nameof(Assists.GameSpeed), assists.GameSpeed);
         HandleSpecialCases(nameof(Assists.MirrorMode), assists.MirrorMode);
         HandleSpecialCases(nameof(Assists.PlayAsBadeline), assists.PlayAsBadeline);
