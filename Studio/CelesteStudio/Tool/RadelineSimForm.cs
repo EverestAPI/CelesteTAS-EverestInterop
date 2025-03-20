@@ -93,8 +93,8 @@ public sealed class RadelineSimForm : Form {
         positionFilterMinControl = new NumericStepper { DecimalPlaces = CommunicationWrapper.GameSettings.PositionDecimals, Width = rowWidth };
         positionFilterMaxControl = new NumericStepper { DecimalPlaces = CommunicationWrapper.GameSettings.PositionDecimals, Width = rowWidth };
         goalSpeedControl = new NumericStepper { DecimalPlaces = CommunicationWrapper.GameSettings.PositionDecimals, Width = rowWidth };
-        rngThresholdControl = new NumericStepper { Value = 20, MinValue = 1, MaxValue = 200, Width = rowWidth };
-        rngThresholdSlowControl = new NumericStepper { Value = 14, MinValue = 1, MaxValue = 200, Width = rowWidth };
+        rngThresholdControl = new NumericStepper { Value = 23, MinValue = 1, MaxValue = 200, Width = rowWidth };
+        rngThresholdSlowControl = new NumericStepper { Value = 15, MinValue = 1, MaxValue = 200, Width = rowWidth };
         appendKeysControl = new TextArea { Font = FontManager.EditorFont, Width = rowWidth, Height = 22};
         hideDuplicatesControl = new CheckBox { Width = rowWidth, Checked = true };
         outputsControl = new ListBox { Font = FontManager.StatusFont, Width = 500, Height = 500 };
@@ -187,7 +187,6 @@ public sealed class RadelineSimForm : Form {
         SetInitialStateTesting();
         SetupSimConfig();
         ICollection<List<(int frames, string key)>> inputPermutations = [];
-        progressBarControl.MaxValue = cfg.InputGenerationTime;
         progressBarControl.Value = 0;
 
         if (cfg.DisabledKey == DisabledKey.Auto) {
@@ -227,8 +226,10 @@ public sealed class RadelineSimForm : Form {
             _ => cfg.RNGThreshold
         };
 
-        if (cfg.Frames < RNGThreshold)
+        if (cfg.Frames < RNGThreshold) {
             Log("Building permutations using sequential method…");
+            inputPermutations = BuildInputPermutationsSequential();
+        }
         else {
             Log("Building permutations using RNG method…");
             inputPermutations = BuildInputPermutationsRng();
@@ -325,6 +326,45 @@ public sealed class RadelineSimForm : Form {
         }
     }
 
+    private List<List<(int frames, string key)>> BuildInputPermutationsSequential() {
+        List<List<(int frames, string key)>> inputPermutations = [];
+        progressBarControl.MaxValue = (int) Math.Pow(generatorKeys.Length, cfg.Frames);
+        int lastReportedProgress = 0;
+        int i = 0;
+
+        foreach (var permutation in CartesianProduct(generatorKeys, cfg.Frames)) {
+            i++;
+            List<(int frames, string key)> permutationFormatted = [];
+            string? currentInput = null;
+            int inputLen = 0;;
+
+            // convert messy inputs to the compact format
+            foreach (var key in permutation) {
+                if (currentInput == null)
+                    currentInput = key;
+
+                if (key == currentInput)
+                    inputLen++;
+                else {
+                    permutationFormatted.Add((inputLen, currentInput));
+                    currentInput = key;
+                    inputLen = 1;
+                }
+            }
+
+            permutationFormatted.Add((inputLen, currentInput)!);
+            inputPermutations.Add(permutationFormatted);
+
+            if (i - lastReportedProgress > 10000) {
+                progressBarControl.Value = i;
+                lastReportedProgress = i;
+                UpdateLayout();
+            }
+        }
+
+        return inputPermutations;
+    }
+
     private HashSet<List<(int frames, string key)>> BuildInputPermutationsRng() {
         var inputPermutations = new HashSet<List<(int frames, string key)>>(new ListTupleComparer());
         int keysLen = generatorKeys.Length;
@@ -335,7 +375,8 @@ public sealed class RadelineSimForm : Form {
         int lastReportedProgress = 0;
         int i = 0;
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        var random = Random.Shared;
+        var random = new Random();
+        progressBarControl.MaxValue = cfg.InputGenerationTime;
 
         if (maxPermutationsDouble <= int.MaxValue) {
             maxPermutations = (int) maxPermutationsDouble;
@@ -463,6 +504,18 @@ public sealed class RadelineSimForm : Form {
         return (y, speedY);
     }
 
+    private static IEnumerable<IEnumerable<T>> CartesianProduct<T>(IEnumerable<T> source, int repeat) {
+        IEnumerable<IEnumerable<T>> seed = [[]];
+
+        for (int i = 0; i < repeat; i++) {
+            seed = from seq in seed
+                from item in source
+                select seq.Concat([item]);
+        }
+
+        return seed;
+    }
+
     private class ListTupleComparer : IEqualityComparer<List<(int frames, string key)>> {
         public bool Equals(List<(int frames, string key)>? x, List<(int frames, string key)>? y) {
             if (x!.Count != y!.Count)
@@ -525,6 +578,7 @@ public sealed class RadelineSimForm : Form {
     }
 
     private void OutputsOnSelectedIndexChanged(object? sender, EventArgs e) {
+        if (!outputsControl.Items.Any()) { return; }
         var selectedItem = outputsControl.Items[outputsControl.SelectedIndex];
         Clipboard.Instance.Clear();
         Clipboard.Instance.Text = selectedItem.Text;
