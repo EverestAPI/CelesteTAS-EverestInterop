@@ -54,6 +54,12 @@ public partial record struct GameState {
         public Vec2 Speed;
 
         public float starFlySpeedLerp;
+
+        public bool OnGround;
+        public bool IsHolding;
+        public int JumpTimer;
+        public bool AutoJump;
+        public float MaxFall;
     }
 
     public record struct LevelState {

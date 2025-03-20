@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace CelesteStudio.Tool;
 
@@ -57,7 +58,7 @@ public sealed class RadelineSimForm : Form {
         const string positionFilterTooltip = "Only show results within this position range (min and max can be backwards, won't make a difference)";
 
         initialStateControl = new TextArea { ReadOnly = true, Wrap = true, Font = FontManager.StatusFont, Width = 180, Height = 190};
-        getInitialStateControl = new Button((_, _) => SetInitialStateTesting()) { Text = "Get Initial State", Width = 150 };
+        getInitialStateControl = new Button((_, _) => GetInitialState()) { Text = "Get Initial State", Width = 150 };
         logControl = new TextArea { ReadOnly = true, Wrap = true, Font = FontManager.StatusFont, Width = rowWidth };
         outputSortingControl = new DropDown {
             Items = {
@@ -182,7 +183,6 @@ public sealed class RadelineSimForm : Form {
     }
 
     private void Run() {
-        SetInitialStateTesting();
         SetupSimConfig();
         ICollection<List<(int frames, string key)>> inputPermutations = [];
         progressBarControl.Value = 0;
@@ -549,36 +549,6 @@ public sealed class RadelineSimForm : Form {
     private static float Approach(float val, float target, float maxMove) =>
         val <= target ? Math.Min(val + maxMove, target) : Math.Max(val - maxMove, target);
 
-    // TODO: implement
-    private void SetInitialState() {
-        if (!CommunicationWrapper.Connected)
-            return;
-
-        initialState = new InitialState {
-            Positions = (CommunicationWrapper.PlayerPosition.X + CommunicationWrapper.PlayerPositionRemainder.X,
-                CommunicationWrapper.PlayerPosition.Y + CommunicationWrapper.PlayerPositionRemainder.Y)
-        };
-
-        initialState.Positions.X += CommunicationWrapper.PlayerPositionRemainder.X;
-
-        initialStateControl.Text = initialState.Position.ToString();
-    }
-
-    private void SetInitialStateTesting() {
-        initialState = new InitialState {
-            Positions = (160.458372503519f, 67.7499865889549f),
-            Speeds = (0f, -15f),
-            OnGround = false,
-            Holding = false,
-            JumpTimer = 0,
-            AutoJump = false,
-            MaxFall = 160f
-        };
-
-        initialStateControl.Text = "Pos: 160.458372503519, 67.7499865889549\nSpeed: 0.00, -15.00\nVel: 0.00, 0.00\nStamina: 110 Timer: 16.609\n" +
-                               "Dash\n[1]\n\nAutoJump: False\nMaxFall: 160.00\nJumpTimer: 0\nHolding:";
-    }
-
     private void OutputsOnSelectedIndexChanged(object? sender, EventArgs e) {
         if (!outputsControl.Items.Any()) { return; }
         var selectedItem = outputsControl.Items[outputsControl.SelectedIndex];
@@ -660,6 +630,35 @@ public sealed class RadelineSimForm : Form {
 
         initialState.Position = axisSelected == Axis.X ? initialState.Positions.X : initialState.Positions.Y;
         initialState.Speed = axisSelected == Axis.X ? initialState.Speeds.X : initialState.Speeds.Y;
+    }
+
+    private void GetInitialState() {
+        if (!CommunicationWrapper.Connected) {
+            Log("Not connected to game");
+            return;
+        }
+
+        var gameStateResult = CommunicationWrapper.GetGameState().Result;
+
+        if (gameStateResult == null) {
+            Console.Error.WriteLine("Failed to get game state");
+            Log("Failed to get game state, please try again");
+            return;
+        }
+
+        var gameState = gameStateResult.Value;
+
+        initialState = new InitialState {
+            Positions = (gameState.Player.Position.X + gameState.Player.PositionRemainder.X, gameState.Player.Position.Y + gameState.Player.PositionRemainder.Y),
+            Speeds = (gameState.Player.Speed.X, gameState.Player.Speed.Y),
+            OnGround = gameState.Player.OnGround,
+            Holding = gameState.Player.IsHolding,
+            JumpTimer = gameState.Player.JumpTimer,
+            AutoJump = gameState.Player.AutoJump,
+            MaxFall = gameState.Player.MaxFall
+        };
+
+        initialStateControl.Text = CommunicationWrapper.GameInfo;
     }
 
     private struct InitialState {

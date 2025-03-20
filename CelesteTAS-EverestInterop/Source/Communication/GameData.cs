@@ -205,6 +205,11 @@ public static class GameData {
                 PositionRemainder = player.PositionRemainder.ToGameStateVec2(),
                 Speed = player.Speed.ToGameStateVec2(),
                 starFlySpeedLerp = player.starFlySpeedLerp,
+                OnGround = player.onGround,
+                IsHolding = player.Holding != null,
+                JumpTimer = GameInfo.ConvertToFrames(player.varJumpTimer),
+                AutoJump = player.AutoJump,
+                MaxFall = player.maxFall
             },
             Level = new GameState.LevelState {
                 Bounds = level.Bounds.ToGameStateRectI(),
