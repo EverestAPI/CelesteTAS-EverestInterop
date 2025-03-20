@@ -97,7 +97,7 @@ public sealed class RadelineSimForm : Form {
         rngThresholdSlowControl = new NumericStepper { Value = 15, MinValue = 1, MaxValue = 200, Width = rowWidth };
         appendKeysControl = new TextArea { Font = FontManager.EditorFont, Width = rowWidth, Height = 22};
         hideDuplicatesControl = new CheckBox { Width = rowWidth, Checked = true };
-        outputsControl = new ListBox { Font = FontManager.StatusFont, Width = 500, Height = 500 };
+        outputsControl = new ListBox { Font = FontManager.StatusFont, Width = 600, Height = 500 };
         progressBarControl = new ProgressBar { Width = 300 };
 
         outputsControl.SelectedIndexChanged += OutputsOnSelectedIndexChanged;
@@ -232,7 +232,7 @@ public sealed class RadelineSimForm : Form {
                     cfg.DisabledKey = initialState.Speed > 0f ? DisabledKey.L : DisabledKey.R;
             } else {
                 // disable jump if past jump peak, or down if can't ever reach fast fall speed
-                if (initialState.Speed > 40f)
+                if (initialState.Speed > 40f || initialState.AutoJump)
                     cfg.DisabledKey = DisabledKey.J;
                 else if (initialState.Speed + cfg.Frames * 15f <= 160)
                     cfg.DisabledKey = DisabledKey.D;
@@ -599,14 +599,17 @@ public sealed class RadelineSimForm : Form {
     }
 
     private static string FormatInputPermutation((float position, float speed, List<(int frames, string key)> inputs) inputPermutation) {
-        string speedFormat = inputPermutation.speed switch {
-            < -10 => "0.00000",
-            > 10 => "0.000000",
-            _ => "0.0000000"
+        int speedPrecisionOffset = inputPermutation.speed switch {
+            < -100 => 3,
+            < -10 => 2,
+            > 100 => 2,
+            > 10 => 1,
+            < 0 => 1,
+            _ => 0
         };
 
-        string position = inputPermutation.position.ToString("0.000000");
-        string speed = inputPermutation.speed.ToString(speedFormat);
+        string position = inputPermutation.position.ToString("F10");
+        string speed = inputPermutation.speed.ToString($"F{8 - speedPrecisionOffset}");
         var inputsDisplay = new StringBuilder($"({position}, {speed}) ");
 
         foreach (var input in inputPermutation.inputs) {
