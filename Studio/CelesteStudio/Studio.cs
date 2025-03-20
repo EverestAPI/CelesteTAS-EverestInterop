@@ -60,6 +60,8 @@ public sealed class Studio : Form {
     private RadelineSimForm? radelineSimForm;
     private ThemeEditor? themeEditorForm;
 
+    private RadelineSimConfig radelineFormPersistence = new();
+
     private string TitleBarText => Editor.Document.FilePath == Document.ScratchFile
         ? $"Studio {Version} - <Scratch>"
         // Hide username inside title bar
@@ -784,7 +786,7 @@ public sealed class Studio : Form {
                     featherlineForm.Closed += (_, _) => featherlineForm = null;
                 }),
                 MenuUtils.CreateAction("&Radeline Simulator", Keys.None, () => {
-                    radelineSimForm ??= new();
+                    radelineSimForm ??= new(radelineFormPersistence);
                     radelineSimForm.Show();
                     radelineSimForm.Closed += (_, _) => radelineSimForm = null;
                 }),

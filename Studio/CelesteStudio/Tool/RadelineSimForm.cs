@@ -2,7 +2,6 @@
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
-using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -33,11 +32,13 @@ public sealed class RadelineSimForm : Form {
     private readonly ListBox outputsControl;
 
     private static InitialState initialState;
-    private static SimConfig cfg;
+    private static RadelineSimConfig cfg;
     private string[] generatorKeys = [];
-    private bool gotInitialState = false;
+    private bool gotInitialState;
 
-    public RadelineSimForm() {
+    public RadelineSimForm(RadelineSimConfig formPersistence) {
+        cfg = formPersistence;
+
         Title = $"Radeline Simulator - v{Version}";
         Icon = Assets.AppIcon;
 
@@ -175,6 +176,32 @@ public sealed class RadelineSimForm : Form {
 
         Resizable = false;
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
+        Closed += (_, _) => SetupSimConfig();
+        FormFromPersistence();
+    }
+
+    private void FormFromPersistence() {
+        if (cfg.WindowFirstOpen) {
+            cfg.WindowFirstOpen = false;
+            return;
+        }
+
+        framesControl.Value = cfg.Frames;
+        axisControl.SelectedKey = cfg.Axis.ToString();
+        positionFilterMinControl.Value = cfg.PositionFilter.Min;
+        positionFilterMaxControl.Value = cfg.PositionFilter.Max;
+        goalSpeedControl.Value = cfg.GoalSpeed;
+        disabledKeyControl.SelectedKey = cfg.DisabledKey.ToString();
+        outputSortingControl.SelectedKey = cfg.OutputSortingPriority.ToString();
+        rngThresholdControl.Value = cfg.RNGThreshold;
+        rngThresholdSlowControl.Value = cfg.RNGThresholdSlow;
+        inputGenerationTimeControl.Value = cfg.InputGenerationTime / 1000;
+        appendKeysControl.Text = cfg.AppendKeys;
+        hideDuplicatesControl.Checked = cfg.HideDuplicateInputs;
+        initialStateControl.Text = cfg.InitialStateInfo;
+
+        initialState = cfg.InitialState;
+        gotInitialState = true;
     }
 
     private void Log(string message) {
@@ -633,18 +660,19 @@ public sealed class RadelineSimForm : Form {
         Enum.TryParse(disabledKeyControl.SelectedKey, out DisabledKey disabledKeySelected);
         Enum.TryParse(outputSortingControl.SelectedKey, out OutputSortingPriority outputSortingPrioritySelected);
 
-        cfg = new SimConfig {
-            Frames = (int) framesControl.Value,
-            Axis = axisSelected,
-            PositionFilter = (positionFilterMinValue, positionFilterMaxValue),
-            GoalSpeed = (float) goalSpeedControl.Value,
-            DisabledKey = disabledKeySelected,
-            OutputSortingPriority = outputSortingPrioritySelected,
-            RNGThresholdSlow = (int) rngThresholdSlowControl.Value,
-            RNGThreshold = (int) rngThresholdControl.Value,
-            HideDuplicateInputs = hideDuplicatesControl.Checked!.Value,
-            InputGenerationTime = (int) inputGenerationTimeControl.Value * 1000
-        };
+        cfg.Frames = (int) framesControl.Value;
+        cfg.Axis = axisSelected;
+        cfg.PositionFilter = (positionFilterMinValue, positionFilterMaxValue);
+        cfg.GoalSpeed = (float) goalSpeedControl.Value;
+        cfg.DisabledKey = disabledKeySelected;
+        cfg.OutputSortingPriority = outputSortingPrioritySelected;
+        cfg.RNGThresholdSlow = (int) rngThresholdSlowControl.Value;
+        cfg.RNGThreshold = (int) rngThresholdControl.Value;
+        cfg.HideDuplicateInputs = hideDuplicatesControl.Checked!.Value;
+        cfg.InputGenerationTime = (int) inputGenerationTimeControl.Value * 1000;
+        cfg.AppendKeys = appendKeysControl.Text;
+        cfg.InitialState = initialState;
+        cfg.InitialStateInfo = initialStateControl.Text;
 
         initialState.Position = axisSelected == Axis.X ? initialState.Positions.X : initialState.Positions.Y;
         initialState.Speed = axisSelected == Axis.X ? initialState.Speeds.X : initialState.Speeds.Y;
@@ -680,7 +708,7 @@ public sealed class RadelineSimForm : Form {
         initialStateControl.Text = CommunicationWrapper.GameInfo;
     }
 
-    private struct InitialState {
+    public struct InitialState {
         public (float X, float Y) Positions;
         public (float X, float Y) Speeds;
         // X axis:
@@ -695,20 +723,24 @@ public sealed class RadelineSimForm : Form {
         public float Speed;
     }
 
-    private struct SimConfig {
-        public int Frames;
-        public Axis Axis;
-        public (float Min, float Max) PositionFilter;
-        public float GoalSpeed;
-        public DisabledKey DisabledKey;
-        public OutputSortingPriority OutputSortingPriority;
-        public int RNGThresholdSlow;
-        public int RNGThreshold;
-        public bool HideDuplicateInputs;
-        public int InputGenerationTime;
-    }
+    public enum Axis { X, Y }
+    public enum DisabledKey { None, Auto, L, R, J, D }
+    public enum OutputSortingPriority { Position, Speed }
+}
 
-    private enum Axis { X, Y }
-    private enum DisabledKey { None, Auto, L, R, J, D }
-    private enum OutputSortingPriority { Position, Speed }
+public class RadelineSimConfig {
+    public bool WindowFirstOpen = true;
+    public int Frames;
+    public RadelineSimForm.Axis Axis;
+    public (float Min, float Max) PositionFilter;
+    public float GoalSpeed;
+    public RadelineSimForm.DisabledKey DisabledKey;
+    public RadelineSimForm.OutputSortingPriority OutputSortingPriority;
+    public int RNGThresholdSlow;
+    public int RNGThreshold;
+    public bool HideDuplicateInputs;
+    public int InputGenerationTime;  // in ms
+    public string AppendKeys;
+    public RadelineSimForm.InitialState InitialState;
+    public string InitialStateInfo;
 }
