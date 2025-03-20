@@ -21,7 +21,8 @@ namespace TAS.InfoHUD;
 // you can make it so that `Player` resolves to all instances of the player entity in the level.
 internal interface IInstanceResolver {
     public bool CanResolve(Type type);
-    List<object>? Resolve(Type type, List<Type> componentTypes, EntityID? entityId);
+
+    List<object> Resolve(Type type, List<Type> componentTypes, EntityID? entityId);
 }
 
 /// Contains all the logic for getting data from a target-query
@@ -36,14 +37,15 @@ public static class TargetQuery {
     /// e.g. `Type@Assembly:Component@Assembly[RoomName:EntityId]`
     private static readonly Regex BaseTypeRegex = new(@"^([\w.]+)(@(?:[^.:\[\]\n]*))?(?::(\w+))?(@(?:[^.:\[\]\n]*))?(?:\[(.+):(\d+)\])?$", RegexOptions.Compiled);
 
-    private static IInstanceResolver[] typeInstanceResolvers = [
-        new GlobalInstanceResolver<Settings>(Settings.Instance),
-        new GlobalInstanceResolver<SaveData>(SaveData.Instance),
-        new GlobalInstanceResolver<Assists>(Assists.Default),
+    private static readonly IInstanceResolver[] TypeInstanceResolvers = [
+        new GlobalInstanceResolver<Settings>(() => Settings.Instance),
+        new GlobalInstanceResolver<SaveData>(() => SaveData.Instance),
+        new GlobalInstanceResolver<Assists>(() => SaveData.Instance.Assists),
         new EverestSettingsInstanceResolver(),
-        new ComponentInstanceResolver(),
         new EntityInstanceResolver(),
+        new ComponentInstanceResolver(),
         new SceneInstanceResolver(),
+        new SessionInstanceResolver(),
     ];
 
     [Initialize]
@@ -235,9 +237,14 @@ public static class TargetQuery {
     /// Resolves a type into all applicable instances of it
     /// Returns null for types which are always in a static context
     public static List<object>? ResolveTypeInstances(Type type, List<Type> componentTypes, EntityID? entityId) {
-        return typeInstanceResolvers
-            .Select(resolver => resolver.CanResolve(type) ? resolver.Resolve(type, componentTypes, entityId) : null)
-            .FirstOrDefault(instances => instances != null);
+        foreach (var resolver in TypeInstanceResolvers) {
+            if (resolver.CanResolve(type)) {
+                return resolver.Resolve(type, componentTypes, entityId);
+            }
+        }
+
+        // No instances available
+        return null;
     }
 
     /// Recursively resolves the type of the specified members

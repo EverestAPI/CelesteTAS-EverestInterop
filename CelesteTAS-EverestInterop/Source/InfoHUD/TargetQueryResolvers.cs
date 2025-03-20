@@ -9,10 +9,10 @@ using TAS.Utils;
 
 namespace TAS.InfoHUD;
 
-internal record GlobalInstanceResolver<T>(T Instance) : IInstanceResolver where T : notnull {
+internal class GlobalInstanceResolver<T>(Func<T> instanceProvider) : IInstanceResolver where T : notnull {
     public bool CanResolve(Type type) => type == typeof(T);
 
-    public List<object> Resolve(Type type, List<Type> componentTypes, EntityID? entityId) => [Instance];
+    public List<object> Resolve(Type type, List<Type> componentTypes, EntityID? entityId) => [instanceProvider()];
 }
 
 internal class EverestSettingsInstanceResolver : IInstanceResolver {
@@ -39,13 +39,13 @@ internal class EntityInstanceResolver : IInstanceResolver {
 
         if (componentTypes.IsEmpty()) {
             return entityInstances
-                .Select(e => (object)e)
+                .Select(object (e) => e)
                 .ToList();
         } else {
             return entityInstances
                 .SelectMany(e => e.Components.Where(c =>
                     componentTypes.Any(componentType => c.GetType().IsSameOrSubclassOf(componentType))))
-                .Select(c => (object)c)
+                .Select(object (c) => c)
                 .ToList();
         }
     }
@@ -71,13 +71,28 @@ internal class ComponentInstanceResolver : IInstanceResolver {
 }
 
 internal class SceneInstanceResolver : IInstanceResolver {
-    public bool CanResolve(Type type) => type == typeof(Session) || type == Engine.Scene.GetType();
+    public bool CanResolve(Type type) => type.IsSameOrSubclassOf(typeof(Scene));
 
     public List<object> Resolve(Type type, List<Type> componentTypes, EntityID? entityId) {
-        if (type == typeof(Session) && Engine.Scene is Level level) {
-            return [level.Session];
+        if (Engine.Scene.GetType().IsSameOrSubclassOf(type)) {
+            return [Engine.Scene];
+        }
+        if (type.IsSameOrSubclassOf(typeof(Level)) && Engine.Scene.GetLevel() is { } level) {
+            return [level];
         }
 
-        return [Engine.Scene];
+        return [];
+    }
+}
+
+internal class SessionInstanceResolver : IInstanceResolver {
+    public bool CanResolve(Type type) => type == typeof(Session);
+
+    public List<object> Resolve(Type type, List<Type> componentTypes, EntityID? entityId) {
+        if (Engine.Scene.GetSession() is { } session) {
+            return [session];
+        }
+
+        return [];
     }
 }
