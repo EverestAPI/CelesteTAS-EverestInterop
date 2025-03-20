@@ -2,12 +2,12 @@
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
+using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace CelesteStudio.Tool;
 
@@ -18,7 +18,6 @@ public sealed class RadelineSimForm : Form {
     private readonly TextArea appendKeysControl;
     private readonly TextArea logControl;
     private readonly Button getInitialStateControl;
-    private readonly Button runControl;
     private readonly ProgressBar progressBarControl;
     private readonly DropDown outputSortingControl;
     private readonly DropDown axisControl;
@@ -36,6 +35,7 @@ public sealed class RadelineSimForm : Form {
     private static InitialState initialState;
     private static SimConfig cfg;
     private string[] generatorKeys = [];
+    private bool gotInitialState = false;
 
     public RadelineSimForm() {
         Title = $"Radeline Simulator - v{Version}";
@@ -140,7 +140,7 @@ public sealed class RadelineSimForm : Form {
                                                                                         "(instead of sequential) when a key is disabled" });
         layout.Add(rngThresholdControl);
         layout.EndBeginHorizontal();
-        layout.AddCentered(new Label { Text = "Input Generation Time", ToolTip = "How long to spend generating random inputs, in seconds"});
+        layout.AddCentered(new Label { Text = "Input Generation Time (RNG)", ToolTip = "How long to spend generating random inputs, in seconds"});
         layout.Add(inputGenerationTimeControl);
         layout.EndBeginHorizontal();
         layout.AddCentered(new Label { Text = "Appended Keys", ToolTip = "Keys the formatter adds, e.g. \"jg\" to hold jump and grab as well"});
@@ -166,7 +166,7 @@ public sealed class RadelineSimForm : Form {
                     Spacing = 10,
                     Orientation = Orientation.Horizontal,
                     Items = {
-                        (runControl = new Button((_, _) => Run()) { Text = "Run", Width = 150 }),
+                        (new Button((_, _) => Run()) { Text = "Run", Width = 150 }),
                         progressBarControl
                     }
                 }
@@ -183,6 +183,11 @@ public sealed class RadelineSimForm : Form {
     }
 
     private void Run() {
+        if (!gotInitialState) {
+            Log("No initial state");
+            return;
+        }
+
         SetupSimConfig();
         ICollection<List<(int frames, string key)>> inputPermutations = [];
         progressBarControl.Value = 0;
@@ -314,7 +319,7 @@ public sealed class RadelineSimForm : Form {
 
         // insert results into output window
         foreach (var inputPermutation in outputPermutations) {
-            outputsControl.Items.Add(new ListItem { Text = FormatInputPermutation(inputPermutation), Key = FormatInputPermutationCompact(inputPermutation.inputs)});
+            outputsControl.Items.Add(new ListItem { Text = FormatInputPermutation(inputPermutation), Key = FormatInputPermutationCompact(inputPermutation.inputs) });
             i++;
 
             if (i == 1000) {
@@ -549,13 +554,6 @@ public sealed class RadelineSimForm : Form {
     private static float Approach(float val, float target, float maxMove) =>
         val <= target ? Math.Min(val + maxMove, target) : Math.Max(val - maxMove, target);
 
-    private void OutputsOnSelectedIndexChanged(object? sender, EventArgs e) {
-        if (!outputsControl.Items.Any()) { return; }
-        var selectedItem = outputsControl.Items[outputsControl.SelectedIndex];
-        Clipboard.Instance.Clear();
-        Clipboard.Instance.Text = selectedItem.Key.Replace(' ', '\n');
-    }
-
     private static string[] GeneratorKeys() {
         var keys = new List<string>();
 
@@ -596,10 +594,31 @@ public sealed class RadelineSimForm : Form {
         var inputsCompact = new StringBuilder();
 
         foreach (var input in inputs) {
-            inputsCompact.Append($"{input.frames},{input.key} ");
+            inputsCompact.Append($"{input.frames},{input.key}\n");
         }
 
         return inputsCompact.ToString();
+    }
+
+    private void OutputsOnSelectedIndexChanged(object? sender, EventArgs e) {
+        if (!outputsControl.Items.Any()) { return; }
+        var appendKeys = appendKeysControl.Text.Where(c => !char.IsWhiteSpace(c));
+        string selectedItemKey = outputsControl.Items[outputsControl.SelectedIndex].Key!;
+        string[] inputLines = selectedItemKey.TrimEnd().Split('\n');
+        var inputsProcessed = new StringBuilder();
+
+        foreach (string inputLine in inputLines) {
+            inputsProcessed.Append(inputLine);
+
+            foreach (char appendKey in appendKeys) {
+                inputsProcessed.Append($",{appendKey}");
+            }
+
+            inputsProcessed.Append('\n');
+        }
+
+        Clipboard.Instance.Clear();
+        Clipboard.Instance.Text = inputsProcessed.ToString();
     }
 
     private void SetupSimConfig() {
@@ -623,7 +642,6 @@ public sealed class RadelineSimForm : Form {
             OutputSortingPriority = outputSortingPrioritySelected,
             RNGThresholdSlow = (int) rngThresholdSlowControl.Value,
             RNGThreshold = (int) rngThresholdControl.Value,
-            AppendKeys = appendKeysControl.Text,
             HideDuplicateInputs = hideDuplicatesControl.Checked!.Value,
             InputGenerationTime = (int) inputGenerationTimeControl.Value * 1000
         };
@@ -646,6 +664,7 @@ public sealed class RadelineSimForm : Form {
             return;
         }
 
+        gotInitialState = true;
         var gameState = gameStateResult.Value;
 
         initialState = new InitialState {
@@ -685,7 +704,6 @@ public sealed class RadelineSimForm : Form {
         public OutputSortingPriority OutputSortingPriority;
         public int RNGThresholdSlow;
         public int RNGThreshold;
-        public string AppendKeys;
         public bool HideDuplicateInputs;
         public int InputGenerationTime;
     }
