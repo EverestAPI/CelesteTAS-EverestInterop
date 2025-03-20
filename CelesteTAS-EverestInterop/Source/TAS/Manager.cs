@@ -87,17 +87,24 @@ public static class Manager {
             return;
         }
 
-        $"Starting TAS: {Controller.FilePath}".Log();
-
         CurrState = NextState = State.Running;
         PlaybackSpeed = 1.0f;
 
         Controller.Stop();
         Controller.RefreshInputs();
+
+        if (Controller.Inputs.Count == 0) {
+            // Empty file
+            CurrState = NextState = State.Disabled;
+            return;
+        }
+
         AttributeUtils.Invoke<EnableRunAttribute>();
 
         // This needs to happen after EnableRun, otherwise the input state will be reset in BindingHelper.SetTasBindings
         Savestates.EnableRun();
+
+        $"Starting TAS: {Controller.FilePath}".Log();
     }
 
     public static void DisableRun() {
