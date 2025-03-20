@@ -17,6 +17,14 @@ using TAS.Utils;
 
 namespace TAS.InfoHUD;
 
+// By default, target queries can only access static members. By providing an `IInstanceResolver`,
+// you can make it so that `Player` resolves to all instances of the player entity in the level.
+internal interface IInstanceResolver {
+    public bool CanResolve(Type type);
+
+    List<object> Resolve(Type type, List<Type> componentTypes, EntityID? entityId);
+}
+
 /// Contains all the logic for getting data from a target-query
 public static class TargetQuery {
     /// Prevents invocations of methods / execution of Lua code in the Custom Info
@@ -26,7 +34,19 @@ public static class TargetQuery {
     private static readonly Dictionary<string, (List<Type> Types, List<Type> ComponentTypes, EntityID? EntityID)> baseTypeCache = [];
 
     /// Searches for the target type, optional target assembly, optional component type, optional component assembly, and optional EntityID
+    /// e.g. `Type@Assembly:Component@Assembly[RoomName:EntityId]`
     private static readonly Regex BaseTypeRegex = new(@"^([\w.]+)(@(?:[^.:\[\]\n]*))?(?::(\w+))?(@(?:[^.:\[\]\n]*))?(?:\[(.+):(\d+)\])?$", RegexOptions.Compiled);
+
+    private static readonly IInstanceResolver[] TypeInstanceResolvers = [
+        new GlobalInstanceResolver<Settings>(() => Settings.Instance),
+        new GlobalInstanceResolver<SaveData>(() => SaveData.Instance),
+        new GlobalInstanceResolver<Assists>(() => SaveData.Instance.Assists),
+        new EverestSettingsInstanceResolver(),
+        new EntityInstanceResolver(),
+        new ComponentInstanceResolver(),
+        new SceneInstanceResolver(),
+        new SessionInstanceResolver(),
+    ];
 
     [Initialize]
     private static void CollectAllTypes() {
@@ -148,7 +168,7 @@ public static class TargetQuery {
             memberArgs = queryArgs;
             return [typeof(Settings)];
         }
-        if (typeof(SaveData).GetFields().FirstOrDefault(f => f.Name == queryArgs[0]) != null) {
+        if (typeof(SaveData).GetFields().FirstOrDefault(f => f.Name == queryArgs[0]) != null && queryArgs[0] != nameof(SaveData.Assists)) {
             memberArgs = queryArgs;
             return [typeof(SaveData)];
         }
@@ -217,67 +237,13 @@ public static class TargetQuery {
     /// Resolves a type into all applicable instances of it
     /// Returns null for types which are always in a static context
     public static List<object>? ResolveTypeInstances(Type type, List<Type> componentTypes, EntityID? entityId) {
-        if (type == typeof(Settings)) {
-            return [Settings.Instance];
-        }
-        if (type == typeof(SaveData)) {
-            return [SaveData.Instance];
-        }
-        if (type == typeof(Assists)) {
-            return [SaveData.Instance.Assists];
-        }
-
-        if (type.IsSameOrSubclassOf(typeof(EverestModuleSettings))) {
-            return Everest.Modules.FirstOrDefault(mod => mod.SettingsType == type) is { } module ? [module._Settings] : [];
-        }
-
-        if (type.IsSameOrSubclassOf(typeof(Entity))) {
-            IEnumerable<Entity> entityInstances;
-            if (Engine.Scene.Tracker.Entities.TryGetValue(type, out var entities)) {
-                entityInstances = entities
-                    .Where(e => entityId == null || e.GetEntityData()?.ToEntityId().Key == entityId.Value.Key);
-            } else {
-                entityInstances = Engine.Scene.Entities
-                    .Where(e => e.GetType().IsSameOrSubclassOf(type) && (entityId == null || e.GetEntityData()?.ToEntityId().Key == entityId.Value.Key));
-            }
-
-            if (componentTypes.IsEmpty()) {
-                return entityInstances
-                    .Select(e => (object) e)
-                    .ToList();
-            } else {
-                return entityInstances
-                    .SelectMany(e => e.Components.Where(c => componentTypes.Any(componentType => c.GetType().IsSameOrSubclassOf(componentType))))
-                    .Select(c => (object) c)
-                    .ToList();
+        foreach (var resolver in TypeInstanceResolvers) {
+            if (resolver.CanResolve(type)) {
+                return resolver.Resolve(type, componentTypes, entityId);
             }
         }
 
-        if (type.IsSameOrSubclassOf(typeof(Component))) {
-            IEnumerable<Component> componentInstances;
-            if (Engine.Scene.Tracker.Components.TryGetValue(type, out var components)) {
-                componentInstances = components;
-            } else {
-                componentInstances = Engine.Scene.Entities
-                    .SelectMany(e => e.Components)
-                    .Where(c => c.GetType().IsSameOrSubclassOf(type));
-            }
-
-            return componentInstances
-                .Select(c => (object) c)
-                .ToList();
-        }
-
-        if (Engine.Scene is Level level) {
-            if (type == typeof(Session)) {
-                return [level.Session];
-            }
-        }
-        if (Engine.Scene.GetType() == type) {
-            return [Engine.Scene];
-        }
-
-        // Nothing found
+        // No instances available
         return null;
     }
 
@@ -407,6 +373,7 @@ public static class TargetQuery {
                     continue;
                 }
             } catch (Exception ex) {
+                ex.LogException($"Failed to resolve member '{member}' on type '{currentType}'");
                 return Result<object?, string>.Fail($"Unknown exception: {ex}");
             }
 
@@ -500,6 +467,7 @@ public static class TargetQuery {
                     continue;
                 }
             } catch (Exception ex) {
+                ex.LogException($"Failed to get member '{member}' on type '{currentType}'");
                 return VoidResult<string>.Fail($"Unknown exception: {ex}");
             }
 
@@ -654,6 +622,7 @@ public static class TargetQuery {
                 return VoidResult<string>.Fail($"Cannot find field / property '{memberArgs[^1]}' on type {currentType}");
             }
         } catch (Exception ex) {
+            ex.LogException($"Failed to set member '{memberArgs[^1]}' on type '{currentType}' to value '{value}'");
             return VoidResult<string>.Fail($"Unknown exception: {ex}");
         }
 
@@ -684,6 +653,7 @@ public static class TargetQuery {
                     }
                 }
             } catch (Exception ex) {
+                ex.LogException($"Failed to set member '{member}' on type '{currentType}' to value '{value}' (value-type back-recursion)");
                 return VoidResult<string>.Fail($"Unknown exception: {ex}");
             }
         }
@@ -755,6 +725,7 @@ public static class TargetQuery {
                     continue;
                 }
             } catch (Exception ex) {
+                ex.LogException($"Failed to get member '{member}' on type '{currentType}'");
                 return VoidResult<string>.Fail($"Unknown exception: {ex}");
             }
 
@@ -783,6 +754,7 @@ public static class TargetQuery {
                 return VoidResult<string>.Ok;
             }
         } catch (Exception ex) {
+            ex.LogException($"Failed to invoke method '{memberArgs[^1]}' on type '{currentType}' with parameters ({string.Join(", ", parameters)})");
             return VoidResult<string>.Fail($"Unknown exception: {ex}");
         }
 
@@ -905,6 +877,7 @@ public static class TargetQuery {
 
                 values[index++] = Convert.ChangeType(arg, targetType);
             } catch (Exception ex) {
+                ex.LogException($"Failed to resolve value for type '{targetType}'");
                 return Result<object?[], string>.Fail($"Failed to resolve value for type '{targetType}': {ex}");
             }
         }
