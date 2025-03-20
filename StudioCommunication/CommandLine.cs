@@ -168,13 +168,7 @@ public readonly record struct CommandLine(
             commandName = Command;
         }
 
-        // Special-cases for:
-        // - console commands to use spaces, like in-game console commands
-        // - Timing commands to use spaces, since they use "A: B"
-        if (IsCommand("console")
-            || Command.Contains("FileTime", StringComparison.OrdinalIgnoreCase)
-            || Command.Contains("ChapterTime", StringComparison.OrdinalIgnoreCase)
-        ) {
+        if (CommandInfo.SpaceSeparatedCommands.Contains(Command, StringComparer.OrdinalIgnoreCase)) {
             overrideSeparator = " ";
         }
 

@@ -461,8 +461,9 @@ public sealed class Studio : Form {
     }
 
     private void OnOpenFile() {
-        if (!ShouldDiscardChanges())
+        if (!ShouldDiscardChanges()) {
             return;
+        }
 
         var dialog = new OpenFileDialog {
             Filters = { new FileFilter("TAS", ".tas") },
@@ -476,22 +477,32 @@ public sealed class Studio : Form {
     }
 
     public void OpenFile(string filePath) {
-        if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
+        if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath)) {
             Settings.Instance.AddRecentFile(filePath);
-
-        var document = Document.Load(filePath);
-        if (document == null) {
-            MessageBox.Show($"An unexpected error occured while trying to open the file '{filePath}'", MessageBoxButtons.OK, MessageBoxType.Error);
-            return;
         }
 
-        if (Editor.Document is { } doc) {
-            doc.Dispose();
-            doc.TextChanged -= UpdateTitle;
-        }
+        FileRefactor.RefactorSemaphore.Wait();
 
-        Editor.Document = document;
-        Editor.Document.TextChanged += UpdateTitle;
+        try {
+            var document = Document.Load(filePath);
+            if (document == null) {
+                MessageBox.Show($"An unexpected error occured while trying to open the file '{filePath}'", MessageBoxButtons.OK, MessageBoxType.Error);
+                return;
+            }
+
+            if (Editor.Document is { } doc) {
+                doc.Dispose();
+                doc.TextChanged -= UpdateTitle;
+            }
+
+            Editor.Document = document;
+            Editor.Document.TextChanged += UpdateTitle;
+        } catch (Exception ex) {
+            Console.Error.WriteLine($"Failed to open file '{filePath}'");
+            Console.Error.WriteLine(ex);
+        } finally {
+            FileRefactor.RefactorSemaphore.Release();
+        }
 
         Title = TitleBarText;
         Menu = CreateMenu(); // Recreate menu to reflect changed "Recent Files"
@@ -661,6 +672,9 @@ public sealed class Studio : Form {
         autoIndexRoomLabels.Enabled = StyleConfig.Current.RoomLabelIndexing == null;
         commandSeparator.Enabled = StyleConfig.Current.CommandArgumentSeparator == null;
 
+        var openProjectFileFormatter = MenuUtils.CreateAction("&Project File Formatter", Keys.None, ProjectFileFormatterDialog.Show);
+        openProjectFileFormatter.Enabled = Editor.Document.FilePath != Document.ScratchFile;
+
         MenuItem[] items = [
             new SubMenuItem { Text = "&File", Items = {
                 MenuEntry.File_New.ToAction(OnNewFile),
@@ -756,7 +770,7 @@ public sealed class Studio : Form {
                 MenuUtils.CreateGameSettingNumberInput("Slow Forward Speed", nameof(GameSettings.SlowForwardSpeed), minSlowForwardSpeed, maxSlowForwardSpeed, 0.1f),
             }},
             new SubMenuItem { Text = "&Tools", Items = {
-                MenuUtils.CreateAction("&Project File Formatter", Keys.None, ProjectFileFormatterDialog.Show),
+                openProjectFileFormatter,
                 MenuUtils.CreateAction("&Integrate Read Files", Keys.None, OnIntegrateReadFiles),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateAction("&Jadderline", Keys.None, () => {

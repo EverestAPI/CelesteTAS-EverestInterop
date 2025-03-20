@@ -42,4 +42,14 @@ public partial record struct CommandInfo(
         "ExportLibTAS", "EndExportLibTAS", "Add", "Skip", "Marker",
         "ExitGame"
     ];
+
+    /// Commands which should always be separated by spaces, regardless of the specified preference
+    public static readonly string[] SpaceSeparatedCommands = [
+        // Mimic in-game console
+        "console",
+        // Formatted as "Command: Value"
+        "RecordCount:", "ChapterTime:", "MidwayChapterTime:", "FileTime:", "MidwayFileTime:", "Author:", "FrameCount:", "TotalRecordCount:",
+        // Arguments are inputs, i.e contain commas
+        "Add"
+    ];
 }

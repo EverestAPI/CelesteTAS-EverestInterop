@@ -45,9 +45,11 @@ public ref struct LineIterator(ReadOnlySpan<char> text) {
     }
 }
 
+#if NET7_0_OR_GREATER
 public static class NumberExtensions {
     public static T Mod<T>(this T x, T m) where T : INumber<T> => (x % m + m) % m;
 }
+#endif
 
 public static class StringExtensions {
     private static readonly string format = "0.".PadRight(339, '#');
@@ -66,6 +68,7 @@ public static class StringExtensions {
         }
     }
 
+#if NET7_0_OR_GREATER
     private static readonly string[] sizeSuffixes = ["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
     public static (string Amount, string Suffix) HumanReadableBytes<T>(this T value, int decimals = 1) where T : INumber<T>
     {
@@ -93,6 +96,7 @@ public static class StringExtensions {
 
         return (string.Format($"{{0:n{decimals}}}", adjustedSize), sizeSuffixes[mag]);
     }
+#endif
 
     /// Replaces the specified range inside the string and returns the result
     public static string ReplaceRange(this string self, int startIndex, int count, string replacement) {

@@ -157,8 +157,8 @@ public static class CommunicationWrapper {
     public static int CurrentFrameInInput => Connected ? State.CurrentFrameInInput : -1;
     public static int TotalFrames => Connected ? State.TotalFrames : -1;
     public static int SaveStateLine => Connected ? State.SaveStateLine : -1;
+    public static bool PlaybackRunning => Connected ? State.PlaybackRunning : false;
 
-    public static States TasStates => Connected ? State.tasStates : States.None;
     public static string GameInfo => Connected ? State.GameInfo : string.Empty;
     public static string LevelName => Connected ? State.LevelName : string.Empty;
     public static string ChapterTime => Connected ? State.ChapterTime : string.Empty;

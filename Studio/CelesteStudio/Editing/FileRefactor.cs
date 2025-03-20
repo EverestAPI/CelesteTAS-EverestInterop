@@ -7,19 +7,20 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace CelesteStudio.Editing;
 
 /// Manages refactoring of files, including semantic and stylistic changes
 public static class FileRefactor {
 
-    private static readonly SemaphoreSlim RefactorSemaphore = new(1);
+    public static readonly SemaphoreSlim RefactorSemaphore = new(1);
 
     /// Caches the file contents in lines of external files
     private static readonly Dictionary<string, string[]> FileCache = [];
     private static readonly HashSet<string> lockedFiles = [];
 
-    private static readonly Dictionary<string, string> projectRootCache = [];
+    private static readonly Dictionary<(string FilePath, bool ReturnFirst), string> projectRootCache = [];
 
     private static readonly Dictionary<string, FileSystemWatcher> watchers = [];
 
@@ -72,7 +73,9 @@ public static class FileRefactor {
         // Allows the user to edit labels without them being auto-trimmed
         string untrimmedLabel = string.Empty;
 
+        RefactorSemaphore.Wait();
         LockFile(filePath);
+
         foreach ((string line, int row, string path, _) in IterateLines(filePath, followReadCommands: roomIndexing == AutoRoomIndexing.IncludeReads)) {
             if (RoomLabelRegex.Match(line) is not { Success: true } match) {
                 continue;
@@ -129,8 +132,10 @@ public static class FileRefactor {
                 lines[occurrences[i].Row] = $"#lvl_{writtenLabel} ({i + startingIndex})";
             }
         }
+
         WriteLines(filePath, lines, raiseEvents: false);
         UnlockFile(filePath);
+        RefactorSemaphore.Release();
 
         foreach ((string oldLabel, string newLabel) in refactors) {
             RefactorLabelName(filePath, oldLabel, newLabel);
@@ -147,7 +152,7 @@ public static class FileRefactor {
             return; // Already has that name
         }
 
-        string projectRoot = FindProjectRoot(filePath);
+        string projectRoot = FindProjectRoot(filePath, returnSubmodules: false);
 
         RefactorSemaphore.Wait();
         Console.WriteLine($"Performing label refactor for '{oldLabel}' => '{newLabel}' file '{filePath}'");
@@ -161,6 +166,7 @@ public static class FileRefactor {
 
                 LockFile(file);
                 string[] lines = ReadLines(file);
+                bool changed = false;
 
                 for (int row = 0; row < lines.Length; row++) {
                     string line = lines[row];
@@ -187,9 +193,12 @@ public static class FileRefactor {
                     }
 
                     lines[row] = commandLine.ToString();
+                    changed = true;
                 }
 
-                WriteLines(file, lines);
+                if (changed) {
+                    WriteLines(file, lines);
+                }
                 UnlockFile(file);
             }
 
@@ -197,6 +206,7 @@ public static class FileRefactor {
             {
                 LockFile(filePath);
                 string[] lines = ReadLines(filePath);
+                bool changed = false;
 
                 for (int row = 0; row < lines.Length; row++) {
                     string line = lines[row];
@@ -214,9 +224,12 @@ public static class FileRefactor {
                     }
 
                     lines[row] = commandLine.ToString();
+                    changed = true;
                 }
 
-                WriteLines(filePath, lines);
+                if (changed) {
+                    WriteLines(filePath, lines);
+                }
                 UnlockFile(filePath);
             }
 
@@ -233,18 +246,22 @@ public static class FileRefactor {
     #region Utilities
 
     /// Locates a probable root directory for the current TAS project
-    public static string FindProjectRoot(string filePath) {
-        if (projectRootCache.TryGetValue(filePath, out string? projectRoot)) {
+    public static string FindProjectRoot(string filePath, bool returnSubmodules) {
+        var cacheKey = (filePath, returnFirst: returnSubmodules);
+        if (projectRootCache.TryGetValue(cacheKey, out string? projectRoot)) {
             return projectRoot;
         }
 
         // 1st approach: Search for a Git repository
         for (string? path = Path.GetDirectoryName(filePath); !string.IsNullOrEmpty(path); path = Path.GetDirectoryName(path)) {
-            if (Directory.Exists(Path.Combine(path, ".git")) &&
-                // Require at least 75% of files in the repo to be TAS files
-                GetTasFilePercentage(path) >= 0.75f)
-            {
-                projectRootCache[filePath] = path;
+            string gitPath = Path.Combine(path, ".git");
+            if (
+                // Search for Git repository, or Git submodule if returnSubmodules is enabled
+                (Directory.Exists(gitPath) || (returnSubmodules && File.Exists(gitPath))) &&
+                // Require at least 75% of files in the repo/submodule to be TAS files
+                GetTasFilePercentage(path) >= 0.75f
+            ) {
+                projectRootCache[cacheKey] = path;
                 return path;
             }
         }
@@ -363,7 +380,7 @@ public static class FileRefactor {
 
         lock(lockedFiles) {
             if (!lockedFiles.Contains(filePath)) {
-                Console.WriteLine($"File '{filePath}' was modified without being locked");
+                Console.WriteLine($"File '{filePath}' was modified without being locked!");
             }
         }
 
@@ -388,12 +405,20 @@ public static class FileRefactor {
 
     private static void LockFile(string filePath) {
         lock(lockedFiles) {
+            if (lockedFiles.Contains(filePath)) {
+                Console.WriteLine($"File '{filePath}' was locked twice!");
+            }
+
             lockedFiles.Add(filePath);
         }
     }
 
     private static void UnlockFile(string filePath) {
         lock(lockedFiles) {
+            if (!lockedFiles.Contains(filePath)) {
+                Console.WriteLine($"File '{filePath}' was never locked!");
+            }
+
             lockedFiles.Remove(filePath);
         }
     }
@@ -421,7 +446,7 @@ public static class FileRefactor {
                     }
                 }
 
-                FileCache[e.FullPath] = await File.ReadAllLinesAsync(e.FullPath).ConfigureAwait(false);
+                FileCache[e.FullPath] = await ReadFileWithRetryAsync(e.FullPath).ConfigureAwait(false);
             } catch (Exception ex) {
                 Console.WriteLine($"Failed to update file cache for '{e.FullPath}'");
                 Console.WriteLine(ex);
@@ -429,6 +454,18 @@ public static class FileRefactor {
                 FileCache.Remove(e.FullPath);
             }
         }
+    }
+
+    private static async Task<string[]> ReadFileWithRetryAsync(string path, int maxRetries = 3, int delayMs = 10) {
+        for (int i = 0; i < maxRetries; i++) {
+            try {
+                return await File.ReadAllLinesAsync(path).ConfigureAwait(false);
+            } catch (IOException) {
+                await Task.Delay(delayMs).ConfigureAwait(false);
+            }
+        }
+
+        throw new IOException($"Failed to read file {path} after {maxRetries} retries.");
     }
 
     #endregion

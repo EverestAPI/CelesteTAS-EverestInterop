@@ -196,13 +196,11 @@ public sealed class Settings {
             RecentFiles.RemoveRange(MaxRecentFiles, RecentFiles.Count - MaxRecentFiles);
         }
 
-        OnChanged();
         Save();
     }
     public void ClearRecentFiles() {
         RecentFiles.Clear();
 
-        OnChanged();
         Save();
     }
 

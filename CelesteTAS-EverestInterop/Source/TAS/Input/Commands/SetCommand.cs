@@ -25,7 +25,7 @@ namespace TAS.Input.Commands;
 internal class NamespaceComparer : IComparer<(string Name, Type Type)> {
     public int Compare((string Name, Type Type) x, (string Name, Type Type) y) {
         if (x.Type.Namespace == null || y.Type.Namespace == null) {
-            return 0;
+            return StringComparer.Ordinal.Compare(x.Name, y.Name);
         }
 
         int namespaceCompare = CompareNamespace(x.Type.Namespace, y.Type.Namespace);
@@ -533,7 +533,6 @@ public static class SetCommand {
 
     public static void ResetVariants(Assists assists) {
         SaveData.Instance.Assists = assists;
-        HandleSpecialCases(nameof(Assists.DashMode), assists.DashMode);
         HandleSpecialCases(nameof(Assists.GameSpeed), assists.GameSpeed);
         HandleSpecialCases(nameof(Assists.MirrorMode), assists.MirrorMode);
         HandleSpecialCases(nameof(Assists.PlayAsBadeline), assists.PlayAsBadeline);

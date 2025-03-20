@@ -8,10 +8,15 @@ public partial struct StudioState() {
     public string CurrentLineSuffix = string.Empty;
     public int CurrentFrameInTas = -1;
     public int CurrentFrameInInput = -1;
-    public int TotalFrames = 0;
     public int SaveStateLine = -1;
 
-    public States tasStates = States.None;
+    /// Whether a TAS is actively playing (i.e. not paused)
+    public bool PlaybackRunning;
+
+    /// Indicates the CelesteTAS detected changes to the file, but hasn't updated the following variables yet
+    public bool FileNeedsReload;
+    public int TotalFrames = 0;
+
     public string GameInfo = string.Empty;
     public string LevelName = string.Empty;
     public string ChapterTime = string.Empty;
