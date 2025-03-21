@@ -476,7 +476,7 @@ public sealed class RadelineSimForm : Form {
                         _ => 0f
                     };
 
-                    if (Math.Abs(speedX) <= max || (speedX == 0.0f ? 0.0f : (float)Math.CopySign(1, speedX)) != speedX)
+                    if (Math.Abs(speedX) <= max || (speedX == 0.0f ? 0.0f : (float) Math.CopySign(1, speedX)) != moveX)
                         speedX = Approach(speedX, max * moveX, mult1);
                     else
                         speedX = Approach(speedX, max * moveX, mult2);
@@ -701,7 +701,7 @@ public sealed class RadelineSimForm : Form {
         initialState = new InitialState {
             Positions = (gameState.Player.Position.X + gameState.Player.PositionRemainder.X, gameState.Player.Position.Y + gameState.Player.PositionRemainder.Y),
             Speeds = (gameState.Player.Speed.X, gameState.Player.Speed.Y),
-            OnGround = gameState.Player.OnGround,
+            OnGround = gameState.Player is { OnGround: true, Speed.Y: >= 0f },
             Holding = gameState.Player.IsHolding,
             JumpTimer = gameState.Player.JumpTimer,
             AutoJump = gameState.Player.AutoJump,

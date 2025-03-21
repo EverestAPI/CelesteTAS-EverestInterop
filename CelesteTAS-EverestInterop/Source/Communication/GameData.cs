@@ -207,7 +207,7 @@ public static class GameData {
                 starFlySpeedLerp = player.starFlySpeedLerp,
                 OnGround = player.onGround,
                 IsHolding = player.Holding != null,
-                JumpTimer = GameInfo.ConvertToFrames(player.varJumpTimer),
+                JumpTimer = player.varJumpTimer.ToFloorFrames(),
                 AutoJump = player.AutoJump,
                 MaxFall = player.maxFall
             },
