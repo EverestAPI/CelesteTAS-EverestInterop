@@ -216,7 +216,7 @@ public sealed class RadelineSimForm : Form {
         }
 
         SetupSimConfig();
-        ICollection<List<(int frames, string key)>> inputPermutations = [];
+        ICollection<List<(int frames, string key)>> inputPermutations;
         progressBarControl.Value = 0;
 
         if (cfg.DisabledKey == DisabledKey.Auto) {
@@ -308,10 +308,7 @@ public sealed class RadelineSimForm : Form {
             }
         }
 
-        // memory cleanup 1
         inputPermutations = [];
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
         List<(float position, float speed, List<(int frames, string key)> inputs)> outputPermutations = [];
 
         // convert optimized dict to sorted list
@@ -335,13 +332,10 @@ public sealed class RadelineSimForm : Form {
             }
         }
 
-        // memory cleanup 2
         Log($"Filtered permutations: {outputPermutations.Count}");
         outputsControl.Items.Clear();
         UpdateLayout();
         filteredPermutations = [];
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
         i = 0;
 
         // insert results into output window
@@ -356,13 +350,12 @@ public sealed class RadelineSimForm : Form {
         }
 
         outputPermutations = [];
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
     }
 
-    private List<List<(int frames, string key)>> BuildInputPermutationsSequential() {
-        List<List<(int frames, string key)>> inputPermutations = [];
-        progressBarControl.MaxValue = (int) Math.Pow(generatorKeys.Length, cfg.Frames);
+    private ICollection<List<(int frames, string key)>> BuildInputPermutationsSequential() {
+        int expectedPermutations = (int)Math.Pow(generatorKeys.Length, cfg.Frames);
+        List<List<(int frames, string key)>> inputPermutations = new(expectedPermutations);
+        progressBarControl.MaxValue = expectedPermutations;
         int lastReportedProgress = 0;
         int i = 0;
 
@@ -487,7 +480,7 @@ public sealed class RadelineSimForm : Form {
             }
         }
 
-        return (x, speedX);
+        return ((float) Math.Round(x, 10), (float) Math.Round(speedX, 8));
     }
 
     private static (float position, float speed) SimY(List<(int frames, string key)> inputs) {
@@ -535,7 +528,7 @@ public sealed class RadelineSimForm : Form {
             }
         }
 
-        return (y, speedY);
+        return ((float) Math.Round(y, 10), (float) Math.Round(speedY, 8));
     }
 
     private static IEnumerable<IEnumerable<T>> CartesianProduct<T>(IEnumerable<T> source, int repeat) {
