@@ -540,8 +540,8 @@ public sealed class RadelineSimForm : Form {
         return ((float) Math.Round(y, 10), (float) Math.Round(speedY, 8));
     }
 
-    private static IEnumerable<IEnumerable<T>> CartesianProduct<T>(IEnumerable<T> source, int repeat) {
-        IEnumerable<IEnumerable<T>> seed = [[]];
+    private static IEnumerable<IEnumerable<string>> CartesianProduct(string[] source, int repeat) {
+        IEnumerable<IEnumerable<string>> seed = [[]];
 
         for (int i = 0; i < repeat; i++) {
             seed = from seq in seed
