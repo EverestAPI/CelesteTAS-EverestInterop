@@ -91,9 +91,9 @@ public sealed class RadelineSimForm : Form {
         };
         framesControl = new NumericStepper { Value = 10, MinValue = 1, MaxValue = 200, Width = rowWidth };
         inputGenerationTimeControl = new NumericStepper { Value = 5, MinValue = 1, MaxValue = 200, Width = rowWidth };
-        positionFilterMinControl = new NumericStepper { DecimalPlaces = CommunicationWrapper.GameSettings.PositionDecimals, Width = rowWidth };
-        positionFilterMaxControl = new NumericStepper { DecimalPlaces = CommunicationWrapper.GameSettings.PositionDecimals, Width = rowWidth };
-        goalSpeedControl = new NumericStepper { DecimalPlaces = CommunicationWrapper.GameSettings.PositionDecimals, Width = rowWidth };
+        positionFilterMinControl = new NumericStepper { DecimalPlaces = 2, Width = rowWidth };
+        positionFilterMaxControl = new NumericStepper { DecimalPlaces = 2, Width = rowWidth };
+        goalSpeedControl = new NumericStepper { DecimalPlaces = 2, Width = rowWidth };
         rngThresholdControl = new NumericStepper { Value = 23, MinValue = 1, MaxValue = 200, Width = rowWidth };
         rngThresholdSlowControl = new NumericStepper { Value = 15, MinValue = 1, MaxValue = 200, Width = rowWidth };
         appendKeysControl = new TextArea { Font = FontManager.EditorFont, Width = rowWidth, Height = 22};
@@ -274,17 +274,13 @@ public sealed class RadelineSimForm : Form {
         var speeds = new HashSet<float>();
         Func<List<(int frames, char key)>, (float position, float speed)> simFunction = cfg.Axis == Axis.X ? SimX : SimY;
         progressBarControl.MaxValue = inputPermutations.Count;
+        int updateInterval = 10000 / cfg.Frames;
         Log("Simulating inputs…");
         int i = 0;
 
         foreach (var permutation in inputPermutations) {
             var simResult = simFunction(permutation);
             i++;
-
-            if (i % 1000 == 0) {
-                progressBarControl.Value = i;
-                UpdateLayout();
-            }
 
             // if result within filter range
             if (simResult.position >= cfg.PositionFilter.Min && simResult.position <= cfg.PositionFilter.Max) {
@@ -306,6 +302,11 @@ public sealed class RadelineSimForm : Form {
                     filteredPermutations[simResult.position][simResult.speed] = [permutation];
                     speeds.Add(simResult.speed);
                 }
+            }
+
+            if (i % updateInterval == 0) {
+                progressBarControl.Value = i;
+                UpdateLayout();
             }
         }
 
@@ -350,6 +351,7 @@ public sealed class RadelineSimForm : Form {
             }
         }
 
+        progressBarControl.Value = progressBarControl.MaxValue;
         outputPermutations = [];
     }
 
@@ -703,7 +705,7 @@ public sealed class RadelineSimForm : Form {
             MaxFall = gameState.Player.MaxFall
         };
 
-        initialStateControl.Text = CommunicationWrapper.GameInfo;
+        initialStateControl.Text = initialState.ToString();
     }
 
     public struct InitialState {
@@ -719,6 +721,16 @@ public sealed class RadelineSimForm : Form {
         // finalized:
         public float Position;
         public float Speed;
+
+        public override string ToString() {
+            return $"Position: {Positions.X}, {Positions.Y}\n" +
+                   $"Speed: {Speeds.X}, {Speeds.Y}\n" +
+                   $"Grounded: {OnGround}\n" +
+                   $"Holding: {Holding}\n" +
+                   $"Jump Timer: {JumpTimer}\n" +
+                   $"Auto Jump: {AutoJump}\n" +
+                   $"Max Fall: {MaxFall}";
+        }
     }
 
     public enum Axis { X, Y }
