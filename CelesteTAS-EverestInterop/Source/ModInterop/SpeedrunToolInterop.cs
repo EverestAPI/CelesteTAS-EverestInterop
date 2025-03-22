@@ -1,21 +1,20 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.SpeedrunTool.Other;
-using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
+using MonoMod.ModInterop;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
-using TAS.EverestInterop.InfoHUD;
 using TAS.Gameplay;
 using TAS.InfoHUD;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
+using static TAS.Input.Commands.StunPauseCommand;
 
 namespace TAS.ModInterop;
 
@@ -24,25 +23,10 @@ public static class SpeedrunToolInterop {
 
     private static object? saveLoadAction;
 
-    private static Dictionary<Entity, EntityData>? savedEntityData;
-    private static int groupCounter;
-    private static bool simulatePauses;
-    private static bool pauseOnCurrentFrame;
-    private static int skipFrames;
-    private static int waitingFrames;
-    private static StunPauseCommand.StunPauseMode? localMode;
-    private static StunPauseCommand.StunPauseMode? globalModeRuntime;
-    private static HashSet<Keys>? pressKeys;
-    private static (long, int)? tasStartInfo;
-    private static MouseState mouseState;
-    private static Dictionary<Follower, bool>? followers;
-    private static bool disallowUnsafeInput;
-    private static Random? auraRandom;
-    private static bool betterInvincible = false;
-
     [Initialize]
     private static void Initialize() {
-        Installed = ModUtils.IsInstalled("SpeedrunTool");
+        typeof(SpeedrunToolImport).ModInterop();
+        Installed = SpeedrunToolImport.DeepClone is not null;
         Everest.Events.AssetReload.OnBeforeReload += _ => {
             if (Installed) {
                 ClearSaveLoadAction();
@@ -51,7 +35,7 @@ public static class SpeedrunToolInterop {
             Installed = false;
         };
         Everest.Events.AssetReload.OnAfterReload += _ => {
-            Installed = ModUtils.IsInstalled("SpeedrunTool");
+            Installed = SpeedrunToolImport.DeepClone is not null;
 
             if (Installed) {
                 AddSaveLoadAction();
@@ -71,67 +55,69 @@ public static class SpeedrunToolInterop {
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void AddSaveLoadAction() {
-        saveLoadAction = new SaveLoadAction(OnSave, OnLoad, OnClear);
-        SaveLoadAction.Add((SaveLoadAction) saveLoadAction);
-
-        return;
-
-        static void OnSave(Dictionary<Type, Dictionary<string, object>> savedValues, Level level) {
-            savedEntityData = EntityDataHelper.CachedEntityData.DeepCloneShared();
-            InfoWatchEntity.WatchedEntities_Save = InfoWatchEntity.WatchedEntities.DeepCloneShared();
-            groupCounter = CycleHitboxColor.GroupCounter;
-            simulatePauses = StunPauseCommand.SimulatePauses;
-            pauseOnCurrentFrame = StunPauseCommand.PauseOnCurrentFrame;
-            skipFrames = StunPauseCommand.SkipFrames;
-            waitingFrames = StunPauseCommand.WaitingFrames;
-            localMode = StunPauseCommand.LocalMode;
-            globalModeRuntime = StunPauseCommand.GlobalModeRuntime;
-            pressKeys = PressCommand.PressKeys.DeepCloneShared();
-            tasStartInfo = MetadataCommands.TasStartInfo.DeepCloneShared();
-            mouseState = MouseCommand.CurrentState;
-            followers = HitboxSimplified.Followers.DeepCloneShared();
-            disallowUnsafeInput = SafeCommand.DisallowUnsafeInput;
-            auraRandom = DesyncFixer.AuraHelperSharedRandom.DeepCloneShared();
-            betterInvincible = Manager.Running && BetterInvincible.Invincible;
+        if (!Installed) {
+            return;
         }
 
-        static void OnLoad(Dictionary<Type, Dictionary<string, object>> savedValues, Level level) {
-            EntityDataHelper.CachedEntityData = savedEntityData!.DeepCloneShared();
-            InfoWatchEntity.WatchedEntities = InfoWatchEntity.WatchedEntities_Save.DeepCloneShared();
-            CycleHitboxColor.GroupCounter = groupCounter;
-            StunPauseCommand.SimulatePauses = simulatePauses;
-            StunPauseCommand.PauseOnCurrentFrame = pauseOnCurrentFrame;
-            StunPauseCommand.SkipFrames = skipFrames;
-            StunPauseCommand.WaitingFrames = waitingFrames;
-            StunPauseCommand.LocalMode = localMode;
-            StunPauseCommand.GlobalModeRuntime = globalModeRuntime;
-            PressCommand.PressKeys.Clear();
-            foreach (var keys in pressKeys!) {
-                PressCommand.PressKeys.Add(keys);
-            }
+        saveLoadAction = SpeedrunToolImport.RegisterSaveLoadAction(
+            (savedValues, _) => {
+                savedValues[typeof(SpeedrunToolInterop)] = (Dictionary<string, object>)SpeedrunToolImport.DeepClone(new Dictionary<string, object> {
+                    { "savedEntityData", EntityDataHelper.CachedEntityData },
+                    {"groupCounter", CycleHitboxColor.GroupCounter },
+                    {"simulatePauses", StunPauseCommand.SimulatePauses },
+                    {"pauseOnCurrentFrame", StunPauseCommand.PauseOnCurrentFrame },
+                    {"skipFrames", StunPauseCommand.SkipFrames },
+                    {"waitingFrames",StunPauseCommand.WaitingFrames },
+                    {"localMode", StunPauseCommand.LocalMode },
+                    {"globalModeRuntime", StunPauseCommand.GlobalModeRuntime },
+                    {"pressKeys", PressCommand.PressKeys },
+                    {"tasStartInfo", MetadataCommands.TasStartInfo },
+                    {"mouseState", MouseCommand.CurrentState },
+                    {"followers", HitboxSimplified.Followers},
+                    {"disallowUnsafeInput", SafeCommand.DisallowUnsafeInput },
+                    {"auraRandom", DesyncFixer.AuraHelperSharedRandom },
+                    {"betterInvincible", Manager.Running && BetterInvincible.Invincible },
+                });
+                InfoWatchEntity.WatchedEntities_Save = (List<WeakReference>)SpeedrunToolImport.DeepClone(InfoWatchEntity.WatchedEntities);
+                // if cleared by user manually, then it should not appear after load state, even if you load from another saveslot?
+                // i'm not sure
+            },
+            (savedValues, _) => {
+                Dictionary<string, object> clonedValues =
+                    ((Dictionary<Type, Dictionary<string, object>>)SpeedrunToolImport.DeepClone(savedValues))[typeof(SpeedrunToolInterop)];
 
-            MetadataCommands.TasStartInfo = tasStartInfo.DeepCloneShared();
-            MouseCommand.CurrentState = mouseState;
-            HitboxSimplified.Followers = followers!.DeepCloneShared();
-            SafeCommand.DisallowUnsafeInput = disallowUnsafeInput;
-            DesyncFixer.AuraHelperSharedRandom = auraRandom!.DeepCloneShared();
-            BetterInvincible.Invincible = Manager.Running && betterInvincible;
-        }
+                EntityDataHelper.CachedEntityData = (Dictionary<Entity, EntityData>)clonedValues["savedEntityData"];
+                CycleHitboxColor.GroupCounter = (int)clonedValues["groupCounter"];
+                StunPauseCommand.SimulatePauses = (bool)clonedValues["simulatePauses"];
+                StunPauseCommand.PauseOnCurrentFrame = (bool)clonedValues["pauseOnCurrentFrame"];
+                StunPauseCommand.SkipFrames = (int)clonedValues["skipFrames"];
+                StunPauseCommand.WaitingFrames = (int)clonedValues["waitingFrames"];
+                StunPauseCommand.LocalMode = (StunPauseMode?)clonedValues["localMode"];
+                StunPauseCommand.GlobalModeRuntime = (StunPauseMode?)clonedValues["globalModeRuntime"];
+                PressCommand.PressKeys.Clear();
+                foreach (var keys in (HashSet<Keys>)clonedValues["pressKeys"]) {
+                    PressCommand.PressKeys.Add(keys);
+                }
 
-        static void OnClear() {
-            savedEntityData = null;
-            pressKeys = null;
-            followers = null;
-            InfoWatchEntity.WatchedEntities_Save.Clear();
-            auraRandom = null;
-            betterInvincible = false;
-        }
+                MetadataCommands.TasStartInfo = ((long FileTimeTicks, int FileSlot)?)clonedValues["tasStartInfo"];
+                MouseCommand.CurrentState = (MouseState)clonedValues["mouseState"];
+                HitboxSimplified.Followers = (Dictionary<Follower, bool>)clonedValues["followers"];
+                SafeCommand.DisallowUnsafeInput = (bool)clonedValues["disallowUnsafeInput"];
+                DesyncFixer.AuraHelperSharedRandom = (Random)clonedValues["auraRandom"];
+                BetterInvincible.Invincible = Manager.Running && (bool)clonedValues["betterInvincible"];
+
+                InfoWatchEntity.WatchedEntities = (List<WeakReference>)SpeedrunToolImport.DeepClone(InfoWatchEntity.WatchedEntities_Save);
+            },
+            () => {
+                InfoWatchEntity.WatchedEntities_Save.Clear();
+            }, null, null, null
+        );
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ClearSaveLoadAction() {
-        if (saveLoadAction != null) {
-            SaveLoadAction.Remove((SaveLoadAction) saveLoadAction);
+        if (Installed) {
+            SpeedrunToolImport.Unregister(saveLoadAction);
         }
     }
 
@@ -141,4 +127,16 @@ public static class SpeedrunToolInterop {
             config.VirtualButton.Value.Deregister();
         }
     }
+}
+
+[ModImportName("SpeedrunTool.SaveLoad")]
+internal static class SpeedrunToolImport {
+
+    public static Func<Action<Dictionary<Type, Dictionary<string, object>>, Level>, Action<Dictionary<Type, Dictionary<string, object>>, Level>, Action, Action<Level>, Action<Level>, Action, object> RegisterSaveLoadAction;
+
+    public static Func<Type, string[], object> RegisterStaticTypes;
+
+    public static Action<object> Unregister;
+
+    public static Func<object, object> DeepClone;
 }
