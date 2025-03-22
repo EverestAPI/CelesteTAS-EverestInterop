@@ -619,7 +619,7 @@ public sealed class RadelineSimForm : Form {
         var inputsCompact = new StringBuilder();
 
         foreach (var input in inputs) {
-            inputsCompact.Append($"{input.frames},{input.key}\n");
+            inputsCompact.Append($"{input.frames},{(input.key == '\0' ? "" : input.key)}\n");
         }
 
         return inputsCompact.ToString();
