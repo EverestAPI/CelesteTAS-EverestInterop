@@ -415,12 +415,20 @@ public sealed class RadelineSimForm : Form {
             i++;
             var inputs = new List<(int frames, string key)>();
             int frameCounter = 0;
+            string prevKey = "-";
 
             while (frameCounter < cfg.Frames) {
                 int frames = random.Next(1, cfg.Frames - frameCounter + 1);
                 frameCounter += frames;
                 string selectedKey = generatorKeys[random.Next(keysLen)];
-                inputs.Add((frames, selectedKey));
+
+                if (selectedKey == prevKey) {
+                    var lastInput = inputs.Last();
+                    lastInput.frames += frames;
+                } else {
+                    inputs.Add((frames, selectedKey));
+                    prevKey = selectedKey;
+                }
             }
 
             inputPermutations.Add(inputs);
