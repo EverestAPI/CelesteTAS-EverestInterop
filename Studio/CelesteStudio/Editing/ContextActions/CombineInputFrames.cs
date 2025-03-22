@@ -1,11 +1,13 @@
 using System;
-using CelesteStudio.Data;
+using Eto.Forms;
 using StudioCommunication;
 
 namespace CelesteStudio.Editing.ContextActions;
 
 public class ForceCombineInputFrames : ContextAction {
-    public override MenuEntry Entry => MenuEntry.ContextActions_ForceCombineInputFrames;
+    public override string Identifier => "ContextActions_ForceCombineInputFrames";
+    public override string DisplayName => "Force Combine Input Frames";
+    public override Hotkey DefaultHotkey => Hotkey.KeyCtrl(Keys.L | Keys.Shift);
 
     public override PopupMenu.Entry? Check() {
         if (Document.Selection.Empty) {
@@ -22,7 +24,9 @@ public class ForceCombineInputFrames : ContextAction {
 }
 
 public class CombineConsecutiveSameInputs : ContextAction {
-    public override MenuEntry Entry => MenuEntry.ContextActions_CombineConsecutiveSameInputs;
+    public override string Identifier => "ContextActions_CombineConsecutiveSameInputs";
+    public override string DisplayName => "Combine Consecutive Same Inputs";
+    public override Hotkey DefaultHotkey => Hotkey.KeyCtrl(Keys.L);
 
     public override PopupMenu.Entry? Check() {
         if (Document.Selection.Empty && !ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) {

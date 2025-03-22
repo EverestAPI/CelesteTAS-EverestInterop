@@ -1,11 +1,12 @@
-using CelesteStudio.Data;
 using CelesteStudio.Util;
 using StudioCommunication;
 
 namespace CelesteStudio.Editing.ContextActions;
 
 public class InlineRepeatCommand : ContextAction {
-    public override MenuEntry Entry => MenuEntry.ContextActions_InlineRepeatCommand;
+    public override string Identifier => "ContextActions_InlineRepeatCommand";
+    public override string DisplayName => "Inline 'Repeat' command";
+    public override Hotkey DefaultHotkey => Hotkey.None;
 
     public override PopupMenu.Entry? Check() {
         int minRow = Document.Caret.Row;

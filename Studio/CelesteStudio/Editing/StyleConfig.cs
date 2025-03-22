@@ -1,4 +1,3 @@
-using CelesteStudio.Data;
 using CelesteStudio.Dialog;
 using Eto.Forms;
 using StudioCommunication.Util;

@@ -1,14 +1,15 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using CelesteStudio.Data;
 using CelesteStudio.Util;
 using StudioCommunication;
 
 namespace CelesteStudio.Editing.ContextActions;
 
 public class InlineReadCommand : ContextAction {
-    public override MenuEntry Entry => MenuEntry.ContextActions_InlineReadCommand;
+    public override string Identifier => "ContextActions_InlineReadCommand";
+    public override string DisplayName => "Inline 'Read' command";
+    public override Hotkey DefaultHotkey => Hotkey.None;
 
     public override PopupMenu.Entry? Check() {
         string currentLine = Document.Lines[Document.Caret.Row];
