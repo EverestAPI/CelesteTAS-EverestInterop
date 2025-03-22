@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using Tedd.RandomUtils;
 
 namespace CelesteStudio.Tool;
 
@@ -399,11 +400,11 @@ public sealed class RadelineSimForm : Form {
         int maxPermutations = 0;
         bool useMaxPermutations;
         bool brokeFromLoopMax = false;
-        int lastReportedProgress = 0;
-        int i = 0;
-        var stopwatch = Stopwatch.StartNew();
-        var random = new Random();
+        int updateInterval = 1000000 / cfg.Frames;
+        var random = new FastRandom();
         progressBarControl.MaxValue = cfg.InputGenerationTime;
+        var stopwatch = Stopwatch.StartNew();
+        int i = 0;
 
         if (maxPermutationsDouble <= int.MaxValue) {
             maxPermutations = (int) maxPermutationsDouble;
@@ -433,8 +434,8 @@ public sealed class RadelineSimForm : Form {
 
             inputPermutations.Add(inputs);
 
-            if (i - lastReportedProgress > 10000) {
-                lastReportedProgress = i;
+            if (i == updateInterval) {
+                i = 0;
                 int elapsedTime = (int) stopwatch.Elapsed.TotalMilliseconds;
                 progressBarControl.Value = elapsedTime;
                 UpdateLayout();
