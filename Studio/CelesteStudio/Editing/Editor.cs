@@ -130,7 +130,7 @@ public sealed class Editor : SkiaDrawable {
     private Size scrollableSize;
 
     private const int offscreenLinePadding = 3;
-    
+
     // Only expand width of line numbers for actually visible digits
     private int lastVisibleLineNumberDigits = -1;
     private int VisibleLineNumberDigits {
@@ -298,7 +298,7 @@ public sealed class Editor : SkiaDrawable {
         };
 
         CommunicationWrapper.StateUpdated += (prevState, state) => {
-            if (state.tasStates.HasFlag(States.Enable) && !state.tasStates.HasFlag(States.FrameStep)) {
+            if (!state.FileNeedsReload) {
                 TotalFrameCount = state.TotalFrames;
             }
 
@@ -886,7 +886,6 @@ public sealed class Editor : SkiaDrawable {
                             ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _ );
         bool isComment = lineTrimmed.StartsWith('#');
         bool isTyping = (DateTime.UtcNow - lastModification).TotalSeconds < Settings.Instance.SendInputsTypingTimeout;
-        bool isRunning = CommunicationWrapper.Connected && CommunicationWrapper.TasStates.HasFlag(States.Enable) && !CommunicationWrapper.TasStates.HasFlag(States.FrameStep);
         bool sendInputs =
             (Settings.Instance.SendInputsOnActionLines && isActionLine) ||
             (Settings.Instance.SendInputsOnComments && isComment) ||
@@ -898,7 +897,7 @@ public sealed class Editor : SkiaDrawable {
         }
 
         // Prevent editing file on accident
-        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && isRunning && Settings.Instance.SendInputsDisableWhileRunning) {
+        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.PlaybackRunning && Settings.Instance.SendInputsDisableWhileRunning) {
             e.Handled = true;
             return;
         }
@@ -2376,7 +2375,8 @@ public sealed class Editor : SkiaDrawable {
         if (autoSplit || splitLines && !ActionLine.TryParse(line, out _)) {
             if (!Document.Selection.Empty) {
                 RemoveRange(Document.Selection.Min, Document.Selection.Max);
-                Document.Caret.Col = Document.Selection.Min.Col;
+                Document.Caret = Document.Selection.Min;
+                Document.Selection.Clear();
 
                 line = Document.Lines[Document.Caret.Row];
                 lineTrimmedStart = line.TrimStart();

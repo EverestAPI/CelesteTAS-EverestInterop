@@ -105,7 +105,7 @@ public static class EvalLuaCommand {
             return;
         }
 
-        EvalLuaImpl(commandAndSeparatorRegex.Replace(commandLine.OriginalText, ""));
+        EvalLuaImpl(string.Join(commandLine.ArgumentSeparator, commandLine.Arguments));
     }
 
     public static object?[]? EvalLuaImpl(string code) {
