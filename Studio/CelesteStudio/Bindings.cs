@@ -7,7 +7,7 @@ namespace CelesteStudio;
 
 /// A binding represents a set of one (or several) hotkey + action relations
 public abstract record Binding {
-    public record struct Entry(string Identifier, string DisplayName, Hotkey DefaultHotkey, Action Action, bool PreferTextHotkey = false);
+    public record struct Entry(string Identifier, string DisplayName, Hotkey DefaultHotkey, Func<bool> Action, bool PreferTextHotkey = false);
 
     public enum Category { File, Settings, View, Editor, FrameOperations, ContextActions, Status, StatusPopout, Game }
 
@@ -24,6 +24,18 @@ public abstract record Binding {
 
 /// Binding to an arbitrary code action
 public record ActionBinding(string Identifier, string DisplayName, Binding.Category DisplayCategory, Hotkey DefaultHotkey, Action Action, bool preferTextHotkey = false) : Binding {
+    public override Entry[] Entries { get; } = [new(Identifier, DisplayName, DefaultHotkey, () => {
+         Action();
+         return true;
+    }, preferTextHotkey)];
+
+    public override MenuItem CreateItem() {
+        return new ButtonMenuItem((_, _) => Action()) { Text = DisplayName, Shortcut = Settings.Instance.KeyBindings.GetValueOrDefault(Identifier, DefaultHotkey).KeysOrNone };
+    }
+}
+
+/// Binding to an arbitrary code action, which conditionally blocks further hotkey checks
+public record ConditionalActionBinding(string Identifier, string DisplayName, Binding.Category DisplayCategory, Hotkey DefaultHotkey, Func<bool> Action, bool preferTextHotkey = false) : Binding {
     public override Entry[] Entries { get; } = [new(Identifier, DisplayName, DefaultHotkey, Action, preferTextHotkey)];
 
     public override MenuItem CreateItem() {
@@ -33,7 +45,10 @@ public record ActionBinding(string Identifier, string DisplayName, Binding.Categ
 
 /// Binding to a boolean variable
 public record BoolBinding(string identifier, string DisplayName, Binding.Category DisplayCategory, Hotkey defaultToggleHotkey, Func<bool> GetValue, Action<bool> SetValue) : Binding {
-    public override Entry[] Entries { get; } = [new(identifier, DisplayName, defaultToggleHotkey, () => SetValue(!GetValue()))];
+    public override Entry[] Entries { get; } = [new(identifier, DisplayName, defaultToggleHotkey, () => {
+        SetValue(!GetValue());
+        return true;
+    })];
 
     public override MenuItem CreateItem() {
         var item = new CheckMenuItem {
@@ -59,15 +74,21 @@ public record EnumBinding<T>(string identifier, string DisplayName, Dictionary<T
             int currIdx = Array.IndexOf(values, GetValue());
             int nextIdx = (currIdx + 1) % values.Length;
             SetValue(values[nextIdx]);
+            return true;
         }),
         new($"{identifier}_{CycleBackwardID}", "Cycle Backward", defaultCycleBackwardHotkey, () => {
             var values = Enum.GetValues<T>();
             int currIdx = Array.IndexOf(values, GetValue());
             int nextIdx = (currIdx - 1) % values.Length;
             SetValue(values[nextIdx]);
+            return true;
+
         }),
     ], Enum.GetValues<T>()
-        .Select(value => new Entry($"{identifier}_{SetID}{value}", $"Set {ValueDisplayNames.GetValueOrDefault(value, value.ToString())}", defaultSetHotkeys.GetValueOrDefault(value, Hotkey.None), () => SetValue(value)))
+        .Select(value => new Entry($"{identifier}_{SetID}{value}", $"Set {ValueDisplayNames.GetValueOrDefault(value, value.ToString())}", defaultSetHotkeys.GetValueOrDefault(value, Hotkey.None), () => {
+            SetValue(value);
+            return true;
+        }))
     ).ToArray();
 
     public override MenuItem CreateItem() {

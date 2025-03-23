@@ -197,11 +197,11 @@ public sealed class Editor : SkiaDrawable {
         editor.Recalc();
     });
 
-    private static readonly ActionBinding FrameOperationAdd = new("Editor_FrameOperationAdd", "Add", Binding.Category.FrameOperations, Hotkey.Char('+'), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Add), preferTextHotkey: true);
-    private static readonly ActionBinding FrameOperationSub = new("Editor_FrameOperationSub", "Subtract", Binding.Category.FrameOperations, Hotkey.Char('-'), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Sub), preferTextHotkey: true);
-    private static readonly ActionBinding FrameOperationMul = new("Editor_FrameOperationMul", "Multiply", Binding.Category.FrameOperations, Hotkey.Char('*'), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Mul), preferTextHotkey: true);
-    private static readonly ActionBinding FrameOperationDiv = new("Editor_FrameOperationDiv", "Divide", Binding.Category.FrameOperations, Hotkey.Char('/'), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Div), preferTextHotkey: true);
-    private static readonly ActionBinding FrameOperationSet = new("Editor_FrameOperationSet", "Set", Binding.Category.FrameOperations, Hotkey.Char('='), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Set), preferTextHotkey: true);
+    private static readonly ConditionalActionBinding FrameOperationAdd = new("Editor_FrameOperationAdd", "Add", Binding.Category.FrameOperations, Hotkey.Char('+'), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Add), preferTextHotkey: true);
+    private static readonly ConditionalActionBinding FrameOperationSub = new("Editor_FrameOperationSub", "Subtract", Binding.Category.FrameOperations, Hotkey.Char('-'), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Sub), preferTextHotkey: true);
+    private static readonly ConditionalActionBinding FrameOperationMul = new("Editor_FrameOperationMul", "Multiply", Binding.Category.FrameOperations, Hotkey.Char('*'), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Mul), preferTextHotkey: true);
+    private static readonly ConditionalActionBinding FrameOperationDiv = new("Editor_FrameOperationDiv", "Divide", Binding.Category.FrameOperations, Hotkey.Char('/'), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Div), preferTextHotkey: true);
+    private static readonly ConditionalActionBinding FrameOperationSet = new("Editor_FrameOperationSet", "Set", Binding.Category.FrameOperations, Hotkey.Char('='), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Set), preferTextHotkey: true);
 
     public static readonly Binding[] AllBindings = [
         Cut, Copy, Paste,
@@ -997,8 +997,7 @@ public sealed class Editor : SkiaDrawable {
                 var hotkey = Hotkey.FromEvent(e);
                 foreach (var binding in CommunicationWrapper.AllBindings) {
                     foreach (var entry in binding.Entries) {
-                        if (Settings.Instance.KeyBindings.GetValueOrDefault(entry.Identifier, entry.DefaultHotkey) == hotkey) {
-                            entry.Action();
+                        if (Settings.Instance.KeyBindings.GetValueOrDefault(entry.Identifier, entry.DefaultHotkey) == hotkey && entry.Action()) {
                             Recalc();
                             ScrollCaretIntoView();
 
@@ -1237,8 +1236,7 @@ public sealed class Editor : SkiaDrawable {
         // Handle bindings
         foreach (var binding in Studio.GetAllStudioBindings()) {
             foreach (var entry in binding.Entries) {
-                if (Settings.Instance.KeyBindings.GetValueOrDefault(entry.Identifier, entry.DefaultHotkey) == hotkey) {
-                    entry.Action();
+                if (Settings.Instance.KeyBindings.GetValueOrDefault(entry.Identifier, entry.DefaultHotkey) == hotkey && entry.Action()) {
                     Recalc();
                     ScrollCaretIntoView();
 
@@ -2993,18 +2991,17 @@ public sealed class Editor : SkiaDrawable {
         }
     }
 
-    private void OnFrameOperation(CalculationOperator op) {
+    private bool OnFrameOperation(CalculationOperator op) {
         if (!ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) {
-            return;
+            return false;
         }
-
 
         if (calculationState != null) {
             // Cancel with same operation again
             if (op == calculationState.Operator && calculationState.Operand.Length == 0) {
                 calculationState = null;
                 Invalidate();
-                return;
+                return true;
             }
 
             CommitCalculation();
@@ -3012,6 +3009,7 @@ public sealed class Editor : SkiaDrawable {
 
         StartCalculation(op);
         Invalidate();
+        return true;
     }
 
     #endregion
