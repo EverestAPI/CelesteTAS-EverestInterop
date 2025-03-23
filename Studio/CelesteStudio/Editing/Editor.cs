@@ -1036,6 +1036,18 @@ public sealed class Editor : SkiaDrawable {
             }
         }
 
+        // On WPF, the order of events is
+        // - OnKeyDown(Equal, ￿)
+        // - OnTextInput(+)
+        // - OnKeyDown(None, +)
+        // So since we handle the hotkey in `OnTextInput`, we don't want to handle it again here.
+        // On GTK we get
+        // - OnKeyDown(Equal, +) or OnKeyDown(None, ^)
+        // - OnTextInput(+)
+        // so again char events are just handled in OnTextInput.
+        if (e.Key == Keys.None) {
+            return;
+        }
         // Forward hotkeys from menu entries / snippets
         if (CheckHotkey(Hotkey.FromEvent(e))) {
             e.Handled = true;
