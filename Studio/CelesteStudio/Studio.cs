@@ -466,7 +466,7 @@ public sealed class Studio : Form {
 
     private static readonly EnumBinding<GameInfoType> ShowGameInfo = CreateSettingOption<GameInfoType>("View_ShowGameInfo", "Game Info", new(), Binding.Category.View, Hotkey.None, Hotkey.None, new(), nameof(Settings.GameInfo));
     private static readonly BoolBinding ShowSubpixelIndicator = CreateSettingToggle("View_ShowSubpixelIndicator", "Show Subpixel Indicator",  Binding.Category.View, Hotkey.None, nameof(Settings.ShowSubpixelIndicator));
-    private static readonly BoolBinding AlwaysOnTop = CreateSettingToggle("View_AlwaysOnTop", "Always on Top", Binding.Category.View, Hotkey.None, nameof(Settings.AlwaysOnTop));
+    private static readonly BoolBinding AlwaysOnTop = CreateSettingToggle("View_AlwaysOnTop", "Always on Top", Binding.Category.StatusPopout, Hotkey.None, nameof(Settings.AlwaysOnTop));
     private static readonly BoolBinding WrapComments = CreateSettingToggle("View_WrapComments", "Word Wrap Comments", Binding.Category.View, Hotkey.None, nameof(Settings.WordWrapComments));
     private static readonly BoolBinding ShowFoldingIndicator = CreateSettingToggle("View_ShowFoldingIndicator", "Show Fold Indicators", Binding.Category.View, Hotkey.None, nameof(Settings.ShowFoldIndicators));
 
