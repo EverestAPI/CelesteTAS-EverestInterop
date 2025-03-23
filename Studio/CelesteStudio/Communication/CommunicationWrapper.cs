@@ -25,6 +25,17 @@ public static class CommunicationWrapper {
     private static GameSettings settings = new();
     private static CommandInfo[] commands = [];
 
+    #region Bindings
+
+    private static readonly ActionBinding StartTAS = new("Game_Start", "Start TAS", Binding.Category.Game, Hotkey.None, () => SendHotkey(HotkeyID.Start));
+    private static readonly ActionBinding RestartTAS = new("Game_Restart", "Restart TAS", Binding.Category.Game, Hotkey.None, () => SendHotkey(HotkeyID.Restart));
+    private static readonly ActionBinding PauseTAS = new("Game_Pause", "Pause TAS", Binding.Category.Game, Hotkey.None, () => SendHotkey(HotkeyID.Pause));
+    private static readonly ActionBinding FrameAdvanceTAS = new("Game_FrameAdvance", "Frame Advance TAS", Binding.Category.Game, Hotkey.None, () => SendHotkey(HotkeyID.FrameAdvance));
+
+    public static readonly Binding[] AllBindings = [StartTAS, RestartTAS, PauseTAS, FrameAdvanceTAS];
+
+    #endregion
+
     public static void Start() {
         if (comm != null) {
             Console.Error.WriteLine("Tried to start the communication adapter while already running!");

@@ -1,10 +1,11 @@
-﻿using CelesteStudio.Data;
-using StudioCommunication;
+﻿using StudioCommunication;
 
 namespace CelesteStudio.Editing.ContextActions;
 
-public class SwapActions(Actions a, Actions b, MenuEntry entry) : ContextAction {
-    public override MenuEntry Entry => entry;
+public class SwapActions(Actions a, Actions b) : ContextAction {
+    public override string Identifier => $"ContextActions_SwapActions{a.CharForAction()}{b.CharForAction()}";
+    public override string DisplayName => $"Swap {a.CharForAction()} and {b.CharForAction()}";
+    public override Hotkey DefaultHotkey => Hotkey.None;
 
     public override PopupMenu.Entry? Check() {
         int minRow = Document.Selection.Empty ? Document.Caret.Row : Document.Selection.Min.Row;
@@ -24,7 +25,7 @@ public class SwapActions(Actions a, Actions b, MenuEntry entry) : ContextAction 
 
         return CreateEntry("", () => {
             using var __ = Document.Update();
-            
+
             for (int row = minRow; row <= maxRow; row++) {
                 if (!Editor.TryParseAndFormatActionLine(row, out var actionLine)) {
                     continue;
@@ -32,13 +33,13 @@ public class SwapActions(Actions a, Actions b, MenuEntry entry) : ContextAction 
                 if (actionLine.Actions.HasFlag(a) && actionLine.Actions.HasFlag(b)) {
                     continue; // Nothing to do
                 }
-                
+
                 if (actionLine.Actions.HasFlag(a)) {
                     actionLine.Actions = actionLine.Actions & ~a | b;
                 } else if (actionLine.Actions.HasFlag(b)) {
                     actionLine.Actions = actionLine.Actions & ~b | a;
                 }
-                
+
                 Document.ReplaceLine(row, actionLine.ToString());
             }
         });
