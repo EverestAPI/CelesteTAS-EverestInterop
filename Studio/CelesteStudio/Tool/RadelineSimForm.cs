@@ -18,6 +18,7 @@ public sealed class RadelineSimForm : Form {
     private readonly TextArea appendKeysControl;
     private readonly TextArea logControl;
     private readonly Button getInitialStateControl;
+    private readonly Button runOrCancelControl;
     private readonly ProgressBar progressBarControl;
     private readonly DropDown outputSortingControl;
     private readonly DropDown axisControl;
@@ -36,6 +37,8 @@ public sealed class RadelineSimForm : Form {
     private static RadelineSimConfig cfg;
     private char[] generatorKeys = [];
     private bool gotInitialState;
+    private bool isRunning;
+    private readonly List<Control> disableControls;
 
     public RadelineSimForm(RadelineSimConfig formPersistence) {
         cfg = formPersistence;
@@ -168,7 +171,7 @@ public sealed class RadelineSimForm : Form {
                     Spacing = 10,
                     Orientation = Orientation.Horizontal,
                     Items = {
-                        (new Button((_, _) => Run()) { Text = "Run", Width = 150 }),
+                        (runOrCancelControl = new Button((_, _) => RunOrCancel()) { Text = "Run", Width = 150 }),
                         progressBarControl
                     }
                 }
@@ -179,6 +182,9 @@ public sealed class RadelineSimForm : Form {
         Load += (_, _) => Studio.Instance.WindowCreationCallback(this);
         Closed += (_, _) => SetupSimConfig();
         FormFromPersistence();
+
+        disableControls = [getInitialStateControl, framesControl, axisControl, positionFilterMinControl, positionFilterMaxControl, goalSpeedControl, disabledKeyControl,
+            outputSortingControl, rngThresholdControl, rngThresholdSlowControl, inputGenerationTimeControl, appendKeysControl, hideDuplicatesControl];
     }
 
     private void FormFromPersistence() {
@@ -210,12 +216,28 @@ public sealed class RadelineSimForm : Form {
         logControl.ScrollToEnd();
     }
 
-    private void Run() {
-        if (!gotInitialState) {
+    private void RunOrCancel() {
+        if (isRunning) {
+            SetRunning(false);
+        } else if (!gotInitialState) {
             Log("No initial state");
-            return;
+        } else {
+            SetRunning(true);
+            Run();
+            SetRunning(false);
         }
+    }
 
+    private void SetRunning(bool running) {
+        isRunning = running;
+        runOrCancelControl.Text = running ? "Cancel" : "Run";
+
+        foreach (var control in disableControls) {
+            control.Enabled = !running;
+        }
+    }
+
+    private void Run() {
         SetupSimConfig();
         ICollection<List<(int frames, char key)>> inputPermutations;
         progressBarControl.Value = 0;
@@ -266,6 +288,8 @@ public sealed class RadelineSimForm : Form {
             inputPermutations = BuildInputPermutationsRng();
         }
 
+        if (!isRunning) return;  // canceled
+
         Log($"Generated permutations: {inputPermutations.Count}");
         UpdateLayout();
 
@@ -307,6 +331,7 @@ public sealed class RadelineSimForm : Form {
             if (i % updateInterval == 0) {
                 progressBarControl.Value = i;
                 UpdateLayout();
+                if (!isRunning) return;  // canceled
             }
         }
 
@@ -356,7 +381,7 @@ public sealed class RadelineSimForm : Form {
     }
 
     private ICollection<List<(int frames, char key)>> BuildInputPermutationsSequential() {
-        int expectedPermutations = (int)Math.Pow(generatorKeys.Length, cfg.Frames);
+        int expectedPermutations = (int) Math.Pow(generatorKeys.Length, cfg.Frames);
         List<List<(int frames, char key)>> inputPermutations = new(expectedPermutations);
         progressBarControl.MaxValue = expectedPermutations;
         int lastReportedProgress = 0;
@@ -389,6 +414,7 @@ public sealed class RadelineSimForm : Form {
                 progressBarControl.Value = i;
                 lastReportedProgress = i;
                 UpdateLayout();
+                if (!isRunning) return [];  // canceled
             }
         }
 
@@ -441,6 +467,7 @@ public sealed class RadelineSimForm : Form {
                 int elapsedTime = (int) stopwatch.Elapsed.TotalMilliseconds;
                 progressBarControl.Value = elapsedTime;
                 UpdateLayout();
+                if (!isRunning) return [];  // canceled
 
                 if (elapsedTime >= cfg.InputGenerationTime)
                     break;
@@ -565,8 +592,8 @@ public sealed class RadelineSimForm : Form {
                 int hash = 17;
 
                 foreach (var item in obj) {
-                    hash = hash * 31 + item.frames.GetHashCode();
-                    hash = hash * 31 + item.key.GetHashCode();
+                    hash = hash * 31 + item.frames;
+                    hash = hash * 31 + item.key;
                 }
 
                 return hash;
