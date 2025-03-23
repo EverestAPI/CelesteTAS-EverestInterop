@@ -9,7 +9,6 @@ using SkiaSharp;
 using StudioCommunication;
 using StudioCommunication.Util;
 using System.ComponentModel;
-using Binding = CelesteStudio.Binding;
 
 namespace CelesteStudio.Editing;
 
@@ -113,7 +112,7 @@ public sealed class GameInfo : Panel {
     private static readonly ActionBinding EditCustomInfoTemplate = new("Status_EditCustomInfoTemplate", "Edit Custom Info Template", Binding.Category.Status, Hotkey.None, () => Studio.Instance.GameInfo.OnEditCustomInfoTemplate());
     private static readonly ActionBinding ClearWatchEntityInfo = new("Status_ClearWatchEntityInfo", "Clear Watch-Entity Info", Binding.Category.Status, Hotkey.None, CommunicationWrapper.ClearWatchEntityInfo);
 
-    private static readonly BoolBinding PopoutAlwaysOnTop = new("StatusPopout_AlwaysOnTop", "Always on Top", Binding.Category.Status, Hotkey.None,
+    private static readonly BoolBinding PopoutAlwaysOnTop = new("StatusPopout_AlwaysOnTop", "Always on Top", Binding.Category.StatusPopout, Hotkey.None,
         () => Settings.Instance.GameInfoPopoutTopmost,
         value => {
             Settings.Instance.GameInfoPopoutTopmost = value;

@@ -49,7 +49,9 @@ public class HotkeyDialog : Dialog<Hotkey> {
             var newHotkey = preferTextHotkey && e.KeyChar != char.MaxValue
                 ? Hotkey.Char(e.KeyChar)
                 : Hotkey.FromEvent(e);
+
             if (preferTextHotkey && newHotkey is not HotkeyChar) {
+                // Handle in OnTextInput
                 return;
             }
 
