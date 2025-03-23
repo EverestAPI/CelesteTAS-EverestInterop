@@ -50,6 +50,11 @@ public class HotkeyDialog : Dialog<Hotkey> {
                 ? Hotkey.Char(e.KeyChar)
                 : Hotkey.FromEvent(e);
 
+            if (preferTextHotkey && newHotkey is not HotkeyChar) {
+                // Handle in OnTextInput
+                return;
+            }
+
             var mods = e.Modifiers;
             if (e.Key is Keys.LeftShift or Keys.RightShift) mods |= Keys.Shift;
             if (e.Key is Keys.LeftControl or Keys.RightControl) mods |= Keys.Control;
@@ -68,6 +73,7 @@ public class HotkeyDialog : Dialog<Hotkey> {
             }
 
             OnHotkeyDown(currentHotkey, newHotkey);
+            e.Handled = true;
         };
         Content.TextInput += (_, e) => {
             if (e.Text.Length != 1) {
@@ -115,6 +121,7 @@ public class HotkeyDialog : Dialog<Hotkey> {
 
             var confirm = MessageBox.Show(msg.ToString(), MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.Yes);
             if (confirm != DialogResult.Yes) {
+                Close();
                 return;
             }
         }

@@ -251,7 +251,7 @@ public sealed class Editor : SkiaDrawable {
             int bottomVisualRow = (int)((scrollablePosition.Y + scrollableSize.Height) / Font.LineHeight()) + offscreenLinePadding;
             int bottomRow = Math.Min(Document.Lines.Count - 1, GetActualRow(bottomVisualRow));
 
-            return bottomRow.Digits();
+            return (bottomRow + 1).Digits();
         }
     }
 
@@ -1036,8 +1036,19 @@ public sealed class Editor : SkiaDrawable {
             }
         }
 
+        // On WPF, the order of events is
+        // - OnKeyDown(Equal, char.MaxValue)
+        // - OnTextInput(+)
+        // - OnKeyDown(None, +)
+        // So since we handle the hotkey in OnTextInput`, we don't want to handle it again here.
+        //
+        // On GTK we get
+        // - OnKeyDown(Equal, +) or OnKeyDown(None, ^)
+        // - OnTextInput(+)
+        // So again char events are just handled in OnTextInput.
+        //
         // Forward hotkeys from menu entries / snippets
-        if (CheckHotkey(Hotkey.FromEvent(e))) {
+        if (e.Key != Keys.None && CheckHotkey(Hotkey.FromEvent(e))) {
             e.Handled = true;
             return;
         }
@@ -2961,6 +2972,11 @@ public sealed class Editor : SkiaDrawable {
     }
 
     private void OnFrameOperation(CalculationOperator op) {
+        if (!ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) {
+            return;
+        }
+
+
         if (calculationState != null) {
             // Cancel with same operation again
             if (op == calculationState.Operator && calculationState.Operand.Length == 0) {
@@ -2970,7 +2986,6 @@ public sealed class Editor : SkiaDrawable {
             }
 
             CommitCalculation();
-            StartCalculation(op);
         }
 
         StartCalculation(op);
@@ -3752,7 +3767,7 @@ public sealed class Editor : SkiaDrawable {
                 if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Left) {
                     canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding, yPos + Font.Offset(), Font, fillPaint);
                 } else if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Right) {
-                    float ident = Font.CharWidth() * (bottomRow - (row + 1).Digits());
+                    float ident = Font.CharWidth() * (bottomRow.Digits() - (row + 1).Digits());
                     canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding + ident, yPos + Font.Offset(), Font, fillPaint);
                 }
 
