@@ -232,8 +232,8 @@ public sealed class Editor : SkiaDrawable {
     private bool lastFindMatchCase = false;
 
     private static readonly Regex UncommentedBreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
-    private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#+\*\*\*", RegexOptions.Compiled);
-    private static readonly Regex AllBreakpointRegex = new(@"^\s*#*\*\*\*", RegexOptions.Compiled);
+    private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#\s*\*\*\*", RegexOptions.Compiled);
+    private static readonly Regex AllBreakpointRegex = new(@"^\s*#?\s*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex TimestampRegex = new(@"^\s*#+\s*(\d+:)?\d{1,2}:\d{2}\.\d{3}\(\d+\)", RegexOptions.Compiled);
 
     public Editor(Document document, Scrollable scrollable) {
@@ -2636,25 +2636,34 @@ public sealed class Editor : SkiaDrawable {
             string line = Document.Lines[row];
             if (allCommented && CommentedBreakpointRegex.IsMatch(line)) {
                 int hashIdx = line.IndexOf('#');
-                Document.ReplaceLine(row, line.Remove(hashIdx, 1));
+                string newLine = line.Remove(hashIdx, 1).TrimStart();
+                Document.ReplaceLine(row, newLine);
 
                 // Shift everything over
-                if (row == minRow)
-                    Document.Selection.Start.Col--;
-                if (row == maxRow)
-                    Document.Selection.End.Col--;
-                if (row == Document.Caret.Row)
-                    Document.Caret.Col--;
+                int offset = line.Length - newLine.Length;
+                if (row == minRow && !Document.Selection.Empty) {
+                    Document.Selection.Start.Col -= offset;
+                }
+                if (row == maxRow && !Document.Selection.Empty) {
+                    Document.Selection.End.Col -= offset;
+                }
+                if (row == Document.Caret.Row) {
+                    Document.Caret.Col -= offset;
+                }
             } else if (!allCommented && UncommentedBreakpointRegex.IsMatch(line)) {
-                Document.ReplaceLine(row, $"#{line}");
+                Document.ReplaceLine(row, $"# {line}");
 
                 // Shift everything over
-                if (row == minRow)
-                    Document.Selection.Start.Col++;
-                if (row == maxRow)
-                    Document.Selection.End.Col++;
-                if (row == Document.Caret.Row)
-                    Document.Caret.Col++;
+                const int offset = 2;
+                if (row == minRow && !Document.Selection.Empty) {
+                    Document.Selection.Start.Col += offset;
+                }
+                if (row == maxRow && !Document.Selection.Empty) {
+                    Document.Selection.End.Col += offset;
+                }
+                if (row == Document.Caret.Row) {
+                    Document.Caret.Col += offset;
+                }
             }
         }
 
@@ -2687,31 +2696,49 @@ public sealed class Editor : SkiaDrawable {
             }
 
             if (lineTrimmed.StartsWith('#')) {
-                if ((!CommentLine.IsLabel(lineTrimmed) && !lineTrimmed.StartsWith("#***") && !ActionLine.TryParse(lineTrimmed[1..], out _)) || lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) {
-                    // Ignore non-input comments and special labels
-                    continue;
+                if (!CommentedBreakpointRegex.IsMatch(lineTrimmed) // Check for breakpoints
+                    && (!CommentLine.IsLabel(lineTrimmed) || lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) // Check for commands
+                    && !ActionLine.TryParse(lineTrimmed[1..], out _) // Check for action lines
+                ) {
+                    continue; // Ignore
                 }
 
                 int hashIdx = line.IndexOf('#');
-                Document.ReplaceLine(row, line.Remove(hashIdx, 1));
+                string newLine = FileRefactor.FormatLine(line.Remove(hashIdx, 1));
+                Document.ReplaceLine(row, newLine);
 
                 // Shift everything over
-                if (row == minRow)
-                    Document.Selection.Start.Col--;
-                if (row == maxRow)
-                    Document.Selection.End.Col--;
-                if (row == Document.Caret.Row)
-                    Document.Caret.Col--;
+                int offset = line.Length - newLine.Length;
+                if (row == minRow) {
+                    Document.Selection.Start.Col -= offset;
+                }
+                if (row == maxRow) {
+                    Document.Selection.End.Col -= offset;
+                }
+                if (row == Document.Caret.Row) {
+                    Document.Caret.Col -= offset;
+                }
             } else {
-                Document.ReplaceLine(row, $"#{line}");
+                int offset;
+                if (char.IsLetter(line[0])) {
+                    // Comment commands as labels
+                    Document.ReplaceLine(row, $"#{line}");
+                    offset = 1;
+                } else {
+                    Document.ReplaceLine(row, $"# {line}");
+                    offset = 2;
+                }
 
                 // Shift everything over
-                if (row == minRow)
-                    Document.Selection.Start.Col++;
-                if (row == maxRow)
-                    Document.Selection.End.Col++;
-                if (row == Document.Caret.Row)
-                    Document.Caret.Col++;
+                if (row == minRow) {
+                    Document.Selection.Start.Col += offset;
+                }
+                if (row == maxRow) {
+                    Document.Selection.End.Col += offset;
+                }
+                if (row == Document.Caret.Row) {
+                    Document.Caret.Col += offset;
+                }
             }
         }
 
@@ -2756,25 +2783,35 @@ public sealed class Editor : SkiaDrawable {
 
             if (allCommented) {
                 int hashIdx = line.IndexOf('#');
-                Document.ReplaceLine(row, line.Remove(hashIdx, 1));
+                string newLine = FileRefactor.FormatLine(line.Remove(hashIdx, 1));
+                Console.WriteLine($"{row} '{line}' -> '{newLine}'");
+                Document.ReplaceLine(row, newLine);
 
                 // Shift everything over
-                if (row == minRow)
-                    Document.Selection.Start.Col--;
-                if (row == maxRow)
-                    Document.Selection.End.Col--;
-                if (row == Document.Caret.Row)
-                    Document.Caret.Col--;
+                int offset = line.Length - newLine.Length;
+                if (row == minRow) {
+                    Document.Selection.Start.Col -= offset;
+                }
+                if (row == maxRow) {
+                    Document.Selection.End.Col -= offset;
+                }
+                if (row == Document.Caret.Row) {
+                    Document.Caret.Col -= offset;
+                }
             } else {
-                Document.ReplaceLine(row, $"#{line}");
+                Document.ReplaceLine(row, $"# {line}");
 
                 // Shift everything over
-                if (row == minRow)
-                    Document.Selection.Start.Col++;
-                if (row == maxRow)
-                    Document.Selection.End.Col++;
-                if (row == Document.Caret.Row)
-                    Document.Caret.Col++;
+                const int offset = 2;
+                if (row == minRow) {
+                    Document.Selection.Start.Col += offset;
+                }
+                if (row == maxRow) {
+                    Document.Selection.End.Col += offset;
+                }
+                if (row == Document.Caret.Row) {
+                    Document.Caret.Col += offset;
+                }
             }
         }
 

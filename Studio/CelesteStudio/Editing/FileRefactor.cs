@@ -50,15 +50,20 @@ public static class FileRefactor {
     /// Applies formatting rules to the specified lines
     public static void FormatLines(string[] lines, IEnumerable<int> rows, bool forceCommandCasing, string? commandSeparator) {
         foreach (int row in rows) {
-            string line = lines[row];
-
-            // Convert to action lines, if possible
-            if (ActionLine.TryParse(line, out var actionLine)) {
-                lines[row] = actionLine.ToString();
-            } else if (CommandLine.TryParse(line, out var commandLine)) {
-                lines[row] = commandLine.Format(CommunicationWrapper.Commands, forceCommandCasing, commandSeparator);
-            }
+            lines[row] = FormatLine(lines[row], forceCommandCasing, commandSeparator);
         }
+    }
+    /// Applies formatting rules to the line
+    public static string FormatLine(string line, bool? forceCommandCasing = null, string? commandSeparator = null) {
+        // Convert to action lines, if possible
+        if (ActionLine.TryParse(line, out var actionLine)) {
+            return actionLine.ToString();
+        }
+        if (CommandLine.TryParse(line, out var commandLine)) {
+            return commandLine.Format(CommunicationWrapper.Commands, forceCommandCasing ?? StyleConfig.Current.ForceCorrectCommandCasing, commandSeparator ?? StyleConfig.Current.CommandArgumentSeparator);
+        }
+
+        return line.Trim();
     }
 
     /// Applies correct room label indices to the file

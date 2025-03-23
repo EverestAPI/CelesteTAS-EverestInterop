@@ -27,22 +27,22 @@ public readonly record struct CommandLine(
 
     public static CommandLine? Parse(string line) => TryParse(line, out var commandLine) ? commandLine : null;
     public static bool TryParse(string line, out CommandLine commandLine) {
-        string lineTrimmed = line.TrimStart();
+        string lineTrimmed = line.Trim();
         if (string.IsNullOrEmpty(lineTrimmed) || !char.IsLetter(lineTrimmed[0])) {
             commandLine = default;
             return false;
         }
 
-        var separatorMatch = SeparatorRegex.Match(line);
+        var separatorMatch = SeparatorRegex.Match(lineTrimmed);
         if (!separatorMatch.Success || separatorMatch.Length == 0) {
             // No arguments
             commandLine = new CommandLine {
-                Command = line,
+                Command = lineTrimmed,
                 Arguments = [],
 
-                Regions = [new Region(0, line.Length - 1)],
+                Regions = [new Region(0, lineTrimmed.Length - 1)],
 
-                OriginalText = line,
+                OriginalText = lineTrimmed,
                 ArgumentSeparator = string.Empty,
             };
             return true;
@@ -58,8 +58,8 @@ public readonly record struct CommandLine(
         StringBuilder currentArg = new();
         int currentArgIndex = separatorMatch.Index + separator.Length;
 
-        for (int i = currentArgIndex; i < line.Length; i++) {
-            string subLine = line[i..];
+        for (int i = currentArgIndex; i < lineTrimmed.Length; i++) {
+            string subLine = lineTrimmed[i..];
 
             if (groupStack.Count == 0 && subLine.StartsWith(separator)) {
                 arguments.Add(currentArg.ToString());
@@ -71,7 +71,7 @@ public readonly record struct CommandLine(
                 continue;
             }
 
-            char curr = line[i];
+            char curr = lineTrimmed[i];
             switch (curr) {
                 case '"' when groupStack.Count == 0 || groupStack.Peek() == '"':
                     if (groupStack.Count > 0 && groupStack.Peek() == '"') {
@@ -107,13 +107,13 @@ public readonly record struct CommandLine(
                     break;
                 case '\\':
                     // Escape next char
-                    if (i == line.Length - 1) {
+                    if (i == lineTrimmed.Length - 1) {
                         // Invalid escape sequence
                         commandLine = default;
                         return false;
                     }
 
-                    char next = line[++i];
+                    char next = lineTrimmed[++i];
                     switch (next) {
                         case 'n':
                             currentArg.Append('\n');
@@ -133,15 +133,15 @@ public readonly record struct CommandLine(
 
         // Finish last argument
         arguments.Add(currentArg.ToString());
-        regions.Add(new Region(currentArgIndex, line.Length));
+        regions.Add(new Region(currentArgIndex, lineTrimmed.Length));
 
         commandLine = new CommandLine {
-            Command = line[..separatorMatch.Index],
+            Command = lineTrimmed[..separatorMatch.Index],
             Arguments = arguments.ToArray(),
 
             Regions = regions.ToArray(),
 
-            OriginalText = line,
+            OriginalText = lineTrimmed,
             ArgumentSeparator = separator,
         };
         return true;
