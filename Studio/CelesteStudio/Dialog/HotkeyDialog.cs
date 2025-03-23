@@ -49,6 +49,9 @@ public class HotkeyDialog : Dialog<Hotkey> {
             var newHotkey = preferTextHotkey && e.KeyChar != char.MaxValue
                 ? Hotkey.Char(e.KeyChar)
                 : Hotkey.FromEvent(e);
+            if (preferTextHotkey && newHotkey is not HotkeyChar) {
+                return;
+            }
 
             var mods = e.Modifiers;
             if (e.Key is Keys.LeftShift or Keys.RightShift) mods |= Keys.Shift;
