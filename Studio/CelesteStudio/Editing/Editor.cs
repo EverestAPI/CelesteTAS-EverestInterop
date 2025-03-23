@@ -975,13 +975,46 @@ public sealed class Editor : SkiaDrawable {
             (Settings.Instance.SendInputsOnComments && isComment) ||
             (Settings.Instance.SendInputsOnCommands && !isActionLine && !isComment);
 
-        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && !isTyping && sendInputs && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
-            e.Handled = true;
-            return;
+        if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.Connected && !isTyping && sendInputs) {
+            if (CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
+                e.Handled = true;
+                return;
+            }
+
+            // Handle alternative game hotkeys
+
+            // On WPF, the order of events is
+            // - OnKeyDown(Equal, char.MaxValue)
+            // - OnTextInput(+)
+            // - OnKeyDown(None, +)
+            // So since we handle the hotkey in OnTextInput`, we don't want to handle it again here.
+            //
+            // On GTK we get
+            // - OnKeyDown(Equal, +) or OnKeyDown(None, ^)
+            // - OnTextInput(+)
+            // So again char events are just handled in OnTextInput.
+            if (e.Key != Keys.None) {
+                var hotkey = Hotkey.FromEvent(e);
+                foreach (var binding in CommunicationWrapper.AllBindings) {
+                    foreach (var entry in binding.Entries) {
+                        if (Settings.Instance.KeyBindings.GetValueOrDefault(entry.Identifier, entry.DefaultHotkey) == hotkey) {
+                            entry.Action();
+                            Recalc();
+                            ScrollCaretIntoView();
+
+                            e.Handled = true;
+                            return;
+                        }
+                    }
+                }
+            }
         }
 
         // Prevent editing file on accident
         if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.PlaybackRunning && Settings.Instance.SendInputsDisableWhileRunning) {
+            ActivePopupMenu = null;
+            lastAutoCompleteArgumentIndex = -1;
+
             e.Handled = true;
             return;
         }
@@ -1036,17 +1069,6 @@ public sealed class Editor : SkiaDrawable {
             }
         }
 
-        // On WPF, the order of events is
-        // - OnKeyDown(Equal, char.MaxValue)
-        // - OnTextInput(+)
-        // - OnKeyDown(None, +)
-        // So since we handle the hotkey in OnTextInput`, we don't want to handle it again here.
-        //
-        // On GTK we get
-        // - OnKeyDown(Equal, +) or OnKeyDown(None, ^)
-        // - OnTextInput(+)
-        // So again char events are just handled in OnTextInput.
-        //
         // Forward hotkeys from menu entries / snippets
         if (e.Key != Keys.None && CheckHotkey(Hotkey.FromEvent(e))) {
             e.Handled = true;
