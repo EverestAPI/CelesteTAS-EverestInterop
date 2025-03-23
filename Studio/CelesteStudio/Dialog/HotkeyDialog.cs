@@ -6,7 +6,6 @@ using CelesteStudio.Editing.AutoCompletion;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
-using Binding = CelesteStudio.Binding;
 
 namespace CelesteStudio.Dialog;
 
@@ -50,11 +49,6 @@ public class HotkeyDialog : Dialog<Hotkey> {
                 ? Hotkey.Char(e.KeyChar)
                 : Hotkey.FromEvent(e);
 
-            if (preferTextHotkey && newHotkey is not HotkeyChar) {
-                // Handle in OnTextInput
-                return;
-            }
-
             var mods = e.Modifiers;
             if (e.Key is Keys.LeftShift or Keys.RightShift) mods |= Keys.Shift;
             if (e.Key is Keys.LeftControl or Keys.RightControl) mods |= Keys.Control;
@@ -68,7 +62,13 @@ public class HotkeyDialog : Dialog<Hotkey> {
             if (e.Key is Keys.LeftShift or Keys.RightShift
                 or Keys.LeftControl or Keys.RightControl
                 or Keys.LeftAlt or Keys.RightAlt
-                or Keys.LeftApplication or Keys.RightApplication) {
+                or Keys.LeftApplication or Keys.RightApplication
+            ) {
+                return;
+            }
+
+            if (preferTextHotkey && newHotkey is not HotkeyChar && !mods.HasCommonModifier() && !mods.HasAlternateModifier()) {
+                // Handle in TextInput, unless Ctrl or Alt is down in which case a TextInput event won't be triggered
                 return;
             }
 
