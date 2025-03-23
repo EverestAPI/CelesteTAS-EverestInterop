@@ -2973,6 +2973,11 @@ public sealed class Editor : SkiaDrawable {
     }
 
     private void OnFrameOperation(CalculationOperator op) {
+        if (!ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) {
+            return;
+        }
+
+
         if (calculationState != null) {
             // Cancel with same operation again
             if (op == calculationState.Operator && calculationState.Operand.Length == 0) {
@@ -2982,7 +2987,6 @@ public sealed class Editor : SkiaDrawable {
             }
 
             CommitCalculation();
-            StartCalculation(op);
         }
 
         StartCalculation(op);
