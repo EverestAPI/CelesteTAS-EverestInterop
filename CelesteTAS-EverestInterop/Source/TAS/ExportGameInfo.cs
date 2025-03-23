@@ -29,7 +29,7 @@ public static class ExportGameInfo {
     // "ExportGameInfo"
     // "ExportGameInfo Path"
     // "ExportGameInfo Path EntitiesToTrack"
-    [TasCommand("ExportGameInfo", Aliases = ["StartExportGameInfo"], CalcChecksum = false)]
+    [TasCommand("ExportGameInfo", Aliases = ["StartExportGameInfo"], CalcChecksum = false, MetaDataProvider = typeof(Meta))]
     private static void StartExportCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         string[] args = commandLine.Arguments;
         string path = "dump.txt";
