@@ -54,8 +54,7 @@ public static class FileRefactor {
     }
     /// Applies formatting rules to the line
     public static string FormatLine(string line, bool? forceCommandCasing = null, string? commandSeparator = null) {
-        // Convert to action lines, if possible
-        if (ActionLine.TryParse(line, out var actionLine)) {
+        if (ActionLine.TryParseStrict(line, out var actionLine)) {
             return actionLine.ToString();
         }
         if (CommandLine.TryParse(line, out var commandLine)) {
