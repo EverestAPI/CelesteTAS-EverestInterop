@@ -451,8 +451,9 @@ public sealed class RadelineSimForm : Form {
                 char selectedKey = generatorKeys[random.Next(keysLen)];
 
                 if (selectedKey == prevKey) {
-                    var lastInput = inputs.Last();
+                    var lastInput = inputs[^1];
                     lastInput.frames += frames;
+                    inputs[^1] = lastInput;
                 } else {
                     inputs.Add((frames, selectedKey));
                     prevKey = selectedKey;
