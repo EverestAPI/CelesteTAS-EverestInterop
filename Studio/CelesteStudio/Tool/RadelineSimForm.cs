@@ -12,12 +12,11 @@ using Tedd.RandomUtils;
 namespace CelesteStudio.Tool;
 
 public sealed class RadelineSimForm : Form {
-    private const string Version = "0.0.1";
+    private const string Version = "1.0.0";
 
     private readonly TextArea initialStateControl;
     private readonly TextArea appendKeysControl;
     private readonly TextArea logControl;
-    private readonly Button getInitialStateControl;
     private readonly Button runOrCancelControl;
     private readonly ProgressBar progressBarControl;
     private readonly DropDown outputSortingControl;
@@ -50,7 +49,7 @@ public sealed class RadelineSimForm : Form {
             AboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
                 Studio.ShowAboutDialog(new AboutDialog {
                     ProgramName = "Radeline Simulator",
-                    ProgramDescription = "Basic movement simulator, for brute forcing precise position/speed values. Hover over most labels for tooltips",
+                    ProgramDescription = "Basic movement simulator, for brute forcing precise position/speed values. Hover over most labels for tooltips.",
                     Version = Version,
 
                     Developers = ["Kataiser"],
@@ -63,7 +62,7 @@ public sealed class RadelineSimForm : Form {
         const string positionFilterTooltip = "Only show results within this position range (min and max can be backwards, won't make a difference)";
 
         initialStateControl = new TextArea { ReadOnly = true, Wrap = true, Font = FontManager.StatusFont, Width = 180, Height = 190};
-        getInitialStateControl = new Button((_, _) => GetInitialState()) { Text = "Get Initial State", Width = 150 };
+        var getInitialStateControl = new Button((_, _) => GetInitialState()) { Text = "Get Initial State", Width = 150 };
         logControl = new TextArea { ReadOnly = true, Wrap = true, Font = FontManager.StatusFont, Width = rowWidth };
         outputSortingControl = new DropDown {
             Items = {
@@ -729,7 +728,8 @@ public sealed class RadelineSimForm : Form {
             Holding = gameState.Player.IsHolding,
             JumpTimer = gameState.Player.JumpTimer,
             AutoJump = gameState.Player.AutoJump,
-            MaxFall = gameState.Player.MaxFall
+            MaxFall = gameState.Player.MaxFall,
+            ChapterTime = gameState.ChapterTime
         };
 
         initialStateControl.Text = initialState.ToString();
@@ -748,6 +748,8 @@ public sealed class RadelineSimForm : Form {
         // finalized:
         public float Position;
         public float Speed;
+        // display only:
+        public string ChapterTime;
 
         public override string ToString() {
             return $"Position: {Positions.X}, {Positions.Y}\n" +
@@ -756,7 +758,8 @@ public sealed class RadelineSimForm : Form {
                    $"Holding: {Holding}\n" +
                    $"Jump Timer: {JumpTimer}\n" +
                    $"Auto Jump: {AutoJump}\n" +
-                   $"Max Fall: {MaxFall}";
+                   $"Max Fall: {MaxFall}\n" +
+                   $"Timer: {ChapterTime}";
         }
     }
 

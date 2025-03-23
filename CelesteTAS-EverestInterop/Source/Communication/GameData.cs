@@ -216,6 +216,7 @@ public static class GameData {
                 WindDirection = level.Wind.ToGameStateVec2(),
             },
 
+            ChapterTime = GameInfo.GetChapterTime(level),
             SolidsData = level.Session.LevelData.Solids,
             StaticSolids = level.Entities
                 .Where(e => e is Solid and not StarJumpBlock { sinks: true } && e.Collider is Hitbox && e.Collidable)
