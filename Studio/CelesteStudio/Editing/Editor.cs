@@ -3767,7 +3767,7 @@ public sealed class Editor : SkiaDrawable {
                 if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Left) {
                     canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding, yPos + Font.Offset(), Font, fillPaint);
                 } else if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Right) {
-                    float ident = Font.CharWidth() * (bottomRow - (row + 1).Digits());
+                    float ident = Font.CharWidth() * (bottomRow.Digits() - (row + 1).Digits());
                     canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding + ident, yPos + Font.Offset(), Font, fillPaint);
                 }
 
