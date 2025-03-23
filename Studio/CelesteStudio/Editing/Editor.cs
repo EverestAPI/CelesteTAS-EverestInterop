@@ -251,7 +251,7 @@ public sealed class Editor : SkiaDrawable {
             int bottomVisualRow = (int)((scrollablePosition.Y + scrollableSize.Height) / Font.LineHeight()) + offscreenLinePadding;
             int bottomRow = Math.Min(Document.Lines.Count - 1, GetActualRow(bottomVisualRow));
 
-            return bottomRow.Digits();
+            return (bottomRow + 1).Digits();
         }
     }
 
