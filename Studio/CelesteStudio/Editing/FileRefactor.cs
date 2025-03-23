@@ -1,5 +1,4 @@
 using CelesteStudio.Communication;
-using CelesteStudio.Data;
 using StudioCommunication;
 using System;
 using System.Collections.Generic;

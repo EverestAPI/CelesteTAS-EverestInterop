@@ -20,36 +20,13 @@ public enum CalculationOperator {
 }
 
 public static class CalculationExtensions {
-    public static CalculationOperator? TryParse(char c) {
-        if (c == char.MaxValue) {
-            return null;
-        }
-
-        if (c == Settings.Instance.AddFrameOperationChar) {
-            return CalculationOperator.Add;
-        }
-        if (c == Settings.Instance.SubFrameOperationChar) {
-            return CalculationOperator.Sub;
-        }
-        if (c == Settings.Instance.MulFrameOperationChar) {
-            return CalculationOperator.Mul;
-        }
-        if (c == Settings.Instance.DivFrameOperationChar) {
-            return CalculationOperator.Div;
-        }
-        if (c == Settings.Instance.SetFrameOperationChar) {
-            return CalculationOperator.Set;
-        }
-
-        return null;
-    }
     public static char Char(this CalculationOperator op) {
         return op switch {
-            CalculationOperator.Add => Settings.Instance.AddFrameOperationChar,
-            CalculationOperator.Sub => Settings.Instance.SubFrameOperationChar,
-            CalculationOperator.Mul => Settings.Instance.MulFrameOperationChar,
-            CalculationOperator.Div => Settings.Instance.DivFrameOperationChar,
-            CalculationOperator.Set => Settings.Instance.SetFrameOperationChar,
+            CalculationOperator.Add => '+',
+            CalculationOperator.Sub => '-',
+            CalculationOperator.Mul => '*',
+            CalculationOperator.Div => '/',
+            CalculationOperator.Set => '=',
             _ => throw new UnreachableException(),
         };
     }
