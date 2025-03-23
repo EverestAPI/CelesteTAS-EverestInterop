@@ -16,7 +16,6 @@ using Eto.Forms;
 using SkiaSharp;
 using StudioCommunication;
 using StudioCommunication.Util;
-using Binding = CelesteStudio.Binding;
 using WrapLine = (string Line, int Index);
 using WrapEntry = (int StartOffset, (string Line, int Index)[] Lines);
 
@@ -194,7 +193,7 @@ public sealed class Editor : SkiaDrawable {
         editor.Recalc();
     });
     private static readonly ActionBinding OpenContextActionsMenu = CreateAction("Editor_OpenContextActionsMenu", "Open Context-Actions Menu...", Hotkey.KeyAlt(Keys.Enter), editor => {
-        editor.UpdateAutoComplete();
+        editor.UpdateContextActions();
         editor.Recalc();
     });
 
@@ -1444,11 +1443,6 @@ public sealed class Editor : SkiaDrawable {
         };
     }
 
-    public void OpenAutoComplete() {
-        UpdateAutoComplete();
-        Recalc();
-    }
-
     private void UpdateAutoComplete(bool open = true) {
         string line = Document.Lines[Document.Caret.Row];
         Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, line.Length);
@@ -1641,11 +1635,6 @@ public sealed class Editor : SkiaDrawable {
     #endregion
 
     #region Context Actions
-
-    public void OpenContextActions() {
-        UpdateContextActions();
-        Recalc();
-    }
 
     private void UpdateContextActions() {
         contextActionsMenu.Entries = ContextActions
@@ -2261,7 +2250,7 @@ public sealed class Editor : SkiaDrawable {
         UpdateAutoComplete();
     }
 
-    public void OnDelete(CaretMovementType direction) {
+    private void OnDelete(CaretMovementType direction) {
         using var __ = Document.Update();
 
         // To be reused, because C# is stupid
@@ -2418,7 +2407,7 @@ public sealed class Editor : SkiaDrawable {
         desiredVisualCol = Document.Caret.Col;
     }
 
-    public void OnEnter(bool splitLines, bool up) {
+    private void OnEnter(bool splitLines, bool up) {
         using var __ = Document.Update();
 
         string line = Document.Lines[Document.Caret.Row];
@@ -2481,17 +2470,17 @@ public sealed class Editor : SkiaDrawable {
         Document.Selection.Clear();
     }
 
-    public void OnUndo() {
+    private void OnUndo() {
         Document.Selection.Clear();
         Document.Undo();
     }
 
-    public void OnRedo() {
+    private void OnRedo() {
         Document.Selection.Clear();
         Document.Redo();
     }
 
-    public void OnCut() {
+    private void OnCut() {
         using var __ = Document.Update();
 
         OnCopy();
@@ -2508,7 +2497,7 @@ public sealed class Editor : SkiaDrawable {
         }
     }
 
-    public void OnCopy() {
+    private void OnCopy() {
         if (Document.Selection.Empty) {
             // Just copy entire line
             Clipboard.Instance.Clear();
@@ -2519,7 +2508,7 @@ public sealed class Editor : SkiaDrawable {
         }
     }
 
-    public void OnPaste() {
+    private void OnPaste() {
         if (!Clipboard.Instance.ContainsText)
             return;
 
@@ -2579,12 +2568,12 @@ public sealed class Editor : SkiaDrawable {
         }
     }
 
-    public void OnSelectAll() {
+    private void OnSelectAll() {
         Document.Selection.Start = new CaretPosition(0, 0);
         Document.Selection.End = new CaretPosition(Document.Lines.Count - 1, Document.Lines[^1].Length);
     }
 
-    public void OnSelectBlock() {
+    private void OnSelectBlock() {
         // Search first empty line above/below caret
         int above = Document.Caret.Row;
         while (above > 0 && !string.IsNullOrWhiteSpace(Document.Lines[above - 1]))
@@ -2598,7 +2587,7 @@ public sealed class Editor : SkiaDrawable {
         Document.Selection.End = new CaretPosition(below, Document.Lines[below].Length);
     }
 
-    public void OnFind() {
+    private void OnFind() {
         if (!Document.Selection.Empty) {
             var min = Document.Selection.Min;
             var max = Document.Selection.Max;
@@ -2617,7 +2606,7 @@ public sealed class Editor : SkiaDrawable {
         FindDialog.Show(this, ref lastFindQuery, ref lastFindMatchCase);
     }
 
-    public void OnGoTo() {
+    private void OnGoTo() {
         Document.Caret.Row = GoToDialog.Show(Document);
         Document.Caret = ClampCaret(Document.Caret);
         Document.Selection.Clear();
@@ -2625,7 +2614,7 @@ public sealed class Editor : SkiaDrawable {
         ScrollCaretIntoView();
     }
 
-    public void OnToggleFolding() {
+    private void OnToggleFolding() {
         // Find current region
         var folding = foldings.FirstOrDefault(fold => fold.MinRow <= Document.Caret.Row && fold.MaxRow >= Document.Caret.Row);
         if (folding.MinRow == folding.MaxRow) {
@@ -2637,7 +2626,7 @@ public sealed class Editor : SkiaDrawable {
         Document.Caret.Col = Document.Lines[folding.MinRow].Length;
     }
 
-    public void OnDeleteSelectedLines() {
+    private void OnDeleteSelectedLines() {
         using var __ = Document.Update();
 
         int minRow = Document.Selection.Min.Row;
@@ -2651,7 +2640,7 @@ public sealed class Editor : SkiaDrawable {
         Document.Caret.Row = minRow;
     }
 
-    public void OnSetFrameCountToStepAmount() {
+    private void OnSetFrameCountToStepAmount() {
         if (!CommunicationWrapper.Connected) {
             return;
         }
@@ -2665,7 +2654,7 @@ public sealed class Editor : SkiaDrawable {
         }
     }
 
-    public void OnToggleCommentBreakpoints() {
+    private void OnToggleCommentBreakpoints() {
         using var __ = Document.Update();
 
         Document.Selection.Normalize();
@@ -2730,7 +2719,7 @@ public sealed class Editor : SkiaDrawable {
         Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length);
     }
 
-    public void OnToggleCommentInputs() {
+    private void OnToggleCommentInputs() {
         using var __ = Document.Update();
 
         Document.Selection.Normalize();
@@ -2811,7 +2800,7 @@ public sealed class Editor : SkiaDrawable {
         Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length);
     }
 
-    public void OnToggleCommentText() {
+    private void OnToggleCommentText() {
         using var __ = Document.Update();
 
         Document.Selection.Normalize();
@@ -2907,7 +2896,7 @@ public sealed class Editor : SkiaDrawable {
         }
     }
 
-    public void InsertOrRemoveText(Regex regex, string text) {
+    private void InsertOrRemoveText(Regex regex, string text) {
         using var __ = Document.Update();
 
         CollapseSelection();
@@ -2953,7 +2942,7 @@ public sealed class Editor : SkiaDrawable {
         }
     }
 
-    public void RemoveLinesMatching(Regex regex) {
+    private void RemoveLinesMatching(Regex regex) {
         using var __ = Document.Update();
 
         for (int row = Document.Lines.Count - 1; row >= 0; row--) {
@@ -2971,7 +2960,7 @@ public sealed class Editor : SkiaDrawable {
         }
     }
 
-    public void OnFrameOperation(CalculationOperator op) {
+    private void OnFrameOperation(CalculationOperator op) {
         if (calculationState != null) {
             // Cancel with same operation again
             if (op == calculationState.Operator && calculationState.Operand.Length == 0) {
