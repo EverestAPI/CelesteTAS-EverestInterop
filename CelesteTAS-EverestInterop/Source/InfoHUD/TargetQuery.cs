@@ -786,7 +786,11 @@ public static class TargetQuery {
         int index = 0;
 
         for (int i = 0; i < valueArgs.Length; i++) {
-            var arg = valueArgs[i];
+            if (index >= targetTypes.Length) {
+                return Result<object?[], string>.Fail($"Too many arguments");
+            }
+
+            string arg = valueArgs[i];
             var targetType = targetTypes[index];
             targetType = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
@@ -848,14 +852,24 @@ public static class TargetQuery {
 
                 if (targetType == typeof(ButtonBinding)) {
                     var data = new ButtonBindingData();
-                    // Parse mouse first, so Mouse.Left is not parsed as Keys.Left
-                    if (Enum.TryParse<MInput.MouseData.MouseButtons>(arg, ignoreCase: true, out var button)) {
-                        data.MouseButtons.Add(button);
-                    } else if (Enum.TryParse<Keys>(arg, ignoreCase: true, out var key)) {
-                        data.KeyboardKeys.Add(key);
-                    } else {
-                        return Result<object?[], string>.Fail($"'{arg}' is not a valid keyboard key or mouse button");
+
+                    // Parse all possible keys
+                    int j = i;
+                    for (; j < valueArgs.Length; j++) {
+                        // Parse mouse first, so Mouse.Left is not parsed as Keys.Left
+                        if (Enum.TryParse<MInput.MouseData.MouseButtons>(arg, ignoreCase: true, out var button)) {
+                            data.MouseButtons.Add(button);
+                        } else if (Enum.TryParse<Keys>(arg, ignoreCase: true, out var key)) {
+                            data.KeyboardKeys.Add(key);
+                        } else {
+                            if (j == i) {
+                                return Result<object?[], string>.Fail($"'{arg}' is not a valid keyboard key or mouse button");
+                            }
+
+                            break;
+                        }
                     }
+                    i = j - 1;
 
                     values[index++] = data;
                     continue;
