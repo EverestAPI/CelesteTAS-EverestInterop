@@ -87,7 +87,7 @@ public class KeyBindingDialog : Dialog<bool> {
 
                     subLayout.EndVertical();
 
-                    layout.Add(new Expander { Header = binding.DisplayName, Content = subLayout, Height = 40 });
+                    layout.Add(new Expander { Header = binding.DisplayName, Content = subLayout });
                 }
             }
             layout.EndVertical();
