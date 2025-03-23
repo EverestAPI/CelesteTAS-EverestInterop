@@ -2762,8 +2762,8 @@ public sealed class Editor : SkiaDrawable {
                     continue; // Ignore
                 }
 
-                int hashIdx = line.IndexOf('#');
-                string newLine = FileRefactor.FormatLine(line.Remove(hashIdx, 1));
+                int hashIdx = lineTrimmed.IndexOf('#');
+                string newLine = FileRefactor.FormatLine(lineTrimmed.Remove(hashIdx, 1));
                 Document.ReplaceLine(row, newLine);
 
                 // Shift everything over
@@ -2843,7 +2843,6 @@ public sealed class Editor : SkiaDrawable {
             if (allCommented) {
                 int hashIdx = line.IndexOf('#');
                 string newLine = FileRefactor.FormatLine(line.Remove(hashIdx, 1));
-                Console.WriteLine($"{row} '{line}' -> '{newLine}'");
                 Document.ReplaceLine(row, newLine);
 
                 // Shift everything over
