@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Monocle;
 using MonoMod.Cil;
+using MonoMod.RuntimeDetour;
 using System;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
@@ -21,6 +22,11 @@ internal static class CenterCamera {
         On.Monocle.Commands.Render += On_Commands_Render;
         On.Celeste.Level.Render += On_Level_Render;
 
+        // Need to ensure ExCameraDynamic hook happens before
+        using (new DetourConfigContext(new DetourConfig("CelesteTAS", before: ["ExCameraDynamics"])).Use()) {
+            On.Celeste.Level.LoadLevel += On_Level_LoadLevel;
+        }
+
 #if DEBUG
         cameraOffset = Engine.Instance.GetDynamicDataInstance().Get<Vector2?>("CelesteTAS_CameraOffset") ?? Vector2.Zero;
         canvasOffset = Engine.Instance.GetDynamicDataInstance().Get<Vector2?>("CelesteTAS_CanvasOffset") ?? Vector2.Zero;
@@ -33,6 +39,7 @@ internal static class CenterCamera {
         On.Monocle.Engine.RenderCore -= On_Engine_RenderCore;
         On.Monocle.Commands.Render -= On_Commands_Render;
         On.Celeste.Level.Render -= On_Level_Render;
+        On.Celeste.Level.LoadLevel -= On_Level_LoadLevel;
 
 #if DEBUG
         Engine.Instance.GetDynamicDataInstance().Set("CelesteTAS_CameraOffset", cameraOffset);
@@ -60,6 +67,19 @@ internal static class CenterCamera {
         // Show cursor for dragging camera
         if (TasSettings.CenterCamera && !Hotkeys.InfoHud.Check && MouseInput.Right.Check) {
             InfoMouse.DrawCursor(MouseInput.Position);
+        }
+    }
+
+    private static void On_Level_LoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader) {
+        orig(self, playerIntro, isFromLoader);
+
+        // Enable ExCameraDynamics if needed
+        if (isFromLoader && TasSettings.EnableExCameraDynamicsForCenterCamera && TasSettings.CenterCamera) {
+            Console.WriteLine();
+            if (!ExCameraDynamicsInterop.Enabled) {
+                ExCameraDynamicsInterop.EnableHooks(ZoomLevel);
+                tasEnabledExCameraDynamics = true;
+            }
         }
     }
 
@@ -101,7 +121,6 @@ internal static class CenterCamera {
 
     public static readonly Camera ScreenCamera = new();
 
-    private static bool savedView = false;
     private static readonly Camera savedCamera = new();
     private static Viewport savedCameraViewport;
     private static float savedLevelZoom;
@@ -116,7 +135,7 @@ internal static class CenterCamera {
 
     public static void Toggled() {
         // Enable ExCameraDynamics if needed
-        if (TasSettings.EnableExCameraDynamicsForCenterCamera && TasSettings.CenterCamera ) {
+        if (TasSettings.EnableExCameraDynamicsForCenterCamera && TasSettings.CenterCamera) {
             if (!ExCameraDynamicsInterop.Enabled) {
                 ExCameraDynamicsInterop.EnableHooks();
                 tasEnabledExCameraDynamics = true;
@@ -275,8 +294,6 @@ internal static class CenterCamera {
         savedLevelZoomFocusPoint = level.ZoomFocusPoint;
         savedLevelScreenPadding = level.ScreenPadding;
 
-        savedView = true;
-
         // Apply camera changes
         camera.Position = target + cameraOffset - new Vector2(camera.Viewport.Width / 2.0f, camera.Viewport.Height / 2.0f);
 
@@ -308,7 +325,7 @@ internal static class CenterCamera {
 
     /// Restore camera settings to previous values, to avoid altering gameplay
     private static void RestoreCamera() {
-        if (Engine.Scene is not Level level || !savedView) {
+        if (Engine.Scene is not Level level) {
             return;
         }
 
@@ -323,7 +340,5 @@ internal static class CenterCamera {
             ExCameraDynamicsInterop.AutomaticZooming = savedAutomaticZooming;
             ExCameraDynamicsInterop.TriggerZoomOverride = savedTriggerZoomOverride;
         }
-
-        savedView = false;
     }
 }
