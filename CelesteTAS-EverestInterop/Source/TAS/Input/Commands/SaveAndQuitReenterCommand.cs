@@ -116,6 +116,13 @@ public static class SaveAndQuitReenterCommand {
                 return;
             }
 
+            if (MetadataCommands.RealTimeInfo != null) {
+                // Always asume best case scenario for a Save & Quit (1st real slot), to keep a consistent time
+                const int bestFrameCount = 58 + 31 + 14 + 1+ 56 + 1 + 14 + 1 + 1 + 32;
+
+                MetadataCommands.RealTimeInfo = MetadataCommands.RealTimeInfo.Value with { FrameCount = MetadataCommands.RealTimeInfo.Value.FrameCount + bestFrameCount };
+            }
+
             // Ensure the inputs are for the current save slot
             controller.RefreshInputs(forceRefresh: true);
         }

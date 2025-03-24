@@ -19,6 +19,8 @@ internal static class MetadataCommands {
     /// Total real-time frames in the TAS, without loading times
     internal static (int FrameCount, int FileSlot)? RealTimeInfo = null;
 
+    private const long TicksPerFrame = TimeSpan.TicksPerSecond / 60;
+
     [Load]
     private static void Load() {
         Everest.Events.Level.OnComplete += UpdateChapterTime;
@@ -40,11 +42,9 @@ internal static class MetadataCommands {
                 // Advance real-time
                 if (RealTimeInfo != null && (Manager.CurrState != Manager.State.Paused || Manager.IsLoading()) && !Manager.IsActuallyLoading()) {
                     RealTimeInfo = RealTimeInfo.Value with { FrameCount = RealTimeInfo.Value.FrameCount + 1 };
-                    Console.WriteLine($"Advance: {RealTimeInfo}");
                 }
 
                 if (RealTimeInfo == null || RealTimeInfo.Value.FileSlot != saveData.FileSlot) {
-                    Console.WriteLine("Reset");
                     RealTimeInfo = (0, saveData.FileSlot);
                 }
             });
@@ -71,12 +71,14 @@ internal static class MetadataCommands {
     }
 
     [DisableRun]
-    private static void UpdateFileTime() {
+    private static void UpdateTimes() {
         if (TasStartInfo != null && SaveData.Instance != null && !Manager.Controller.CanPlayback) {
             UpdateAllMetadata("FileTime", _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartInfo.Value.FileTimeTicks));
         }
+        if (RealTimeInfo != null && !Manager.Controller.CanPlayback) {
+            UpdateAllMetadata("RealTime", _ => GameInfo.FormatTime(RealTimeInfo.Value.FrameCount * TicksPerFrame));
+        }
 
-        Console.WriteLine($"RealTime: {RealTimeInfo}");
         TasStartInfo = null;
         RealTimeInfo = null;
     }
@@ -116,6 +118,11 @@ internal static class MetadataCommands {
         // dummy
     }
 
+    [TasCommand("RealTime", Aliases = ["RealTime:", "RealTime："], CalcChecksum = false)]
+    private static void RealTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        // dummy
+    }
+
     [TasCommand("MidwayFileTime", Aliases = ["MidwayFileTime:", "MidwayFileTime："], CalcChecksum = false)]
     private static void MidwayFileTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         if (TasStartInfo == null || SaveData.Instance == null) {
@@ -135,6 +142,17 @@ internal static class MetadataCommands {
 
         UpdateAllMetadata("MidwayChapterTime",
             _ => GameInfo.GetChapterTime(level),
+            command => Manager.Controller.CurrentCommands.Contains(command));
+    }
+
+    [TasCommand("MidwayRealTime", Aliases = ["MidwayRealTime:", "MidwayRealTime："], CalcChecksum = false)]
+    private static void MidwayRealTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        if (RealTimeInfo == null) {
+            return;
+        }
+
+        UpdateAllMetadata("MidwayRealTime",
+            _ => GameInfo.FormatTime(RealTimeInfo.Value.FrameCount * TicksPerFrame),
             command => Manager.Controller.CurrentCommands.Contains(command));
     }
 

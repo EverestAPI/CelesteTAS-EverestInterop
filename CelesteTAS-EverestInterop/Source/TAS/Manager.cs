@@ -322,11 +322,8 @@ public static class Manager {
     public static bool IsActuallyLoading() {
         if (Controller.Inputs!.GetValueOrDefault(Controller.CurrentFrameInTas) is { } current && current.ParentCommand is { } command && command.Is("SaveAndQuitReenter")) {
             // SaveAndQuitReenter manually adds the optimal S&Q real-time
-            Console.WriteLine("SNQ");
             return true;
         }
-
-        Console.WriteLine($"S {UserIO.Saving} O {(Engine.Scene as Overworld)?.Next} E {Engine.Scene}");
 
         return Engine.Scene switch {
             Level level => level.IsAutoSaving(),
@@ -344,12 +341,12 @@ public static class Manager {
             return false;
         }
 
-        // Require any FileTime or ChapterTime, alternatively MidwayFileTime or MidwayChapterTime at the end for the TAS to be counted as finished
+        // Require any *Time, alternatively Midway*Time at the end for the TAS to be counted as finished
         return Controller.Commands.Values
             .SelectMany(commands => commands)
-            .All(command => !command.Is("FileTime") && !command.Is("ChapterTime"))
+            .All(command => !command.Is("FileTime") && !command.Is("ChapterTime") && !command.Is("RealTime"))
         && Controller.Commands.GetValueOrDefault(Controller.Inputs.Count, [])
-            .All(command => !command.Is("MidwayFileTime") && !command.Is("MidwayChapterTime"));
+            .All(command => !command.Is("MidwayFileTime") && !command.Is("MidwayChapterTime") && !command.Is("MidwayRealTime"));
     }
 
     public static bool PreventSendStudioState = false; // a cursed demand of tas helper's predictor

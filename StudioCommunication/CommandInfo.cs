@@ -31,7 +31,7 @@ public partial record struct CommandInfo(
         null,
         "Assert", "Unsafe", "Safe", "EnforceLegal",
         null,
-        "RecordCount", "FileTime", "ChapterTime", "MidwayFileTime", "MidwayChapterTime", "CompleteInfo",
+        "RecordCount", "FileTime", "ChapterTime", "RealTime", "MidwayFileTime", "MidwayChapterTime", "MidwayRealTime", "CompleteInfo",
         null,
         "ExportGameInfo", "EndExportGameInfo", "ExportRoomInfo", "EndExportRoomInfo",
     ];
@@ -48,7 +48,7 @@ public partial record struct CommandInfo(
         // Mimic in-game console
         "console",
         // Formatted as "Command: Value"
-        "RecordCount:", "ChapterTime:", "MidwayChapterTime:", "FileTime:", "MidwayFileTime:", "Author:", "FrameCount:", "TotalRecordCount:",
+        "RecordCount:", "ChapterTime:", "MidwayChapterTime:", "FileTime:", "MidwayFileTime:", "RealTime:", "MidwayRealTime:", "Author:", "FrameCount:", "TotalRecordCount:",
         // Arguments are inputs, i.e contain commas
         "Add"
     ];

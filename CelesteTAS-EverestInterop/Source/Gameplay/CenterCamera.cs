@@ -75,7 +75,6 @@ internal static class CenterCamera {
 
         // Enable ExCameraDynamics if needed
         if (isFromLoader && TasSettings.EnableExCameraDynamicsForCenterCamera && TasSettings.CenterCamera) {
-            Console.WriteLine();
             if (!ExCameraDynamicsInterop.Enabled) {
                 ExCameraDynamicsInterop.EnableHooks(ZoomLevel);
                 tasEnabledExCameraDynamics = true;
