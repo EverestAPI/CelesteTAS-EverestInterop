@@ -121,6 +121,7 @@ internal static class CenterCamera {
 
     public static readonly Camera ScreenCamera = new();
 
+    private static bool savedView = false;
     private static readonly Camera savedCamera = new();
     private static Viewport savedCameraViewport;
     private static float savedLevelZoom;
@@ -294,6 +295,8 @@ internal static class CenterCamera {
         savedLevelZoomFocusPoint = level.ZoomFocusPoint;
         savedLevelScreenPadding = level.ScreenPadding;
 
+        savedView = true;
+
         // Apply camera changes
         camera.Position = target + cameraOffset - new Vector2(camera.Viewport.Width / 2.0f, camera.Viewport.Height / 2.0f);
 
@@ -325,7 +328,7 @@ internal static class CenterCamera {
 
     /// Restore camera settings to previous values, to avoid altering gameplay
     private static void RestoreCamera() {
-        if (Engine.Scene is not Level level) {
+        if (Engine.Scene is not Level level || !savedView) {
             return;
         }
 
@@ -340,5 +343,7 @@ internal static class CenterCamera {
             ExCameraDynamicsInterop.AutomaticZooming = savedAutomaticZooming;
             ExCameraDynamicsInterop.TriggerZoomOverride = savedTriggerZoomOverride;
         }
+        
+        savedView = false;
     }
 }
