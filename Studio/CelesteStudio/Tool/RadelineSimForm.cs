@@ -133,9 +133,6 @@ public sealed class RadelineSimForm : Form {
         layout.AddCentered(new Label { Text = "Disabled Key", ToolTip = "Disable generating a certain key. Auto will disable keys that can't ever affect input" });
         layout.Add(disabledKeyControl);
         layout.EndBeginHorizontal();
-        layout.AddCentered(new Label { Text = "Output Sorting Priority" });
-        layout.Add(outputSortingControl);
-        layout.EndBeginHorizontal();
         layout.AddCentered(new Label { Text = "RNG Threshold (All Keys)", ToolTip = "Frame count at which to start using the RNG input generation method " +
                                                                                     "(instead of sequential) when all keys are enabled"});
         layout.Add(rngThresholdSlowControl);
@@ -147,7 +144,10 @@ public sealed class RadelineSimForm : Form {
         layout.AddCentered(new Label { Text = "Input Generation Time (RNG)", ToolTip = "How long to spend generating random inputs, in seconds"});
         layout.Add(inputGenerationTimeControl);
         layout.EndBeginHorizontal();
-        layout.AddCentered(new Label { Text = "Appended Keys", ToolTip = "Keys the formatter adds, e.g. \"jg\" to hold jump and grab as well"});
+        layout.AddCentered(new Label { Text = "Output Sorting Priority" });
+        layout.Add(outputSortingControl);
+        layout.EndBeginHorizontal();
+        layout.AddCentered(new Label { Text = "Appended Keys", ToolTip = "Keys added when copying, e.g. \"jg\" to hold jump and grab as well"});
         layout.Add(appendKeysControl);
         layout.EndBeginHorizontal();
         layout.AddCentered(new Label { Text = "Hide Duplicate Inputs", ToolTip = "Don't output multiple inputs with the same resulting position/speed (disable for performance)"});
@@ -220,6 +220,8 @@ public sealed class RadelineSimForm : Form {
             SetRunning(false);
         } else if (!gotInitialState) {
             Log("No initial state");
+        } else if (initialState.PlayerStateName != "StNormal") {
+            Log($"Player state must be StNormal, not {initialState.PlayerStateName}");
         } else {
             SetRunning(true);
             Run();
@@ -480,7 +482,7 @@ public sealed class RadelineSimForm : Form {
         }
 
         if (brokeFromLoopMax)
-            Log($"Exiting generation early due to reaching max possible permutations ({maxPermutations})");
+            Log($"Exiting generation early due to reaching max possible permutations");
 
         return inputPermutations;
     }
@@ -731,7 +733,8 @@ public sealed class RadelineSimForm : Form {
             AutoJump = gameState.Player.AutoJump,
             MaxFall = gameState.Player.MaxFall,
             ChapterTime = gameState.ChapterTime,
-            RoomName = gameState.RoomName
+            RoomName = gameState.RoomName,
+            PlayerStateName = gameState.PlayerStateName
         };
 
         initialStateControl.Text = initialState.ToString();
@@ -750,9 +753,10 @@ public sealed class RadelineSimForm : Form {
         // finalized:
         public float Position;
         public float Speed;
-        // display only:
+        // display/logic only:
         public string ChapterTime;
         public string RoomName;
+        public string PlayerStateName;
 
         public override string ToString() {
             return $"Position: {Positions.X}, {Positions.Y}\n" +
@@ -762,6 +766,7 @@ public sealed class RadelineSimForm : Form {
                    $"Jump Timer: {JumpTimer}\n" +
                    $"Auto Jump: {AutoJump}\n" +
                    $"Max Fall: {MaxFall}\n" +
+                   $"State: {PlayerStateName}\n" +
                    $"Timer: {ChapterTime}\n" +
                    $"[{RoomName}]";
         }

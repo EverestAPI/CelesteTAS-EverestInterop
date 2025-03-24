@@ -72,6 +72,7 @@ public partial record struct GameState {
     public LevelState Level;
     public string ChapterTime;
     public string RoomName;
+    public string PlayerStateName;
 
     public string SolidsData;
     public RectF[] StaticSolids;
