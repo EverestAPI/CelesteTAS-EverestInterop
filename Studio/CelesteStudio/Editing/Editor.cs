@@ -155,11 +155,11 @@ public sealed class Editor : SkiaDrawable {
     private static readonly ActionBinding RemoveAllUncommentedBreakpoints = CreateAction("Editor_RemoveAllUncommentedBreakpoints", "Remove All Uncommented Breakpoints", Hotkey.KeyCtrl(Keys.P), editor => editor.RemoveLinesMatching(UncommentedBreakpointRegex));
     private static readonly ActionBinding RemoveAllBreakpoints = CreateAction("Editor_RemoveAllBreakpoints", "Remove All Breakpoints", Hotkey.KeyCtrl(Keys.P | Keys.Shift), editor => editor.RemoveLinesMatching(AllBreakpointRegex));
     private static readonly ActionBinding ToggleCommentBreakpoints = CreateAction("Editor_CommentUncommentAllBreakpoints", "Comment / Uncomment All Breakpoints", Hotkey.KeyCtrl(Keys.P | Application.Instance.AlternateModifier), editor => editor.OnToggleCommentBreakpoints());
-    private static readonly ActionBinding ToggleCommentInputs = CreateAction("Editor_CommentUncommentInputs", "Comment / Uncomment All Breakpoints", Hotkey.KeyCtrl(Keys.K), editor => editor.OnToggleCommentInputs());
-    private static readonly ActionBinding ToggleCommentText = CreateAction("Editor_CommentUncommentText", "Comment / Uncomment All Breakpoints", Hotkey.KeyCtrl(Keys.K | Keys.Shift), editor => editor.OnToggleCommentText());
+    private static readonly ActionBinding ToggleCommentInputs = CreateAction("Editor_CommentUncommentInputs", "Comment / Uncomment Inputs", Hotkey.KeyCtrl(Keys.K), editor => editor.OnToggleCommentInputs());
+    private static readonly ActionBinding ToggleCommentText = CreateAction("Editor_CommentUncommentText", "Comment / Uncomment Text", Hotkey.KeyCtrl(Keys.K | Keys.Shift), editor => editor.OnToggleCommentText());
 
     private static readonly ActionBinding InsertRoomName = CreateAction("Editor_InsertRoomName", "Insert current Room Name", Hotkey.KeyCtrl(Keys.R), editor => editor.InsertLine($"#lvl_{CommunicationWrapper.LevelName}"));
-    private static readonly ActionBinding InsertChapterTime = CreateAction("Editor_InsertCurrentChapterTime", "Insert current Room Name", Hotkey.KeyCtrl(Keys.R), editor => editor.InsertLine($"#{CommunicationWrapper.ChapterTime}"));
+    private static readonly ActionBinding InsertChapterTime = CreateAction("Editor_InsertCurrentChapterTime", "Insert current ChapterTime", Hotkey.KeyCtrl(Keys.T), editor => editor.InsertLine($"#{CommunicationWrapper.ChapterTime}"));
     private static readonly ActionBinding RemoveAllTimestamps = CreateAction("Editor_RemoveAllTimestamps", "Remove All Timestamps", Hotkey.KeyCtrl(Keys.T | Keys.Shift), editor => editor.RemoveLinesMatching(TimestampRegex));
 
     private static readonly ActionBinding InsertPlayerPosition = CreateAction("Editor_InsertCurrentPosition", "Insert current Player Position", Hotkey.None, editor => {
@@ -177,12 +177,12 @@ public sealed class Editor : SkiaDrawable {
             editor.InsertLine(modInfo);
         }
     });
-    private static readonly ActionBinding InsertConsoleLoadCommand = CreateAction("Editor_InsertConsoleLoadCommand", "Insert Exact \"console load\" Command", Hotkey.None, editor => {
+    private static readonly ActionBinding InsertConsoleLoadCommand = CreateAction("Editor_InsertConsoleLoadCommand", "Insert Exact \"console load\" Command", Hotkey.KeyCtrl(Keys.R | Keys.Shift), editor => {
         if (CommunicationWrapper.GetConsoleCommand(simple: false) is var command && !string.IsNullOrWhiteSpace(command)) {
             editor.InsertLine(command);
         }
     });
-    private static readonly ActionBinding InsertSimpleConsoleLoadCommand = CreateAction("Editor_InsertSimpleConsoleLoadCommand", "Insert Simple \"console load\" Command", Hotkey.None, editor => {
+    private static readonly ActionBinding InsertSimpleConsoleLoadCommand = CreateAction("Editor_InsertSimpleConsoleLoadCommand", "Insert Simple \"console load\" Command", Hotkey.KeyCtrl(Keys.R | Application.Instance.AlternateModifier), editor => {
         if (CommunicationWrapper.GetConsoleCommand(simple: true) is var command && !string.IsNullOrWhiteSpace(command)) {
             editor.InsertLine(command);
         }
