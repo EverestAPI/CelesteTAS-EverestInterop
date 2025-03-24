@@ -19,8 +19,6 @@ internal static class MetadataCommands {
     /// Total real-time frames in the TAS, without loading times
     internal static (int FrameCount, int FileSlot)? RealTimeInfo = null;
 
-    private const long TicksPerFrame = TimeSpan.TicksPerSecond / 60;
-
     [Load]
     private static void Load() {
         Everest.Events.Level.OnComplete += UpdateChapterTime;
@@ -76,7 +74,7 @@ internal static class MetadataCommands {
             UpdateAllMetadata("FileTime", _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartInfo.Value.FileTimeTicks));
         }
         if (RealTimeInfo != null && !Manager.Controller.CanPlayback) {
-            UpdateAllMetadata("RealTime", _ => GameInfo.FormatTime(RealTimeInfo.Value.FrameCount * TicksPerFrame));
+            UpdateAllMetadata("RealTime", _ => $"{TimeSpan.FromSeconds(RealTimeInfo.Value.FrameCount / 60.0f).ShortGameplayFormat()}({RealTimeInfo.Value.FrameCount})");
         }
 
         TasStartInfo = null;
@@ -152,7 +150,7 @@ internal static class MetadataCommands {
         }
 
         UpdateAllMetadata("MidwayRealTime",
-            _ => GameInfo.FormatTime(RealTimeInfo.Value.FrameCount * TicksPerFrame),
+            _ => $"{TimeSpan.FromSeconds(RealTimeInfo.Value.FrameCount / 60.0f).ShortGameplayFormat()}({RealTimeInfo.Value.FrameCount})",
             command => Manager.Controller.CurrentCommands.Contains(command));
     }
 

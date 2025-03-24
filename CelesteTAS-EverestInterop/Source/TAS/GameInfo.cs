@@ -15,6 +15,7 @@ using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
 using TAS.InfoHUD;
+using TAS.Input.Commands;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
@@ -228,6 +229,15 @@ public static class GameInfo {
             return;
         }
         Scene scene = Engine.Scene;
+
+        // Dynamically show real-time / game-time timer
+        bool showRealTime = MetadataCommands.RealTimeInfo != null && Manager.Controller.Commands.Values
+            .SelectMany(commands => commands)
+            .Any(command => command.Is("RealTime") || command.Is("MidwayRealTime"));
+        bool showGameTime = !showRealTime || Manager.Controller.Commands.Values
+            .SelectMany(commands => commands)
+            .Any(command => command.Is("FileTime") || command.Is("ChapterTime") || command.Is("MidwayFileTime") || command.Is("MidwayChapterTime"));
+
         if (scene is Level level) {
             Player player = level.Tracker.GetEntity<Player>();
             if (player != null) {
@@ -358,8 +368,19 @@ public static class GameInfo {
             LevelName = level.Session.Level;
             ChapterTime = GetChapterTime(level);
 
-            Status = StatusWithoutTime + $"[{LevelName}] Timer: {ChapterTime}";
-            ExactStatus = ExactStatusWithoutTime + $"[{LevelName}] Timer: {ChapterTime}";
+            string timer = "";
+            if (showGameTime && !showRealTime) {
+                timer = $"[{LevelName}] Timer: {ChapterTime}";
+            } else if (!showGameTime && showRealTime) {
+                int realTimeFrames = MetadataCommands.RealTimeInfo!.Value.FrameCount;
+                timer = $"[{LevelName}] Real Timer: {TimeSpan.FromSeconds(realTimeFrames / 60.0f).ShortGameplayFormat()}({realTimeFrames})";
+            } else if (showGameTime && showRealTime) {
+                int realTimeFrames = MetadataCommands.RealTimeInfo!.Value.FrameCount;
+                timer = $"[{LevelName}] Game Timer: {ChapterTime} | Real Timer: {TimeSpan.FromSeconds(realTimeFrames / 60.0f).ShortGameplayFormat()}({realTimeFrames})";
+            }
+
+            Status = StatusWithoutTime + timer;
+            ExactStatus = ExactStatusWithoutTime + timer;
             UpdateAdditionInfo();
         } else if (scene is Emulator {game: { } game} emulator) {
             StringBuilder stringBuilder = new();
@@ -396,6 +417,11 @@ public static class GameInfo {
                 Status = ExactStatus = ouiName;
             } else if (scene != null) {
                 Status = ExactStatus = scene.GetType().Name;
+            }
+
+            if (showRealTime) {
+                int realTimeFrames = MetadataCommands.RealTimeInfo!.Value.FrameCount;
+                Status += $"\n\nReal Timer: {TimeSpan.FromSeconds(realTimeFrames / 60.0f).ShortGameplayFormat()}({realTimeFrames})";
             }
         }
     }
