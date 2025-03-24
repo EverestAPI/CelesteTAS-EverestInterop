@@ -730,7 +730,8 @@ public sealed class RadelineSimForm : Form {
             JumpTimer = gameState.Player.JumpTimer,
             AutoJump = gameState.Player.AutoJump,
             MaxFall = gameState.Player.MaxFall,
-            ChapterTime = gameState.ChapterTime
+            ChapterTime = gameState.ChapterTime,
+            RoomName = gameState.RoomName
         };
 
         initialStateControl.Text = initialState.ToString();
@@ -751,6 +752,7 @@ public sealed class RadelineSimForm : Form {
         public float Speed;
         // display only:
         public string ChapterTime;
+        public string RoomName;
 
         public override string ToString() {
             return $"Position: {Positions.X}, {Positions.Y}\n" +
@@ -760,7 +762,8 @@ public sealed class RadelineSimForm : Form {
                    $"Jump Timer: {JumpTimer}\n" +
                    $"Auto Jump: {AutoJump}\n" +
                    $"Max Fall: {MaxFall}\n" +
-                   $"Timer: {ChapterTime}";
+                   $"Timer: {ChapterTime}\n" +
+                   $"[{RoomName}]";
         }
     }
 
