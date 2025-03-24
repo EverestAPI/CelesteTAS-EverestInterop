@@ -857,13 +857,13 @@ public static class TargetQuery {
                     int j = i;
                     for (; j < valueArgs.Length; j++) {
                         // Parse mouse first, so Mouse.Left is not parsed as Keys.Left
-                        if (Enum.TryParse<MInput.MouseData.MouseButtons>(arg, ignoreCase: true, out var button)) {
+                        if (Enum.TryParse<MInput.MouseData.MouseButtons>(valueArgs[j], ignoreCase: true, out var button)) {
                             data.MouseButtons.Add(button);
-                        } else if (Enum.TryParse<Keys>(arg, ignoreCase: true, out var key)) {
+                        } else if (Enum.TryParse<Keys>(valueArgs[j], ignoreCase: true, out var key)) {
                             data.KeyboardKeys.Add(key);
                         } else {
                             if (j == i) {
-                                return Result<object?[], string>.Fail($"'{arg}' is not a valid keyboard key or mouse button");
+                                return Result<object?[], string>.Fail($"'{valueArgs[j]}' is not a valid keyboard key or mouse button");
                             }
 
                             break;
