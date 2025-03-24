@@ -27,19 +27,19 @@ public static class SaveAndQuitReenterCommand {
 
     [Load]
     private static void Load() {
-        var f_justPressedSnQ = typeof(SaveAndQuitReenterCommand).GetFieldInfo(nameof(justPressedSnQ));
+        var f_justPressedSnQ = typeof(SaveAndQuitReenterCommand).GetFieldInfo(nameof(justPressedSnQ))!;
 
         // Set justPressedSnQ to true when button is pressed
         typeof(Level)
             .GetNestedType("<>c__DisplayClass149_0", BindingFlags.NonPublic)!
-            .GetMethodInfo("<Pause>b__8")
+            .GetMethodInfo("<Pause>b__8")!
             .IlHook((cursor, _) => cursor
                 .EmitLdcI4(/*true*/ 1)
                 .EmitStsfld(f_justPressedSnQ));
 
         // Reset justPressedSnQ back to false
         typeof(Level)
-            .GetMethodInfo("Update")
+            .GetMethodInfo(nameof(Level.Update))!
             .IlHook((cursor, _) => cursor
                 .EmitLdcI4(/*false*/ 0)
                 .EmitStsfld(f_justPressedSnQ));
@@ -53,6 +53,7 @@ public static class SaveAndQuitReenterCommand {
     [TasCommand("SaveAndQuitReenter", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
     private static void SaveAndQuitReenter(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         var controller = Manager.Controller;
+        var command = controller.Commands[controller.CurrentParsingFrame][^1];
 
         if (ParsingCommand) {
             int slot = ActiveFileSlot;
@@ -68,32 +69,32 @@ public static class SaveAndQuitReenterCommand {
             }
 
             LibTasHelper.AddInputFrame("58");
-            controller.AddFrames("31", studioLine);
-            controller.AddFrames("14", studioLine);
+            controller.AddFrames("31", studioLine, parentCommand: command);
+            controller.AddFrames("14", studioLine, parentCommand: command);
             if (slot == -1) {
                 // Load debug slot
-                controller.AddFrames("1,D", studioLine);
+                controller.AddFrames("1,D", studioLine, parentCommand: command);
                 // The Randomizer adds a new menu entry between CLIMB and ~DEBUG~
                 if (ModUtils.IsInstalled("Randomizer")) {
-                    controller.AddFrames("1,F,180", studioLine);
-                    controller.AddFrames("1", studioLine);
+                    controller.AddFrames("1,F,180", studioLine, parentCommand: command);
+                    controller.AddFrames("1", studioLine, parentCommand: command);
                 }
-                controller.AddFrames("1,O", studioLine);
-                controller.AddFrames("33", studioLine);
+                controller.AddFrames("1,O", studioLine, parentCommand: command);
+                controller.AddFrames("33", studioLine, parentCommand: command);
             } else {
                 // Get to the save files screen
-                controller.AddFrames("1,O", studioLine);
-                controller.AddFrames("56", studioLine);
+                controller.AddFrames("1,O", studioLine, parentCommand: command);
+                controller.AddFrames("56", studioLine, parentCommand: command);
                 // Alternate 1,D and 1,F,180 to select the slot
                 for (int i = 0; i < slot; i++) {
-                    controller.AddFrames(i % 2 == 0 ? "1,D" : "1,F,180", studioLine);
+                    controller.AddFrames(i % 2 == 0 ? "1,D" : "1,F,180", studioLine, parentCommand: command);
                 }
 
                 // Load the selected save file
-                controller.AddFrames("1,O", studioLine);
-                controller.AddFrames("14", studioLine);
-                controller.AddFrames("1,O", studioLine);
-                controller.AddFrames("1", studioLine);
+                controller.AddFrames("1,O", studioLine, parentCommand: command);
+                controller.AddFrames("14", studioLine, parentCommand: command);
+                controller.AddFrames("1,O", studioLine, parentCommand: command);
+                controller.AddFrames("1", studioLine, parentCommand: command);
                 LibTasHelper.AddInputFrame("32");
             }
 

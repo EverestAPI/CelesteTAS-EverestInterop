@@ -16,6 +16,9 @@ internal static class MetadataCommands {
     // Track starting conditions for TAS to properly calculate (Midway)FileTime
     public static (long FileTimeTicks, int FileSlot)? TasStartInfo;
 
+    /// Total real-time frames in the TAS, without loading times
+    internal static (int FrameCount, int FileSlot)? RealTimeInfo = null;
+
     [Load]
     private static void Load() {
         Everest.Events.Level.OnComplete += UpdateChapterTime;
@@ -26,6 +29,25 @@ internal static class MetadataCommands {
         typeof(Level)
             .GetMethodInfo(nameof(Level.UpdateTime))!
             .HookAfter(StartFileTime);
+
+        typeof(Celeste.Celeste)
+            .GetMethodInfo(nameof(Celeste.Celeste.Update))!
+            .HookBefore(() => {
+                if (!Manager.Running || SaveData.Instance is not { } saveData) {
+                    return;
+                }
+
+                // Advance real-time
+                if (RealTimeInfo != null && (Manager.CurrState != Manager.State.Paused || Manager.IsLoading()) && !Manager.IsActuallyLoading()) {
+                    RealTimeInfo = RealTimeInfo.Value with { FrameCount = RealTimeInfo.Value.FrameCount + 1 };
+                    Console.WriteLine($"Advance: {RealTimeInfo}");
+                }
+
+                if (RealTimeInfo == null || RealTimeInfo.Value.FileSlot != saveData.FileSlot) {
+                    Console.WriteLine("Reset");
+                    RealTimeInfo = (0, saveData.FileSlot);
+                }
+            });
 
         static void StartFileTime() {
             if (!Manager.Running || SaveData.Instance is not { } saveData) {
@@ -43,13 +65,20 @@ internal static class MetadataCommands {
         Everest.Events.Level.OnComplete -= UpdateChapterTime;
     }
 
+    [EnableRun]
+    private static void ResetRealTime() {
+        RealTimeInfo = null;
+    }
+
     [DisableRun]
     private static void UpdateFileTime() {
         if (TasStartInfo != null && SaveData.Instance != null && !Manager.Controller.CanPlayback) {
             UpdateAllMetadata("FileTime", _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartInfo.Value.FileTimeTicks));
         }
 
+        Console.WriteLine($"RealTime: {RealTimeInfo}");
         TasStartInfo = null;
+        RealTimeInfo = null;
     }
 
     private static void UpdateChapterTime(Level level) {

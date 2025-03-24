@@ -318,6 +318,26 @@ public static class Manager {
         };
     }
 
+    /// Whether the game is currently truly loading, i.e. waiting an undefined amount of time
+    public static bool IsActuallyLoading() {
+        if (Controller.Inputs!.GetValueOrDefault(Controller.CurrentFrameInTas) is { } current && current.ParentCommand is { } command && command.Is("SaveAndQuitReenter")) {
+            // SaveAndQuitReenter manually adds the optimal S&Q real-time
+            Console.WriteLine("SNQ");
+            return true;
+        }
+
+        Console.WriteLine($"S {UserIO.Saving} O {(Engine.Scene as Overworld)?.Next} E {Engine.Scene}");
+
+        return Engine.Scene switch {
+            Level level => level.IsAutoSaving(),
+            SummitVignette summit => !summit.ready,
+            Overworld overworld => overworld.Next is OuiChapterSelect && UserIO.Saving ||
+                                   overworld.Next is OuiMainMenu && (UserIO.Saving || Everest._SavingSettings),
+            LevelExit exit => exit.mode == LevelExit.Mode.Completed && !exit.completeLoaded || UserIO.Saving,
+            _ => Engine.Scene is LevelLoader or GameLoader || Engine.Scene.GetType().Name == "LevelExitToLobby" && UserIO.Saving,
+        };
+    }
+
     /// Determine if current TAS file is a draft
     private static bool IsDraft() {
         if (TASRecorderInterop.IsRecording) {
