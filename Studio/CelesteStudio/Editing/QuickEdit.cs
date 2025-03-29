@@ -15,6 +15,8 @@ public record struct QuickEdit {
             return quickEdit;
         }
 
+        text = text.ReplaceLineEndings($"{Document.NewLine}");
+
         var actualText = new StringBuilder(capacity: text.Length);
         var quickEditSpots = new Dictionary<int, Selection>();
 
