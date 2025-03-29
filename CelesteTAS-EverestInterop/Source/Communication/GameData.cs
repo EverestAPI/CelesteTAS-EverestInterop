@@ -205,12 +205,20 @@ public static class GameData {
                 PositionRemainder = player.PositionRemainder.ToGameStateVec2(),
                 Speed = player.Speed.ToGameStateVec2(),
                 starFlySpeedLerp = player.starFlySpeedLerp,
+                OnGround = player.onGround,
+                IsHolding = player.Holding != null,
+                JumpTimer = player.varJumpTimer.ToFloorFrames(),
+                AutoJump = player.AutoJump,
+                MaxFall = player.maxFall
             },
             Level = new GameState.LevelState {
                 Bounds = level.Bounds.ToGameStateRectI(),
                 WindDirection = level.Wind.ToGameStateVec2(),
             },
 
+            ChapterTime = GameInfo.GetChapterTime(level),
+            RoomName = level.Session.Level,
+            PlayerStateName = PlayerStates.GetCurrentStateName(player),
             SolidsData = level.Session.LevelData.Solids,
             StaticSolids = level.Entities
                 .Where(e => e is Solid and not StarJumpBlock { sinks: true } && e.Collider is Hitbox && e.Collidable)

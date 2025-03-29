@@ -516,7 +516,7 @@ public static class GameInfo {
         return (int) Math.Ceiling(seconds / Engine.RawDeltaTime / Engine.TimeRateB);
     }
 
-    private static int ToFloorFrames(this float seconds) {
+    public static int ToFloorFrames(this float seconds) {
         return (int) Math.Floor(seconds / Engine.RawDeltaTime / Engine.TimeRateB);
     }
 
