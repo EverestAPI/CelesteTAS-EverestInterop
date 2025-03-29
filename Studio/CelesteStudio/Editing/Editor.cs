@@ -1354,15 +1354,17 @@ public sealed class Editor : SkiaDrawable {
 
         var newActionLine = calculationState.Operator.Apply(actionLine, operand);
         Document.ReplaceLine(calculationState.Row, newActionLine.ToString());
-
+        
         if (stealFrom != 0) {
-            int stealFromRow = calculationState.Row + stealFrom;
-            if (stealFromRow >= 0 && stealFromRow < Document.Lines.Count && ActionLine.TryParse(Document.Lines[stealFromRow], out var stealFromActionLine)) {
+            for (var stealFromRow = calculationState.Row + stealFrom; stealFromRow >= 0 && stealFromRow < Document.Lines.Count; stealFromRow += stealFrom) {
+                if (!ActionLine.TryParse(Document.Lines[stealFromRow], out var stealFromActionLine)) continue;
+
                 int frameDelta = newActionLine.FrameCount - actionLine.FrameCount;
 
                 Document.ReplaceLine(stealFromRow, (stealFromActionLine with {
                     FrameCount = Math.Clamp(stealFromActionLine.FrameCount - frameDelta, 0, ActionLine.MaxFrames)
                 }).ToString());
+                break;
             }
         }
     }
