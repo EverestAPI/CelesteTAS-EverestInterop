@@ -474,6 +474,8 @@ public class CelesteTasSettings : EverestModuleSettings {
         set => _BetterInvincible = value;
     }
 
+    public EnableCondition ForceAllowAccessibilityTools = EnableCondition.WhileStudioConnected;
+
     public bool HideFreezeFrames { get; set; } = false;
     public bool IgnoreGcCollect { get; set; } = true;
 
