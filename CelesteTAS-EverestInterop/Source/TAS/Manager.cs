@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Linq;
 using Celeste;
 using Celeste.Mod;
+using Celeste.Mod.UI;
 using Celeste.Pico8;
 using JetBrains.Annotations;
 using Monocle;
@@ -142,6 +143,13 @@ public static class Manager {
         Savestates.Update();
 
         if (!Running || CurrState == State.Paused || IsLoading()) {
+            return;
+        }
+
+        if (CriticalErrorHandler.CurrentHandler != null) {
+            // Always prevent execution inside crash handler, even with Unsafe
+            // TODO: Move this after executing the first frame, once Everest fixes scene changes from the crash handler
+            DisableRun();
             return;
         }
 
