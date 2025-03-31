@@ -667,6 +667,9 @@ public static class TargetQuery {
             // Static target context
             return SetMemberValue(baseType, null, value, memberArgs);
         }
+        if (baseObjects.IsEmpty()) {
+            return VoidResult<string>.Ok; // Nothing to do
+        }
 
         return baseObjects
             .Select(obj => SetMemberValue(baseType, obj, value, memberArgs))
@@ -767,6 +770,9 @@ public static class TargetQuery {
         if (baseObjects == null) {
             // Static target context
             return InvokeMemberMethod(baseType, null, parameters, memberArgs);
+        }
+        if (baseObjects.IsEmpty()) {
+            return VoidResult<string>.Ok; // Nothing to do
         }
 
         return baseObjects
