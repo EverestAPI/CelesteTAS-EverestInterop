@@ -145,7 +145,11 @@ internal static class MetadataCommands {
 
         // Prevent a reload from being triggered by the file-system change
         bool needsReload = Manager.Controller.NeedsReload;
-        File.WriteAllLines(tasFilePath, allLines);
+        try {
+            File.WriteAllLines(tasFilePath, allLines);
+        } catch (IOExcpetion) {
+            // Something is blocking the TAS file. Just ignore it, the change should be reflected in Studio either way.
+        }
         Manager.Controller.NeedsReload = needsReload;
 
         CommunicationWrapper.SendUpdateLines(updateLines);
