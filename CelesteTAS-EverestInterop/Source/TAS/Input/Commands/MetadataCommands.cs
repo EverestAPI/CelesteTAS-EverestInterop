@@ -147,7 +147,7 @@ internal static class MetadataCommands {
         bool needsReload = Manager.Controller.NeedsReload;
         try {
             File.WriteAllLines(tasFilePath, allLines);
-        } catch (IOExcpetion) {
+        } catch (IOException) {
             // Something is blocking the TAS file. Just ignore it, the change should be reflected in Studio either way.
         }
         Manager.Controller.NeedsReload = needsReload;
