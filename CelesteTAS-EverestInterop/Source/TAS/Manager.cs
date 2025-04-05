@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Linq;
 using Celeste;
 using Celeste.Mod;
+using Celeste.Mod.UI;
 using Celeste.Pico8;
 using JetBrains.Annotations;
 using Monocle;
@@ -87,17 +88,24 @@ public static class Manager {
             return;
         }
 
-        $"Starting TAS: {Controller.FilePath}".Log();
-
         CurrState = NextState = State.Running;
         PlaybackSpeed = 1.0f;
 
         Controller.Stop();
         Controller.RefreshInputs();
+
+        if (Controller.Inputs.Count == 0) {
+            // Empty file
+            CurrState = NextState = State.Disabled;
+            return;
+        }
+
         AttributeUtils.Invoke<EnableRunAttribute>();
 
         // This needs to happen after EnableRun, otherwise the input state will be reset in BindingHelper.SetTasBindings
         Savestates.EnableRun();
+
+        $"Starting TAS: {Controller.FilePath}".Log();
     }
 
     public static void DisableRun() {
@@ -135,6 +143,13 @@ public static class Manager {
         Savestates.Update();
 
         if (!Running || CurrState == State.Paused || IsLoading()) {
+            return;
+        }
+
+        if (CriticalErrorHandler.CurrentHandler != null) {
+            // Always prevent execution inside crash handler, even with Unsafe
+            // TODO: Move this after executing the first frame, once Everest fixes scene changes from the crash handler
+            DisableRun();
             return;
         }
 
@@ -311,18 +326,35 @@ public static class Manager {
         };
     }
 
+    /// Whether the game is currently truly loading, i.e. waiting an undefined amount of time
+    public static bool IsActuallyLoading() {
+        if (Controller.Inputs!.GetValueOrDefault(Controller.CurrentFrameInTas) is { } current && current.ParentCommand is { } command && command.Is("SaveAndQuitReenter")) {
+            // SaveAndQuitReenter manually adds the optimal S&Q real-time
+            return true;
+        }
+
+        return Engine.Scene switch {
+            Level level => level.IsAutoSaving(),
+            SummitVignette summit => !summit.ready,
+            Overworld overworld => overworld.Next is OuiChapterSelect && UserIO.Saving ||
+                                   overworld.Next is OuiMainMenu && (UserIO.Saving || Everest._SavingSettings),
+            LevelExit exit => exit.mode == LevelExit.Mode.Completed && !exit.completeLoaded || UserIO.Saving,
+            _ => Engine.Scene is LevelLoader or GameLoader || Engine.Scene.GetType().Name == "LevelExitToLobby" && UserIO.Saving,
+        };
+    }
+
     /// Determine if current TAS file is a draft
     private static bool IsDraft() {
         if (TASRecorderInterop.IsRecording) {
             return false;
         }
 
-        // Require any FileTime or ChapterTime, alternatively MidwayFileTime or MidwayChapterTime at the end for the TAS to be counted as finished
+        // Require any *Time, alternatively Midway*Time at the end for the TAS to be counted as finished
         return Controller.Commands.Values
             .SelectMany(commands => commands)
-            .All(command => !command.Is("FileTime") && !command.Is("ChapterTime"))
+            .All(command => !command.Is("FileTime") && !command.Is("ChapterTime") && !command.Is("RealTime"))
         && Controller.Commands.GetValueOrDefault(Controller.Inputs.Count, [])
-            .All(command => !command.Is("MidwayFileTime") && !command.Is("MidwayChapterTime"));
+            .All(command => !command.Is("MidwayFileTime") && !command.Is("MidwayChapterTime") && !command.Is("MidwayRealTime"));
     }
 
     public static bool PreventSendStudioState = false; // a cursed demand of tas helper's predictor
@@ -336,9 +368,12 @@ public static class Manager {
             CurrentLine = previous?.Line ?? -1,
             CurrentLineSuffix = $"{Controller.CurrentFrameInInput + (previous?.FrameOffset ?? 0)}{previous?.RepeatString ?? ""}",
             CurrentFrameInTas = Controller.CurrentFrameInTas,
-            TotalFrames = Controller.Inputs.Count,
             SaveStateLine = Savestates.StudioHighlightLine,
-            tasStates = 0,
+            PlaybackRunning = CurrState == State.Running,
+
+            FileNeedsReload = Controller.NeedsReload,
+            TotalFrames = Controller.Inputs.Count,
+
             // TODO: Avoid string.Join and just iterate info blocks
             GameInfo = string.Join("\n\n", InfoHUD.GameInfo.Query(InfoHUD.GameInfo.Target.Studio)),
             LevelName = InfoHUD.GameInfo.RoomName,

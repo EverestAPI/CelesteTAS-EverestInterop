@@ -177,24 +177,39 @@ public static class ReadCommand {
     }
 
     private static string? FindTargetFile(string commandName, string fileDirectory, string filePath, out string errorMessage) {
-        if (!filePath.EndsWith(".tas", StringComparison.InvariantCulture)) {
-            filePath += ".tas";
+        string path = Path.Combine(fileDirectory, filePath);
+        if (!path.EndsWith(".tas", StringComparison.InvariantCulture)) {
+            path += ".tas";
         }
 
-        string path = Path.Combine(fileDirectory, filePath);
         if (File.Exists(path)) {
             errorMessage = string.Empty;
             return path;
         }
 
         // Windows allows case-insensitive names, but Linux/macOS don't...
-        string[] components = filePath.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+        string[] components = filePath.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
 
         string realDirectory = fileDirectory;
         for (int i = 0; i < components.Length - 1; i++) {
             string directory = components[i];
+
+            if (directory == "..") {
+                string? parentDirectory = Path.GetDirectoryName(realDirectory);
+                if (parentDirectory == null) {
+                    errorMessage = $"""
+                                    "{commandName}" failed
+                                    Parent directory for '{realDirectory}' not found
+                                    """;
+                    return null;
+                }
+
+                realDirectory = parentDirectory;
+                continue;
+            }
+
             string[] directories = Directory.EnumerateDirectories(realDirectory)
-                .Where(d => d.Equals(directory, StringComparison.InvariantCultureIgnoreCase))
+                .Where(d => Path.GetFileName(d).Equals(directory, StringComparison.InvariantCultureIgnoreCase))
                 .ToArray();
 
             if (directories.Length > 1) {
@@ -215,10 +230,10 @@ public static class ReadCommand {
             realDirectory = Path.Combine(realDirectory, directories[0]);
         }
 
-        // Can't merge this into the above loop since a bit more is done with the file name
-        string file = components[^1];
+        string file = Path.GetFileNameWithoutExtension(components[^1]);
         string[] files = Directory.EnumerateFiles(realDirectory)
-            .Where(f => f.Equals(file, StringComparison.InvariantCultureIgnoreCase))
+            // Allow an optional suffix on file names. Example: 9D_04 -> 9D_04_Curiosity.tas
+            .Where(f => Path.GetFileNameWithoutExtension(f).StartsWith(file, StringComparison.InvariantCultureIgnoreCase))
             .ToArray();
 
         if (files.Length > 1) {
@@ -236,28 +251,9 @@ public static class ReadCommand {
             }
         }
 
-        // Allow an optional suffix on file names. Example: 9D_04 -> 9D_04_Curiosity.tas
-        if (Directory.GetParent(Path.Combine(realDirectory, file)) is { Exists: true } info) {
-            var suffixFiles = info.GetFiles()
-                .Where(f => f.Name.StartsWith(Path.GetFileNameWithoutExtension(file), StringComparison.InvariantCultureIgnoreCase))
-                .ToArray();
-
-            if (suffixFiles.Length > 1) {
-                errorMessage = $"""
-                                "{commandName}" failed
-                                Ambiguous match for file '{file}'
-                                """;
-                return null;
-            }
-            if (suffixFiles.Length == 1 && suffixFiles[0].Exists) {
-                errorMessage = string.Empty;
-                return suffixFiles[0].FullName;
-            }
-        }
-
         errorMessage = $"""
                         "{commandName}" failed
-                        File not found
+                        Couldn't find file '{file}'
                         """;
         return null;
     }

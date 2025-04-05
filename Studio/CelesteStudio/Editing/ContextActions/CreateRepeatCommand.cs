@@ -1,11 +1,12 @@
-﻿using CelesteStudio.Data;
-using CelesteStudio.Util;
+﻿using CelesteStudio.Util;
 using StudioCommunication;
 
 namespace CelesteStudio.Editing.ContextActions;
 
-public class CreateRepeat : ContextAction {
-    public override MenuEntry Entry => MenuEntry.ContextActions_CreateRepeatCommand;
+public class CreateRepeatCommand : ContextAction {
+    public override string Identifier => "ContextActions_CreateRepeatCommand";
+    public override string DisplayName => "Create 'Repeat' command";
+    public override Hotkey DefaultHotkey => Hotkey.None;
 
     public override PopupMenu.Entry? Check() {
         if (Document.Selection.Empty) {

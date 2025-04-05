@@ -176,7 +176,6 @@ internal static class TriggerHitbox {
         AddModdedTypes("ExtendedCameraDynamics", "ExtendedCameraDynamics.Code.Triggers.CameraSnapTrigger", "Celeste.Mod.ExCameraDynamics.Code.Triggers.CameraZoomTrigger"); // v1.0.5
         AddCameraTypes("FrostHelper", "FrostHelper.EasedCameraZoomTrigger"); // v1.65.0
         AddCameraTypes("FurryHelper", "Celeste.Mod.FurryHelper.MomentumCameraOffsetTrigger"); // v1.0.6
-        AddCameraTypes("GameHelper", "Celeste.Mod.GameHelper.Triggers.CameraEntityTargetTrigger"); // v1.6.2.0
         AddCameraTypes("HonlyHelper", "Celeste.Mod.HonlyHelper.CameraTargetCornerTrigger", "Celeste.Mod.HonlyHelper.CameraTargetCrossfadeTrigger"); // v1.7.5
         AddCameraTypes("MaxHelpingHand", "Celeste.Mod.MaxHelpingHand.Triggers.CameraCatchupSpeedTrigger", "Celeste.Mod.MaxHelpingHand.Triggers.CameraOffsetBorder", "Celeste.Mod.MaxHelpingHand.Triggers.OneWayCameraTrigger"); // v1.33.7
         AddCameraTypes("Microlith57MiscellaneousMechanics", "Celeste.Mod.Microlith57Misc.Entities.SliderCameraOffsetTrigger", "Celeste.Mod.Microlith57Misc.Entities.SliderCameraTargetTrigger"); // v1.2.0

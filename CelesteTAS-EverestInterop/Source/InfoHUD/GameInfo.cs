@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using TAS.Gameplay;
 using TAS.Input;
+using TAS.Input.Commands;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
@@ -34,13 +35,30 @@ public static class GameInfo {
             yield break;
         }
 #endif
+
+        // Dynamically show real-time / game-time timer
+        bool showRealTime = MetadataCommands.RealTimeInfo != null && Manager.Controller.Commands.Values
+            .SelectMany(commands => commands)
+            .Any(command => command.Is("RealTime") || command.Is("MidwayRealTime"));
+        bool showGameTime = !showRealTime || Manager.Controller.Commands.Values
+            .SelectMany(commands => commands)
+            .Any(command => command.Is("FileTime") || command.Is("ChapterTime") || command.Is("MidwayFileTime") || command.Is("MidwayChapterTime"));
+
         switch (target) {
             case Target.InGameHud: {
                 if (TasSettings.InfoTasInput && tasInput.Value is { } input && !string.IsNullOrEmpty(input)) {
                     yield return input;
                 }
                 if (TasSettings.InfoGame && levelStatus.Value is { } status && sessionData.Value is { } session) {
-                    yield return $"{status}\n[{session.RoomName}] Timer: {session.ChapterTime}";
+                    if (showGameTime && !showRealTime) {
+                        yield return $"{status}\n[{session.RoomName}] Timer: {session.ChapterTime}";
+                    } else if (!showGameTime && showRealTime) {
+                        int realTimeFrames = MetadataCommands.RealTimeInfo!.Value.FrameCount;
+                        yield return $"{status}\n[{session.RoomName}] Real Timer: {TimeSpan.FromSeconds(realTimeFrames / 60.0f).ShortGameplayFormat()}({realTimeFrames})";
+                    } else if (showGameTime && showRealTime) {
+                        int realTimeFrames = MetadataCommands.RealTimeInfo!.Value.FrameCount;
+                        yield return $"{status}\n[{session.RoomName}] Game Timer: {session.ChapterTime}\n{new string(' ', session.RoomName.Length + 3)}Real Timer: {TimeSpan.FromSeconds(realTimeFrames / 60.0f).ShortGameplayFormat()}({realTimeFrames})";
+                    }
                 }
                 if (InfoMouse.Info.Value is { } infoMouse) {
                     yield return infoMouse;
@@ -66,7 +84,15 @@ public static class GameInfo {
 
             case Target.Studio: {
                 if (levelStatus.Value is { } status && sessionData.Value is { } session) {
-                    yield return $"{status}\n[{session.RoomName}] Timer: {session.ChapterTime}";
+                    if (showGameTime && !showRealTime) {
+                        yield return $"{status}\n[{session.RoomName}] Timer: {session.ChapterTime}";
+                    } else if (!showGameTime && showRealTime) {
+                        int realTimeFrames = MetadataCommands.RealTimeInfo!.Value.FrameCount;
+                        yield return $"{status}\n[{session.RoomName}] Real Timer: {TimeSpan.FromSeconds(realTimeFrames / 60.0f).ShortGameplayFormat()}({realTimeFrames})";
+                    } else if (showGameTime && showRealTime) {
+                        int realTimeFrames = MetadataCommands.RealTimeInfo!.Value.FrameCount;
+                        yield return $"{status}\n[{session.RoomName}] Game Timer: {session.ChapterTime}\n{new string(' ', session.RoomName.Length + 3)}Real Timer: {TimeSpan.FromSeconds(realTimeFrames / 60.0f).ShortGameplayFormat()}({realTimeFrames})";
+                    }
                 }
                 if (InfoMouse.Info.Value is { } infoMouse) {
                     yield return infoMouse;
@@ -92,7 +118,15 @@ public static class GameInfo {
 
             case Target.ExactInfo: {
                 if (TasSettings.InfoGame && levelStatusExact.Value is { } status && sessionData.Value is { } session) {
-                    yield return $"{status}\n[{session.RoomName}] Timer: {session.ChapterTime}";
+                    if (showGameTime && !showRealTime) {
+                        yield return $"{status}\n[{session.RoomName}] Timer: {session.ChapterTime}";
+                    } else if (!showGameTime && showRealTime) {
+                        int realTimeFrames = MetadataCommands.RealTimeInfo!.Value.FrameCount;
+                        yield return $"{status}\n[{session.RoomName}] Real Timer: {TimeSpan.FromSeconds(realTimeFrames / 60.0f).ShortGameplayFormat()}({realTimeFrames})";
+                    } else if (showGameTime && showRealTime) {
+                        int realTimeFrames = MetadataCommands.RealTimeInfo!.Value.FrameCount;
+                        yield return $"{status}\n[{session.RoomName}] Game Timer: {session.ChapterTime}\n{new string(' ', session.RoomName.Length + 3)}Real Timer: {TimeSpan.FromSeconds(realTimeFrames / 60.0f).ShortGameplayFormat()}({realTimeFrames})";
+                    }
                 }
                 if (InfoMouse.Info.Value is { } infoMouse) {
                     yield return infoMouse;
