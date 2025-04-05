@@ -376,7 +376,7 @@ public static class GameInfo {
                 timer = $"[{LevelName}] Real Timer: {TimeSpan.FromSeconds(realTimeFrames / 60.0f).ShortGameplayFormat()}({realTimeFrames})";
             } else if (showGameTime && showRealTime) {
                 int realTimeFrames = MetadataCommands.RealTimeInfo!.Value.FrameCount;
-                timer = $"[{LevelName}] Game Timer: {ChapterTime} | Real Timer: {TimeSpan.FromSeconds(realTimeFrames / 60.0f).ShortGameplayFormat()}({realTimeFrames})";
+                timer = $"[{LevelName}] Game Timer: {ChapterTime}\n{new string(' ', LevelName.Length + 3)}Real Timer: {TimeSpan.FromSeconds(realTimeFrames / 60.0f).ShortGameplayFormat()}({realTimeFrames})";
             }
 
             Status = StatusWithoutTime + timer;
