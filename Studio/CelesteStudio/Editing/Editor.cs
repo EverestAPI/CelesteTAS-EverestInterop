@@ -2779,8 +2779,12 @@ public sealed class Editor : SkiaDrawable {
             }
 
             if (lineTrimmed.StartsWith('#')) {
+                if (lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) {
+                    continue; // Ignore
+                }
+
                 if (!CommentedBreakpointRegex.IsMatch(lineTrimmed) // Check for breakpoints
-                    && (!CommentLine.IsLabel(lineTrimmed) || lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) // Check for commands
+                    && !CommentLine.IsLabel(lineTrimmed) // Check for commands
                     && !ActionLine.TryParse(lineTrimmed[1..], out _) // Check for action lines
                 ) {
                     continue; // Ignore
