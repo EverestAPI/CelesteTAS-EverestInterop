@@ -326,18 +326,35 @@ public static class Manager {
         };
     }
 
+    /// Whether the game is currently truly loading, i.e. waiting an undefined amount of time
+    public static bool IsActuallyLoading() {
+        if (Controller.Inputs!.GetValueOrDefault(Controller.CurrentFrameInTas) is { } current && current.ParentCommand is { } command && command.Is("SaveAndQuitReenter")) {
+            // SaveAndQuitReenter manually adds the optimal S&Q real-time
+            return true;
+        }
+
+        return Engine.Scene switch {
+            Level level => level.IsAutoSaving(),
+            SummitVignette summit => !summit.ready,
+            Overworld overworld => overworld.Next is OuiChapterSelect && UserIO.Saving ||
+                                   overworld.Next is OuiMainMenu && (UserIO.Saving || Everest._SavingSettings),
+            LevelExit exit => exit.mode == LevelExit.Mode.Completed && !exit.completeLoaded || UserIO.Saving,
+            _ => Engine.Scene is LevelLoader or GameLoader || Engine.Scene.GetType().Name == "LevelExitToLobby" && UserIO.Saving,
+        };
+    }
+
     /// Determine if current TAS file is a draft
     private static bool IsDraft() {
         if (TASRecorderInterop.IsRecording) {
             return false;
         }
 
-        // Require any FileTime or ChapterTime, alternatively MidwayFileTime or MidwayChapterTime at the end for the TAS to be counted as finished
+        // Require any *Time, alternatively Midway*Time at the end for the TAS to be counted as finished
         return Controller.Commands.Values
             .SelectMany(commands => commands)
-            .All(command => !command.Is("FileTime") && !command.Is("ChapterTime"))
+            .All(command => !command.Is("FileTime") && !command.Is("ChapterTime") && !command.Is("RealTime"))
         && Controller.Commands.GetValueOrDefault(Controller.Inputs.Count, [])
-            .All(command => !command.Is("MidwayFileTime") && !command.Is("MidwayChapterTime"));
+            .All(command => !command.Is("MidwayFileTime") && !command.Is("MidwayChapterTime") && !command.Is("MidwayRealTime"));
     }
 
     public static bool PreventSendStudioState = false; // a cursed demand of tas helper's predictor
