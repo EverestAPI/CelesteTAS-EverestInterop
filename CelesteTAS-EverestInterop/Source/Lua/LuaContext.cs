@@ -1,8 +1,11 @@
 global using NeoLua = Neo.IronLua;
 using Celeste;
+using Celeste.Mod;
 using Monocle;
+using MonoMod.Cil;
 using System;
 using MonoMod.RuntimeDetour;
+using MonoMod.Utils;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -12,6 +15,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using TAS.Module;
 using TAS.Utils;
+using OpCodes = Mono.Cecil.Cil.OpCodes;
 
 namespace TAS.Lua;
 
@@ -34,6 +38,37 @@ internal readonly struct LuaContext : IDisposable {
         typeof(NeoLua.LuaType)
             .GetMethodInfo("IsCallableMethod")!
             .OnHook(bool (Func<MethodInfo, bool, bool> _, MethodInfo methodInfo, bool searchStatic) => (methodInfo.CallingConvention & CallingConventions.VarArgs) == 0 && methodInfo.IsStatic == searchStatic);
+
+        // In LuaEmit.MemberMatchInfo, the penalty constants don't match the comment and also don't make sense
+        // This fixes those incorrect penalties to a more reasonable value
+        var t_MemberMatchInfo = typeof(NeoLua.Lua).Assembly
+            .GetType("Neo.IronLua.LuaEmit")!
+            .GetNestedType("MemberMatchInfo`1", BindingFlags.NonPublic)!;
+
+        foreach (var memberType in (ReadOnlySpan<Type>)[typeof(MemberInfo), typeof(FieldInfo), typeof(PropertyInfo), typeof(MethodInfo)]) {
+            t_MemberMatchInfo
+                .MakeGenericType(memberType)
+                .GetMethodInfo("SetMatch")!
+                // _Technically_ this isn't officially supported.. but it works and that's all i care about :catsnug:
+                .IlHook((cursor, _) => {
+                    ILLabel[]? targets = [];
+                    cursor.GotoNext(instr => instr.MatchSwitch(out targets));
+
+                    // Change MemberMatchValue.GenericMatch to 1
+                    cursor.Goto(targets[1].Target);
+                    cursor.Next!.OpCode = OpCodes.Ldc_I4_1;
+
+                    // Change MemberMatchValue.AssignableMatch to 1
+                    cursor.Goto(targets[2].Target);
+                    cursor.Next!.OpCode = OpCodes.Ldc_I4_1;
+
+                    // Change MemberMatchValue.ArraySplatting to 3
+                    cursor.Goto(targets[4].Target);
+                    cursor.Next!.OpCode = OpCodes.Ldc_I4_3;
+
+                    Console.WriteLine(cursor.Context);
+                });
+        }
     }
 
     private readonly NeoLua.Lua lua;
