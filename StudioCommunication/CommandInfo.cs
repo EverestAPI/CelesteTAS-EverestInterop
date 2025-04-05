@@ -21,7 +21,7 @@ public partial record struct CommandInfo(
         null,
         "Repeat", "EndRepeat", "StunPause", "EndStunPause", "SkipInput", "StunPauseMode", "AnalogMode",
         null,
-        "SaveAndQuitReenter",
+        "SaveAndQuitReenter", "SelectCampaign",
         null,
         "Read", "Play", "Press", "Mouse", "Gun",
         null,
