@@ -1356,13 +1356,17 @@ public sealed class Editor : SkiaDrawable {
         Document.ReplaceLine(calculationState.Row, newActionLine.ToString());
 
         if (stealFrom != 0) {
-            int stealFromRow = calculationState.Row + stealFrom;
-            if (stealFromRow >= 0 && stealFromRow < Document.Lines.Count && ActionLine.TryParse(Document.Lines[stealFromRow], out var stealFromActionLine)) {
+            for (int stealFromRow = calculationState.Row + stealFrom; stealFromRow >= 0 && stealFromRow < Document.Lines.Count; stealFromRow += stealFrom) {
+                if (!ActionLine.TryParse(Document.Lines[stealFromRow], out var stealFromActionLine)) {
+                    continue;
+                }
+
                 int frameDelta = newActionLine.FrameCount - actionLine.FrameCount;
 
                 Document.ReplaceLine(stealFromRow, (stealFromActionLine with {
                     FrameCount = Math.Clamp(stealFromActionLine.FrameCount - frameDelta, 0, ActionLine.MaxFrames)
                 }).ToString());
+                break;
             }
         }
     }
@@ -2775,8 +2779,12 @@ public sealed class Editor : SkiaDrawable {
             }
 
             if (lineTrimmed.StartsWith('#')) {
+                if (lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) {
+                    continue; // Ignore
+                }
+
                 if (!CommentedBreakpointRegex.IsMatch(lineTrimmed) // Check for breakpoints
-                    && (!CommentLine.IsLabel(lineTrimmed) || lineTrimmed.StartsWith("#lvl_") || TimestampRegex.IsMatch(lineTrimmed)) // Check for commands
+                    && !CommentLine.IsLabel(lineTrimmed) // Check for commands
                     && !ActionLine.TryParse(lineTrimmed[1..], out _) // Check for action lines
                 ) {
                     continue; // Ignore

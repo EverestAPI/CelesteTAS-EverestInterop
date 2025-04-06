@@ -16,6 +16,9 @@ internal static class MetadataCommands {
     // Track starting conditions for TAS to properly calculate (Midway)FileTime
     public static (long FileTimeTicks, int FileSlot)? TasStartInfo;
 
+    /// Total real-time frames in the TAS, without loading times
+    internal static (int FrameCount, int FileSlot)? RealTimeInfo = null;
+
     [Load]
     private static void Load() {
         Everest.Events.Level.OnComplete += UpdateChapterTime;
@@ -26,6 +29,23 @@ internal static class MetadataCommands {
         typeof(Level)
             .GetMethodInfo(nameof(Level.UpdateTime))!
             .HookAfter(StartFileTime);
+
+        typeof(Celeste.Celeste)
+            .GetMethodInfo(nameof(Celeste.Celeste.Update))!
+            .HookBefore(() => {
+                if (!Manager.Running || SaveData.Instance is not { } saveData) {
+                    return;
+                }
+
+                // Advance real-time
+                if (RealTimeInfo != null && (Manager.CurrState != Manager.State.Paused || Manager.IsLoading()) && !Manager.IsActuallyLoading()) {
+                    RealTimeInfo = RealTimeInfo.Value with { FrameCount = RealTimeInfo.Value.FrameCount + 1 };
+                }
+
+                if (RealTimeInfo == null || RealTimeInfo.Value.FileSlot != saveData.FileSlot) {
+                    RealTimeInfo = (0, saveData.FileSlot);
+                }
+            });
 
         static void StartFileTime() {
             if (!Manager.Running || SaveData.Instance is not { } saveData) {
@@ -43,13 +63,22 @@ internal static class MetadataCommands {
         Everest.Events.Level.OnComplete -= UpdateChapterTime;
     }
 
+    [EnableRun]
+    private static void ResetRealTime() {
+        RealTimeInfo = null;
+    }
+
     [DisableRun]
-    private static void UpdateFileTime() {
+    private static void UpdateTimes() {
         if (TasStartInfo != null && SaveData.Instance != null && !Manager.Controller.CanPlayback) {
             UpdateAllMetadata("FileTime", _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartInfo.Value.FileTimeTicks));
         }
+        if (RealTimeInfo != null && !Manager.Controller.CanPlayback) {
+            UpdateAllMetadata("RealTime", _ => $"{TimeSpan.FromSeconds(RealTimeInfo.Value.FrameCount / 60.0f).ShortGameplayFormat()}({RealTimeInfo.Value.FrameCount})");
+        }
 
         TasStartInfo = null;
+        RealTimeInfo = null;
     }
 
     private static void UpdateChapterTime(Level level) {
@@ -87,6 +116,11 @@ internal static class MetadataCommands {
         // dummy
     }
 
+    [TasCommand("RealTime", Aliases = ["RealTime:", "RealTime："], CalcChecksum = false)]
+    private static void RealTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        // dummy
+    }
+
     [TasCommand("MidwayFileTime", Aliases = ["MidwayFileTime:", "MidwayFileTime："], CalcChecksum = false)]
     private static void MidwayFileTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         if (TasStartInfo == null || SaveData.Instance == null) {
@@ -106,6 +140,17 @@ internal static class MetadataCommands {
 
         UpdateAllMetadata("MidwayChapterTime",
             _ => GameInfo.GetChapterTime(level),
+            command => Manager.Controller.CurrentCommands.Contains(command));
+    }
+
+    [TasCommand("MidwayRealTime", Aliases = ["MidwayRealTime:", "MidwayRealTime："], CalcChecksum = false)]
+    private static void MidwayRealTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        if (RealTimeInfo == null) {
+            return;
+        }
+
+        UpdateAllMetadata("MidwayRealTime",
+            _ => $"{TimeSpan.FromSeconds(RealTimeInfo.Value.FrameCount / 60.0f).ShortGameplayFormat()}({RealTimeInfo.Value.FrameCount})",
             command => Manager.Controller.CurrentCommands.Contains(command));
     }
 
@@ -145,7 +190,11 @@ internal static class MetadataCommands {
 
         // Prevent a reload from being triggered by the file-system change
         bool needsReload = Manager.Controller.NeedsReload;
-        File.WriteAllLines(tasFilePath, allLines);
+        try {
+            File.WriteAllLines(tasFilePath, allLines);
+        } catch (IOException) {
+            // Something is blocking the TAS file. Just ignore it, the change should be reflected in Studio either way.
+        }
         Manager.Controller.NeedsReload = needsReload;
 
         CommunicationWrapper.SendUpdateLines(updateLines);
