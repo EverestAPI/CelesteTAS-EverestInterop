@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using Celeste;
 using Celeste.Mod;
@@ -10,7 +9,6 @@ using Microsoft.Xna.Framework.Input;
 using Monocle;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
-using TAS.EverestInterop.InfoHUD;
 using TAS.Gameplay;
 using TAS.InfoHUD;
 using TAS.Input.Commands;

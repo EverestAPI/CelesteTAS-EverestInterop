@@ -1,8 +1,6 @@
 using Celeste;
-using JetBrains.Annotations;
 using Monocle;
 using MonoMod.Cil;
-using System;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;

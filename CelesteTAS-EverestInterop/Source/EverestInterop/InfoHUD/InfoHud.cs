@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Text;
 using Celeste;
 using Celeste.Mod;
-using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication;
 using TAS.Entities;

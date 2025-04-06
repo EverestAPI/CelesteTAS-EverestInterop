@@ -1,5 +1,4 @@
 using Celeste;
-using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Module;
 

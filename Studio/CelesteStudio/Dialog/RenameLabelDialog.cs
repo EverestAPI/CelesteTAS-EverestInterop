@@ -1,7 +1,4 @@
-using CelesteStudio.Communication;
-using Eto.Drawing;
 using Eto.Forms;
-using System;
 
 namespace CelesteStudio.Dialog;
 

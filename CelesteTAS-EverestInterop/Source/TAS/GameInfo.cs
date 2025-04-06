@@ -3,23 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Celeste;
-using Celeste.Mod;
 using Celeste.Pico8;
-using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
-using MonoMod.Utils;
 using StudioCommunication;
 using TAS.Communication;
 using TAS.EverestInterop;
-using TAS.EverestInterop.InfoHUD;
-using TAS.InfoHUD;
 using TAS.Input.Commands;
 using TAS.ModInterop;
-using TAS.Module;
 using TAS.Utils;
-using InfoMouse = TAS.InfoHUD.InfoMouse;
 
 namespace TAS;
 

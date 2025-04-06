@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using Celeste;
 using Celeste.Mod;
-using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication;
 using TAS.Communication;
@@ -12,7 +11,6 @@ using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Gameplay;
-using TAS.Input;
 using TAS.ModInterop;
 using TAS.Utils;
 

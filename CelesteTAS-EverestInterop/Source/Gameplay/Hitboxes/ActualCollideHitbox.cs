@@ -4,7 +4,6 @@ using System.Linq;
 using Celeste;
 using Celeste.Mod;
 using JetBrains.Annotations;
-using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;

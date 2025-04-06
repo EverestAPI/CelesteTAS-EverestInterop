@@ -2,7 +2,6 @@
 using System.Linq;
 using Celeste;
 using Celeste.Pico8;
-using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Utils;
 

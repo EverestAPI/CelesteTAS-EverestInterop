@@ -5,10 +5,8 @@ using System.Linq;
 using Celeste;
 using FMOD;
 using FMOD.Studio;
-using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
-using StudioCommunication;
 using TAS.Module;
 using TAS.Utils;
 

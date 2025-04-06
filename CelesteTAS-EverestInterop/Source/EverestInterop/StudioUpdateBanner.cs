@@ -1,5 +1,4 @@
 using Celeste;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Monocle;
 using MonoMod.Cil;

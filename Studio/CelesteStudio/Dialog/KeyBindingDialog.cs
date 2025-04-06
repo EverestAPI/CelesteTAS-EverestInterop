@@ -4,7 +4,6 @@ using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
 using System.Linq;
-using Binding = CelesteStudio.Binding;
 
 namespace CelesteStudio.Dialog;
 

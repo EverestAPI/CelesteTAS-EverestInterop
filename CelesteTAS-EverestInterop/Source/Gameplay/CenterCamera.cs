@@ -1,12 +1,10 @@
 using Celeste;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Monocle;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using System;
 using TAS.EverestInterop;
-using TAS.EverestInterop.InfoHUD;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;

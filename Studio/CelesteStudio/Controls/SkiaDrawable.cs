@@ -1,8 +1,6 @@
 using Eto;
-using Eto.Drawing;
 using Eto.Forms;
 using SkiaSharp;
-using System;
 
 namespace CelesteStudio.Controls;
 

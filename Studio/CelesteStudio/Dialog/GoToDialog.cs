@@ -1,6 +1,5 @@
 using System.Linq;
 using CelesteStudio.Editing;
-using Eto.Drawing;
 using Eto.Forms;
 using StudioCommunication;
 

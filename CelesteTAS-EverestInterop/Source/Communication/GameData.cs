@@ -2,21 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.Helpers;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
 using Monocle;
 using StudioCommunication;
-using TAS.EverestInterop;
-using TAS.EverestInterop.InfoHUD;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
-using Type = System.Type;
 
 namespace TAS.Communication;
 

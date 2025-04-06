@@ -7,7 +7,6 @@ using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.Entities;
 using FMOD.Studio;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Mono.Cecil.Cil;
 using Monocle;

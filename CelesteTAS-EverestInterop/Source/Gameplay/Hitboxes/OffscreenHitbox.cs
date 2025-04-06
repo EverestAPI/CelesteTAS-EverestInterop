@@ -1,10 +1,7 @@
 using Celeste;
-using Celeste.Mod;
 using Celeste.Mod.UI;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Monocle;
-using MonoMod.Cil;
 using System;
 using TAS.EverestInterop.Hitboxes;
 using TAS.ModInterop;

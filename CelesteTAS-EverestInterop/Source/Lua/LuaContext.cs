@@ -1,18 +1,9 @@
 global using NeoLua = Neo.IronLua;
-using Celeste;
-using Celeste.Mod;
-using Monocle;
 using MonoMod.Cil;
 using System;
-using MonoMod.RuntimeDetour;
-using MonoMod.Utils;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
-using System.Reflection.Emit;
 using TAS.Module;
 using TAS.Utils;
 using OpCodes = Mono.Cecil.Cil.OpCodes;

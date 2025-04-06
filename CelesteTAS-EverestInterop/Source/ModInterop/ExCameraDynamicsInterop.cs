@@ -1,12 +1,8 @@
 using Celeste;
 using Celeste.Mod.ExCameraDynamics.Code.Entities;
 using Celeste.Mod.ExCameraDynamics.Code.Hooks;
-using Celeste.Mod.ExCameraDynamics.Code.Module;
-using Microsoft.Xna.Framework;
-using Monocle;
 using System;
 using System.Runtime.CompilerServices;
-using TAS.Utils;
 
 namespace TAS.ModInterop;
 

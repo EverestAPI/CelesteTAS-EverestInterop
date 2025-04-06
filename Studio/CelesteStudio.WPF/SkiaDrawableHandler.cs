@@ -1,13 +1,4 @@
 using CelesteStudio.Controls;
-using CelesteStudio.Util;
-using System;
-using System.Windows;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using Eto.Wpf.Forms;
-using SkiaSharp;
-using System.Windows.Controls;
-using Eto.Wpf;
 
 namespace CelesteStudio.WPF;
 

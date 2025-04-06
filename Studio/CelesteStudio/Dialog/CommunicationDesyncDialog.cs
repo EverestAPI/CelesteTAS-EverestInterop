@@ -1,8 +1,6 @@
 using Eto.Forms;
 using StudioCommunication.Util;
 using System;
-using System.ComponentModel;
-using System.Globalization;
 
 namespace CelesteStudio.Dialog;
 

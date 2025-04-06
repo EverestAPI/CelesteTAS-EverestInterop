@@ -2,7 +2,6 @@
 using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.UI;
-using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Module;
 

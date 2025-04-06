@@ -3,12 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Celeste;
-using FMOD.Studio;
 using Monocle;
-using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using StudioCommunication;
-using System.Reflection;
 using TAS.Module;
 using TAS.Utils;
 

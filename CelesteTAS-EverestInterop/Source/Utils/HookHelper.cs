@@ -1,16 +1,11 @@
-﻿using Celeste;
-using Celeste.Mod;
+﻿using Celeste.Mod;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Numerics;
 using System.Reflection;
-using JetBrains.Annotations;
 using Mono.Cecil;
-using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
-using MonoMod.Utils;
 using System.Linq;
 using System.Runtime.Loader;
 using TAS.Module;

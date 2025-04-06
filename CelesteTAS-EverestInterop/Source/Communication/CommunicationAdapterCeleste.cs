@@ -9,7 +9,6 @@ using Celeste.Mod;
 using StudioCommunication;
 using StudioCommunication.Util;
 using TAS.EverestInterop;
-using TAS.EverestInterop.InfoHUD;
 using TAS.InfoHUD;
 using TAS.Input;
 using TAS.Input.Commands;

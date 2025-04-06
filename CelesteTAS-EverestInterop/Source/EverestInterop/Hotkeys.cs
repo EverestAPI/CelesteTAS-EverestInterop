@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using Celeste;
 using Celeste.Mod;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using StudioCommunication;

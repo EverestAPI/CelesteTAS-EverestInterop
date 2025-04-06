@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using CelesteStudio.Editing;
-using Eto.Drawing;
 using Eto.Forms;
 
 namespace CelesteStudio.Dialog;

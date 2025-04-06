@@ -1,6 +1,5 @@
 using Celeste.Mod;
 using JetBrains.Annotations;
-using Microsoft.Xna.Framework;
 using MonoMod.ModInterop;
 using System;
 using System.Collections.Generic;

@@ -2,7 +2,6 @@ using CelesteStudio.Controls;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
 using SkiaSharp;

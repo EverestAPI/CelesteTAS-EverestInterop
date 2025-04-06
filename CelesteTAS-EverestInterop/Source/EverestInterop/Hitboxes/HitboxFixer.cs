@@ -1,5 +1,4 @@
 ﻿using System;
-using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Cil;
 using TAS.Module;

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using Celeste;
 using Celeste.Mod;
-using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;

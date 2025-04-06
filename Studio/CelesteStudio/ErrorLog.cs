@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Text;
-using CelesteStudio.Util;
 using StudioCommunication.Util;
 using System.Globalization;
 

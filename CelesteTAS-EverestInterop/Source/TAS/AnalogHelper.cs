@@ -2,13 +2,11 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
-using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication;
 using System.Collections.Generic;
 using TAS.Input;
 using TAS.Utils;
-using GameInput = Celeste.Input;
 
 namespace TAS;
 

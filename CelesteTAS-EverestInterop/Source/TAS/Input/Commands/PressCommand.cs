@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework.Input;
 using StudioCommunication;
-using System.Linq;
-using System.Threading.Tasks;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;

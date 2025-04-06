@@ -1,11 +1,6 @@
-using CelesteStudio.Dialog;
-using Eto.Forms;
-using StudioCommunication.Util;
 using System;
 using System.IO;
-using System.Reflection;
 using Tomlet;
-using Tomlet.Models;
 
 namespace CelesteStudio.Editing;
 

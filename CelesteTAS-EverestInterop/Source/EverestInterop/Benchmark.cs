@@ -1,7 +1,5 @@
 #if DEBUG || PROFILE
-using Celeste.Mod;
 using JetBrains.Profiler.Api;
-using Microsoft.Xna.Framework;
 using Monocle;
 using System;
 using System.Diagnostics;

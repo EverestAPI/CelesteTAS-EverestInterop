@@ -3,9 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Celeste;
-using Microsoft.Xna.Framework.Input;
 using Monocle;
-using TAS.Input;
 using TAS.ModInterop;
 using TAS.Utils;
 

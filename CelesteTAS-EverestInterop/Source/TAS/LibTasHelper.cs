@@ -6,7 +6,6 @@ using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Tar;
 using StudioCommunication;
 using TAS.Input;
-using TAS.Input.Commands;
 using TAS.Utils;
 
 namespace TAS;

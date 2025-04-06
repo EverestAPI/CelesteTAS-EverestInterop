@@ -8,12 +8,10 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Celeste;
 using Celeste.Mod;
-using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Utils;
 using StudioCommunication;
 using System.Diagnostics;
-using TAS.ModInterop;
 using Platform = Celeste.Platform;
 
 namespace TAS.Utils;

@@ -1,5 +1,4 @@
 using System.Numerics;
-using Eto.Drawing;
 using Eto.Forms;
 
 namespace CelesteStudio.Dialog;

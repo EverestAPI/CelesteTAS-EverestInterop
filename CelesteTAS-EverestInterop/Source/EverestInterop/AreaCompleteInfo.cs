@@ -1,19 +1,15 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using Celeste;
-using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using StudioCommunication;
 using TAS.Input;
-using TAS.Input.Commands;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
-using Comment = TAS.Input.Comment;
 
 namespace TAS.EverestInterop;
 

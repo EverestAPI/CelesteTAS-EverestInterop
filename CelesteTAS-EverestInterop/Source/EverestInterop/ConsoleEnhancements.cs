@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using Celeste;
 using Celeste.Mod;
-using Celeste.Mod.Core;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using MonoMod.Cil;

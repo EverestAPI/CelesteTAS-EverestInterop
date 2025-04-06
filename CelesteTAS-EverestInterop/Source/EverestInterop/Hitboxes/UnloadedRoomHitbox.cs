@@ -6,7 +6,6 @@ using System.Text.RegularExpressions;
 using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.Entities;
-using Microsoft.Xna.Framework;
 using Monocle;
 using TAS.Module;
 using TAS.Utils;

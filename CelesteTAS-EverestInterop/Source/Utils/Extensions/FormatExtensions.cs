@@ -1,5 +1,3 @@
-using Microsoft.Xna.Framework;
-
 namespace TAS.Utils;
 
 /// Helper functions for formatting various values to simple human-readable string

@@ -1,5 +1,3 @@
-using TAS.Utils;
-
 namespace TAS.Input;
 
 /// /// Represents a commented line in a TAS file
