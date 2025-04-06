@@ -145,6 +145,22 @@ internal static class ForceAllowAccessibilityTools {
         cursor.EmitRet();
     }
 
+    /// Prevent the "Crash Trigger" from actually throwing an exception
+    [ModILHook("GameHelper", "Celeste.Mod.GameHelper.Triggers.CrashGameTrigger", nameof(Trigger.OnEnter))]
+    private static void PreventGameCrash(ILCursor cursor) {
+        var skipPrevent = cursor.MarkLabel();
+        cursor.MoveBeforeLabels();
+
+        cursor.EmitCall(typeof(ForceAllowAccessibilityTools).GetGetMethod(nameof(Enabled))!);
+        cursor.EmitBrfalse(skipPrevent);
+
+        cursor.EmitStaticDelegate("ShowToast", () => {
+            // Technically this would cause a crash, and therefore a TAS should not be allowed to enter it ever.
+            AbortTas("Prevented 'Crash Trigger'");
+        });
+        cursor.EmitRet();
+    }
+
     #endregion
 
 }
