@@ -294,7 +294,11 @@ public sealed class Studio : Form {
 
         // Studio can't be also top-most while a dialog is open, since it would be above the dialog
         Instance.Topmost = false;
-        Instance.Focus();
+        if (wasTopmost) {
+            // Loosely emulate being topmost
+            Instance.Focus();
+            dialog.Focus();
+        }
 
         dialog.Closed += (_, _) => Instance.Topmost = wasTopmost;
 
