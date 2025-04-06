@@ -1,7 +1,9 @@
 using Celeste;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Monocle;
 using MonoMod.Cil;
+using MonoMod.RuntimeDetour;
 using System;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
@@ -20,6 +22,11 @@ internal static class CenterCamera {
         On.Monocle.Commands.Render += On_Commands_Render;
         On.Celeste.Level.Render += On_Level_Render;
 
+        // Need to ensure ExCameraDynamic hook happens before
+        using (new DetourConfigContext(new DetourConfig("CelesteTAS", before: ["ExCameraDynamics"])).Use()) {
+            On.Celeste.Level.LoadLevel += On_Level_LoadLevel;
+        }
+
 #if DEBUG
         cameraOffset = Engine.Instance.GetDynamicDataInstance().Get<Vector2?>("CelesteTAS_CameraOffset") ?? Vector2.Zero;
         canvasOffset = Engine.Instance.GetDynamicDataInstance().Get<Vector2?>("CelesteTAS_CanvasOffset") ?? Vector2.Zero;
@@ -32,6 +39,7 @@ internal static class CenterCamera {
         On.Monocle.Engine.RenderCore -= On_Engine_RenderCore;
         On.Monocle.Commands.Render -= On_Commands_Render;
         On.Celeste.Level.Render -= On_Level_Render;
+        On.Celeste.Level.LoadLevel -= On_Level_LoadLevel;
 
 #if DEBUG
         Engine.Instance.GetDynamicDataInstance().Set("CelesteTAS_CameraOffset", cameraOffset);
@@ -59,6 +67,18 @@ internal static class CenterCamera {
         // Show cursor for dragging camera
         if (TasSettings.CenterCamera && !Hotkeys.InfoHud.Check && MouseInput.Right.Check) {
             InfoMouse.DrawCursor(MouseInput.Position);
+        }
+    }
+
+    private static void On_Level_LoadLevel(On.Celeste.Level.orig_LoadLevel orig, Level self, Player.IntroTypes playerIntro, bool isFromLoader) {
+        orig(self, playerIntro, isFromLoader);
+
+        // Enable ExCameraDynamics if needed
+        if (isFromLoader && TasSettings.EnableExCameraDynamicsForCenterCamera && TasSettings.CenterCamera) {
+            if (!ExCameraDynamicsInterop.Enabled) {
+                ExCameraDynamicsInterop.EnableHooks(ZoomLevel);
+                tasEnabledExCameraDynamics = true;
+            }
         }
     }
 
@@ -100,20 +120,22 @@ internal static class CenterCamera {
 
     public static readonly Camera ScreenCamera = new();
 
-    private static Vector2? savedCameraPosition;
-    private static float? savedLevelZoom;
-    private static float? savedLevelZoomTarget;
-    private static Vector2? savedLevelZoomFocusPoint;
-    private static float? savedLevelScreenPadding;
+    private static bool savedView = false;
+    private static readonly Camera savedCamera = new();
+    private static Viewport savedCameraViewport;
+    private static float savedLevelZoom;
+    private static float savedLevelZoomTarget;
+    private static Vector2 savedLevelZoomFocusPoint;
+    private static float savedLevelScreenPadding;
 
     // ExCameraDynamics
     private static bool tasEnabledExCameraDynamics;
-    private static bool? savedAutomaticZooming;
-    private static float? savedTriggerZoomOverride;
+    private static bool savedAutomaticZooming;
+    private static float savedTriggerZoomOverride;
 
     public static void Toggled() {
         // Enable ExCameraDynamics if needed
-        if (TasSettings.EnableExCameraDynamicsForCenterCamera && TasSettings.CenterCamera ) {
+        if (TasSettings.EnableExCameraDynamicsForCenterCamera && TasSettings.CenterCamera) {
             if (!ExCameraDynamicsInterop.Enabled) {
                 ExCameraDynamicsInterop.EnableHooks();
                 tasEnabledExCameraDynamics = true;
@@ -265,11 +287,14 @@ internal static class CenterCamera {
         }
 
         // Backup original values
-        savedCameraPosition = camera.Position;
+        savedCamera.CopyFrom(camera);
+        savedCameraViewport = camera.Viewport;
         savedLevelZoom = level.Zoom;
         savedLevelZoomTarget = level.ZoomTarget;
         savedLevelZoomFocusPoint = level.ZoomFocusPoint;
         savedLevelScreenPadding = level.ScreenPadding;
+
+        savedView = true;
 
         // Apply camera changes
         camera.Position = target + cameraOffset - new Vector2(camera.Viewport.Width / 2.0f, camera.Viewport.Height / 2.0f);
@@ -302,38 +327,22 @@ internal static class CenterCamera {
 
     /// Restore camera settings to previous values, to avoid altering gameplay
     private static void RestoreCamera() {
-        if (Engine.Scene is not Level level) {
+        if (Engine.Scene is not Level level || !savedView) {
             return;
         }
 
-        if (savedCameraPosition != null) {
-            level.Camera.Position = savedCameraPosition.Value;
-            savedCameraPosition = null;
-        }
-        if (savedLevelZoom != null) {
-            level.Zoom = savedLevelZoom.Value;
-            savedLevelZoom = null;
-        }
-        if (savedLevelZoomTarget != null) {
-            level.ZoomTarget = savedLevelZoomTarget.Value;
-            savedLevelZoomTarget = null;
-        }
-        if (savedLevelZoomFocusPoint != null) {
-            level.ZoomFocusPoint = savedLevelZoomFocusPoint.Value;
-            savedLevelZoomFocusPoint = null;
-        }
-        if (savedLevelScreenPadding != null) {
-            level.ScreenPadding = savedLevelScreenPadding.Value;
-            savedLevelScreenPadding = null;
+        level.Camera.CopyFrom(savedCamera);
+        level.Camera.Viewport = savedCameraViewport;
+        level.Zoom = savedLevelZoom;
+        level.ZoomTarget = savedLevelZoomTarget;
+        level.ZoomFocusPoint = savedLevelZoomFocusPoint;
+        level.ScreenPadding = savedLevelScreenPadding;
+
+        if (ExCameraDynamicsInterop.Enabled) {
+            ExCameraDynamicsInterop.AutomaticZooming = savedAutomaticZooming;
+            ExCameraDynamicsInterop.TriggerZoomOverride = savedTriggerZoomOverride;
         }
 
-        if (savedAutomaticZooming != null) {
-            ExCameraDynamicsInterop.AutomaticZooming = savedAutomaticZooming.Value;
-            savedAutomaticZooming = null;
-        }
-        if (savedTriggerZoomOverride != null) {
-            ExCameraDynamicsInterop.TriggerZoomOverride = savedTriggerZoomOverride.Value;
-            savedTriggerZoomOverride = null;
-        }
+        savedView = false;
     }
 }
