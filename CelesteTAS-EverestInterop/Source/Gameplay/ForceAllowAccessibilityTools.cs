@@ -130,8 +130,19 @@ internal static class ForceAllowAccessibilityTools {
             AbortTas("Prevented 'Restart Game Trigger'");
         });
         cursor.EmitRet();
+    }
 
-        Console.WriteLine(cursor.Context);
+    /// Prevent the "Set Window Size Trigger" from actually resizing the game window
+    [ModILHook("KoseiHelper", "Celeste.Mod.KoseiHelper.Triggers.SetWindowSizeTrigger", nameof(Trigger.OnStay))]
+    private static void PreventWindowResize(ILCursor cursor) {
+        cursor.GotoNext(MoveType.After, instr => instr.MatchCall<Trigger>(nameof(Trigger.OnStay)));
+
+        var skipPrevent = cursor.MarkLabel();
+        cursor.MoveBeforeLabels();
+
+        cursor.EmitCall(typeof(ForceAllowAccessibilityTools).GetGetMethod(nameof(Enabled))!);
+        cursor.EmitBrfalse(skipPrevent);
+        cursor.EmitRet();
     }
 
     #endregion
