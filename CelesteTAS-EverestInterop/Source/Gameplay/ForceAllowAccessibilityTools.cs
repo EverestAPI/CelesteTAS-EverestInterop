@@ -6,6 +6,7 @@ using StudioCommunication;
 using System;
 using System.Reflection;
 using TAS.Communication;
+using TAS.Entities;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
@@ -29,7 +30,7 @@ internal static class ForceAllowAccessibilityTools {
 
     [Initialize]
     private static void Initialize() {
-        // Prevents the Custom Pause Controller from disabling pausing / 'Save & Quit'
+        // Prevent the "Custom Pause Controller" from disabling pausing / 'Save & Quit'
         if (ModUtils.GetType("KoseiHelper", "Celeste.Mod.KoseiHelper.Entities.CustomPauseController") is { } t_CustomPauseController) {
             t_CustomPauseController
                 .GetConstructor([typeof(EntityData), typeof(Vector2)])!
@@ -111,4 +112,28 @@ internal static class ForceAllowAccessibilityTools {
     }
 
     #endregion
+    #region Annoyance
+
+    /// Prevent the "Reset Game Trigger" from actually restarting the game
+    [ModILHook("KoseiHelper", "Celeste.Mod.KoseiHelper.Triggers.RestartGameTrigger", nameof(Trigger.OnEnter))]
+    private static void PreventGameRestart(ILCursor cursor) {
+        cursor.GotoNext(MoveType.After, instr => instr.MatchCall<Trigger>(nameof(Trigger.OnEnter)));
+
+        var skipPrevent = cursor.MarkLabel();
+        cursor.MoveBeforeLabels();
+
+        cursor.EmitCall(typeof(ForceAllowAccessibilityTools).GetGetMethod(nameof(Enabled))!);
+        cursor.EmitBrfalse(skipPrevent);
+
+        cursor.EmitStaticDelegate("ShowToast", () => {
+            // Technically this would cause a game restart, and therefore a TAS should not be allowed to enter it ever.
+            AbortTas("Prevented 'Restart Game Trigger'");
+        });
+        cursor.EmitRet();
+
+        Console.WriteLine(cursor.Context);
+    }
+
+    #endregion
+
 }
