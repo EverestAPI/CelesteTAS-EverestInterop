@@ -57,7 +57,7 @@ public partial record struct GameState {
 
         public bool OnGround;
         public bool IsHolding;
-        public int JumpTimer;
+        public float JumpTimer;
         public bool AutoJump;
         public float MaxFall;
     }
@@ -68,8 +68,11 @@ public partial record struct GameState {
         public Vec2 WindDirection;
     }
 
+    public float DeltaTime;
+
     public PlayerState Player;
     public LevelState Level;
+
     public string ChapterTime;
     public string RoomName;
     public string PlayerStateName;

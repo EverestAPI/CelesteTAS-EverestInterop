@@ -759,8 +759,6 @@ public sealed class RadelineSimForm : Form {
     #endregion
     #region Simulation
 
-    private static float DeltaTime => 0.0166667f;
-
     private const float RunAccel = 1000.0f;
     private const float RunReduce = 400.0f;
     private const float AirMult = 0.65f;
@@ -772,8 +770,8 @@ public sealed class RadelineSimForm : Form {
         float x = initialState.Position;
         float speedX = initialState.Speed;
         bool grounded = initialState.OnGround;
-        float multAccel = grounded ? DeltaTime * RunAccel : AirMult * DeltaTime * RunAccel;
-        float multReduce = grounded ? DeltaTime * RunReduce : AirMult * DeltaTime * RunReduce;
+        float multAccel = grounded ? initialState.DeltaTime * RunAccel : AirMult * initialState.DeltaTime * RunAccel;
+        float multReduce = grounded ? initialState.DeltaTime * RunReduce : AirMult * initialState.DeltaTime * RunReduce;
         float max = initialState.Holding ? HoldingMaxRun : MaxRun;
 
         foreach (var inputLine in inputs) {
@@ -781,7 +779,7 @@ public sealed class RadelineSimForm : Form {
                 // celeste code (from Player.NormalUpdate) somewhat loosely simplified
 
                 if (grounded && inputAction == Actions.Down) {
-                    speedX = Approach(speedX, 0.0f, DuckFriction * DeltaTime);
+                    speedX = Approach(speedX, 0.0f, DuckFriction * initialState.DeltaTime);
                 } else {
                     // get input first
                     int moveX = inputAction switch {
@@ -798,7 +796,7 @@ public sealed class RadelineSimForm : Form {
                 }
 
                 // calculate position third
-                x += speedX * DeltaTime;
+                x += speedX * initialState.DeltaTime;
             }
         }
 
@@ -823,16 +821,16 @@ public sealed class RadelineSimForm : Form {
 
                 // calculate speed
                 if (inputAction == Actions.Down && speedY >= MaxFall) {
-                    maxFall = Approach(maxFall, FastMaxFall, FastMaxAccel * DeltaTime);
+                    maxFall = Approach(maxFall, FastMaxFall, FastMaxAccel * initialState.DeltaTime);
                 } else {
-                    maxFall = Approach(maxFall, MaxFall, FastMaxAccel * DeltaTime);
+                    maxFall = Approach(maxFall, MaxFall, FastMaxAccel * initialState.DeltaTime);
                 }
 
                 float mult;
                 if (Math.Abs(speedY) <= HalfGravThreshold && (inputAction == Actions.Jump || initialState.AutoJump)) {
-                    mult = Gravity * 0.5f * DeltaTime;
+                    mult = Gravity * 0.5f * initialState.DeltaTime;
                 } else {
-                    mult = Gravity * DeltaTime;
+                    mult = Gravity * initialState.DeltaTime;
                 }
 
                 speedY = Approach(speedY, maxFall, mult);
@@ -848,7 +846,7 @@ public sealed class RadelineSimForm : Form {
                 jumpTimer--;
 
                 // calculate position
-                y += speedY * DeltaTime;
+                y += speedY * initialState.DeltaTime;
             }
         }
 
@@ -907,11 +905,12 @@ public sealed class RadelineSimForm : Form {
         var gameState = gameStateResult.Value;
 
         initialState = new InitialState {
+            DeltaTime = gameState.DeltaTime,
             Positions = (gameState.Player.Position.X + gameState.Player.PositionRemainder.X, gameState.Player.Position.Y + gameState.Player.PositionRemainder.Y),
             Speeds = (gameState.Player.Speed.X, gameState.Player.Speed.Y),
             OnGround = gameState.Player is { OnGround: true, Speed.Y: >= 0f },
             Holding = gameState.Player.IsHolding,
-            JumpTimer = gameState.Player.JumpTimer,
+            JumpTimer = (int) MathF.Floor(gameState.Player.JumpTimer / gameState.DeltaTime),
             AutoJump = gameState.Player.AutoJump,
             MaxFallSpeed = gameState.Player.MaxFall,
             ChapterTime = gameState.ChapterTime,
@@ -923,6 +922,8 @@ public sealed class RadelineSimForm : Form {
     }
 
     public struct InitialState {
+        public float DeltaTime;
+
         public (float X, float Y) Positions;
         public (float X, float Y) Speeds;
         // X axis:

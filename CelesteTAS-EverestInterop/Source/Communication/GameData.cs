@@ -200,6 +200,8 @@ public static class GameData {
         var player = level.Tracker.GetEntity<Player>();
 
         return new GameState {
+            DeltaTime = Engine.DeltaTime,
+
             Player = new GameState.PlayerState {
                 Position = player.Position.ToGameStateVec2(),
                 PositionRemainder = player.PositionRemainder.ToGameStateVec2(),
@@ -207,7 +209,7 @@ public static class GameData {
                 starFlySpeedLerp = player.starFlySpeedLerp,
                 OnGround = player.onGround,
                 IsHolding = player.Holding != null,
-                JumpTimer = player.varJumpTimer.ToFloorFrames(),
+                JumpTimer = player.varJumpTimer,
                 AutoJump = player.AutoJump,
                 MaxFall = player.maxFall
             },
