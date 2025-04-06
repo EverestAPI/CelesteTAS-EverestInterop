@@ -20,9 +20,11 @@ internal static class ForceAllowAccessibilityTools {
         _ => throw new ArgumentOutOfRangeException()
     };
 
-    /// Prevent rooms from being hidden in the debug map
+    #region Debug Map
+
+    /// Prevent rooms from being hidden in the debug map by VivHelper
     [ModILHook("VivHelper", "VivHelper.Entities.SpawnPointHooks", "MapEditor_ctor")]
-    private static void PreventHideRoomInDebug(ILCursor cursor) {
+    private static void PreventHideRoomInDebugViv(ILCursor cursor) {
         // Goto 'EntityData entityData = levelData.Entities.FirstOrDefault((e) => e.Name == "VivHelper/HideRoomInMap");'
         var f_FirstOrDefault = ModUtils
             .GetType("VivHelper", "VivHelper.Entities.SpawnPointHooks")!
@@ -38,4 +40,53 @@ internal static class ForceAllowAccessibilityTools {
         cursor.EmitCall(typeof(ForceAllowAccessibilityTools).GetGetMethod(nameof(Enabled))!);
         cursor.EmitBrtrue(skipRoomHide!);
     }
+
+    /// Prevent rooms from being hidden in the debug map by KoseiHelper
+    [ModILHook("KoseiHelper", "Celeste.Mod.KoseiHelper.Entities.DebugMapController", "MapEditorCtor")]
+    private static void PreventHideRoomInDebugKosei(ILCursor cursor) {
+        // Find 'return' statement
+        cursor.GotoNext(instr => instr.MatchRet());
+        var ret = cursor.Next!;
+
+        // Return after calling 'orig(...)'
+        cursor.Index = 0;
+        cursor.GotoNext(MoveType.After, instr => instr.MatchCallvirt<On.Celeste.Editor.MapEditor.orig_ctor>(nameof(On.Celeste.Editor.MapEditor.orig_ctor.Invoke)));
+
+        cursor.EmitCall(typeof(ForceAllowAccessibilityTools).GetGetMethod(nameof(Enabled))!);
+        cursor.EmitBrtrue(ret);
+    }
+
+    /// Prevent keys from being hidden in the debug map by KoseiHelper
+    [ModILHook("KoseiHelper", "Celeste.Mod.KoseiHelper.Entities.DebugMapController", "RenderKeys")]
+    private static void PreventHideKeysInDebug(ILCursor cursor) {
+        var start = cursor.MarkLabel();
+        cursor.MoveBeforeLabels();
+
+        // Check if active
+        cursor.EmitCall(typeof(ForceAllowAccessibilityTools).GetGetMethod(nameof(Enabled))!);
+        cursor.EmitBrfalse(start);
+
+        // Only call 'orig(self)' and skip the rest of the hook
+        cursor.EmitLdarg0(); // orig
+        cursor.EmitLdarg1(); // self
+        cursor.EmitCall(typeof(On.Celeste.Editor.MapEditor.orig_RenderKeys).GetMethodInfo(nameof(On.Celeste.Editor.MapEditor.orig_RenderKeys.Invoke))!);
+
+        cursor.EmitRet();
+    }
+
+    /// Prevent rooms in debug map from being altered visually, including hiding certain things
+    [ModILHook("KoseiHelper", "Celeste.Mod.KoseiHelper.Entities.DebugMapController", "RenderLevels")]
+    private static void PreventRoomAlteredInDebug(ILCursor cursor) {
+        ILLabel? jumpToOrig = null;
+        cursor.GotoNext(instr => instr.MatchBrfalse(out jumpToOrig));
+
+        cursor.Index = 0;
+        cursor.MoveBeforeLabels();
+
+        // Skip directly to the 'orig(...)' call
+        cursor.EmitCall(typeof(ForceAllowAccessibilityTools).GetGetMethod(nameof(Enabled))!);
+        cursor.EmitBrtrue(jumpToOrig!);
+    }
+
+    #endregion
 }
