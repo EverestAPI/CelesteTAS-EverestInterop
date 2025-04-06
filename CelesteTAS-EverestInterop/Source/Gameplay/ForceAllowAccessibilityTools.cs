@@ -1,9 +1,13 @@
+using Celeste;
+using Microsoft.Xna.Framework;
+using Monocle;
 using MonoMod.Cil;
 using StudioCommunication;
 using System;
 using System.Reflection;
 using TAS.Communication;
 using TAS.ModInterop;
+using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.Gameplay;
@@ -19,6 +23,24 @@ internal static class ForceAllowAccessibilityTools {
         EnableCondition.WhileStudioConnected => CommunicationWrapper.Connected,
         _ => throw new ArgumentOutOfRangeException()
     };
+
+    /// Only active in RTA gameplay, since it would change the intended gameplay experience inside the TAS
+    private static bool EnabledRTA => Enabled && !Manager.Running;
+
+    [Initialize]
+    private static void Initialize() {
+        // Prevents the Custom Pause Controller from disabling pausing / 'Save & Quit'
+        if (ModUtils.GetType("KoseiHelper", "Celeste.Mod.KoseiHelper.Entities.CustomPauseController") is { } t_CustomPauseController) {
+            t_CustomPauseController
+                .GetConstructor([typeof(EntityData), typeof(Vector2)])!
+                .HookAfter((Entity controller) => {
+                    if (EnabledRTA) {
+                        controller.SetFieldValue("canPause", true);
+                        controller.SetFieldValue("canSaveAndQuit", true);
+                    }
+                });
+        }
+    }
 
     #region Debug Map
 
