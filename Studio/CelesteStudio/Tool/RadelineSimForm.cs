@@ -2,49 +2,53 @@
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
+using StudioCommunication;
+using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Tedd.RandomUtils;
+using InputPermutation = System.Collections.Generic.List<(int Frames, StudioCommunication.Actions Action)>;
 
 namespace CelesteStudio.Tool;
 
 public sealed class RadelineSimForm : Form {
     private const string Version = "1.0.0";
 
-    private readonly TextArea initialStateControl;
-    private readonly TextArea appendKeysControl;
-    private readonly Button runButton;
-    private readonly DropDown outputSortingControl;
-    private readonly DropDown axisControl;
-    private readonly DropDown disabledKeyControl;
-    private readonly NumericStepper framesControl;
-    private readonly NumericStepper inputGenerationTimeControl;
-    private readonly NumericStepper positionFilterMinControl;
-    private readonly NumericStepper positionFilterMaxControl;
-    private readonly NumericStepper goalSpeedControl;
-    private readonly NumericStepper rngThresholdSlowControl;
-    private readonly NumericStepper rngThresholdControl;
-    private readonly CheckBox hideDuplicatesControl;
+    private readonly TextArea initialStateText;
+    private readonly TextArea appendKeysText;
+    private readonly DropDown outputSortingOption;
+    private readonly DropDown axisOption;
+    private readonly DropDown disabledKeyOption;
+    private readonly NumericStepper framesStepper;
+    private readonly NumericStepper inputGenerationTimeStepper;
+    private readonly NumericStepper positionFilterMinStepper;
+    private readonly NumericStepper positionFilterMaxStepper;
+    private readonly NumericStepper goalSpeedStepper;
+    private readonly NumericStepper rngThresholdSlowStepper;
+    private readonly NumericStepper rngThresholdStepper;
+    private readonly CheckBox hideDuplicatesCheck;
 
     private const string InvalidOutput = "InvalidOutput";
-    private readonly ListBox outputsControl;
+    private readonly ListBox outputsList;
 
     private Eto.Forms.Dialog? progressPopup;
     private TextArea logControl = null!;
     private ProgressBar individualProgressBar = null!;
 
-    private static InitialState initialState;
-    private static RadelineSimConfig cfg;
-    private char[] generatorKeys = [];
+    private readonly Config cfg;
+    private InitialState initialState;
+
+    private Actions availableActions = Actions.None;
     private bool gotInitialState;
     private bool isRunning;
-    private readonly List<Control> disableControls;
+    private readonly List<Control> disabledControls;
 
-    public RadelineSimForm(RadelineSimConfig formPersistence) {
+    public RadelineSimForm(Config formPersistence) {
         cfg = formPersistence;
 
         Title = $"Radeline Simulator - v{Version}";
@@ -65,7 +69,7 @@ public sealed class RadelineSimForm : Form {
 
         const int rowWidth = 180;
 
-        runButton = new Button((_, _) => Run()) { Text = "Run", Width = 150 };
+        var runButton = new Button((_, _) => Run()) { Text = "Run", Width = 150 };
         if (!gotInitialState) {
             runButton.Enabled = false;
             runButton.ToolTip = "No initial state";
@@ -74,9 +78,9 @@ public sealed class RadelineSimForm : Form {
             runButton.ToolTip = $"Player state must be StNormal, not {initialState.PlayerStateName}";
         }
 
-        initialStateControl = new TextArea { ReadOnly = true, Wrap = true, Font = FontManager.StatusFont, Width = 180, Height = 190};
+        initialStateText = new TextArea { ReadOnly = true, Wrap = true, Font = FontManager.StatusFont, Width = 180, Height = 190};
         var getInitialStateButton = new Button((_, _) => {
-            GetInitialState();
+            FetchInitialState();
 
             if (!gotInitialState) {
                 runButton.Enabled = false;
@@ -104,7 +108,7 @@ public sealed class RadelineSimForm : Form {
             }
         };
 
-        outputSortingControl = new DropDown {
+        outputSortingOption = new DropDown {
             Items = {
                 new ListItem { Text = "Position" },
                 new ListItem { Text = "Speed" }
@@ -112,7 +116,7 @@ public sealed class RadelineSimForm : Form {
             SelectedKey = "Position",
             Width = rowWidth
         };
-        axisControl = new DropDown {
+        axisOption = new DropDown {
             Items = {
                 new ListItem { Text = "X (horizontal)", Key = "X" },
                 new ListItem { Text = "Y (vertical)", Key = "Y" }
@@ -120,7 +124,7 @@ public sealed class RadelineSimForm : Form {
             SelectedKey = "X",
             Width = rowWidth
         };
-        disabledKeyControl = new DropDown {
+        disabledKeyOption = new DropDown {
             Items = {
                 new ListItem { Text = "Auto" },
                 new ListItem { Text = "L" },
@@ -131,17 +135,17 @@ public sealed class RadelineSimForm : Form {
             SelectedKey = "Auto",
             Width = rowWidth
         };
-        framesControl = new NumericStepper { Value = 10, MinValue = 1, MaxValue = 200, Width = rowWidth };
-        inputGenerationTimeControl = new NumericStepper { Value = 5, MinValue = 1, MaxValue = 200, Width = rowWidth };
-        positionFilterMinControl = new NumericStepper { DecimalPlaces = 2, Width = rowWidth };
-        positionFilterMaxControl = new NumericStepper { DecimalPlaces = 2, Width = rowWidth };
-        goalSpeedControl = new NumericStepper { DecimalPlaces = 2, Width = rowWidth };
-        rngThresholdControl = new NumericStepper { Value = 23, MinValue = 1, MaxValue = 200, Width = rowWidth };
-        rngThresholdSlowControl = new NumericStepper { Value = 15, MinValue = 1, MaxValue = 200, Width = rowWidth };
-        appendKeysControl = new TextArea { Font = FontManager.EditorFont, Width = rowWidth, Height = 22};
-        hideDuplicatesControl = new CheckBox { Width = rowWidth, Checked = true };
-        outputsControl = new ListBox { Font = FontManager.StatusFont, Width = 600, Height = 500 };
-        outputsControl.SelectedIndexChanged += OutputsOnSelectedIndexChanged;
+        framesStepper = new NumericStepper { Value = 10, MinValue = 1, MaxValue = 200, Width = rowWidth };
+        inputGenerationTimeStepper = new NumericStepper { Value = 5, MinValue = 1, MaxValue = 200, Width = rowWidth };
+        positionFilterMinStepper = new NumericStepper { DecimalPlaces = 2, Width = rowWidth };
+        positionFilterMaxStepper = new NumericStepper { DecimalPlaces = 2, Width = rowWidth };
+        goalSpeedStepper = new NumericStepper { DecimalPlaces = 2, Width = rowWidth };
+        rngThresholdStepper = new NumericStepper { Value = 23, MinValue = 1, MaxValue = 200, Width = rowWidth };
+        rngThresholdSlowStepper = new NumericStepper { Value = 15, MinValue = 1, MaxValue = 200, Width = rowWidth };
+        appendKeysText = new TextArea { Font = FontManager.EditorFont, Width = rowWidth, Height = 22};
+        hideDuplicatesCheck = new CheckBox { Width = rowWidth, Checked = true };
+        outputsList = new ListBox { Font = FontManager.StatusFont, Width = 600, Height = 500 };
+        outputsList.SelectedIndexChanged += CopySelectedOutput;
 
         const string positionFilterTooltip = "Only show results within this position range (min and max can be backwards, won't make a difference)";
 
@@ -150,40 +154,40 @@ public sealed class RadelineSimForm : Form {
         configLayout.BeginVertical();
         configLayout.BeginHorizontal();
         configLayout.AddCentered(new Label { Text = "Frames", ToolTip = "Number of frames to simulate" });
-        configLayout.Add(framesControl);
+        configLayout.Add(framesStepper);
         configLayout.EndBeginHorizontal();
         configLayout.AddCentered(new Label { Text = "Axis" });
-        configLayout.Add(axisControl);
+        configLayout.Add(axisOption);
         configLayout.EndBeginHorizontal();
         configLayout.AddCentered(new Label { Text = "Position Filter (Min)", ToolTip = positionFilterTooltip });
-        configLayout.Add(positionFilterMinControl);
+        configLayout.Add(positionFilterMinStepper);
         configLayout.EndBeginHorizontal();
         configLayout.AddCentered(new Label { Text = "Position Filter (Max)", ToolTip = positionFilterTooltip });
-        configLayout.Add(positionFilterMaxControl);
+        configLayout.Add(positionFilterMaxStepper);
         configLayout.EndBeginHorizontal();
         configLayout.AddCentered(new Label { Text = "Goal Speed", ToolTip = "This is calculated with |final speed - goal speed|" });
-        configLayout.Add(goalSpeedControl);
+        configLayout.Add(goalSpeedStepper);
         configLayout.EndBeginHorizontal();
         configLayout.AddCentered(new Label { Text = "Disabled Key", ToolTip = "Disable generating a certain key. Auto will disable keys that can't ever affect input" });
-        configLayout.Add(disabledKeyControl);
+        configLayout.Add(disabledKeyOption);
         configLayout.EndBeginHorizontal();
         configLayout.AddCentered(new Label { Text = "RNG Threshold (All Keys)", ToolTip = "Frame count at which to start using the RNG input generation method (instead of sequential) when all keys are enabled"});
-        configLayout.Add(rngThresholdSlowControl);
+        configLayout.Add(rngThresholdSlowStepper);
         configLayout.EndBeginHorizontal();
         configLayout.AddCentered(new Label { Text = "RNG Threshold (Disabled Key)", ToolTip = "Frame count at which to start using the RNG input generation method (instead of sequential) when a key is disabled" });
-        configLayout.Add(rngThresholdControl);
+        configLayout.Add(rngThresholdStepper);
         configLayout.EndBeginHorizontal();
         configLayout.AddCentered(new Label { Text = "Input Generation Time (RNG)", ToolTip = "How long to spend generating random inputs, in seconds"});
-        configLayout.Add(inputGenerationTimeControl);
+        configLayout.Add(inputGenerationTimeStepper);
         configLayout.EndBeginHorizontal();
         configLayout.AddCentered(new Label { Text = "Output Sorting Priority" });
-        configLayout.Add(outputSortingControl);
+        configLayout.Add(outputSortingOption);
         configLayout.EndBeginHorizontal();
         configLayout.AddCentered(new Label { Text = "Appended Keys", ToolTip = "Keys added when copying, e.g. \"jg\" to hold jump and grab as well"});
-        configLayout.Add(appendKeysControl);
+        configLayout.Add(appendKeysText);
         configLayout.EndBeginHorizontal();
         configLayout.AddCentered(new Label { Text = "Hide Duplicate Inputs", ToolTip = "Don't output multiple inputs with the same resulting position/speed (disable for performance)"});
-        configLayout.Add(hideDuplicatesControl);
+        configLayout.Add(hideDuplicatesCheck);
         configLayout.EndBeginHorizontal();
         configLayout.EndHorizontal();
         configLayout.EndVertical();
@@ -192,12 +196,12 @@ public sealed class RadelineSimForm : Form {
         layout.BeginHorizontal();
 
         layout.BeginVertical();
-        layout.Add(initialStateControl);
+        layout.Add(initialStateText);
         layout.Add(getInitialStateButton);
         layout.Add(configLayout);
         layout.EndVertical();
 
-        layout.Add(outputsControl);
+        layout.Add(outputsList);
 
         layout.EndHorizontal();
 
@@ -225,32 +229,32 @@ public sealed class RadelineSimForm : Form {
         Closed += (_, _) => StoreConfig();
         LoadConfig();
 
-        disableControls = [getInitialStateButton, framesControl, axisControl, positionFilterMinControl, positionFilterMaxControl, goalSpeedControl, disabledKeyControl,
-            outputSortingControl, rngThresholdControl, rngThresholdSlowControl, inputGenerationTimeControl, appendKeysControl, hideDuplicatesControl];
+        disabledControls = [getInitialStateButton, framesStepper, axisOption, positionFilterMinStepper, positionFilterMaxStepper, goalSpeedStepper, disabledKeyOption,
+            outputSortingOption, rngThresholdStepper, rngThresholdSlowStepper, inputGenerationTimeStepper, appendKeysText, hideDuplicatesCheck];
     }
 
     private void StoreConfig() {
-        float positionFilterMinValue = (float) positionFilterMinControl.Value;
-        float positionFilterMaxValue = (float) positionFilterMaxControl.Value;
+        float positionFilterMinValue = (float) positionFilterMinStepper.Value;
+        float positionFilterMaxValue = (float) positionFilterMaxStepper.Value;
 
         // fix for accidentally backwards order
         if (positionFilterMinValue > positionFilterMaxValue) {
             (positionFilterMinValue, positionFilterMaxValue) = (positionFilterMaxValue, positionFilterMinValue);
         }
 
-        cfg.Frames = (int) framesControl.Value;
-        cfg.Axis = Enum.Parse<Axis>(axisControl.SelectedKey);
+        cfg.Frames = (int) framesStepper.Value;
+        cfg.Axis = Enum.Parse<Axis>(axisOption.SelectedKey);
         cfg.PositionFilter = (positionFilterMinValue, positionFilterMaxValue);
-        cfg.GoalSpeed = (float) goalSpeedControl.Value;
-        cfg.DisabledKey = Enum.Parse<DisabledKey>(disabledKeyControl.SelectedKey);
-        cfg.OutputSortingPriority = Enum.Parse<OutputSortingPriority>(outputSortingControl.SelectedKey);
-        cfg.RNGThresholdSlow = (int) rngThresholdSlowControl.Value;
-        cfg.RNGThreshold = (int) rngThresholdControl.Value;
-        cfg.HideDuplicateInputs = hideDuplicatesControl.Checked!.Value;
-        cfg.InputGenerationTime = (int) inputGenerationTimeControl.Value * 1000;
-        cfg.AppendKeys = appendKeysControl.Text;
+        cfg.GoalSpeed = (float) goalSpeedStepper.Value;
+        cfg.DisabledKey = Enum.Parse<DisabledKey>(disabledKeyOption.SelectedKey);
+        cfg.OutputSortingPriority = Enum.Parse<OutputSortingPriority>(outputSortingOption.SelectedKey);
+        cfg.RNGThresholdSlow = (int) rngThresholdSlowStepper.Value;
+        cfg.RNGThreshold = (int) rngThresholdStepper.Value;
+        cfg.HideDuplicateInputs = hideDuplicatesCheck.Checked!.Value;
+        cfg.InputGenerationTime = (int) inputGenerationTimeStepper.Value * 1000;
+        cfg.AppendKeys = appendKeysText.Text;
         cfg.InitialState = initialState;
-        cfg.InitialStateInfo = initialStateControl.Text;
+        cfg.InitialStateInfo = initialStateText.Text;
 
         initialState.Position = cfg.Axis == Axis.X ? initialState.Positions.X : initialState.Positions.Y;
         initialState.Speed = cfg.Axis == Axis.X ? initialState.Speeds.X : initialState.Speeds.Y;
@@ -261,19 +265,19 @@ public sealed class RadelineSimForm : Form {
             return;
         }
 
-        framesControl.Value = cfg.Frames;
-        axisControl.SelectedKey = cfg.Axis.ToString();
-        positionFilterMinControl.Value = cfg.PositionFilter.Min;
-        positionFilterMaxControl.Value = cfg.PositionFilter.Max;
-        goalSpeedControl.Value = cfg.GoalSpeed;
-        disabledKeyControl.SelectedKey = cfg.DisabledKey.ToString();
-        outputSortingControl.SelectedKey = cfg.OutputSortingPriority.ToString();
-        rngThresholdControl.Value = cfg.RNGThreshold;
-        rngThresholdSlowControl.Value = cfg.RNGThresholdSlow;
-        inputGenerationTimeControl.Value = cfg.InputGenerationTime / 1000;
-        appendKeysControl.Text = cfg.AppendKeys;
-        hideDuplicatesControl.Checked = cfg.HideDuplicateInputs;
-        initialStateControl.Text = cfg.InitialStateInfo;
+        framesStepper.Value = cfg.Frames;
+        axisOption.SelectedKey = cfg.Axis.ToString();
+        positionFilterMinStepper.Value = cfg.PositionFilter.Min;
+        positionFilterMaxStepper.Value = cfg.PositionFilter.Max;
+        goalSpeedStepper.Value = cfg.GoalSpeed;
+        disabledKeyOption.SelectedKey = cfg.DisabledKey.ToString();
+        outputSortingOption.SelectedKey = cfg.OutputSortingPriority.ToString();
+        rngThresholdStepper.Value = cfg.RNGThreshold;
+        rngThresholdSlowStepper.Value = cfg.RNGThresholdSlow;
+        inputGenerationTimeStepper.Value = cfg.InputGenerationTime / 1000;
+        appendKeysText.Text = cfg.AppendKeys;
+        hideDuplicatesCheck.Checked = cfg.HideDuplicateInputs;
+        initialStateText.Text = cfg.InitialStateInfo;
 
         initialState = cfg.InitialState;
         gotInitialState = true;
@@ -308,7 +312,7 @@ public sealed class RadelineSimForm : Form {
         };
         progressPopup.Closed += (_, _) => {
             isRunning = false;
-            foreach (var control in disableControls) {
+            foreach (var control in disabledControls) {
                 control.Enabled = true;
             }
 
@@ -318,18 +322,27 @@ public sealed class RadelineSimForm : Form {
         Studio.RegisterDialog(progressPopup, this);
 
         isRunning = true;
-        foreach (var control in disableControls) {
+        foreach (var control in disabledControls) {
             control.Enabled = false;
         }
         Task.Run(async () => {
-            await RunSim();
+            bool autoClose;
+            try {
+                await RunSim();
+                autoClose = true;
+            } catch (Exception ex) {
+                Console.Error.WriteLine(ex);
+                await Log(ex.ToString());
+                autoClose = false;
+            }
+
             await Application.Instance.InvokeAsync(() => doneCancelButton.Text = "Done");
 
-            Console.WriteLine("DONE");
-
             // Auto-close after 3s
-            await Task.Delay(TimeSpan.FromSeconds(3.0f));
-            await Application.Instance.InvokeAsync(() => progressPopup?.Close());
+            if (autoClose) {
+                await Task.Delay(TimeSpan.FromSeconds(3.0f));
+                await Application.Instance.InvokeAsync(() => progressPopup?.Close());
+            }
         });
 
         progressPopup.ShowModal();
@@ -344,7 +357,6 @@ public sealed class RadelineSimForm : Form {
 
     private async Task RunSim() {
         StoreConfig();
-        ICollection<List<(int frames, char key)>> inputPermutations;
         await Application.Instance.InvokeAsync(() => individualProgressBar.Value = 0);
 
         if (cfg.DisabledKey == DisabledKey.Auto) {
@@ -381,34 +393,39 @@ public sealed class RadelineSimForm : Form {
             await Log($"Disabled generating {cfg.DisabledKey} inputs");
         }
 
-        int RNGThreshold = (generatorKeys = GeneratorKeys()).Length switch {
+        int rngThreshold = BitOperations.PopCount((uint) (availableActions = GenerateAvailableActions())) switch {
             3 => cfg.RNGThresholdSlow,
             4 => cfg.RNGThresholdSlow - 2,
             _ => cfg.RNGThreshold
         };
 
-        if (cfg.Frames < RNGThreshold) {
-            await Log("Building permutations using sequential method…");
-            inputPermutations = await BuildInputPermutationsSequential();
+        ICollection<InputPermutation> inputPermutations;
+        if (cfg.Frames < rngThreshold) {
+            await Log("Generating permutations using sequential method...");
+            inputPermutations = await GenerateInputPermutationsSequential();
         } else {
-            await Log("Building permutations using RNG method…");
-            inputPermutations = await BuildInputPermutationsRng();
+            await Log("Generating permutations using RNG method...");
+            inputPermutations = await GenerateInputPermutationsRng();
         }
 
-        if (!isRunning) return; // canceled
+        if (!isRunning) {
+            return; // canceled
+        }
 
         await Log($"Generated permutations: {inputPermutations.Count}");
         await Application.Instance.InvokeAsync(UpdateLayout);
 
         // store as position and speed dicts, for performance
-        var filteredPermutations = new SortedDictionary<float, Dictionary<float, List<List<(int frames, char key)>>>>();
+        var filteredPermutations = new SortedDictionary<float, Dictionary<float, List<InputPermutation>>>();
         var speeds = new HashSet<float>();
-        Func<List<(int frames, char key)>, (float position, float speed)> simFunction = cfg.Axis == Axis.X ? SimX : SimY;
-        await Application.Instance.InvokeAsync(() => individualProgressBar.Value = inputPermutations.Count);
-        int updateInterval = 10000 / cfg.Frames;
-        await Log("Simulating inputs…");
-        int i = 0;
 
+        Func<InputPermutation, (float position, float speed)> simFunction = cfg.Axis == Axis.X ? SimX : SimY;
+
+        await Application.Instance.InvokeAsync(() => individualProgressBar.Value = inputPermutations.Count);
+        await Log("Simulating inputs...");
+
+        int updateInterval = 10000 / cfg.Frames;
+        int i = 0;
         foreach (var permutation in inputPermutations) {
             var simResult = simFunction(permutation);
             i++;
@@ -441,11 +458,13 @@ public sealed class RadelineSimForm : Form {
                     UpdateLayout();
                 });
 
-                if (!isRunning) return;  // canceled
+                if (!isRunning) {
+                    return;  // canceled
+                }
             }
         }
 
-        List<(float position, float speed, List<(int frames, char key)> inputs)> outputPermutations = [];
+        List<(float position, float speed, InputPermutation inputs)> outputPermutations = [];
 
         // convert optimized dict to sorted list
         if (cfg.OutputSortingPriority == OutputSortingPriority.Position) {
@@ -470,7 +489,7 @@ public sealed class RadelineSimForm : Form {
 
         await Log($"Filtered permutations: {outputPermutations.Count}");
         await Application.Instance.InvokeAsync(() => {
-            outputsControl.Items.Clear();
+            outputsList.Items.Clear();
             UpdateLayout();
         });
         i = 0;
@@ -478,7 +497,7 @@ public sealed class RadelineSimForm : Form {
         // insert results into output window
         foreach (var inputPermutation in outputPermutations) {
             await Application.Instance.InvokeAsync(() => {
-                outputsControl.Items.Add(new ListItem { Text = FormatInputPermutation(inputPermutation), Key = FormatInputPermutationCompact(inputPermutation.inputs) });
+                outputsList.Items.Add(new ListItem { Text = FormatInputPermutationText(inputPermutation), Key = FormatInputPermutationKey(inputPermutation.inputs) });
             });
             i++;
 
@@ -491,8 +510,8 @@ public sealed class RadelineSimForm : Form {
         await Application.Instance.InvokeAsync(() => {
             individualProgressBar.Value = individualProgressBar.MaxValue;
 
-            if (outputsControl.Items.Count == 0) {
-                outputsControl.Items.Add(new ListItem { Text = "No solution found", Key = InvalidOutput });
+            if (outputsList.Items.Count == 0) {
+                outputsList.Items.Add(new ListItem { Text = "No solution found", Key = InvalidOutput });
             }
 
             UpdateLayout();
@@ -501,92 +520,117 @@ public sealed class RadelineSimForm : Form {
         await Log("Complete");
     }
 
-    private async Task<ICollection<List<(int frames, char key)>>> BuildInputPermutationsSequential() {
-        int expectedPermutations = (int) Math.Pow(generatorKeys.Length, cfg.Frames);
-        List<List<(int frames, char key)>> inputPermutations = new(expectedPermutations);
-        await Application.Instance.InvokeAsync(() => individualProgressBar.MaxValue = expectedPermutations);
-        int lastReportedProgress = 0;
-        int i = 0;
+    #region Permutations
 
-        foreach (var permutation in CartesianProduct(generatorKeys, cfg.Frames)) {
+    /// Enumerates all permutations with the specified length
+    private static IEnumerable<IEnumerable<T>> EnumeratePermutations<T>(T[] source, int length) {
+        IEnumerable<IEnumerable<T>> seed = [[]];
+
+        for (int i = 0; i < length; i++) {
+            seed = seed.SelectMany(_ => source, (seq, item) => seq.Concat([item]));
+        }
+
+        return seed;
+    }
+
+    private async Task<ICollection<InputPermutation>> GenerateInputPermutationsSequential() {
+        var actions = availableActions.ToValues().ToArray();
+        int expectedPermutations = (int) Math.Pow(actions.Length, cfg.Frames);
+
+        List<InputPermutation> inputPermutations = new(expectedPermutations);
+        await Application.Instance.InvokeAsync(() => individualProgressBar.MaxValue = expectedPermutations);
+
+        const int updateInterval = 10000;
+
+        int i = 0;
+        foreach (var permutation in EnumeratePermutations(actions, cfg.Frames)) {
             i++;
-            List<(int frames, char key)> permutationFormatted = [];
-            char? currentInput = null;
+
+            InputPermutation permutationFormatted = [];
+            var currentInput = Actions.None;
             int inputLen = 0;
 
             // convert messy inputs to the compact format
             foreach (var key in permutation) {
-                if (currentInput == null)
+                if (currentInput == Actions.None) {
                     currentInput = key;
+                }
 
-                if (key == currentInput)
+                if (key == currentInput) {
                     inputLen++;
-                else {
-                    permutationFormatted.Add((inputLen, (char) currentInput));
+                } else {
+                    permutationFormatted.Add((inputLen, currentInput));
                     currentInput = key;
                     inputLen = 1;
                 }
             }
 
-            permutationFormatted.Add((inputLen, (char) currentInput!));
+            permutationFormatted.Add((inputLen, currentInput));
             inputPermutations.Add(permutationFormatted);
 
-            if (i - lastReportedProgress > 10000) {
-                lastReportedProgress = i;
+            if (i % updateInterval == 0) {
                 await Application.Instance.InvokeAsync(() => {
                     individualProgressBar.Value = i;
                     UpdateLayout();
                 });
 
-                if (!isRunning) return [];  // canceled
+                if (!isRunning) {
+                    return [];  // canceled
+                }
             }
         }
 
         return inputPermutations;
     }
 
-    private async Task<HashSet<List<(int frames, char key)>>> BuildInputPermutationsRng() {
-        var inputPermutations = new HashSet<List<(int frames, char key)>>(new ListTupleComparer());
-        int keysLen = generatorKeys.Length;
-        double maxPermutationsDouble = Math.Pow(generatorKeys.Length, cfg.Frames);
-        int maxPermutations = 0;
-        bool useMaxPermutations;
-        bool brokeFromLoopMax = false;
+    private async Task<HashSet<InputPermutation>> GenerateInputPermutationsRng() {
+        var inputPermutations = new HashSet<InputPermutation>(new InputPermutationComparer());
+        await Application.Instance.InvokeAsync(() => individualProgressBar.MaxValue = cfg.InputGenerationTime);
+
+        var actions = availableActions.ToValues().ToArray();
+
         int updateInterval = 1000000 / cfg.Frames;
         var random = new FastRandom();
-        await Application.Instance.InvokeAsync(() => individualProgressBar.MaxValue = cfg.InputGenerationTime);
         var stopwatch = Stopwatch.StartNew();
-        int i = 0;
 
+        double maxPermutationsDouble = Math.Pow(actions.Length, cfg.Frames);
+
+        int maxPermutations;
+        bool useMaxPermutations;
         if (maxPermutationsDouble <= int.MaxValue) {
             maxPermutations = (int) maxPermutationsDouble;
             useMaxPermutations = true;
         } else {
+            maxPermutations = 0;
             useMaxPermutations = false;
         }
 
+        bool brokeFromLoopMax = false;
+
+        int i = 0;
         while (true) {
             i++;
-            var inputs = new List<(int frames, char key)>();
+
+            var input = new InputPermutation();
             int frameCounter = 0;
-            char? prevKey = null;
+            var prevAction = Actions.None;
 
             while (frameCounter < cfg.Frames) {
                 int frames = random.Next(1, cfg.Frames - frameCounter + 1);
                 frameCounter += frames;
-                char selectedKey = generatorKeys[random.Next(keysLen)];
+                var selectedAction = actions[random.Next(actions.Length)];
 
-                if (selectedKey == prevKey) {
-                    var lastInput = inputs[^1];
-                    lastInput.frames += frames;
-                    inputs[^1] = lastInput;
+                if (selectedAction == prevAction) {
+                    var lastInput = input[^1];
+                    lastInput.Frames += frames;
+                    input[^1] = lastInput;
                 } else {
-                    inputs.Add((frames, selectedKey));
-                    prevKey = selectedKey;
+                    input.Add((frames, selectedAction));
+                    prevAction = selectedAction;
                 }
             }
 
-            inputPermutations.Add(inputs);
+            inputPermutations.Add(input);
 
             if (i == updateInterval) {
                 i = 0;
@@ -596,7 +640,9 @@ public sealed class RadelineSimForm : Form {
                     UpdateLayout();
                 });
 
-                if (!isRunning) return [];  // canceled
+                if (!isRunning) {
+                    return [];  // canceled
+                }
 
                 if (elapsedTime >= cfg.InputGenerationTime) {
                     break;
@@ -616,147 +662,65 @@ public sealed class RadelineSimForm : Form {
         return inputPermutations;
     }
 
-    private static (float position, float speed) SimX(List<(int frames, char key)> inputs) {
-        float x = initialState.Position;
-        float speedX = initialState.Speed;
-        bool grounded = initialState.OnGround;
-        float mult1 = grounded ? 0.0166667f * 1000f : 0.65f * 0.0166667f * 1000f;
-        float mult2 = grounded ? 0.0166667f * 400f : 0.65f * 0.0166667f * 400f;
-        float max = initialState.Holding ? 70f : 90f;
-
-        foreach (var inputLine in inputs) {
-            foreach (char inputKey in Enumerable.Repeat(inputLine.key, inputLine.frames)) {
-                // celeste code (from Player.NormalUpdate) somewhat loosely simplified
-
-                if (grounded && inputKey == 'd')
-                    speedX = Approach(speedX, 0.0f, 500f * 0.0166667f);
-                else {
-                    // get input first
-                    float moveX = inputKey switch {
-                        'l' => -1f,
-                        'r' => 1f,
-                        _ => 0f
-                    };
-
-                    if (Math.Abs(speedX) <= max || (speedX == 0.0f ? 0.0f : (float) Math.CopySign(1, speedX)) != moveX)
-                        speedX = Approach(speedX, max * moveX, mult1);
-                    else
-                        speedX = Approach(speedX, max * moveX, mult2);
-                }
-
-                // calculate position third
-                x += speedX * 0.0166667f;
-            }
-        }
-
-        return ((float) Math.Round(x, 10), (float) Math.Round(speedX, 8));
-    }
-
-    private static (float position, float speed) SimY(List<(int frames, char key)> inputs) {
-        float y = initialState.Position;
-        float speedY = initialState.Speed;
-        float maxFall = initialState.MaxFall;
-        int jumpTimer = initialState.JumpTimer;
-
-        foreach (var inputLine in inputs) {
-            foreach (char inputKey in Enumerable.Repeat(inputLine.key, inputLine.frames)) {
-                // celeste code (from Player.NormalUpdate) somewhat loosely simplified
-
-                // calculate speed
-                if (inputKey == 'd' && speedY >= 160f) {
-                    maxFall = Approach(maxFall, 240f, 300f * 0.0166667f);
-                } else {
-                    maxFall = Approach(maxFall, 160f, 300f * 0.0166667f);
-                }
-
-                float mult;
-                if (Math.Abs(speedY) <= 40f && (inputKey == 'j' || initialState.AutoJump)) {
-                    mult = 900f * 0.5f * 0.0166667f;
-                } else {
-                    mult = 900f * 0.0166667f;
-                }
-
-                speedY = Approach(speedY, maxFall, mult);
-
-                if (jumpTimer > 0) {
-                    if (inputKey == 'j' || initialState.AutoJump) {
-                        speedY = Math.Min(speedY, initialState.Speed);
-                    } else {
-                        jumpTimer = 0;
-                    }
-                }
-
-                jumpTimer--;
-
-                // calculate position
-                y += speedY * 0.0166667f;
-            }
-        }
-
-        return ((float) Math.Round(y, 10), (float) Math.Round(speedY, 8));
-    }
-
-    private static IEnumerable<IEnumerable<char>> CartesianProduct(char[] source, int repeat) {
-        IEnumerable<IEnumerable<char>> seed = [[]];
-
-        for (int i = 0; i < repeat; i++) {
-            seed = from seq in seed
-                from item in source
-                select seq.Concat([item]);
-        }
-
-        return seed;
-    }
-
-    private class ListTupleComparer : IEqualityComparer<List<(int frames, char key)>> {
-        public bool Equals(List<(int frames, char key)>? x, List<(int frames, char key)>? y) {
-            if (x!.Count != y!.Count)
+    private class InputPermutationComparer : IEqualityComparer<InputPermutation> {
+        public bool Equals(InputPermutation? x, InputPermutation? y) {
+            if (x!.Count != y!.Count) {
                 return false;
+            }
 
             for (int i = 0; i < x.Count; i++) {
-                if (x[i].frames != y[i].frames || x[i].key != y[i].key)
+                if (x[i].Frames != y[i].Frames || x[i].Action != y[i].Action) {
                     return false;
+                }
             }
 
             return true;
         }
 
-        public int GetHashCode(List<(int frames, char key)> obj) {
-            unchecked {
-                int hash = 17;
-
-                foreach (var item in obj) {
-                    hash = hash * 31 + item.frames;
-                    hash = hash * 31 + item.key;
-                }
-
-                return hash;
+        public int GetHashCode(InputPermutation obj) {
+            var hash = new HashCode();
+            foreach (var item in obj) {
+                hash.Add(item.Frames);
+                hash.Add(item.Action);
             }
+            return hash.ToHashCode();
         }
     }
 
-    // directly from Monocle.Calc
-    private static float Approach(float val, float target, float maxMove) =>
-        val <= target ? Math.Min(val + maxMove, target) : Math.Max(val - maxMove, target);
-
-    private static char[] GeneratorKeys() {
-        var keys = new List<char>();
+    private Actions GenerateAvailableActions() {
+        var actions = Actions.None;
 
         if (cfg.Axis == Axis.X) {
-            keys.AddRange(['\0', 'l', 'r']);
+            actions |= Actions.Left;
+            actions |= Actions.Right;
 
-            if (initialState.OnGround)
-                keys.Add('d');
-        } else
-            keys.AddRange(['\0', 'j', 'd']);
+            if (initialState.OnGround) {
+                actions |= Actions.Down;
+            }
+        } else {
+            actions |= Actions.Jump;
+            actions |= Actions.Down;
+        }
 
-        if (cfg.DisabledKey != DisabledKey.None)
-            keys.Remove(cfg.DisabledKey.ToString().ToLower().ToCharArray()[0]);
+        switch (cfg.DisabledKey) {
+            case DisabledKey.L:
+                actions &= ~Actions.Left;
+                break;
+            case DisabledKey.R:
+                actions &= ~Actions.Right;
+                break;
+            case DisabledKey.J:
+                actions &= ~Actions.Jump;
+                break;
+            case DisabledKey.D:
+                actions &= ~Actions.Down;
+                break;
+        }
 
-        return keys.ToArray();
+        return actions;
     }
 
-    private static string FormatInputPermutation((float position, float speed, List<(int frames, char key)> inputs) inputPermutation) {
+    private static string FormatInputPermutationText((float position, float speed, InputPermutation inputs) inputPermutation) {
         int speedPrecisionOffset = inputPermutation.speed switch {
             < -100 => 3,
             < -10 => 2,
@@ -768,55 +732,166 @@ public sealed class RadelineSimForm : Form {
 
         string position = inputPermutation.position.ToString("F10");
         string speed = inputPermutation.speed.ToString($"F{8 - speedPrecisionOffset}");
-        var inputsDisplay = new StringBuilder($"({position}, {speed}) ");
 
+        var builder = new StringBuilder($"({position}, {speed}) ");
         foreach (var input in inputPermutation.inputs) {
-            string comma = input.key == '\0' ? "" : ",";
-            inputsDisplay.Append($"{input.frames}{comma}{char.ToUpper(input.key)} ");
+            if (input.Action == Actions.None) {
+                builder.Append($"{input.Frames} ");
+            } else {
+                builder.Append($"{input.Frames},{input.Action.CharForAction()} ");
+            }
         }
-
-        return inputsDisplay.ToString();
+        return builder.ToString();
     }
 
-    private static string FormatInputPermutationCompact(List<(int frames, char key)> inputs) {
-        var inputsCompact = new StringBuilder();
-
+    private static string FormatInputPermutationKey(InputPermutation inputs) {
+        var builder = new StringBuilder();
         foreach (var input in inputs) {
-            inputsCompact.Append($"{input.frames},{(input.key == '\0' ? "" : input.key)}\n");
+            if (input.Action == Actions.None) {
+                builder.Append($"{input.Frames}\n");
+            } else {
+                builder.Append($"{input.Frames},{input.Action.CharForAction()}\n");
+            }
         }
-
-        return inputsCompact.ToString();
+        return builder.ToString();
     }
 
-    private void OutputsOnSelectedIndexChanged(object? sender, EventArgs e) {
-        if (outputsControl.Items.Count == 0) {
+    #endregion
+    #region Simulation
+
+    private static float DeltaTime => 0.0166667f;
+
+    private const float RunAccel = 1000.0f;
+    private const float RunReduce = 400.0f;
+    private const float AirMult = 0.65f;
+    private const float MaxRun = 90.0f;
+    private const float HoldingMaxRun = 70.0f;
+    private const float DuckFriction = 500.0f;
+
+    private (float position, float speed) SimX(InputPermutation inputs) {
+        float x = initialState.Position;
+        float speedX = initialState.Speed;
+        bool grounded = initialState.OnGround;
+        float multAccel = grounded ? DeltaTime * RunAccel : AirMult * DeltaTime * RunAccel;
+        float multReduce = grounded ? DeltaTime * RunReduce : AirMult * DeltaTime * RunReduce;
+        float max = initialState.Holding ? HoldingMaxRun : MaxRun;
+
+        foreach (var inputLine in inputs) {
+            foreach (var inputAction in Enumerable.Repeat(inputLine.Action, inputLine.Frames)) {
+                // celeste code (from Player.NormalUpdate) somewhat loosely simplified
+
+                if (grounded && inputAction == Actions.Down) {
+                    speedX = Approach(speedX, 0.0f, DuckFriction * DeltaTime);
+                } else {
+                    // get input first
+                    int moveX = inputAction switch {
+                        Actions.Left => -1,
+                        Actions.Right => 1,
+                        _ => 0,
+                    };
+
+                    if (Math.Abs(speedX) <= max || Math.Sign(speedX) != moveX) {
+                        speedX = Approach(speedX, max * moveX, multAccel);
+                    } else {
+                        speedX = Approach(speedX, max * moveX, multReduce);
+                    }
+                }
+
+                // calculate position third
+                x += speedX * DeltaTime;
+            }
+        }
+
+        return ((float) Math.Round(x, 10), (float) Math.Round(speedX, 8));
+    }
+
+    private const float MaxFall = 160.0f;
+    private const float FastMaxFall = 240.0f;
+    private const float FastMaxAccel = 300.0f;
+    private const float Gravity = 900.0f;
+    private const float HalfGravThreshold = 40.0f;
+
+    private (float position, float speed) SimY(InputPermutation inputs) {
+        float y = initialState.Position;
+        float speedY = initialState.Speed;
+        float maxFall = initialState.MaxFallSpeed;
+        int jumpTimer = initialState.JumpTimer;
+
+        foreach (var inputLine in inputs) {
+            foreach (var inputAction in Enumerable.Repeat(inputLine.Action, inputLine.Frames)) {
+                // celeste code (from Player.NormalUpdate) somewhat loosely simplified
+
+                // calculate speed
+                if (inputAction == Actions.Down && speedY >= MaxFall) {
+                    maxFall = Approach(maxFall, FastMaxFall, FastMaxAccel * DeltaTime);
+                } else {
+                    maxFall = Approach(maxFall, MaxFall, FastMaxAccel * DeltaTime);
+                }
+
+                float mult;
+                if (Math.Abs(speedY) <= HalfGravThreshold && (inputAction == Actions.Jump || initialState.AutoJump)) {
+                    mult = Gravity * 0.5f * DeltaTime;
+                } else {
+                    mult = Gravity * DeltaTime;
+                }
+
+                speedY = Approach(speedY, maxFall, mult);
+
+                if (jumpTimer > 0) {
+                    if (inputAction == Actions.Jump || initialState.AutoJump) {
+                        speedY = Math.Min(speedY, initialState.Speed);
+                    } else {
+                        jumpTimer = 0;
+                    }
+                }
+
+                jumpTimer--;
+
+                // calculate position
+                y += speedY * DeltaTime;
+            }
+        }
+
+        return ((float) Math.Round(y, 10), (float) Math.Round(speedY, 8));
+    }
+
+
+    // directly from Monocle.Calc
+    private static float Approach(float val, float target, float maxMove) =>
+        val <= target ? Math.Min(val + maxMove, target) : Math.Max(val - maxMove, target);
+
+    #endregion
+
+    private void CopySelectedOutput(object? sender, EventArgs e) {
+        if (outputsList.Items.Count == 0) {
             return;
         }
 
-        string selectedItemKey = outputsControl.Items[outputsControl.SelectedIndex].Key!;
+        string selectedItemKey = outputsList.Items[outputsList.SelectedIndex].Key!;
         if (selectedItemKey == InvalidOutput) {
             return;
         }
 
-        var appendKeys = appendKeysControl.Text.Where(c => !char.IsWhiteSpace(c));
-        string[] inputLines = selectedItemKey.TrimEnd().Split('\n');
-        var inputsProcessed = new StringBuilder();
+        char[] appendActions = appendKeysText.Text
+            .Select(char.ToUpper)
+            .Where(c => ActionsUtils.Chars.ContainsKey(c))
+            .ToArray();
 
-        foreach (string inputLine in inputLines) {
-            inputsProcessed.Append(inputLine);
+        var builder = new StringBuilder();
 
-            foreach (char appendKey in appendKeys) {
-                inputsProcessed.Append($",{appendKey}");
+        foreach (string inputLine in selectedItemKey.TrimEnd().Split('\n')) {
+            builder.Append(inputLine);
+            foreach (char appendKey in appendActions) {
+                builder.Append($",{appendKey}");
             }
-
-            inputsProcessed.Append('\n');
+            builder.Append('\n');
         }
 
         Clipboard.Instance.Clear();
-        Clipboard.Instance.Text = inputsProcessed.ToString();
+        Clipboard.Instance.Text = builder.ToString();
     }
 
-    private void GetInitialState() {
+    private void FetchInitialState() {
         if (!CommunicationWrapper.Connected) {
             return;
         }
@@ -838,13 +913,13 @@ public sealed class RadelineSimForm : Form {
             Holding = gameState.Player.IsHolding,
             JumpTimer = gameState.Player.JumpTimer,
             AutoJump = gameState.Player.AutoJump,
-            MaxFall = gameState.Player.MaxFall,
+            MaxFallSpeed = gameState.Player.MaxFall,
             ChapterTime = gameState.ChapterTime,
             RoomName = gameState.RoomName,
             PlayerStateName = gameState.PlayerStateName
         };
 
-        initialStateControl.Text = initialState.ToString();
+        initialStateText.Text = initialState.ToString();
     }
 
     public struct InitialState {
@@ -856,7 +931,7 @@ public sealed class RadelineSimForm : Form {
         // Y axis:
         public int JumpTimer;
         public bool AutoJump;
-        public float MaxFall;
+        public float MaxFallSpeed;
         // finalized:
         public float Position;
         public float Speed;
@@ -873,31 +948,31 @@ public sealed class RadelineSimForm : Form {
                     Holding: {Holding}
                     Jump Timer: {JumpTimer}f
                     Auto Jump: {AutoJump}
-                    Max Fall: {MaxFall}
+                    Max Fall: {MaxFallSpeed}
                     State: {PlayerStateName}
                     [{RoomName}] Timer: {ChapterTime}
                     """;
         }
     }
 
+    public record Config {
+        public bool WindowFirstOpen = true;
+        public int Frames;
+        public Axis Axis;
+        public (float Min, float Max) PositionFilter;
+        public float GoalSpeed;
+        public DisabledKey DisabledKey;
+        public OutputSortingPriority OutputSortingPriority;
+        public int RNGThresholdSlow;
+        public int RNGThreshold;
+        public bool HideDuplicateInputs;
+        public int InputGenerationTime;  // in ms
+        public string AppendKeys = string.Empty;
+        public InitialState InitialState;
+        public string InitialStateInfo = string.Empty;
+    }
+
     public enum Axis { X, Y }
     public enum DisabledKey { None, Auto, L, R, J, D }
     public enum OutputSortingPriority { Position, Speed }
-}
-
-public class RadelineSimConfig {
-    public bool WindowFirstOpen = true;
-    public int Frames;
-    public RadelineSimForm.Axis Axis;
-    public (float Min, float Max) PositionFilter;
-    public float GoalSpeed;
-    public RadelineSimForm.DisabledKey DisabledKey;
-    public RadelineSimForm.OutputSortingPriority OutputSortingPriority;
-    public int RNGThresholdSlow;
-    public int RNGThreshold;
-    public bool HideDuplicateInputs;
-    public int InputGenerationTime;  // in ms
-    public string AppendKeys;
-    public RadelineSimForm.InitialState InitialState;
-    public string InitialStateInfo;
 }

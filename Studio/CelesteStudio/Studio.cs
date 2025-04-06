@@ -55,7 +55,7 @@ public sealed class Studio : Form {
     private RadelineSimForm? radelineSimForm;
     private ThemeEditor? themeEditorForm;
 
-    private RadelineSimConfig radelineFormPersistence = new();
+    private RadelineSimForm.Config radelineFormPersistence = new();
 
     private string TitleBarText => Editor.Document.FilePath == Document.ScratchFile
         ? $"Studio {Version} - <Scratch>"
