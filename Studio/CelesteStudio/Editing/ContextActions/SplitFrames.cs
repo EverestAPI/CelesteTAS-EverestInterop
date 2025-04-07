@@ -1,11 +1,12 @@
 using System.Linq;
-using CelesteStudio.Data;
 using StudioCommunication;
 
 namespace CelesteStudio.Editing.ContextActions;
 
 public class SplitFrames : ContextAction {
-    public override MenuEntry Entry => MenuEntry.ContextActions_SplitFrames;
+    public override string Identifier => "ContextActions_SplitFrames";
+    public override string DisplayName => "Split Input Frames";
+    public override Hotkey DefaultHotkey => Hotkey.None;
 
     public override PopupMenu.Entry? Check() {
         (int minRow, int maxRow) = Document.Selection.Empty

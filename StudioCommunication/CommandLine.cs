@@ -33,14 +33,16 @@ public readonly record struct CommandLine(
             return false;
         }
 
-        var separatorMatch = SeparatorRegex.Match(line);
+        int leadingWhitespace = line.Length - lineTrimmed.Length;
+
+        var separatorMatch = SeparatorRegex.Match(lineTrimmed);
         if (!separatorMatch.Success || separatorMatch.Length == 0) {
             // No arguments
             commandLine = new CommandLine {
-                Command = line,
+                Command = lineTrimmed,
                 Arguments = [],
 
-                Regions = [new Region(0, line.Length - 1)],
+                Regions = [new Region(leadingWhitespace, line.Length - 1)],
 
                 OriginalText = line,
                 ArgumentSeparator = string.Empty,
@@ -50,13 +52,13 @@ public readonly record struct CommandLine(
 
         string separator = separatorMatch.Value;
         List<string> arguments = [];
-        List<Region> regions = [new Region(0, separatorMatch.Index - 1)];
+        List<Region> regions = [new Region(leadingWhitespace, separatorMatch.Index - 1)];
 
         // All quotes ("), braces ({}) and brackets ([]) need to be closed before the next argument can happen
         Stack<char> groupStack = new();
 
         StringBuilder currentArg = new();
-        int currentArgIndex = separatorMatch.Index + separator.Length;
+        int currentArgIndex = separatorMatch.Index + separator.Length + leadingWhitespace;
 
         for (int i = currentArgIndex; i < line.Length; i++) {
             string subLine = line[i..];
@@ -136,7 +138,7 @@ public readonly record struct CommandLine(
         regions.Add(new Region(currentArgIndex, line.Length));
 
         commandLine = new CommandLine {
-            Command = line[..separatorMatch.Index],
+            Command = lineTrimmed[..separatorMatch.Index],
             Arguments = arguments.ToArray(),
 
             Regions = regions.ToArray(),
@@ -184,7 +186,7 @@ public readonly record struct CommandLine(
             }
 
             return $"\"{arg}\"";
-        })]);
+        })]).Trim();
     }
 
     public override string ToString() {

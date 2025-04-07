@@ -276,6 +276,23 @@ internal static class HookHelper {
 
         var methodDef = cb.Method.ResolveDefinition();
 
+        // Static delegates do not work well with hot-reloads
+        // Since they're only intended for better performance, they are simply disabled in debug builds
+#if DEBUG
+        // Still validate callback method
+        foreach (var instr in methodDef.Body.Instructions) {
+            if (!instr.MatchLdarg(out int index)) {
+                continue;
+            }
+
+            if (index == 0) {
+                throw new Exception("Using captured variables inside a static delegate is not allowed");
+            }
+        }
+
+        cursor.EmitDelegate(cb);
+#else
+
         // Extract hook name from delegate
         string hookName = cb.Method.Name.Split('>')[0][1..];
         string name = $"{hookName}_{methodName}";
@@ -331,6 +348,7 @@ internal static class HookHelper {
         targetReference.Parameters.AddRange(dynamicMethod.Definition.Parameters);
 
         cursor.EmitCall(targetReference);
+#endif
     }
 
     /// Resolves the TypeDefinition of a runtime TypeInfo

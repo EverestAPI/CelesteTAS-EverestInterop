@@ -55,7 +55,7 @@ public abstract class CommunicationAdapterBase : IDisposable {
     private readonly List<(MessageID, Action<BinaryWriter>)> queuedWrites = [];
 
     /// Indicates ABI compatibility between two adapters
-    protected const ushort ProtocolVersion = 3;
+    protected const ushort ProtocolVersion = 4;
     private const int PingMessageSize = sizeof(ushort);
 
     private const int MessageCountOffset = 4;
@@ -67,7 +67,7 @@ public abstract class CommunicationAdapterBase : IDisposable {
     // Safety caps to avoid any crashes
     private const int MaxOffset = BufferCapacity - 4096;
     private const byte MaxMessageCount = 100;
-    
+
     private static bool IsWine() => Environment.GetEnvironmentVariable("WINEPREFIX") != null;
 
     private const string MutexName = "Global\\CelesteTAS_StudioCom";

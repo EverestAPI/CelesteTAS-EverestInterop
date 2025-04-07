@@ -72,7 +72,7 @@ public class SnippetDialog : Dialog<bool> {
 
             var hotkeyButton = new Button { Text = snippet.Hotkey.ToShortcutString(), ToolTip = "Use the right mouse button to clear a hotkey!", Font = SystemFonts.Bold(), Width = 150};
             hotkeyButton.Click += (_, _) => {
-                snippet.Hotkey = HotkeyDialog.Show(this, snippet.Hotkey, null, snippets);
+                snippet.Hotkey = HotkeyDialog.Show(this, snippet.Hotkey, null, snippets, false);
                 hotkeyButton.Text = snippet.Hotkey.ToShortcutString();
             };
 

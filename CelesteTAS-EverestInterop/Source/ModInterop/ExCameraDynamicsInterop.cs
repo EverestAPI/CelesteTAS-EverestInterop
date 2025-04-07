@@ -3,6 +3,7 @@ using Celeste.Mod.ExCameraDynamics.Code.Entities;
 using Celeste.Mod.ExCameraDynamics.Code.Hooks;
 using Celeste.Mod.ExCameraDynamics.Code.Module;
 using Microsoft.Xna.Framework;
+using Monocle;
 using System;
 using System.Runtime.CompilerServices;
 using TAS.Utils;
@@ -16,8 +17,8 @@ internal static class ExCameraDynamicsInterop {
 
     public static bool Enabled => Installed && hooksEnabled();
 
-    public static void EnableHooks() {
-        if (Installed) { enableHooks(); }
+    public static void EnableHooks(float currentZoom = 1.0f) {
+        if (Installed) { enableHooks(currentZoom); }
     }
     public static void DisableHooks() {
         if (Installed) { disableHooks(); }
@@ -48,8 +49,9 @@ internal static class ExCameraDynamicsInterop {
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void enableHooks() {
+    public static void enableHooks(float currentZoom) {
         CameraZoomHooks.Hook();
+        CameraZoomHooks.ResizeVanillaBuffers(currentZoom);
     }
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void disableHooks() {
