@@ -84,10 +84,12 @@ public static class ActualCollideHitbox {
         }
 
         CollidableHandlers.Clear();
+        CollidableHandlers.Add(typeof(FinalBossBeam), e => FinalBossHitbox.IsBeamCollidable((FinalBossBeam) e));
+
         CollidableHandlers.Add(typeof(Lightning), e => e.Collidable && !((Lightning)e).disappearing);
         if (ModUtils.GetType("ChronoHelper", "Celeste.Mod.ChronoHelper.Entities.DarkLightning") is { } chronoLightningType) {
             // Not a subclass of Lightning
-            var disappearingField = chronoLightningType.GetFieldInfo("disappearing");
+            var disappearingField = chronoLightningType.GetFieldInfo("disappearing")!;
             CollidableHandlers.Add(chronoLightningType, e => {
                 if (!e.Collidable) {
                     return false;
@@ -100,7 +102,7 @@ public static class ActualCollideHitbox {
         }
         if (ModUtils.GetType("Glyph", "Celeste.Mod.AcidHelper.Entities.AcidLightning") is { } acidLightningType) {
             // Subclass of Lightning, but has it's own "toggleOffset" and "disappearing"
-            var disappearingField = acidLightningType.GetFieldInfo("disappearing");
+            var disappearingField = acidLightningType.GetFieldInfo("disappearing")!;
             CollidableHandlers.Add(acidLightningType, e => {
                 if (!e.Collidable) {
                     return false;
@@ -141,7 +143,7 @@ public static class ActualCollideHitbox {
         var cursor = new ILCursor(il);
 
         // Store player
-        if (cursor.TryGotoNext(MoveType.After, ins => ins.MatchCallvirt(typeof(Tracker).GetMethodInfo(nameof(Tracker.GetComponents)).MakeGenericMethod(typeof(PlayerCollider))))) {
+        if (cursor.TryGotoNext(MoveType.After, ins => ins.MatchCallvirt(typeof(Tracker).GetMethodInfo(nameof(Tracker.GetComponents))!.MakeGenericMethod(typeof(PlayerCollider))))) {
             cursor.Emit(OpCodes.Ldarg_0);
             cursor.EmitDelegate(StoreActualColliderState);
         } else {
@@ -151,11 +153,19 @@ public static class ActualCollideHitbox {
         // Store entities with PlayerCollider
         if (cursor.TryGotoNext(MoveType.After, ins => ins.MatchCastclass<PlayerCollider>())) {
             cursor.EmitDup();
-            cursor.EmitCall(typeof(Component).GetPropertyInfo(nameof(Component.Entity)).GetMethod!);
+            cursor.EmitCall(typeof(Component).GetGetMethod(nameof(Component.Entity))!);
             cursor.EmitDelegate(StoreActualColliderState);
         } else {
             "Failed to apply patch for storing entity state during Update for actual-collide-hitboxes".Log(LogLevel.Warn);
         }
+
+        // Store other entities
+        cursor.EmitLdarg0();
+        cursor.EmitStaticDelegate("StoreActualColliderStateForOtherEntities", (Player player) => {
+            foreach (var beam in player.Scene.Tracker.GetEntities<FinalBossBeam>()) {
+                StoreActualColliderState(beam);
+            }
+        });
     }
 
     [PublicAPI]
