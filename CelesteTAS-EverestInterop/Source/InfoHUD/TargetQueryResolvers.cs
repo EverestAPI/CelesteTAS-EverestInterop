@@ -27,6 +27,10 @@ internal class EntityInstanceResolver : IInstanceResolver {
     public bool CanResolve(Type type) => type.IsSameOrSubclassOf(typeof(Entity));
 
     public List<object> Resolve(Type type, List<Type> componentTypes, EntityID? entityId) {
+        if (Engine.Scene == null) {
+            return [];
+        }
+
         IEnumerable<Entity> entityInstances;
         if (Engine.Scene.Tracker.Entities.TryGetValue(type, out var entities)) {
             entityInstances = entities
@@ -55,6 +59,10 @@ internal class ComponentInstanceResolver : IInstanceResolver {
     public bool CanResolve(Type type) => type.IsSameOrSubclassOf(typeof(Component));
 
     public List<object> Resolve(Type type, List<Type> componentTypes, EntityID? entityId) {
+        if (Engine.Scene == null) {
+            return [];
+        }
+
         IEnumerable<Component> componentInstances;
         if (Engine.Scene.Tracker.Components.TryGetValue(type, out var components)) {
             componentInstances = components;
@@ -65,7 +73,7 @@ internal class ComponentInstanceResolver : IInstanceResolver {
         }
 
         return componentInstances
-            .Select(c => (object)c)
+            .Select(object (c) => c)
             .ToList();
     }
 }
@@ -74,6 +82,10 @@ internal class SceneInstanceResolver : IInstanceResolver {
     public bool CanResolve(Type type) => type.IsSameOrSubclassOf(typeof(Scene));
 
     public List<object> Resolve(Type type, List<Type> componentTypes, EntityID? entityId) {
+        if (Engine.Scene == null) {
+            return [];
+        }
+
         if (Engine.Scene.GetType().IsSameOrSubclassOf(type)) {
             return [Engine.Scene];
         }
@@ -89,7 +101,7 @@ internal class SessionInstanceResolver : IInstanceResolver {
     public bool CanResolve(Type type) => type == typeof(Session);
 
     public List<object> Resolve(Type type, List<Type> componentTypes, EntityID? entityId) {
-        if (Engine.Scene.GetSession() is { } session) {
+        if (Engine.Scene?.GetSession() is { } session) {
             return [session];
         }
 
