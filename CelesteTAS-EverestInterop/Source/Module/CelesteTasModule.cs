@@ -129,3 +129,4 @@ internal class UnloadAttribute : Attribute;
 /// Invokes the target method when the module is initialized
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
 internal class InitializeAttribute : Attribute;
+
