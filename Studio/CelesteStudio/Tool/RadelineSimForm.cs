@@ -212,14 +212,6 @@ public sealed class RadelineSimForm : Form {
             Items = {
                 layout,
                 runButton
-
-                // new StackLayout {
-                //     Spacing = 10,
-                //     Orientation = Orientation.Horizontal,
-                //     Items = {
-                //         runButton,
-                //     }
-                // }
             }
         };
         Resizable = false;
@@ -497,9 +489,9 @@ public sealed class RadelineSimForm : Form {
         i = 0;
 
         // insert results into output window
-        foreach (var inputPermutation in outputPermutations) {
+        foreach (var outputPermutation in outputPermutations) {
             await Application.Instance.InvokeAsync(() => {
-                outputsList.Items.Add(new ListItem { Text = FormatInputPermutationText(inputPermutation), Key = FormatInputPermutationKey(inputPermutation.inputs) });
+                outputsList.Items.Add(new ListItem { Text = FormatInputPermutationText(outputPermutation), Key = FormatInputPermutationKey(outputPermutation.inputs) });
             });
             i++;
 
