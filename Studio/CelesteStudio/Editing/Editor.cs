@@ -2316,7 +2316,9 @@ public sealed class Editor : SkiaDrawable {
 
             // Handle frame count
             if (caret.Col == ActionLine.MaxFramesDigits && direction is CaretMovementType.WordLeft or CaretMovementType.CharLeft ||
-                caret.Col < ActionLine.MaxFramesDigits) {
+                caret.Col < ActionLine.MaxFramesDigits
+            ) {
+                line = actionLine.ToString();
                 int leadingSpaces = line.Length - line.TrimStart().Length;
                 int caretIndex = Math.Clamp(caret.Col - leadingSpaces, 0, actionLine.Frames.Length);
 
@@ -2434,6 +2436,9 @@ public sealed class Editor : SkiaDrawable {
 
                 RemoveRange(min, max);
                 Document.Caret = min;
+
+                // Ensure new line is correctly formatted
+                Document.ReplaceLine(Document.Caret.Row, FileRefactor.FormatLine(Document.Lines[Document.Caret.Row], StyleConfig.Current.ForceCorrectCommandCasing, StyleConfig.Current.CommandArgumentSeparator));
 
                 ActivePopupMenu = null;
             }
