@@ -1,3 +1,7 @@
+using System;
+using System.Windows;
+using System.Windows.Controls;
+
 namespace FramePFX.Themes.Attached {
     public class PasswordBoxHelper {
         public static readonly DependencyProperty ListenToLengthProperty =

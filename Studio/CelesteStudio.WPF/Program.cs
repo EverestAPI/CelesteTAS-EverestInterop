@@ -1,5 +1,17 @@
-﻿using CelesteStudio.Communication;
+﻿using System;
+using System.Runtime.InteropServices;
+using System.Windows.Interop;
+using System.Windows.Media;
+using CelesteStudio.Communication;
 using CelesteStudio.Controls;
+using Dark.Net;
+using Dark.Net.Wpf;
+using Eto.Forms;
+using Eto.Wpf;
+using Eto.Wpf.Forms;
+using Eto.Wpf.Forms.Controls;
+using Eto.Wpf.Forms.Menu;
+using Eto.Wpf.Forms.ToolBar;
 
 namespace CelesteStudio.WPF;
 
