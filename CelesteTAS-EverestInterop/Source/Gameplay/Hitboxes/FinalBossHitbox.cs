@@ -42,9 +42,9 @@ internal static class FinalBossHitbox {
         var from = beam.boss.BeamOrigin + Calc.AngleToVector(beam.angle, FinalBossBeam.BeamStartDist);
         var to = beam.boss.BeamOrigin + Calc.AngleToVector(beam.angle, FinalBossBeam.BeamLength);
         var perp = (to - from).Perpendicular().SafeNormalize(FinalBossBeam.CollideCheckSep);
-        DrawExactLine(from + perp, to + perp, color);
-        DrawExactLine(from - perp, to - perp, color);
-        DrawExactLine(from, to, color);
+        HitboxFixer.DrawExactLine(from + perp, to + perp, color);
+        HitboxFixer.DrawExactLine(from - perp, to - perp, color);
+        HitboxFixer.DrawExactLine(from, to, color);
     }
 
     /// Changes the color of shot bullets
@@ -54,52 +54,5 @@ internal static class FinalBossHitbox {
         }
 
         orig(self, camera, color);
-    }
-
-    /// Draws an exact line, filling all pixels the line actually intersects
-    private static void DrawExactLine(Vector2 from, Vector2 to, Color color) {
-        float dx = to.X - from.X;
-        float dy = to.Y - from.Y;
-
-        float step = Math.Min(Math.Abs(dx), Math.Abs(dy));
-        dx /= step;
-        dy /= step;
-
-        // Starting / Ending point will post likely not be an integer coordinate
-        float startDist = dx > dy
-            ? Math.Sign(dx) * 0.5f + 0.5f - from.X.Mod(1.0f)
-            : Math.Sign(dy) * 0.5f + 0.5f - from.Y.Mod(1.0f);
-        float endDist = dx > dy
-            ? -Math.Sign(dx) * 0.5f + 0.5f - to.X.Mod(1.0f)
-            : -Math.Sign(dy) * 0.5f + 0.5f - to.Y.Mod(1.0f);
-
-        float startX = from.X + startDist * dx;
-        float startY = from.Y + startDist * dy;
-
-        float endX = to.X + endDist * dx;
-        float endY = to.Y + endDist * dy;
-
-        int steps = (int) Math.Min(Math.Abs(endX - startX), Math.Abs(endY - startY));
-
-        float x = startX, y = startY;
-        for (int i = 0; i < steps; i++, x += dx, y += dy) {
-            int left   = (int) MathF.Floor  (Math.Min(x, x + dx));
-            int right  = (int) MathF.Ceiling(Math.Max(x, x + dx));
-            int top    = (int) MathF.Floor  (Math.Min(y, y + dy));
-            int bottom = (int) MathF.Ceiling(Math.Max(y, y + dy));
-            Draw.Rect(left, top, right - left, bottom - top, color);
-        }
-
-        int startLeft   = (int) MathF.Floor  (Math.Min(from.X, startX));
-        int startRight  = (int) MathF.Ceiling(Math.Max(from.X, startX));
-        int startTop    = (int) MathF.Floor  (Math.Min(from.Y, startY));
-        int startBottom = (int) MathF.Ceiling(Math.Max(from.Y, startY));
-        Draw.Rect(startLeft, startTop, startLeft - startRight, startBottom - startTop, color);
-
-        int endLeft   = (int) MathF.Floor  (Math.Min(to.X, endX));
-        int endRight  = (int) MathF.Ceiling(Math.Max(to.X, endX));
-        int endTop    = (int) MathF.Floor  (Math.Min(to.Y, endY));
-        int endBottom = (int) MathF.Ceiling(Math.Max(to.Y, endY));
-        Draw.Rect(endLeft, endTop, endLeft - endRight, endBottom - endTop, color);
     }
 }
