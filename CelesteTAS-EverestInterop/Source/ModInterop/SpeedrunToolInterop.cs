@@ -121,12 +121,6 @@ public static class SpeedrunToolInterop {
         }
     }
 
-    public static void InputDeregister() {
-        Dictionary<Hotkey, HotkeyConfig> hotkeyConfigs = typeof(HotkeyConfigUi).GetFieldValue<Dictionary<Hotkey, HotkeyConfig>>("HotkeyConfigs");
-        foreach (HotkeyConfig config in hotkeyConfigs.Values) {
-            config.VirtualButton.Value.Deregister();
-        }
-    }
 }
 
 [ModImportName("SpeedrunTool.SaveLoad")]
