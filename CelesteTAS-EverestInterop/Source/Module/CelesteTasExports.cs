@@ -10,8 +10,13 @@ using TAS.Utils;
 
 namespace TAS.Module;
 
-// Copy-Paste the CelesteTasImports class into your mod and call typeof(CelesteTasImports).ModInterop() in EverestModule.Initialize()
-// You can omit the [PublicAPI] attribute
+/* How to use the CelesteTAS ModInterop API:
+ *  1. Copy-Paste the CelesteTasImports class into your mod
+ *  2. Remove the [PublicAPI] attribute if you aren't using JetBrains' annotations
+ *  3. Add the [ModImportName("CelesteTAS")] attribute to the class
+ *  4. Call typeof(CelesteTasImports).ModInterop() in EverestModule.Initialize()
+ */
+
 [PublicAPI]
 public static class CelesteTasImports {
     public delegate void AddSettingsRestoreHandlerDelegate(EverestModule module, (Func<object> Backup, Action<object> Restore)? handler);

@@ -202,7 +202,7 @@ internal static class HitboxFixer {
         dx /= step;
         dy /= step;
 
-        // Starting / Ending point might not be an integer coordinates
+        // Starting / Ending point might not be integer coordinates
         float startDist = horizontal
             ? Math.Sign(dy) * 0.5f + 0.5f - from.Y.Mod(1.0f)
             : Math.Sign(dx) * 0.5f + 0.5f - from.X.Mod(1.0f);
