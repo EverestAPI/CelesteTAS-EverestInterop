@@ -1,8 +1,11 @@
 using Celeste.Mod;
 using JetBrains.Annotations;
+using Microsoft.Xna.Framework;
+using Monocle;
 using MonoMod.ModInterop;
 using System;
 using TAS.EverestInterop;
+using TAS.EverestInterop.Hitboxes;
 using TAS.Utils;
 
 namespace TAS.Module;
@@ -13,6 +16,7 @@ namespace TAS.Module;
 public static class CelesteTasImports {
     public delegate void AddSettingsRestoreHandlerDelegate(EverestModule module, (Func<object> Backup, Action<object> Restore)? handler);
     public delegate void RemoveSettingsRestoreHandlerDelegate(EverestModule module);
+    public delegate void DrawAccurateLineDelegate(Vector2 from, Vector2 to, Color color);
 
     /// Registers custom delegates for backing up and restoring mod setting before / after running a TAS
     /// A `null` handler causes the settings to not be backed up and later restored
@@ -20,6 +24,20 @@ public static class CelesteTasImports {
 
     /// De-registers a previously registered handler for the module
     public static RemoveSettingsRestoreHandlerDelegate RemoveSettingsRestoreHandler = null!;
+
+    #region Rendering
+
+    /// <summary>
+    /// Draws an exact line, filling all pixels the line actually intersects. <br/>
+    /// Based on the logic of <see cref="Collide.RectToLine(float,float,float,float,Microsoft.Xna.Framework.Vector2,Microsoft.Xna.Framework.Vector2)">Collide.RectToLine</see> and with the assumption that other colliders are grid-aligned.
+    /// </summary>
+    ///
+    /// <remarks>
+    /// Available since CelesteTAS v3.44.0
+    /// </remarks>
+    public static DrawAccurateLineDelegate DrawAccurateLine = null!;
+
+    #endregion
 }
 
 /// Official stable API for interacting with CelesteTAS
@@ -51,4 +69,6 @@ public static class CelesteTasExports {
             $"Tried to de-register a custom setting-restore handler for mod '{module.Metadata.Name}', without having a handler previously registered".Log(LogLevel.Warn);
         }
     }
+
+    public static void DrawAccurateLine(Vector2 from, Vector2 to, Color color) => HitboxFixer.DrawExactLine(from, to, color);
 }
