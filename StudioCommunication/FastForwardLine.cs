@@ -4,6 +4,8 @@ namespace StudioCommunication;
 
 /// A parsed line representing a fast-forward point in the TAS
 public record struct FastForwardLine(bool SaveState, string SpeedText, float? PlaybackSpeed) {
+
+    public static FastForwardLine? Parse(string line) => TryParse(line, out var fastForwardLine) ? fastForwardLine : null;
     public static bool TryParse(string line, out FastForwardLine fastForwardLine) {
         fastForwardLine = default;
 
