@@ -1479,17 +1479,19 @@ public sealed class Editor : SkiaDrawable {
     }
 
     private void UpdateAutoComplete(bool open = true) {
-        string line = Document.Lines[Document.Caret.Row];
-        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, line.Length);
+        string fullLine = Document.Lines[Document.Caret.Row];
+        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, fullLine.Length);
 
-        // Ignore text to the right of the caret to auto-completion
-        line = line[..Document.Caret.Col].TrimStart();
+        fullLine = fullLine.TrimStart();
 
         // Don't auto-complete on comments or action lines
-        if (line.StartsWith('#') || line.StartsWith('*') || ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) {
+        if (fullLine.StartsWith('#') || fullLine.StartsWith('*') || ActionLine.TryParse(fullLine, out _)) {
             CloseAutoCompletePopup();
             return;
         }
+
+        // Ignore text to the right of the caret to auto-completion
+        string line = fullLine[..Document.Caret.Col];
 
         if (open) {
             ActivePopupMenu = autoCompleteMenu;
@@ -1501,7 +1503,7 @@ public sealed class Editor : SkiaDrawable {
 
         // Use auto-complete entries for current command
         var commandLine = CommandLine.Parse(line);
-        var fullCommandLine = CommandLine.Parse(Document.Lines[Document.Caret.Row]);
+        var fullCommandLine = CommandLine.Parse(fullLine);
 
         if (commandLine == null || commandLine.Value.Arguments.Length == 0 ||
             fullCommandLine == null || fullCommandLine.Value.Arguments.Length == 0)
@@ -2134,9 +2136,14 @@ public sealed class Editor : SkiaDrawable {
 
         var oldCaret = Document.Caret;
 
-        // If it's an action line, handle it ourselves
+        // Manually handle action line
         if (TryParseAndFormatActionLine(Document.Caret.Row, out actionLine) && e.Text.Length == 1) {
             ClearQuickEdits();
+
+            // Handle breakpoints
+            if (typedCharacter == '*') {
+                InsertLine("***");
+            }
 
             line = Document.Lines[Document.Caret.Row];
             leadingSpaces = line.Length - line.TrimStart().Length;
@@ -2247,6 +2254,21 @@ public sealed class Editor : SkiaDrawable {
 
             FinishEdit:
             Document.Caret = ClampCaret(Document.Caret);
+        }
+        // Manually handle breakpoints
+        else if (FastForwardLine.TryParse(Document.Lines[Document.Caret.Row], out var fastForward)) {
+            if (char.ToUpper(typedCharacter) == 'S') {
+                fastForward.SaveState = !fastForward.SaveState;
+                if (fastForward.SaveState) {
+                    Document.Caret.Col++;
+                } else {
+                    Document.Caret.Col--;
+                }
+
+                Document.ReplaceLine(Document.Caret.Row, fastForward.ToString());
+            } else if (typedCharacter is >= '0' and <= '9' or '.') {
+                Document.Insert(e.Text);
+            }
         }
         // Just write it as text
         else {
