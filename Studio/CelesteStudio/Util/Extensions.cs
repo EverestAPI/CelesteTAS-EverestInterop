@@ -13,6 +13,12 @@ namespace CelesteStudio.Util;
 
 public static class Extensions
 {
+    /// Helper method to modify a value without requiring a variable
+    public static T Apply<T>(this T obj, Action<T> action) {
+        action(obj);
+        return obj;
+    }
+
     public static string[] SplitDocumentLines(this string self, StringSplitOptions options = StringSplitOptions.None) => self.Split(Document.NewLine, options);
 
     public static int Digits(this int self) => Math.Abs(self).ToString().Length;
@@ -39,45 +45,6 @@ public static class Extensions
     public static CommonControl WithFontStyle(this CommonControl self, FontStyle style) {
         self.Font = self.Font.WithFontStyle(style);
         return self;
-    }
-
-    public static string HotkeyToString(this Keys hotkey, string separator) {
-        var keys = new List<Keys>();
-        // Swap App and Ctrl on macOS
-        if (hotkey.HasFlag(Keys.Application))
-            keys.Add(Eto.Platform.Instance.IsMac ? Keys.Control : Keys.Application);
-        if (hotkey.HasFlag( Keys.Control))
-            keys.Add(Eto.Platform.Instance.IsMac ? Keys.Application : Keys.Control);
-        if (hotkey.HasFlag(Keys.Alt))
-            keys.Add(Keys.Alt);
-        if (hotkey.HasFlag(Keys.Shift))
-            keys.Add(Keys.Shift);
-        keys.Add(hotkey & Keys.KeyMask);
-
-        return string.Join(separator, keys);
-    }
-
-    public static Keys HotkeyFromString(this string hotkeyString, string separator) {
-        var keys = hotkeyString
-                .Split(separator)
-                .Select(Enum.Parse<Keys>)
-                .ToArray();
-
-        var hotkey = keys.FirstOrDefault(key => (key & Keys.KeyMask) != Keys.None, Keys.None);
-        if (hotkey == Keys.None)
-            return Keys.None;
-
-        // Swap App and Ctrl on macOS
-        if (keys.Any(key => key == Keys.Application))
-            hotkey |= Eto.Platform.Instance.IsMac ? Keys.Control : Keys.Application;
-        if (keys.Any(key => key == Keys.Control))
-            hotkey |= Eto.Platform.Instance.IsMac ? Keys.Application : Keys.Control;
-        if (keys.Any(key => key == Keys.Alt))
-            hotkey |= Keys.Alt;
-        if (keys.Any(key => key == Keys.Shift))
-            hotkey |= Keys.Shift;
-
-        return hotkey;
     }
 
     public static bool HasCommonModifier(this Keys keys) => keys.HasFlag(Application.Instance.CommonModifier);

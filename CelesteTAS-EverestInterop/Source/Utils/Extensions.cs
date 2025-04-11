@@ -224,7 +224,12 @@ internal static class ReflectionExtensions {
                     NextMethod:;
                 }
             } else {
-                result = currentType.GetMethod(name, bindingFlags);
+                try {
+                    result = currentType.GetMethod(name, bindingFlags);
+                } catch (Exception ex) {
+                    ex.LogException($"Failed to get method '{name}' on type '{type}'");
+                    return CachedMethodInfos[key] = null;
+                }
             }
             currentType = currentType.BaseType;
         } while (result == null && currentType != null);

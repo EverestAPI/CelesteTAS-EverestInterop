@@ -109,13 +109,16 @@ public static class InfoWatchEntity {
         }
 
         var worldPosition = level.MouseToWorld(screenPosition);
+        // Custom colliders are more likely to implement rectangles than points
+        var checkRect = new Rectangle((int) worldPosition.X, (int) worldPosition.Y, 1, 1);
+
         foreach (var entity in level.Entities.Where(e => !IgnoreEntity(e))) {
             if (entity.Collider == null) {
                 // Attempt to reconstruct collider from entity data
                 if (entity.GetEntityData() is { } data) {
                     entity.Collider = new Hitbox(data.Width, data.Height);
 
-                    if (entity.CollidePoint(worldPosition)) {
+                    if (entity.CollideRect(checkRect)) {
                         yield return entity;
                     }
 
@@ -125,7 +128,7 @@ public static class InfoWatchEntity {
                 continue;
             }
 
-            if (entity.CollidePoint(worldPosition)) {
+            if (entity.CollideRect(checkRect)) {
                 yield return entity;
             }
         }
