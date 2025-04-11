@@ -839,6 +839,10 @@ public sealed class Editor : SkiaDrawable {
 
         foreach (int row in rows) {
             if (row == Document.Caret.Row) {
+                // Still fix action lines
+                if (ActionLine.TryParseStrict(Document.Lines[Document.Caret.Row], out var actionLine)) {
+                    Document.ReplaceLine(row, actionLine.ToString());
+                }
                 continue;
             }
 
@@ -2571,8 +2575,9 @@ public sealed class Editor : SkiaDrawable {
     }
 
     private void OnPaste() {
-        if (!Clipboard.Instance.ContainsText)
+        if (!Clipboard.Instance.ContainsText) {
             return;
+        }
 
         using var __ = Document.Update();
 
@@ -2582,16 +2587,16 @@ public sealed class Editor : SkiaDrawable {
             Document.Selection.Clear();
         }
 
-        var clipboardText = Clipboard.Instance.Text.ReplaceLineEndings(Document.NewLine.ToString());
+        string line = Document.Lines[Document.Caret.Row];
+        string clipboardText = Clipboard.Instance.Text.ReplaceLineEndings(Document.NewLine.ToString());
 
         // Prevent splitting the action-line in half or inserting garbage into the middle
-        if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) {
+        if (ActionLine.TryParse(line, out _)) {
             // Trim leading / trailing blank lines
-            var insertLines = clipboardText.Trim(Document.NewLine).SplitDocumentLines();
+            string[] insertLines = clipboardText.Trim(Document.NewLine).SplitDocumentLines();
 
             // Insert into the action-line if it stays valid
             if (insertLines.Length == 1) {
-                string oldLine = Document.Lines[Document.Caret.Row];
                 Document.Insert(insertLines[0]);
 
                 if (ActionLine.TryParseStrict(Document.Lines[Document.Caret.Row], out var actionLine)) {
@@ -2608,8 +2613,8 @@ public sealed class Editor : SkiaDrawable {
                     }
 
                     // Account for frame count not moving
-                    string line = Document.Lines[Document.Caret.Row];
-                    int leadingSpaces = line.Length - line.TrimStart().Length;
+                    string newLine = Document.Lines[Document.Caret.Row];
+                    int leadingSpaces = newLine.Length - newLine.TrimStart().Length;
                     int frameDigits = actionLine.Frames.Length;
                     Document.Caret.Col += ActionLine.MaxFramesDigits - (leadingSpaces + frameDigits);
 
@@ -2618,7 +2623,33 @@ public sealed class Editor : SkiaDrawable {
                     return;
                 }
 
-                Document.ReplaceLine(Document.Caret.Row, oldLine);
+                // Revert
+                Document.ReplaceLine(Document.Caret.Row, line);
+            }
+
+            // Otherwise insert below
+            Document.InsertLines(Document.Caret.Row + 1, insertLines);
+            Document.Caret.Row += insertLines.Length;
+            Document.Caret.Col = Document.Lines[Document.Caret.Row].Length;
+        }
+        // Apply similar logic to breakpoints
+        else if (FastForwardLine.TryParse(line, out var prevFastForward)) {
+            string[] insertLines = clipboardText.Trim(Document.NewLine).SplitDocumentLines();
+
+            if (insertLines.Length == 1) {
+                Document.Insert(insertLines[0]);
+
+                if (FastForwardLine.TryParse(Document.Lines[Document.Caret.Row], out var nextFastForward)
+                    && prevFastForward.SaveState == nextFastForward.SaveState
+                    && nextFastForward.SpeedText.All(c => c is >= '0' and <= '9' or '.')
+                ) {
+                    // Still valid
+                    Document.ReplaceLine(Document.Caret.Row, nextFastForward.ToString());
+                    return;
+                }
+
+                // Revert
+                Document.ReplaceLine(Document.Caret.Row, line);
             }
 
             // Otherwise insert below
