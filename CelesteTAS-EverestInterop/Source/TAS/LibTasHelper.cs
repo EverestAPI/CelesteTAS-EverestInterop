@@ -249,7 +249,7 @@ public static class LibTasHelper {
         StartExport(path);
     }
 
-    [TasCommand("EndExportLibTAS", Aliases = new[] {"FinishExportLibTAS"}, ExecuteTiming = ExecuteTiming.Parse)]
+    [TasCommand("EndExportLibTAS", Aliases = ["FinishExportLibTAS"], ExecuteTiming = ExecuteTiming.Parse)]
     private static void FinishExportLibTasCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         FinishExport();
     }

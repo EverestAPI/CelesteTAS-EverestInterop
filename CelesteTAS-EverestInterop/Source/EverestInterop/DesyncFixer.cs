@@ -70,7 +70,7 @@ public static class DesyncFixer {
         }
 
         if (ModUtils.GetType("AuraHelper", "AuraHelper.Lantern") is { } auraLanternType) {
-            auraLanternType.GetConstructor(new Type[] { typeof(Vector2), typeof(string), typeof(int) })?.IlHook(SetupAuraHelperRandom);
+            auraLanternType.GetConstructor([typeof(Vector2), typeof(string), typeof(int)])?.IlHook(SetupAuraHelperRandom);
             auraLanternType.GetMethodInfo("Update")?.IlHook(FixAuraEntityDesync);
             ModUtils.GetType("AuraHelper", "AuraHelper.Generator")?.GetMethodInfo("Update")?.IlHook(FixAuraEntityDesync);
         }

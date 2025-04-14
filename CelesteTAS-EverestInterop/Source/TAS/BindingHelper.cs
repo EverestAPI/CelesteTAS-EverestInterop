@@ -64,7 +64,7 @@ public static class BindingHelper {
             SetBinding("Talk", DashAndTalkAndCancel, JournalAndTalk);
 
             SetBinding("Pause", Pause);
-            SetBinding("Confirm", new[] {Confirm2}, JumpAndConfirm);
+            SetBinding("Confirm", [Confirm2], JumpAndConfirm);
             SetBinding("Cancel", DashAndTalkAndCancel, Dash2AndCancel);
 
             SetBinding("Journal", JournalAndTalk);
@@ -77,10 +77,10 @@ public static class BindingHelper {
             SetBinding("UpDashOnly", UpDashOnly);
             SetBinding("DownDashOnly", DownDashOnly);
 
-            SetBinding("LeftMoveOnly", new[] {LeftMoveOnly});
-            SetBinding("RightMoveOnly", new[] {RightMoveOnly});
-            SetBinding("UpMoveOnly", new[] {UpMoveOnly});
-            SetBinding("DownMoveOnly", new[] {DownMoveOnly});
+            SetBinding("LeftMoveOnly", [LeftMoveOnly]);
+            SetBinding("RightMoveOnly", [RightMoveOnly]);
+            SetBinding("UpMoveOnly", [UpMoveOnly]);
+            SetBinding("DownMoveOnly", [DownMoveOnly]);
 
             GameInput.Initialize();
             ClearModsBindings();

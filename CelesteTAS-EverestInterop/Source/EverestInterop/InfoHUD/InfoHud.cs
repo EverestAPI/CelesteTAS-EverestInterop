@@ -245,12 +245,12 @@ public static class InfoHud {
     }
 
     private static KeyValuePair<HudOptions, string>[] CreateHudOptions() {
-        return new[] {
+        return [
             new KeyValuePair<HudOptions, string>(HudOptions.Off, "Info HUD Options Off".ToDialogText()),
             new KeyValuePair<HudOptions, string>(HudOptions.HudOnly, "Info HUD Options Hud Only".ToDialogText()),
             new KeyValuePair<HudOptions, string>(HudOptions.StudioOnly, "Info HUD Options Studio Only".ToDialogText()),
             new KeyValuePair<HudOptions, string>(HudOptions.Both, "Info HUD Options Both".ToDialogText()),
-        };
+        ];
     }
 
     public static void AddSubMenuDescription(TextMenu menu) {

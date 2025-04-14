@@ -36,7 +36,7 @@ public static class GunCommand {
            ) {
             Vector2 pos = new(x, y);
             GunInputCursorPosition.Value.SetValue(null, pos);
-            GunelineGunshot.Value.Invoke(null, new object[] {player, pos, Facings.Left});
+            GunelineGunshot.Value.Invoke(null, [player, pos, Facings.Left]);
         }
     }
 }
