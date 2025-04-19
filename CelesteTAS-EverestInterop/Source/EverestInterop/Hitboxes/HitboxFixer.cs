@@ -222,10 +222,12 @@ internal static class HitboxFixer {
         DrawSegment(to.X,   to.Y,   endX,   endY);
 
         int steps = (int) Math.Min(MathF.Round(Math.Abs(endX - startX)), MathF.Round(Math.Abs(endY - startY)));
-
-        float x = startX, y = startY;
-        for (int i = 0; i < steps; i++, x += dx, y += dy) {
-            DrawSegment(x, y, x + dx, y + dy);
+        for (int i = 0; i < steps; i++) {
+            DrawSegment(
+                startX + i * dx,
+                startY + i * dy,
+                startX + (i + 1) * dx,
+                startY + (i + 1) * dy);
         }
         void DrawSegment(float ax, float ay, float bx, float by) {
             if (horizontal) {
