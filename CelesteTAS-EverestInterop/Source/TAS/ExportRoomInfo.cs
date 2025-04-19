@@ -80,7 +80,7 @@ public static class ExportRoomInfo {
     }
 
     // "ExportRoomInfo [Path = dump_room_info.txt]"
-    [TasCommand("ExportRoomInfo", Aliases = ["StartExportRoomInfo"], CalcChecksum = false)]
+    [TasCommand("ExportRoomInfo", Aliases = ["StartExportRoomInfo"], CalcChecksum = false, MetaDataProvider = typeof(Meta))]
     private static void StartExportCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         string[] args = commandLine.Arguments;
         string path = args.Length > 0 ? args[0] : "dump_room_info.txt";
