@@ -590,6 +590,47 @@ internal static class EnumerableExtensions {
         return !enumerable.IsNullOrEmpty();
     }
 
+    /// Checks if the first sequence starts with the second sequence
+    public static bool SequenceStartsWith<T>(this IEnumerable<T> first, IEnumerable<T> second, IEqualityComparer<T>? comparer = null) {
+        // Optimize for certain cases
+        if (first is ICollection<T> firstCollection && second is ICollection<T> secondCollection) {
+            if (firstCollection.Count < secondCollection.Count) {
+                return false;
+            }
+
+            if (first is T[] firstArray && second is T[] secondArray) {
+                int count = secondArray.Length;
+                return ((ReadOnlySpan<T>)firstArray)[..count].SequenceEqual((ReadOnlySpan<T>) secondArray, comparer);
+            }
+
+            if (first is IList<T> firstList && second is IList<T> secondList) {
+                comparer ??= EqualityComparer<T>.Default;
+
+                int count = secondList.Count;
+                for (int i = 0; i < count; ++i) {
+                    if (!comparer.Equals(firstList[i], secondList[i])) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+
+        // Generic case
+        comparer ??= EqualityComparer<T>.Default;
+
+        using var firstEnumerator = first.GetEnumerator();
+        using var secondEnumerator = second.GetEnumerator();
+
+        while (secondEnumerator.MoveNext()) {
+            if (!firstEnumerator.MoveNext() || !comparer.Equals(firstEnumerator.Current, secondEnumerator.Current)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     // public static IEnumerable<T> SkipLast<T>(this IEnumerable<T> source, int n = 1) {
     //     var it = source.GetEnumerator();
     //     bool hasRemainingItems = false;

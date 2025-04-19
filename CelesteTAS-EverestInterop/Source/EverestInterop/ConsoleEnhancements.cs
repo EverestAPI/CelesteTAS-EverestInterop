@@ -17,7 +17,9 @@ public static class ConsoleEnhancements {
     private static string clickedEntityInfo = string.Empty;
     private static readonly Dictionary<string, string> AllModNames = new();
 
-    [Initialize]
+    internal const int InitializePriority = 0;
+
+    [Initialize(InitializePriority)]
     private static void InitializeHelperMethods() {
         AllModNames.Add(ModUtils.VanillaAssembly.FullName, "Celeste");
         foreach (EverestModule module in Everest.Modules) {

@@ -14,19 +14,146 @@ using TAS.Input.Commands;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
+using StudioCommunication;
+using StudioCommunication.Util;
+using System.Runtime.CompilerServices;
 
 namespace TAS.InfoHUD;
 
-// By default, target queries can only access static members. By providing an `IInstanceResolver`,
-// you can make it so that `Player` resolves to all instances of the player entity in the level.
+/// By default, target queries can only access static members.
+/// By providing an `IInstanceResolver`, types like `Player` can resolve to all instances of the player entity in the level.
 internal interface IInstanceResolver {
     public bool CanResolve(Type type);
 
     List<object> Resolve(Type type, List<Type> componentTypes, EntityID? entityId);
 }
 
-/// Contains all the logic for getting data from a target-query
+/// Contains all the logic for getting/setting/invoking data with the target-query syntax
+/// See wiki for documentation: https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Info-HUD#target-queries
 public static class TargetQuery {
+    internal enum Variant {
+        Get, Set, Invoke
+    }
+
+    /// Handler to provide support for Celeste-specific special cases
+    internal abstract class Handler {
+        public abstract bool AcceptsType(Type type);
+
+        public virtual (List<Type> Types, string[] MemberArgs)? ResolveBaseTypes(string[] queryArgs) => null;
+        public virtual List<object> ResolveInstances(Type type, List<Type> componentTypes, EntityID? entityId) => null;
+
+        [MustDisposeResource]
+        public virtual IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(Variant variant) {
+            yield break;
+        }
+        [MustDisposeResource]
+        public virtual IEnumerator<CommandAutoCompleteEntry> EnumerateMemberEntries(Type type, Variant variant) {
+            foreach (var field in EnumerateUsableFields(type, variant, ReflectionExtensions.StaticInstanceAnyVisibility).OrderBy(f => f.Name)) {
+                yield return new CommandAutoCompleteEntry {
+                    Name = field.Name,
+                    Extra = field.FieldType.CSharpName(),
+                    IsDone = IsFinalTarget(field.FieldType)
+                };
+            }
+            foreach (var property in EnumerateUsableProperties(type, variant, ReflectionExtensions.StaticInstanceAnyVisibility).OrderBy(p => p.Name)) {
+                yield return new CommandAutoCompleteEntry {
+                    Name = property.Name,
+                    Extra = property.PropertyType.CSharpName(),
+                    IsDone = IsFinalTarget(property.PropertyType)
+                };
+            }
+            foreach (var method in EnumerateUsableMethods(type, variant, ReflectionExtensions.StaticInstanceAnyVisibility).OrderBy(m => m.Name)) {
+                yield return new CommandAutoCompleteEntry {
+                    Name = method.Name,
+                    Extra = $"({string.Join(", ", method.GetParameters().Select(p => p.HasDefaultValue ? $"[{p.ParameterType.CSharpName()}]" : p.ParameterType.CSharpName()))})",
+                    IsDone = true,
+                };
+            }
+        }
+    }
+
+    private static bool IsSettableType(Type type) => !type.IsSameOrSubclassOf(typeof(Delegate));
+    private static bool IsInvokableMethod(MethodInfo info) {
+        // Generic methods could probably be supported somehow, but that's probably not worth
+        if (info.IsGenericMethod) {
+            return false;
+        }
+        // To be invokable, all parameters need to be settable or have a default value from a non-settable onwards
+        bool requireDefaults = false;
+        foreach (var param in info.GetParameters()) {
+            if (!requireDefaults && !SetCommand.SetMeta.IsSettableType(param.ParameterType)) {
+                requireDefaults = true;
+            }
+
+            if (requireDefaults && !param.HasDefaultValue) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    internal static bool IsFieldUsable(FieldInfo field, Variant variant) {
+        return variant switch {
+            Variant.Get => true,
+            Variant.Set => IsFinalTarget(field.FieldType)
+                ? (field.Attributes & (FieldAttributes.InitOnly | FieldAttributes.Literal)) == 0 && IsSettableType(field.FieldType)
+                : (field.Attributes & (FieldAttributes.InitOnly | FieldAttributes.Literal)) == 0 || !field.FieldType.IsValueType,
+            Variant.Invoke => !IsFinalTarget(field.FieldType),
+            _ => throw new ArgumentOutOfRangeException(nameof(variant), variant, null)
+        };
+    }
+    internal static bool IsPropertyUsable(PropertyInfo property, Variant variant) {
+        return variant switch {
+            Variant.Get => property.CanRead,
+            Variant.Set => IsFinalTarget(property.PropertyType)
+                ? property.CanWrite && IsSettableType(property.PropertyType)
+                : property.CanRead && (property.CanWrite || !property.PropertyType.IsValueType),
+            Variant.Invoke => !IsFinalTarget(property.PropertyType),
+            _ => throw new ArgumentOutOfRangeException(nameof(variant), variant, null)
+        };
+    }
+    internal static bool IsMethodUsable(MethodInfo method, Variant variant) {
+        return variant switch {
+            Variant.Get => false,
+            Variant.Set => false,
+            Variant.Invoke => IsInvokableMethod(method),
+            _ => throw new ArgumentOutOfRangeException(nameof(variant), variant, null)
+        };
+    }
+
+    internal static IEnumerable<FieldInfo> EnumerateUsableFields(Type type, Variant variant, BindingFlags bindingFlags) {
+        return type
+            .GetAllFieldInfos(bindingFlags)
+            .Where(f =>
+                // Filter-out compiler generated fields
+                f.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !f.Name.Contains('<') && !f.Name.Contains('>') &&
+                // Require to be usable
+                IsFieldUsable(f, variant));
+    }
+    internal static IEnumerable<PropertyInfo> EnumerateUsableProperties(Type type, Variant variant, BindingFlags bindingFlags) {
+        return type
+            .GetAllPropertyInfos(bindingFlags)
+            .Where(p =>
+                // Filter-out compiler generated properties
+                p.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !p.Name.Contains('<') && !p.Name.Contains('>') &&
+                // Require to be usable
+                IsPropertyUsable(p, variant));
+    }
+    internal static IEnumerable<MethodInfo> EnumerateUsableMethods(Type type, Variant variant, BindingFlags bindingFlags) {
+        return type
+            .GetAllMethodInfos(bindingFlags)
+            .Where(m =>
+                // Filter-out compiler generated fields
+                m.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !m.Name.Contains('<') && !m.Name.Contains('>') &&
+                // Require to be usable
+                IsMethodUsable(m, variant));
+    }
+
+    /// Guesses whether the target type is reasonably the final part of a target-query
+    /// This is only relevant for auto-complete and therefore not important to be 100% correct each time
+    private static bool IsFinalTarget(Type type) => type == typeof(string) || type == typeof(Vector2) || type == typeof(Random) || type == typeof(ButtonBinding) || type.IsEnum || type.IsPrimitive;
+
     /// Prevents invocations of methods / execution of Lua code in the Custom Info
     public static bool PreventCodeExecution => EnforceLegalCommand.EnabledWhenRunning;
 
@@ -38,17 +165,23 @@ public static class TargetQuery {
     private static readonly Regex BaseTypeRegex = new(@"^([\w.]+)(@(?:[^.:\[\]\n]*))?(?::(\w+))?(@(?:[^.:\[\]\n]*))?(?:\[(.+):(\d+)\])?$", RegexOptions.Compiled);
 
     private static readonly IInstanceResolver[] TypeInstanceResolvers = [
-        new GlobalInstanceResolver<Settings>(() => Settings.Instance),
-        new GlobalInstanceResolver<SaveData>(() => SaveData.Instance),
-        new GlobalInstanceResolver<Assists>(() => SaveData.Instance.Assists),
-        new EverestSettingsInstanceResolver(),
+        // new GlobalInstanceResolver<Settings>(() => Settings.Instance),
+        // new GlobalInstanceResolver<SaveData>(() => SaveData.Instance),
+        // new GlobalInstanceResolver<Assists>(() => SaveData.Instance.Assists),
+        // new EverestSettingsInstanceResolver(),
         new EntityInstanceResolver(),
         new ComponentInstanceResolver(),
         new SceneInstanceResolver(),
         new SessionInstanceResolver(),
     ];
+    private static readonly Handler[] Handlers = [
+        new SettingsQueryHandler(),
+        new SaveDataQueryHandler(),
+        new AssistsQueryHandler(),
+        new EverestModuleSettingsQueryHandler(),
+    ];
 
-    [Initialize]
+    [Initialize(ConsoleEnhancements.InitializePriority + 1)]
     private static void CollectAllTypes() {
         allTypes.Clear();
         baseTypeCache.Clear();
@@ -58,15 +191,14 @@ public static class TargetQuery {
                 string assemblyName = type.Assembly.GetName().Name!;
                 string modName = ConsoleEnhancements.GetModName(type);
 
+                // Use '.' instead of '+' for nested types
+                fullName = fullName.Replace('+', '.');
+
                 // Strip namespace
                 int namespaceLen = type.Namespace != null
                     ? type.Namespace.Length + 1
                     : 0;
-                string shortName = type.FullName[namespaceLen..];
-
-                // Use '.' instead of '+' for nested types
-                fullName = fullName.Replace('+', '.');
-                shortName = shortName.Replace('+', '.');
+                string shortName = fullName[namespaceLen..];
 
                 allTypes.AddToKey(fullName, type);
                 allTypes.AddToKey($"{fullName}@{assemblyName}", type);
@@ -108,6 +240,181 @@ public static class TargetQuery {
             }
         }
     }
+
+    #region Auto-Complete
+
+    /// Sorts types by namespace into Celeste -> Monocle -> other (alphabetically)
+    /// Inside the namespace it's sorted alphabetically
+    internal class NamespaceComparer : IComparer<(string Name, Type Type)> {
+        public int Compare((string Name, Type Type) x, (string Name, Type Type) y) {
+            if (x.Type.Namespace == null || y.Type.Namespace == null) {
+                return StringComparer.Ordinal.Compare(x.Name, y.Name);
+            }
+
+            int namespaceCompare = CompareNamespace(x.Type.Namespace, y.Type.Namespace);
+            if (namespaceCompare != 0) {
+                return namespaceCompare;
+            }
+
+            return StringComparer.Ordinal.Compare(x.Name, y.Name);
+        }
+
+        private int CompareNamespace(string x, string y) {
+            if (x.StartsWith("Celeste") && y.StartsWith("Celeste")) return 0;
+            if (x.StartsWith("Celeste")) return -1;
+            if (y.StartsWith("Celeste")) return  1;
+            if (x.StartsWith("Monocle") && y.StartsWith("Monocle")) return 0;
+            if (x.StartsWith("Monocle")) return -1;
+            if (y.StartsWith("Monocle")) return  1;
+            return StringComparer.Ordinal.Compare(x, y);
+        }
+    }
+
+    internal static readonly string[] ignoredNamespaces = ["System", "StudioCommunication", "TAS", "SimplexNoise", "FMOD", "MonoMod", "Snowberry"];
+
+    internal static IEnumerator<CommandAutoCompleteEntry> ResolveAutoCompleteEntries(string[] queryArgs, Variant variant) {
+        {
+            using var enumerator = ResolveBaseTypeAutoCompleteEntries(queryArgs, variant);
+            while (enumerator.MoveNext()) {
+                yield return enumerator.Current;
+            }
+        }
+
+        var baseTypes = ResolveBaseTypes(queryArgs, out string[] memberArgs, out var componentTypes, out var entityId);
+        foreach (var type in baseTypes) {
+            foreach (var handler in Handlers.Where(handler => handler.AcceptsType(type))) {
+                using var enumerator = handler.EnumerateMemberEntries(type, variant);
+                while (enumerator.MoveNext()) {
+                    yield return enumerator.Current;
+                }
+                goto NextType;
+            }
+
+            // Generic handler
+            foreach (var field in EnumerateUsableFields(type, variant, ReflectionExtensions.StaticInstanceAnyVisibility).OrderBy(f => f.Name)) {
+                yield return new CommandAutoCompleteEntry {
+                    Name = field.Name,
+                    Extra = field.FieldType.CSharpName(),
+                    IsDone = IsFinalTarget(field.FieldType)
+                };
+            }
+            foreach (var property in EnumerateUsableProperties(type, variant, ReflectionExtensions.StaticInstanceAnyVisibility).OrderBy(p => p.Name)) {
+                yield return new CommandAutoCompleteEntry {
+                    Name = property.Name,
+                    Extra = property.PropertyType.CSharpName(),
+                    IsDone = IsFinalTarget(property.PropertyType)
+                };
+            }
+            foreach (var method in EnumerateUsableMethods(type, variant, ReflectionExtensions.StaticInstanceAnyVisibility).OrderBy(m => m.Name)) {
+                yield return new CommandAutoCompleteEntry {
+                    Name = method.Name,
+                    Extra = $"({string.Join(", ", method.GetParameters().Select(p => p.HasDefaultValue ? $"[{p.ParameterType.CSharpName()}]" : p.ParameterType.CSharpName()))})",
+                    IsDone = true,
+                };
+            }
+
+            NextType:;
+        }
+    }
+    private static IEnumerator<CommandAutoCompleteEntry> ResolveBaseTypeAutoCompleteEntries(string[] queryArgs, Variant variant) {
+        foreach (var handler in Handlers) {
+            using var enumerator = handler.ProvideGlobalEntries(variant);
+            while (enumerator.MoveNext()) {
+                yield return enumerator.Current;
+            }
+        }
+
+        string queryPrefix = queryArgs.Length != 0 ? $"{string.Join('.', queryArgs)}." : "";
+
+        var types = ModUtils.GetTypes()
+            .Where(type =>
+                // Filter-out types which probably aren't useful
+                (type.IsClass || type.IsStructType()) && type.FullName != null && type.Namespace != null && !ignoredNamespaces.Any(ns => type.Namespace.StartsWith(ns)) &&
+                // Filter-out compiler generated types
+                type.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() & !type.FullName.Contains('<') && !type.FullName.Contains('>') &&
+                // Require query-arguments to match namespace
+                type.FullName.StartsWith(queryPrefix))
+            .Where(type => {
+                var bindingFlags = Handlers.Any(handler => handler.AcceptsType(type))
+                    ? ReflectionExtensions.StaticInstanceAnyVisibility
+                    : ReflectionExtensions.StaticAnyVisibility;
+
+                // Require some viable members
+                return EnumerateUsableFields(type, variant, bindingFlags).Any() ||
+                       EnumerateUsableProperties(type, variant, bindingFlags).Any() ||
+                       EnumerateUsableMethods(type, variant, bindingFlags).Any();
+            })
+            .OrderBy(t => (t.CSharpName(), t), new NamespaceComparer())
+            .ToArray();
+
+        string[][] namespaces = types
+            .Select(type => type.Namespace!)
+            .Distinct()
+            .Select(ns => ns.Split('.'))
+            .Where(ns => ns.Length > queryArgs.Length)
+            .ToArray();
+
+        // Merge the lowest common namespaces (we love triple nested loops!)
+        for (int nsIdxA = 0; nsIdxA < namespaces.Length; nsIdxA++) {
+            for (int compLen = namespaces[nsIdxA].Length; compLen > queryArgs.Length; compLen--) {
+                string[] subSeq = namespaces[nsIdxA][..compLen];
+                bool foundAny = false;
+
+                for (int nsIdxB = 0; nsIdxB < namespaces.Length; nsIdxB++) {
+                    if (nsIdxA == nsIdxB || namespaces[nsIdxB].Length < compLen) {
+                        continue;
+                    }
+
+                    if (namespaces[nsIdxB].SequenceStartsWith(subSeq)) {
+                        foundAny = true;
+                        namespaces[nsIdxB] = [];
+                    }
+                }
+
+                if (foundAny) {
+                    namespaces[nsIdxA] = subSeq;
+                }
+            }
+        }
+
+        foreach (string[] ns in namespaces) {
+            if (ns.Length <= queryArgs.Length) {
+                continue;
+            }
+
+            yield return new CommandAutoCompleteEntry { Name = $"{string.Join('.', ns[queryArgs.Length..])}.", Extra = "Namespace", Prefix = queryPrefix, IsDone = false };
+        }
+
+        foreach (var type in types) {
+            if (queryPrefix.Length != 0 && type.Namespace!.Length + 1 != queryPrefix.Length) {
+                // Require exact prefix if specified
+                continue;
+            }
+
+            string assemblyName = type.Assembly.GetName().Name!;
+            string modName = ConsoleEnhancements.GetModName(type);
+
+            // Use '.' instead of '+' for nested types
+            string fullName = type.FullName!.Replace('+', '.');
+
+            // Strip namespace
+            int namespaceLen = type.Namespace != null
+                ? type.Namespace.Length + 1
+                : 0;
+            string shortName = fullName[namespaceLen..];
+
+            // Use short name if possible, otherwise specify mod name / assembly name
+            if (allTypes[shortName].Count == 1) {
+                yield return new CommandAutoCompleteEntry { Name = $"{shortName}.", Extra = type.Namespace ?? string.Empty, Prefix = queryPrefix, IsDone = false };
+            } else if (allTypes[$"{shortName}@{modName}"].Count == 1) {
+                yield return new CommandAutoCompleteEntry { Name = $"{shortName}@{modName}.", Extra = type.Namespace ?? string.Empty, Prefix = queryPrefix, IsDone = false };
+            } else if (allTypes[$"{shortName}@{assemblyName}"].Count == 1) {
+                yield return new CommandAutoCompleteEntry { Name = $"{shortName}@{assemblyName}.", Extra = type.Namespace ?? string.Empty, Prefix = queryPrefix, IsDone = false };
+            }
+        }
+    }
+
+    #endregion
 
     /// Parses a target-query and returns the results for that
     /// A single BaseInstance == null entry is returned for static contexts
@@ -163,25 +470,37 @@ public static class TargetQuery {
         componentTypes = [];
         entityId = null;
 
-        // Vanilla settings don't need a prefix
-        if (typeof(Settings).GetFields().FirstOrDefault(f => f.Name == queryArgs[0]) != null) {
+        if (queryArgs.Length == 0) {
             memberArgs = queryArgs;
-            return [typeof(Settings)];
-        }
-        if (typeof(SaveData).GetFields().FirstOrDefault(f => f.Name == queryArgs[0]) != null && queryArgs[0] != nameof(SaveData.Assists)) {
-            memberArgs = queryArgs;
-            return [typeof(SaveData)];
-        }
-        if (typeof(Assists).GetFields().FirstOrDefault(f => f.Name == queryArgs[0]) != null) {
-            memberArgs = queryArgs;
-            return [typeof(Assists)];
+            return [];
         }
 
-        // Check for mod settings
-        if (Everest.Modules.FirstOrDefault(mod => mod.SettingsType != null && mod.Metadata.Name == queryArgs[0]) is { } module) {
-            memberArgs = queryArgs[1..];
-            return [module.SettingsType];
+        foreach (var handler in Handlers) {
+            if (handler.ResolveBaseTypes(queryArgs) is { } result) {
+                memberArgs = result.MemberArgs;
+                return result.Types;
+            }
         }
+
+        // Vanilla settings don't need a prefix
+        // if (typeof(Settings).GetFields().FirstOrDefault(f => f.Name == queryArgs[0]) != null) {
+        //     memberArgs = queryArgs;
+        //     return [typeof(Settings)];
+        // }
+        // if (typeof(SaveData).GetFields().FirstOrDefault(f => f.Name == queryArgs[0]) != null && queryArgs[0] != nameof(SaveData.Assists)) {
+        //     memberArgs = queryArgs;
+        //     return [typeof(SaveData)];
+        // }
+        // if (typeof(Assists).GetFields().FirstOrDefault(f => f.Name == queryArgs[0]) != null) {
+        //     memberArgs = queryArgs;
+        //     return [typeof(Assists)];
+        // }
+
+        // Check for mod settings
+        // if (Everest.Modules.FirstOrDefault(mod => mod.SettingsType != null && mod.Metadata.Name == queryArgs[0]) is { } module) {
+        //     memberArgs = queryArgs[1..];
+        //     return [module.SettingsType];
+        // }
 
         // Greedily increase amount of tested arguments
         string currentType = string.Empty;
@@ -237,6 +556,11 @@ public static class TargetQuery {
     /// Resolves a type into all applicable instances of it
     /// Returns null for types which are always in a static context
     public static List<object>? ResolveTypeInstances(Type type, List<Type> componentTypes, EntityID? entityId) {
+        foreach (var handler in Handlers) {
+            if (handler.AcceptsType(type)) {
+                return handler.ResolveInstances(type, componentTypes, entityId);
+            }
+        }
         foreach (var resolver in TypeInstanceResolvers) {
             if (resolver.CanResolve(type)) {
                 return resolver.Resolve(type, componentTypes, entityId);

@@ -63,6 +63,11 @@ public static class SetCommand {
 
         public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
             var targetArgs = GetTargetArgs(args).ToArray();
+            using var enumerator2 = TargetQuery.ResolveAutoCompleteEntries(targetArgs, TargetQuery.Variant.Set);
+            while (enumerator2.MoveNext()) {
+                yield return enumerator2.Current;
+            }
+            yield break;
 
             // Parameter
             if (args.Length > 1) {
@@ -75,27 +80,27 @@ public static class SetCommand {
 
             if (targetArgs.Length == 0) {
                 // Vanilla settings. Manually selected to filter out useless entries
-                var vanillaSettings = ((string[])["DisableFlashes", "ScreenShake", "GrabMode", "CrouchDashMode", "SpeedrunClock", "Pico8OnMainMenu", "VariantsUnlocked"]).Select(e => typeof(Settings).GetFieldInfo(e)!);
-                var vanillaSaveData = ((string[])["CheatMode", "AssistMode", "VariantMode", "UnlockedAreas", "RevealedChapter9", "DebugMode"]).Select(e => typeof(SaveData).GetFieldInfo(e)!);
-
-                foreach (var f in vanillaSettings) {
-                    yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Settings)", IsDone = true };
-                }
-                foreach (var f in vanillaSaveData) {
-                    yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Save Data)", IsDone = true };
-                }
-                foreach (var f in typeof(Assists).GetFields()) {
-                    yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Assists)", IsDone = true };
-                }
+                // var vanillaSettings = ((string[])["DisableFlashes", "ScreenShake", "GrabMode", "CrouchDashMode", "SpeedrunClock", "Pico8OnMainMenu", "VariantsUnlocked"]).Select(e => typeof(Settings).GetFieldInfo(e)!);
+                // var vanillaSaveData = ((string[])["CheatMode", "AssistMode", "VariantMode", "UnlockedAreas", "RevealedChapter9", "DebugMode"]).Select(e => typeof(SaveData).GetFieldInfo(e)!);
+                //
+                // foreach (var f in vanillaSettings) {
+                //     yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Settings)", IsDone = true };
+                // }
+                // foreach (var f in vanillaSaveData) {
+                //     yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Save Data)", IsDone = true };
+                // }
+                // foreach (var f in typeof(Assists).GetFields()) {
+                //     yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Assists)", IsDone = true };
+                // }
 
                 // Mod settings
-                foreach (var mod in Everest.Modules) {
-                    if (mod.SettingsType != null && (mod.SettingsType.GetAllFieldInfos().Any() ||
-                                                     mod.SettingsType.GetAllPropertyInfos().Any(p => p.SetMethod != null)))
-                    {
-                        yield return new CommandAutoCompleteEntry { Name = $"{mod.Metadata.Name}.", Extra = "Mod Setting", IsDone = false };
-                    }
-                }
+                // foreach (var mod in Everest.Modules) {
+                //     if (mod.SettingsType != null && (mod.SettingsType.GetAllFieldInfos().Any() ||
+                //                                      mod.SettingsType.GetAllPropertyInfos().Any(p => p.SetMethod != null)))
+                //     {
+                //         yield return new CommandAutoCompleteEntry { Name = $"{mod.Metadata.Name}.", Extra = "Mod Setting", IsDone = false };
+                //     }
+                // }
 
                 var allTypes = ModUtils.GetTypes();
                 foreach ((string typeName, var type) in allTypes
@@ -153,11 +158,11 @@ public static class SetCommand {
                         yield return new CommandAutoCompleteEntry { Name = variant.ToString()!, Prefix = "ExtendedVariantMode.", Extra = typeName, IsDone = true, HasNext = true };
                     }
                 }
-            } else if (targetArgs.Length >= 1 && Everest.Modules.FirstOrDefault(m => m.Metadata.Name == targetArgs[0] && m.SettingsType != null) is { } mod) {
+            } /*else if (targetArgs.Length >= 1 && Everest.Modules.FirstOrDefault(m => m.Metadata.Name == targetArgs[0] && m.SettingsType != null) is { } mod) {
                 foreach (var entry in GetSetTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, args), isRootType: targetArgs.Length == 1)) {
                     yield return entry with { Name = entry.Name + (entry.IsDone ? "" : "."), Prefix = string.Join('.', targetArgs) + ".", HasNext = true };
                 }
-            } else if (targetArgs.Length >= 1 && TargetQuery.ResolveBaseTypes(targetArgs, out string[] memberArgs, out _, out _) is { } types && types.IsNotEmpty()) {
+            } */else if (targetArgs.Length >= 1 && TargetQuery.ResolveBaseTypes(targetArgs, out string[] memberArgs, out _, out _) is { } types && types.IsNotEmpty()) {
                 // Assume the first type
                 foreach (var entry in GetSetTypeAutoCompleteEntries(RecurseSetType(types[0], memberArgs), isRootType: targetArgs.Length == 1)) {
                     yield return entry with { Name = entry.Name + (entry.IsDone ? "" : "."), Prefix = string.Join('.', targetArgs) + ".", HasNext = true };
