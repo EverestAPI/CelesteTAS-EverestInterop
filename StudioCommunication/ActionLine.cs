@@ -12,7 +12,7 @@ public struct ActionLine() {
 
     public Actions Actions;
 
-    private string frames;
+    private string frames = "";
     private int frameCount;
 
     public string Frames {

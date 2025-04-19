@@ -178,7 +178,7 @@ public sealed class FeatherlineForm : Form {
             Featherline.Settings.Framecount = (int) maxFrames.Value;
             Featherline.Settings.GensPerTiming = (int) gensPerTiming.Value;
             Featherline.Settings.ShuffleCount = (int) timingShuffles.Value;
-            Featherline.Settings.TimingTestFavDirectly = (bool) testOnInitial.Checked;
+            Featherline.Settings.TimingTestFavDirectly = testOnInitial.Checked ?? false;
             Featherline.Settings.Checkpoints = checkpoints.Text.Split("\n");
             Featherline.Settings.Favorite = initialInputs.Text;
             Featherline.Settings.ManualHitboxes = customHitboxes.Text.Split("\n");

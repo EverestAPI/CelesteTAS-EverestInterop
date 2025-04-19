@@ -2,26 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.Helpers;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
 using Monocle;
 using StudioCommunication;
-using TAS.EverestInterop;
-using TAS.EverestInterop.InfoHUD;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
-using Type = System.Type;
 
 namespace TAS.Communication;
 
 public static class GameData {
-    private static Dictionary<string, ModUpdateInfo> modUpdateInfos;
+    private static Dictionary<string, ModUpdateInfo>? modUpdateInfos;
 
     [Load]
     private static void Load() {
@@ -67,7 +60,7 @@ public static class GameData {
 
         AreaData areaData = AreaData.Get(level);
         string moduleName = string.Empty;
-        EverestModuleMetadata mapMeta = null;
+        EverestModuleMetadata? mapMeta = null;
         if (Everest.Content.TryGet<AssetTypeMap>("Maps/" + areaData.SID, out ModAsset mapModAsset) && mapModAsset.Source != null) {
             moduleName = mapModAsset.Source.Name;
             mapMeta = metas.FirstOrDefault(meta => meta.Name == moduleName);
@@ -85,7 +78,7 @@ public static class GameData {
         metas.Remove(everestMeta);
         metas.Remove(tasMeta);
 
-        EverestModuleMetadata speedrunToolMeta = metas.FirstOrDefault(metadata => metadata.Name == "SpeedrunTool");
+        EverestModuleMetadata? speedrunToolMeta = metas.FirstOrDefault(metadata => metadata.Name == "SpeedrunTool");
         if (speedrunToolMeta != null) {
             modInfo += MetaToString(speedrunToolMeta);
             metas.Remove(speedrunToolMeta);
@@ -134,7 +127,7 @@ public static class GameData {
 
     public static string GetSettingValue(string settingName) {
         if (typeof(CelesteTasSettings).GetPropertyInfo(settingName) is { } property) {
-            return property.GetValue(TasSettings).ToString();
+            return property.GetValue(TasSettings)!.ToString()!;
         } else {
             return string.Empty;
         }
@@ -147,7 +140,7 @@ public static class GameData {
 
         AreaData areaData = AreaData.Get(level);
         string moduleName = string.Empty;
-        EverestModule mapModule = null;
+        EverestModule? mapModule = null;
         if (Everest.Content.TryGet<AssetTypeMap>("Maps/" + areaData.SID, out ModAsset mapModAsset) && mapModAsset.Source != null) {
             moduleName = mapModAsset.Source.Name;
             mapModule = Everest.Modules.FirstOrDefault(module => module.Metadata?.Name == moduleName);

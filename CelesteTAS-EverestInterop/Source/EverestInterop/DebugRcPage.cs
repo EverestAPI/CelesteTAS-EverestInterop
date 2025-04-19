@@ -7,12 +7,9 @@ using System.Text;
 using Celeste.Mod;
 using StudioCommunication;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Web;
 using TAS.Communication;
-using TAS.Input;
 using TAS.Module;
-using TAS.Utils;
 
 namespace TAS.EverestInterop;
 
@@ -97,7 +94,7 @@ TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}
             Everest.DebugRC.WriteHTMLStart(c, builder);
 
             NameValueCollection args = Everest.DebugRC.ParseQueryString(c.Request.RawUrl);
-            string template = args["template"];
+            string? template = args["template"];
             if (template != null) {
                 TasSettings.InfoCustomTemplate = WebUtility.UrlDecode(template).Replace("\\n", "\n");
             }

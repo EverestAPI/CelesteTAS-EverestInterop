@@ -89,7 +89,7 @@ public static class ReadCommand {
                 // Don't include labels before the starting one for the ending label
                 bool afterStartingLabel = args.Length == 2;
                 foreach (string line in File.ReadAllText(fullPath).ReplaceLineEndings("\n").Split('\n')) {
-                    if (!StudioCommunication.CommentLine.IsLabel(line)) {
+                    if (!CommentLine.IsLabel(line)) {
                         continue;
                     }
 
@@ -124,7 +124,7 @@ public static class ReadCommand {
 
         string commandName = $"Read, {string.Join(", ", args)}";
 
-        string fileDirectory = Path.GetDirectoryName(filePath);
+        string? fileDirectory = Path.GetDirectoryName(filePath);
         if (string.IsNullOrWhiteSpace(fileDirectory)) {
             fileDirectory = Directory.GetCurrentDirectory();
         }
@@ -172,8 +172,6 @@ public static class ReadCommand {
         if (readCommandStack.Count > 0) {
             readCommandStack.RemoveAt(readCommandStack.Count - 1);
         }
-
-        return;
     }
 
     private static string? FindTargetFile(string commandName, string fileDirectory, string filePath, out string errorMessage) {

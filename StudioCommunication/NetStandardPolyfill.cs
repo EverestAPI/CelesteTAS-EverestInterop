@@ -1,6 +1,8 @@
 ﻿#if !NET7_0_OR_GREATER
 using System;
 using System.IO;
+// ReSharper disable UnusedType.Global
+// ReSharper disable UnusedMember.Global
 
 namespace StudioCommunication {
     public static class NetStandardPolyfill {
@@ -42,6 +44,22 @@ namespace StudioCommunication {
 
 #if !NET5_0_OR_GREATER
 namespace System.Runtime.CompilerServices {
-    class IsExternalInit { }
+    internal class IsExternalInit;
+}
+#endif
+
+#if !NET8_0_OR_GREATER
+namespace System.Runtime.CompilerServices {
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
+    internal sealed class RequiredMemberAttribute : Attribute;
+    
+    // https://stackoverflow.com/a/75995697
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = true, Inherited = false)]
+    internal sealed class CompilerFeatureRequiredAttribute(string featureName) : Attribute {
+        public string FeatureName { get; } = featureName;
+        public bool IsOptional { get; init; }
+        public const string RefStructs = nameof(RefStructs);
+        public const string RequiredMembers = nameof(RequiredMembers);
+    }
 }
 #endif
