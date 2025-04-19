@@ -120,13 +120,12 @@ public class CelesteTasModule : EverestModule {
 
 /// Invokes the target method when the module is loaded
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-internal class LoadAttribute : Attribute;
+internal class LoadAttribute(int priority = 0) : EventAttribute(priority);
 
 /// Invokes the target method when the module is unloaded
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-internal class UnloadAttribute : Attribute;
+internal class UnloadAttribute(int priority = 0) : EventAttribute(priority);
 
 /// Invokes the target method when the module is initialized
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-internal class InitializeAttribute : Attribute;
-
+internal class InitializeAttribute(int priority = 0) : EventAttribute(priority);
