@@ -356,8 +356,10 @@ public sealed class RadelineSimForm : Form {
     }
 
     private async Task RunSim() {
-        StoreConfig();
-        await Application.Instance.InvokeAsync(() => individualProgressBar.Value = 0);
+        await Application.Instance.InvokeAsync(() => {
+            StoreConfig();
+            individualProgressBar.Value = 0;
+        });
 
         if (cfg.DisabledKey == DisabledKey.Auto) {
             cfg.DisabledKey = DisabledKey.None;
