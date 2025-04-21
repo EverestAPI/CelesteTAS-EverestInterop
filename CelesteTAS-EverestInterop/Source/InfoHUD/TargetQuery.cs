@@ -16,6 +16,7 @@ using TAS.Module;
 using TAS.Utils;
 using StudioCommunication;
 using StudioCommunication.Util;
+using System.Collections;
 using System.Runtime.CompilerServices;
 
 namespace TAS.InfoHUD;
@@ -37,10 +38,22 @@ public static class TargetQuery {
 
     /// Handler to provide support for Celeste-specific special cases
     internal abstract class Handler {
-        public abstract bool AcceptsType(Type type);
+        public abstract bool CanResolveInstances(Type type);
+        public abstract bool CanResolveMembers(Type type);
 
+        public virtual object[] ResolveInstances(Type type) => [];
         public virtual (List<Type> Types, string[] MemberArgs)? ResolveBaseTypes(string[] queryArgs) => null;
-        public virtual List<object> ResolveInstances(Type type, List<Type> componentTypes, EntityID? entityId) => null;
+
+        public virtual object[] ResolveInstancesWithUserData(Type type, object? userData) => ResolveInstances(type);
+        public virtual (List<Type> Types, string[] MemberArgs, object? UserData)? ResolveBaseTypesWithUserData(string[] queryArgs) {
+            if (ResolveBaseTypes(queryArgs) is { } result) {
+                return (result.Types, result.MemberArgs, UserData: null);
+            }
+
+            return null;
+        }
+
+        public virtual Result<bool, QueryError> ResolveMember(ref object?[] values, ref int memberIdx, string[] memberArgs) => Result<bool, QueryError>.Ok(false);
 
         [MustDisposeResource]
         public virtual IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(Variant variant) {
@@ -93,23 +106,23 @@ public static class TargetQuery {
         return true;
     }
 
-    internal static bool IsFieldUsable(FieldInfo field, Variant variant) {
+    internal static bool IsFieldUsable(FieldInfo field, Variant variant, bool isFinal) {
         return variant switch {
             Variant.Get => true,
-            Variant.Set => IsFinalTarget(field.FieldType)
+            Variant.Set => isFinal
                 ? (field.Attributes & (FieldAttributes.InitOnly | FieldAttributes.Literal)) == 0 && IsSettableType(field.FieldType)
                 : (field.Attributes & (FieldAttributes.InitOnly | FieldAttributes.Literal)) == 0 || !field.FieldType.IsValueType,
-            Variant.Invoke => !IsFinalTarget(field.FieldType),
+            Variant.Invoke => !isFinal,
             _ => throw new ArgumentOutOfRangeException(nameof(variant), variant, null)
         };
     }
-    internal static bool IsPropertyUsable(PropertyInfo property, Variant variant) {
+    internal static bool IsPropertyUsable(PropertyInfo property, Variant variant, bool isFinal) {
         return variant switch {
             Variant.Get => property.CanRead,
-            Variant.Set => IsFinalTarget(property.PropertyType)
+            Variant.Set => isFinal
                 ? property.CanWrite && IsSettableType(property.PropertyType)
                 : property.CanRead && (property.CanWrite || !property.PropertyType.IsValueType),
-            Variant.Invoke => !IsFinalTarget(property.PropertyType),
+            Variant.Invoke => !isFinal,
             _ => throw new ArgumentOutOfRangeException(nameof(variant), variant, null)
         };
     }
@@ -129,7 +142,7 @@ public static class TargetQuery {
                 // Filter-out compiler generated fields
                 f.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !f.Name.Contains('<') && !f.Name.Contains('>') &&
                 // Require to be usable
-                IsFieldUsable(f, variant));
+                IsFieldUsable(f, variant, IsFinalTarget(f.FieldType)));
     }
     internal static IEnumerable<PropertyInfo> EnumerateUsableProperties(Type type, Variant variant, BindingFlags bindingFlags) {
         return type
@@ -138,7 +151,7 @@ public static class TargetQuery {
                 // Filter-out compiler generated properties
                 p.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !p.Name.Contains('<') && !p.Name.Contains('>') &&
                 // Require to be usable
-                IsPropertyUsable(p, variant));
+                IsPropertyUsable(p, variant, IsFinalTarget(p.PropertyType)));
     }
     internal static IEnumerable<MethodInfo> EnumerateUsableMethods(Type type, Variant variant, BindingFlags bindingFlags) {
         return type
@@ -157,8 +170,8 @@ public static class TargetQuery {
     /// Prevents invocations of methods / execution of Lua code in the Custom Info
     public static bool PreventCodeExecution => EnforceLegalCommand.EnabledWhenRunning;
 
-    private static readonly Dictionary<string, List<Type>> allTypes = new();
-    private static readonly Dictionary<string, (List<Type> Types, List<Type> ComponentTypes, EntityID? EntityID)> baseTypeCache = [];
+    internal static readonly Dictionary<string, List<Type>> AllTypes = new();
+    internal static readonly Dictionary<string, (List<Type> Types, string[] MemberArgs, object? UserData)> BaseTypeCache = [];
 
     /// Searches for the target type, optional target assembly, optional component type, optional component assembly, and optional EntityID
     /// e.g. `Type@Assembly:Component@Assembly[RoomName:EntityId]`
@@ -179,12 +192,13 @@ public static class TargetQuery {
         new SaveDataQueryHandler(),
         new AssistsQueryHandler(),
         new EverestModuleSettingsQueryHandler(),
+        new EntityQueryHandler(),
     ];
 
     [Initialize(ConsoleEnhancements.InitializePriority + 1)]
     private static void CollectAllTypes() {
-        allTypes.Clear();
-        baseTypeCache.Clear();
+        AllTypes.Clear();
+        BaseTypeCache.Clear();
 
         foreach (var type in ModUtils.GetTypes()) {
             if (type.FullName is { } fullName) {
@@ -200,19 +214,19 @@ public static class TargetQuery {
                     : 0;
                 string shortName = fullName[namespaceLen..];
 
-                allTypes.AddToKey(fullName, type);
-                allTypes.AddToKey($"{fullName}@{assemblyName}", type);
-                allTypes.AddToKey($"{fullName}@{modName}", type);
+                AllTypes.AddToKey(fullName, type);
+                AllTypes.AddToKey($"{fullName}@{assemblyName}", type);
+                AllTypes.AddToKey($"{fullName}@{modName}", type);
 
-                allTypes.AddToKey(shortName, type);
-                allTypes.AddToKey($"{shortName}@{assemblyName}", type);
-                allTypes.AddToKey($"{shortName}@{modName}", type);
+                AllTypes.AddToKey(shortName, type);
+                AllTypes.AddToKey($"{shortName}@{assemblyName}", type);
+                AllTypes.AddToKey($"{shortName}@{modName}", type);
             }
         }
     }
 
     [MonocleCommand("get", "'get Type.fieldOrProperty' -> value | Example: 'get Player.Position', 'get Level.Wind' (CelesteTAS)"), UsedImplicitly]
-    private static void GetCommand(string? query) {
+    private static void GetCmd(string? query) {
         if (query == null) {
             "No target-query specified".ConsoleLog(LogLevel.Error);
             return;
@@ -229,7 +243,7 @@ public static class TargetQuery {
         } else if (result.Value.Count == 1) {
             result.Value[0].Value.ConsoleLog();
         } else {
-            foreach ((object? value, object? baseInstance) in result.Value) {
+            foreach ((object? baseInstance, object? value) in result.Value) {
                 if (baseInstance is Entity entity &&
                     entity.GetEntityData()?.ToEntityId().ToString() is { } id)
                 {
@@ -239,6 +253,44 @@ public static class TargetQuery {
                 }
             }
         }
+    }
+
+    /// Parses a target-query and returns the results for that
+    /// A single BaseInstance == null entry is returned for static contexts
+    internal static Result<List<(object BaseInstance, object? Value)>, QueryError> GetMemberValues(string query, bool forceAllowCodeExecution = false) {
+        string[] queryArgs = query.Split('.');
+
+        var baseTypes = ResolveBaseTypes(queryArgs, out string[] memberArgs, out object? userData);
+        if (baseTypes.IsEmpty()) {
+            return Result<List<(object BaseInstance, object? Value)>, QueryError>.Fail(new QueryError.NoBaseTypes(query));
+        }
+
+        List<(object BaseInstance, object? Value)> allResults = [];
+        MemberAccessError? error = null;
+
+        foreach (var baseType in baseTypes) {
+            object[] instances = ResolveTypeInstances(baseType, userData);
+            foreach (object instance in instances) {
+                var result = GetMemberValue(instance, memberArgs, forceAllowCodeExecution);
+                if (result.Failure) {
+                    if (result.Error is MemberAccessError accessError) {
+                        error = MemberAccessError.Aggregate(error, accessError);
+                    } else {
+                        return Result<List<(object BaseInstance, object? Value)>, QueryError>.Fail(result.Error);
+                    }
+
+                    continue;
+                }
+
+                allResults.AddRange(result.Value.Where(value => value != InvalidValue && value is not QueryError).Select(value => (instance, value)));
+            }
+        }
+
+        if (error == null || allResults.Count != 0) {
+            return Result<List<(object BaseInstance, object? Value)>, QueryError>.Ok(allResults);
+        }
+
+        return Result<List<(object BaseInstance, object? Value)>, QueryError>.Fail(error);
     }
 
     #region Auto-Complete
@@ -280,9 +332,9 @@ public static class TargetQuery {
             }
         }
 
-        var baseTypes = ResolveBaseTypes(queryArgs, out string[] memberArgs, out var componentTypes, out var entityId);
+        var baseTypes = ResolveBaseTypes(queryArgs, out string[] memberArgs, out var userData);
         foreach (var type in baseTypes) {
-            foreach (var handler in Handlers.Where(handler => handler.AcceptsType(type))) {
+            foreach (var handler in Handlers.Where(handler => handler.CanResolveInstances(type))) {
                 using var enumerator = handler.EnumerateMemberEntries(type, variant);
                 while (enumerator.MoveNext()) {
                     yield return enumerator.Current;
@@ -335,7 +387,7 @@ public static class TargetQuery {
                 // Require query-arguments to match namespace
                 type.FullName.StartsWith(queryPrefix))
             .Where(type => {
-                var bindingFlags = Handlers.Any(handler => handler.AcceptsType(type))
+                var bindingFlags = Handlers.Any(handler => handler.CanResolveInstances(type))
                     ? ReflectionExtensions.StaticInstanceAnyVisibility
                     : ReflectionExtensions.StaticAnyVisibility;
 
@@ -404,83 +456,46 @@ public static class TargetQuery {
             string shortName = fullName[namespaceLen..];
 
             // Use short name if possible, otherwise specify mod name / assembly name
-            if (allTypes[shortName].Count == 1) {
+            if (AllTypes[shortName].Count == 1) {
                 yield return new CommandAutoCompleteEntry { Name = $"{shortName}.", Extra = type.Namespace ?? string.Empty, Prefix = queryPrefix, IsDone = false };
-            } else if (allTypes[$"{shortName}@{modName}"].Count == 1) {
+            } else if (AllTypes[$"{shortName}@{modName}"].Count == 1) {
                 yield return new CommandAutoCompleteEntry { Name = $"{shortName}@{modName}.", Extra = type.Namespace ?? string.Empty, Prefix = queryPrefix, IsDone = false };
-            } else if (allTypes[$"{shortName}@{assemblyName}"].Count == 1) {
+            } else if (AllTypes[$"{shortName}@{assemblyName}"].Count == 1) {
                 yield return new CommandAutoCompleteEntry { Name = $"{shortName}@{assemblyName}.", Extra = type.Namespace ?? string.Empty, Prefix = queryPrefix, IsDone = false };
             }
         }
     }
 
     #endregion
-
-    /// Parses a target-query and returns the results for that
-    /// A single BaseInstance == null entry is returned for static contexts
-    public static Result<List<(object? Value, object? BaseInstance)>, string> GetMemberValues(string query, bool forceAllowCodeExecution = false) {
-        string[] queryArgs = query.Split('.');
-
-        var baseTypes = ResolveBaseTypes(queryArgs, out string[] memberArgs, out var componentTypes, out var entityId);
-        if (baseTypes.IsEmpty()) {
-            return Result<List<(object? Value, object? BaseInstance)>, string>.Fail($"Failed to find base type for target-query '{query}'");
-        }
-        if (memberArgs.IsEmpty()) {
-            return Result<List<(object? Value, object? BaseInstance)>, string>.Fail("No members specified");
-        }
-
-        List< (object? Value, object? BaseInstance)> allResults = [];
-        foreach (var baseType in baseTypes) {
-            var instances = ResolveTypeInstances(baseType, componentTypes, entityId);
-
-            if (componentTypes.IsEmpty()) {
-                if (ProcessType(baseType).CheckFailure(out string? error)) {
-                    return Result<List<(object? Value, object? BaseInstance)>, string>.Fail(error);
-                }
-            } else {
-                foreach (var componentType in componentTypes) {
-                    if (ProcessType(componentType).CheckFailure(out string? error)) {
-                        return Result<List<(object? Value, object? BaseInstance)>, string>.Fail(error);
-                    }
-                }
-            }
-            continue;
-
-            VoidResult<string> ProcessType(Type type) {
-                var result = ResolveMemberValues(type, instances, memberArgs, forceAllowCodeExecution);
-                if (result.Failure) {
-                    return VoidResult<string>.Fail(result.Error);
-                }
-
-                if (instances == null) {
-                    allResults.Add((result.Value[0], null));
-                } else {
-                    allResults.AddRange(result.Value.Select((value, i) => (value, (object?)instances[i])));
-                }
-
-                return VoidResult<string>.Ok;
-            }
-        }
-
-        return Result<List<(object? Value, object? BaseInstance)>, string>.Ok(allResults);
-    }
+    #region Resolving
 
     /// Parses the first part of a query into types and an optional EntityID
-    public static List<Type> ResolveBaseTypes(string[] queryArgs, out string[] memberArgs, out List<Type> componentTypes, out EntityID? entityId) {
-        componentTypes = [];
-        entityId = null;
-
+    public static List<Type> ResolveBaseTypes(string[] queryArgs, out string[] memberArgs, out object? userData) {
         if (queryArgs.Length == 0) {
             memberArgs = queryArgs;
+            userData = null;
             return [];
         }
 
+        string fullQueryArgs = string.Join('.', queryArgs);
+        if (BaseTypeCache.TryGetValue(fullQueryArgs, out var cache)) {
+            memberArgs = cache.MemberArgs;
+            userData = cache.UserData;
+            return cache.Types;
+        }
+
         foreach (var handler in Handlers) {
-            if (handler.ResolveBaseTypes(queryArgs) is { } result) {
+            if (handler.ResolveBaseTypesWithUserData(queryArgs) is { } result) {
+                BaseTypeCache[fullQueryArgs] = result;
+
                 memberArgs = result.MemberArgs;
+                userData = result.UserData;
                 return result.Types;
             }
         }
+
+        userData = null;
+        return ParseGenericBaseTypes(queryArgs, out memberArgs);
 
         // Vanilla settings don't need a prefix
         // if (typeof(Settings).GetFields().FirstOrDefault(f => f.Name == queryArgs[0]) != null) {
@@ -502,50 +517,106 @@ public static class TargetQuery {
         //     return [module.SettingsType];
         // }
 
-        // Greedily increase amount of tested arguments
-        string currentType = string.Empty;
-        int currentIndex = 0;
-
-        for (int i = 1; i <= queryArgs.Length; i++) {
+        // Decrease query arguments until a match is found
+        for (int i = queryArgs.Length; i > 0; i--) {
             string typeName = string.Join('.', queryArgs[..i]);
 
-            if (baseTypeCache.ContainsKey(typeName)) {
-                currentType = typeName;
-                currentIndex = i;
-                continue;
+            if (BaseTypeCache.TryGetValue(typeName, out cache)) {
+                memberArgs = cache.MemberArgs;
+                userData = cache.UserData;
+                return cache.Types;
             }
 
-            var match = BaseTypeRegex.Match(typeName);
-            if (!match.Success) {
-                break; // No further matches
+            if (AllTypes.TryGetValue(typeName, out var types)) {
+                memberArgs = queryArgs[i..];
+                userData = null;
+
+                BaseTypeCache[fullQueryArgs] = BaseTypeCache[typeName] = (types, memberArgs, UserData: null);
+                return types;
             }
-
-            // Remove the entity ID from the type check
-            string checkTypeName = $"{match.Groups[1].Value}{match.Groups[2].Value}";
-            string componentTypeName = $"{match.Groups[3].Value}{match.Groups[4].Value}";
-
-            if (int.TryParse(match.Groups[6].Value, out int id)) {
-                entityId = new EntityID(match.Groups[5].Value, id);
-            }
-
-            if (!allTypes.TryGetValue(checkTypeName, out var types)) {
-                break; // No further existing types
-            }
-
-            if (!allTypes.TryGetValue(componentTypeName, out componentTypes!)) {
-                componentTypes = [];
-            }
-
-            baseTypeCache[typeName] = (Types: types, ComponentTypes: componentTypes, EntityID: entityId);
-            currentType = typeName;
-            currentIndex = i;
         }
 
-        if (baseTypeCache.TryGetValue(currentType, out var pair)) {
-            componentTypes = pair.ComponentTypes;
-            entityId = pair.EntityID;
-            memberArgs = queryArgs[currentIndex..];
-            return pair.Types;
+        // // Greedily increase amount of tested arguments
+        // string currentType = string.Empty;
+        // int currentIndex = 0;
+        //
+        // for (int i = 1; i <= queryArgs.Length; i++) {
+        //     string typeName = string.Join('.', queryArgs[..i]);
+        //
+        //     if (baseTypeCache.ContainsKey(typeName)) {
+        //         currentType = typeName;
+        //         currentIndex = i;
+        //         continue;
+        //     }
+        //
+        //     var match = BaseTypeRegex.Match(typeName);
+        //     if (!match.Success) {
+        //         break; // No further matches
+        //     }
+        //
+        //     // Remove the entity ID from the type check
+        //     string checkTypeName = $"{match.Groups[1].Value}{match.Groups[2].Value}";
+        //     string componentTypeName = $"{match.Groups[3].Value}{match.Groups[4].Value}";
+        //
+        //     if (int.TryParse(match.Groups[6].Value, out int id)) {
+        //         entityId = new EntityID(match.Groups[5].Value, id);
+        //     }
+        //
+        //     if (!allTypes.TryGetValue(checkTypeName, out var types)) {
+        //         break; // No further existing types
+        //     }
+        //
+        //     if (!allTypes.TryGetValue(componentTypeName, out componentTypes!)) {
+        //         componentTypes = [];
+        //     }
+        //
+        //     baseTypeCache[typeName] = (Types: types, ComponentTypes: componentTypes, EntityID: entityId);
+        //     currentType = typeName;
+        //     currentIndex = i;
+        // }
+        //
+        // if (baseTypeCache.TryGetValue(currentType, out var pair)) {
+        //     componentTypes = pair.ComponentTypes;
+        //     entityId = pair.EntityID;
+        //     memberArgs = queryArgs[currentIndex..];
+        //     return pair.Types;
+        // }
+
+        // No matching type found
+        memberArgs = queryArgs;
+        userData = null;
+        return [];
+    }
+
+    /// Parses query-arguments into a list of types, while only searching for generic .NET types
+    /// Does not reference any defined special-case handlers
+    internal static List<Type> ParseGenericBaseTypes(string[] queryArgs, out string[] memberArgs) {
+        string fullQueryArgs = string.Join('.', queryArgs);
+
+        if (BaseTypeCache.TryGetValue(fullQueryArgs, out var cache) && cache.UserData == null) {
+            memberArgs = cache.MemberArgs;
+            return cache.Types;
+        }
+
+        // Decrease query arguments until a match is found
+        for (int i = queryArgs.Length; i > 0; i--) {
+            bool isFirst = i == queryArgs.Length;
+            string typeName = isFirst
+                ? fullQueryArgs
+                : string.Join('.', queryArgs, startIndex: 0, count: i);
+
+            if (!isFirst && BaseTypeCache.TryGetValue(typeName, out cache) && cache.UserData == null && cache.MemberArgs.Length == 0) {
+                memberArgs = queryArgs[i..];
+                return cache.Types;
+            }
+
+            if (AllTypes.TryGetValue(typeName, out var types)) {
+                memberArgs = queryArgs[i..];
+
+                BaseTypeCache[typeName] = (types, [], UserData: null);
+                BaseTypeCache[fullQueryArgs] = (types, memberArgs, UserData: null);
+                return types;
+            }
         }
 
         // No matching type found
@@ -555,20 +626,291 @@ public static class TargetQuery {
 
     /// Resolves a type into all applicable instances of it
     /// Returns null for types which are always in a static context
-    public static List<object>? ResolveTypeInstances(Type type, List<Type> componentTypes, EntityID? entityId) {
+    public static object[] ResolveTypeInstances(Type type, object? userData) {
         foreach (var handler in Handlers) {
-            if (handler.AcceptsType(type)) {
-                return handler.ResolveInstances(type, componentTypes, entityId);
+            if (handler.CanResolveInstances(type)) {
+                return handler.ResolveInstancesWithUserData(type, userData);
             }
         }
-        foreach (var resolver in TypeInstanceResolvers) {
-            if (resolver.CanResolve(type)) {
-                return resolver.Resolve(type, componentTypes, entityId);
-            }
-        }
+        // foreach (var resolver in TypeInstanceResolvers) {
+        //     if (resolver.CanResolve(type)) {
+        //         return resolver.Resolve(type, componentTypes, entityId);
+        //     }
+        // }
 
         // No instances available
-        return null;
+        return [type];
+    }
+
+    #endregion
+    #region Evaluation
+
+    /// Value in the result array which is not valid, but was kept in the array to avoid allocations
+    internal static readonly object InvalidValue = new();
+
+    internal record QueryError {
+        public record NoBaseTypes(string query) : QueryError;
+    }
+
+    internal record MemberAccessError : QueryError {
+        public record NoMembers : MemberAccessError {
+            public NoMembers() : base(typeof(object), -1) { }
+        }
+        public record CodeExecutionNotAllowed : MemberAccessError {
+            public CodeExecutionNotAllowed(Type type, int member, string[] memberArgs) : base(type, member) { }
+            //  VoidResult<string>.Fail($"Cannot safely get property '{member}' during EnforceLegal");
+        }
+        public record UnknownException : MemberAccessError {
+            public UnknownException(Type? type, int member, string[] memberArgs, Exception ex) : base(type ?? typeof(object), member) { }
+            // VoidResult<string>.Fail($"Unknown exception: {ex}");
+        }
+        public record MemberNotFound : MemberAccessError {
+            public MemberNotFound(Type type, int member, string[] memberArgs, BindingFlags bindingFlags) : base(type, member) { }
+            // VoidResult<string>.Fail($"Cannot find member '{member}' on type {currentType}");
+        }
+
+        public Type Type;
+        public int Member;
+
+        public MemberAccessError(Type type, int member) {
+            Type = type;
+            Member = member;
+        }
+
+        public static MemberAccessError Aggregate(MemberAccessError? accum, MemberAccessError error) {
+            if (accum == null) {
+                return error;
+            }
+
+            // 1. NoMembers
+            // 2. CodeExecutionNotAllowed
+            // 3. UnknownException
+            // 4. MemberNotFound
+            if (accum is NoMembers && error is not NoMembers) {
+                return accum;
+            } else if (error is NoMembers && accum is not NoMembers) {
+                return error;
+            }
+            if (accum is CodeExecutionNotAllowed && error is not CodeExecutionNotAllowed) {
+                return accum;
+            } else if (error is CodeExecutionNotAllowed && accum is not CodeExecutionNotAllowed) {
+                return error;
+            }
+            if (accum is UnknownException && error is not UnknownException) {
+                return accum;
+            } else if (error is UnknownException && accum is not UnknownException) {
+                return error;
+            }
+
+            // Prefer lower member index
+            if (accum.Member < error.Member) {
+                return accum;
+            } else if (error.Member < accum.Member) {
+                return error;
+            }
+
+            // Resolve common base type
+            if (accum.Type.IsAssignableTo(error.Type)) {
+                return error;
+            }
+
+            // This will always terminate when ret == typeof(object)
+            while (!error.Type.IsAssignableTo(accum.Type)) {
+                accum.Type = accum.Type.BaseType ?? typeof(object);
+            }
+            return accum;
+        }
+    }
+
+    /// Evaluates the member arguments on the base-instances and gets the specified value(s)
+    private static Result<object?[], QueryError> GetMemberValue(object instance, string[] memberArgs, bool forceAllowCodeExecution = false) {
+        if (instance is Type && memberArgs.Length == 0) {
+            return Result<object?[], QueryError>.Fail(new MemberAccessError.NoMembers());
+        }
+
+        object?[] values = [instance];
+
+        for (int memberIdx = 0; memberIdx < memberArgs.Length; memberIdx++) {
+            string member = memberArgs[memberIdx];
+            bool isFinal = memberIdx == memberArgs.Length - 1;
+
+            var bindingFlags = memberIdx == 0
+                ? instance is Type
+                    ? ReflectionExtensions.StaticAnyVisibility
+                    : ReflectionExtensions.StaticInstanceAnyVisibility
+                : ReflectionExtensions.InstanceAnyVisibility;
+
+            // Forward to handlers
+            try {
+                foreach (var handler in Handlers) {
+                    var result = handler.ResolveMember(ref values, ref memberIdx, memberArgs);
+                    if (result.Success && result.Value) {
+                        goto NextValue;
+                    }
+                    if (result.Failure) {
+                        return Result<object?[], QueryError>.Fail(result.Error);
+                    }
+                }
+            } catch (Exception ex) {
+                return Result<object?[], QueryError>.Fail(new MemberAccessError.UnknownException(null, memberIdx, memberArgs, ex));
+            }
+
+            // Resolve members individually
+            for (int valueIdx = values.Length - 1; valueIdx >= 0; valueIdx--) {
+                if (values[valueIdx] == null || values[valueIdx] == InvalidValue || values[valueIdx] is QueryError) {
+                    continue;
+                }
+
+                var currentType = values[valueIdx] as Type ?? values[valueIdx]!.GetType();
+
+                try {
+                    if (currentType.GetFieldInfo(member, bindingFlags, logFailure: false) is { } field && IsFieldUsable(field, Variant.Get, isFinal)) {
+                        if (field.IsStatic) {
+                            ProcessValue(ref values, valueIdx, field.GetValue(null));
+
+                            // Invalidate all other instances of this type to avoid duplicates
+                            InvalidateValues(ref values, valueIdx, currentType);
+                        } else {
+                            ProcessValue(ref values, valueIdx, field.GetValue(values[valueIdx]));
+                        }
+                        continue;
+                    }
+
+                    if (currentType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property && IsPropertyUsable(property, Variant.Get, isFinal)) {
+                        if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
+                            values[valueIdx] = new MemberAccessError.CodeExecutionNotAllowed(currentType, memberIdx, memberArgs);
+
+                            // Invalidate all other instances of this type to avoid duplicates
+                            InvalidateValues(ref values, valueIdx, currentType);
+                            continue;
+                        }
+
+                        if (property.IsStatic()) {
+                            ProcessValue(ref values, valueIdx, property.GetValue(null));
+
+                            // Invalidate all other instances of this type to avoid duplicates
+                            InvalidateValues(ref values, valueIdx, currentType);
+                        } else {
+                            ProcessValue(ref values, valueIdx, property.GetValue(values[valueIdx]));
+                        }
+                        continue;
+                    }
+
+                    values[valueIdx] = new MemberAccessError.MemberNotFound(currentType, memberIdx, memberArgs, bindingFlags);
+
+                    // Invalidate all other instances of this type to avoid duplicates
+                    InvalidateValues(ref values, valueIdx, currentType);
+                } catch (Exception ex) {
+                    values[valueIdx] = new MemberAccessError.UnknownException(currentType, memberIdx, memberArgs, ex);
+
+                    // Invalidate all other instances of this type to avoid duplicates
+                    InvalidateValues(ref values, valueIdx, currentType);
+                }
+            }
+
+            NextValue:;
+        }
+
+        if (values.Any(value => value is not MemberAccessError)) {
+            return Result<object?[], QueryError>.Ok(values);
+        }
+
+        // No valid results. Aggregate errors
+        return Result<object?[], QueryError>.Fail((MemberAccessError) values.Aggregate((accum, error) => {
+            return MemberAccessError.Aggregate((MemberAccessError) accum!, (MemberAccessError) error!);
+        })!);
+
+        static void InvalidateValues(ref object?[] values, int valueIdx, Type currentType) {
+            for (int otherValueIdx = valueIdx - 1; otherValueIdx >= 0; otherValueIdx--) {
+                if (values[otherValueIdx]?.GetType() == currentType) {
+                    values[otherValueIdx] = InvalidValue;
+                }
+            }
+        }
+        static void ProcessValue(ref object?[] values, int valueIdx, object? value) {
+            if (value is ICollection collection) {
+                switch (collection.Count) {
+                    case 0:
+                        values[valueIdx] = InvalidValue;
+                        break;
+
+                    case 1:
+                        collection.CopyTo(values, valueIdx);
+                        break;
+
+                    default:
+                        // Can only copy entire collection, so need to invalidate previous instance
+                        values[valueIdx] = InvalidValue;
+                        int startIdx = values.Length;
+                        Array.Resize(ref values, values.Length + collection.Count);
+                        collection.CopyTo(values, startIdx);
+                        break;
+                }
+            } else {
+                values[valueIdx] = value;
+            }
+        }
+    }
+
+    #endregion
+
+    /// Recursively gets the value of the specified members
+    public static Result<object?, string> GetMemberValue(Type baseType, object? baseObject, string[] memberArgs, bool forceAllowCodeExecution = false) {
+        var currentType = baseType;
+        var currentObject = baseObject;
+        foreach (string member in memberArgs) {
+            try {
+                if (currentType.GetFieldInfo(member, logFailure: false) is { } field) {
+                    if (field.IsStatic) {
+                        currentObject = field.GetValue(null);
+                    } else {
+                        if (currentObject == null) {
+                            if (currentType == baseType) {
+                                return Result<object?, string>.Fail($"Cannot access instance field '{member}' in a static context");
+                            }
+
+                            // Propagate null
+                            return Result<object?, string>.Ok(null);
+                        }
+
+                        currentObject = field.GetValue(currentObject);
+                    }
+                    currentType = field.FieldType;
+
+                    continue;
+                }
+                if (currentType.GetPropertyInfo(member, logFailure: false) is { } property && property.GetMethod != null) {
+                    if (PreventCodeExecution && !forceAllowCodeExecution) {
+                        return Result<object?, string>.Fail($"Cannot safely get property '{member}' during EnforceLegal");
+                    }
+
+                    if (property.IsStatic()) {
+                        currentObject = property.GetValue(null);
+                    } else {
+                        if (currentObject == null) {
+                            if (currentType == baseType) {
+                                return Result<object?, string>.Fail($"Cannot access instance property '{member}' in a static context");
+                            }
+
+                            // Propagate null
+                            return Result<object?, string>.Ok(null);
+                        }
+
+                        currentObject = property.GetValue(currentObject);
+                    }
+                    currentType = property.PropertyType;
+
+                    continue;
+                }
+            } catch (Exception ex) {
+                ex.LogException($"Failed to resolve member '{member}' on type '{currentType}'");
+                return Result<object?, string>.Fail($"Unknown exception: {ex}");
+            }
+
+            return Result<object?, string>.Fail($"Cannot find field / property '{member}' on type {currentType}");
+        }
+
+        return Result<object?, string>.Ok(currentObject);
     }
 
     /// Recursively resolves the type of the specified members
@@ -648,90 +990,145 @@ public static class TargetQuery {
         return Result<MethodInfo, string>.Fail($"Failed to find method '{memberArgs[^1]}' on type '{currentType}'");
     }
 
-    /// Recursively resolves the value of the specified members
-    public static Result<object?, string> ResolveMemberValue(Type baseType, object? baseObject, string[] memberArgs, bool forceAllowCodeExecution = false) {
-        var currentType = baseType;
-        var currentObject = baseObject;
-        foreach (string member in memberArgs) {
-            try {
-                if (currentType.GetFieldInfo(member, logFailure: false) is { } field) {
-                    if (field.IsStatic) {
-                        currentObject = field.GetValue(null);
-                    } else {
-                        if (currentObject == null) {
-                            if (currentType == baseType) {
-                                return Result<object?, string>.Fail($"Cannot access instance field '{member}' in a static context");
-                            }
 
-                            // Propagate null
-                            return Result<object?, string>.Ok(null);
-                        }
 
-                        currentObject = field.GetValue(currentObject);
-                    }
-                    currentType = field.FieldType;
 
-                    continue;
-                }
-                if (currentType.GetPropertyInfo(member, logFailure: false) is { } property && property.GetMethod != null) {
-                    if (PreventCodeExecution && !forceAllowCodeExecution) {
-                        return Result<object?, string>.Fail($"Cannot safely get property '{member}' during EnforceLegal");
-                    }
 
-                    if (property.IsStatic()) {
-                        currentObject = property.GetValue(null);
-                    } else {
-                        if (currentObject == null) {
-                            if (currentType == baseType) {
-                                return Result<object?, string>.Fail($"Cannot access instance property '{member}' in a static context");
-                            }
-
-                            // Propagate null
-                            return Result<object?, string>.Ok(null);
-                        }
-
-                        currentObject = property.GetValue(currentObject);
-                    }
-                    currentType = property.PropertyType;
-
-                    continue;
-                }
-            } catch (Exception ex) {
-                ex.LogException($"Failed to resolve member '{member}' on type '{currentType}'");
-                return Result<object?, string>.Fail($"Unknown exception: {ex}");
-            }
-
-            return Result<object?, string>.Fail($"Cannot find field / property '{member}' on type {currentType}");
-        }
-
-        return Result<object?, string>.Ok(currentObject);
-    }
-
-    /// Recursively resolves the value of the specified members for multiple instances at once
-    public static Result<List<object?>, string> ResolveMemberValues(Type baseType, List<object>? baseObjects, string[] memberArgs, bool forceAllowCodeExecution = false) {
-        if (baseObjects == null) {
-            // Static target context
-            var result = ResolveMemberValue(baseType, null, memberArgs, forceAllowCodeExecution);
-            if (result.Failure) {
-                return Result<List<object?>, string>.Fail(result.Error);
-            }
-
-            return Result<List<object?>, string>.Ok([result.Value]);
-        }
-
-        List<object?> values = new(capacity: baseObjects.Count);
-
-        foreach (object obj in baseObjects) {
-            var result = ResolveMemberValue(baseType, obj, memberArgs, forceAllowCodeExecution);
-            if (result.Failure) {
-                return Result<List<object?>, string>.Fail(result.Error);
-            }
-
-            values.Add(result.Value);
-        }
-
-        return Result<List<object?>, string>.Ok(values);
-    }
+    // /// Recursively resolves the value of the specified members for multiple instances at once
+    // /// The resulting array contains the final values in the same order of the input instances
+    // /// If the result value is null, it's a static context
+    // /// If the result type is null, it's an invalid result value which should be ignored
+    // public static Result<(object? Value, Type? Type)[], string> ResolveMemberValues(Type baseType, object[]? instances, string[] memberArgs, bool forceAllowCodeExecution = false) {
+    //     var current = new (object? Instance, object[]? Values, Type? CommonType)[instances?.Length ?? 1];
+    //     if (instances == null) {
+    //         current[0] = (Instance: null, Values: null, CommonType: baseType);
+    //     } else {
+    //         for (int i = 0; i < instances.Length; i++) {
+    //             //current[i] = ([instances[i]], instances[i].GetType());
+    //             current[i] = (instances[i], [instances[i]], instances[i].GetType());
+    //         }
+    //     }
+    //
+    //     for (int memberIdx = 0; memberIdx < memberArgs.Length; memberIdx++) {
+    //         string member = memberArgs[memberIdx];
+    //
+    //         for (int i = 0; i < current.Length; i++) {
+    //             // var currentType = current[i].Values?
+    //             //     .Select(obj => obj.GetType())
+    //             //     .Aggregate((accum, type) => {
+    //             //         if (accum.IsAssignableTo(type)) {
+    //             //             return type;
+    //             //         }
+    //             //
+    //             //         // This will always terminate when accum == typeof(object)
+    //             //         while (!type.IsAssignableTo(accum)) {
+    //             //             accum = accum.BaseType!;
+    //             //         }
+    //             //
+    //             //         return accum;
+    //             //     }) ?? baseType;
+    //
+    //             var bindingFlags = memberIdx == 0
+    //                 ? instances == null
+    //                     ? ReflectionExtensions.StaticAnyVisibility
+    //                     : ReflectionExtensions.StaticInstanceAnyVisibility
+    //                 : ReflectionExtensions.InstanceAnyVisibility;
+    //
+    //             bool isFinal = memberIdx == memberArgs.Length - 1;
+    //
+    //             try {
+    //                 if (current[i].CommonType!.GetFieldInfo(member, bindingFlags, logFailure: false) is { } field && IsFieldUsable(field, Variant.Get, isFinal)) {
+    //                     if (field.IsStatic) {
+    //                         for (int j = 0; j < current[i].Values.Length; j++) {
+    //                             current[i].Values[j] = field.GetValue(current[i].Values[j]);
+    //                         }
+    //                         current[i].Values = field.GetValue(null);
+    //                         current[i].Type = current[i].Values?.GetType() ?? field.FieldType;
+    //
+    //                         // Clear all other instances of this type to avoid duplicates
+    //                         var currentType = current[i].Type;
+    //                         for (int j = i + 1; j < current.Length; j++) {
+    //                             if (current[j].Type == currentType) {
+    //                                 current[j].Type = null;
+    //                             }
+    //                         }
+    //                     } else {
+    //                         if (current[i].Values == null) {
+    //                             if (memberIdx == 0) {
+    //                                 return Result<(object? Value, Type? Type)[], string>.Fail($"Cannot access instance field '{member}' in a static context");
+    //                             }
+    //                         } else {
+    //                             current[i].Values = field.GetValue(current[i].Values);
+    //                             current[i].Type = current[i].Values?.GetType() ?? field.FieldType;
+    //                         }
+    //                     }
+    //                     continue;
+    //                 }
+    //
+    //                 if (current[i].Type!.GetPropertyInfo(member, logFailure: false) is { } property && IsPropertyUsable(property, Variant.Get, isFinal)) {
+    //                     if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
+    //                         return Result<(object? Value, Type? Type)[], string>.Fail($"Cannot safely get property '{member}' during EnforceLegal");
+    //                     }
+    //
+    //                     if (property.IsStatic()) {
+    //                         current[i].Values = property.GetValue(null);
+    //                         current[i].Type = current[i].Values?.GetType() ?? property.PropertyType;
+    //
+    //                         // Clear all other instances of this type to avoid duplicates
+    //                         var currentType = current[i].Type;
+    //                         for (int j = i + 1; j < current.Length; j++) {
+    //                             if (current[j].Type == currentType) {
+    //                                 current[j].Type = null;
+    //                             }
+    //                         }
+    //                     } else {
+    //                         if (current[i].Values == null) {
+    //                             if (memberIdx == 0) {
+    //                                 return Result<(object? Value, Type? Type)[], string>.Fail($"Cannot access instance property '{member}' in a static context");
+    //                             }
+    //                         } else {
+    //                             current[i].Values = property.GetValue(current[i].Values);
+    //                             current[i].Type = current[i].Values?.GetType() ?? property.PropertyType;
+    //                         }
+    //                     }
+    //                     continue;
+    //                 }
+    //
+    //                 current[i].Values = Result<(object? Value, Type? Type)[], string>.Fail($"Cannot find member '{member}' on type {current[i].Type}");
+    //
+    //                 // Clear all instances of this type to avoid trying over and over
+    //                 {
+    //                     var currentType = current[i].Type;
+    //                     for (int j = i; j < current.Length; j++) {
+    //                         if (current[j].Type == currentType) {
+    //                             current[j].Type = null;
+    //                         }
+    //                     }
+    //                 }
+    //             } catch (Exception ex) {
+    //                 current[i].Values = Result<(object? Value, Type? Type)[], string>.Fail($"Unknown exception: {ex}");
+    //                 current[i].Type = null;
+    //             }
+    //         }
+    //     }
+    //
+    //     var result = Result<(object? Value, Type? Type)[], string>.Ok(current);
+    //     for (int i = 0; i < current.Length; i++) {
+    //         if (current[i].Values is Result<(object? Value, Type? Type)[], string> error) {
+    //             result = error;
+    //             continue;
+    //         }
+    //         if (current[i].Type == null) {
+    //             continue;
+    //         }
+    //
+    //         // At least 1 instance is valid
+    //         result = Result<(object? Value, Type? Type)[], string>.Ok(current);
+    //         break;
+    //     }
+    //
+    //     return result;
+    // }
 
     /// Recursively resolves the value of the specified members
     public static VoidResult<string> SetMemberValue(Type baseType, object? baseObject, object? value, string[] memberArgs) {
@@ -1129,7 +1526,7 @@ public static class TargetQuery {
                     // The value is a target-query, which needs to be resolved
                     var result = GetMemberValues(arg);
                     if (result.Failure) {
-                        return Result<object?[], string>.Fail(result.Error);
+                        return Result<object?[], string>.Fail(result.Error.ToString());
                     }
                     if (result.Value.Count != 1) {
                         return Result<object?[], string>.Fail($"Target-query '{arg}' for type '{targetType}' needs to resolve to exactly 1 value! Got {result.Value.Count}");

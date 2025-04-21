@@ -1,6 +1,8 @@
 using Celeste;
 using Celeste.Mod;
 using Monocle;
+using StudioCommunication;
+using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,6 +16,29 @@ internal class GlobalInstanceResolver<T>(Func<T> instanceProvider) : IInstanceRe
 
     public List<object> Resolve(Type type, List<Type> componentTypes, EntityID? entityId) => [instanceProvider()];
 }
+
+// internal class SettingsQueryHandler() {
+//     public (List<Type> Types, string[] MemberArgs)? ResolveBaseTypes(string[] queryArgs) {
+//         if (Everest.Modules.FirstOrDefault(mod => mod.SettingsType != null && mod.Metadata.Name == queryArgs[0]) is { } module) {
+//             return ([module.SettingsType], queryArgs[1..]);
+//         }
+//         return null;
+//     }
+//     public List<object>? ResolveTypeInstances(Type type, List<Type> componentTypes, EntityID? entityId) {
+//         if (type == typeof(Settings)) {
+//             return [Settings.Instance];
+//         }
+//         return null;
+//     }
+//
+//     public IEnumerator<CommandAutoCompleteEntry> EnumerateEntries(Type type) {
+//         // Manually filtered list
+//         var vanillaSettings = ((string[])["DisableFlashes", "ScreenShake", "GrabMode", "CrouchDashMode", "SpeedrunClock", "Pico8OnMainMenu", "VariantsUnlocked"]).Select(e => typeof(Settings).GetFieldInfo(e)!);
+//         foreach (var f in vanillaSettings) {
+//             yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Settings)", IsDone = true };
+//         }
+//     }
+// }
 
 internal class EverestSettingsInstanceResolver : IInstanceResolver {
     public bool CanResolve(Type type) => type.IsSameOrSubclassOf(typeof(EverestModuleSettings));

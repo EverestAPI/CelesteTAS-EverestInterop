@@ -31,60 +31,62 @@ public static class InvokeCommand {
 
         public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
             var targetArgs = SetCommand.SetMeta.GetTargetArgs(args).ToArray();
+            yield break;
 
-            // Parameters
-            if (args.Length > 1) {
-                using var enumerator = GetParameterAutoCompleteEntries(targetArgs, args.Length - 2);
-                while (enumerator.MoveNext()) {
-                    yield return enumerator.Current;
-                }
-                yield break;
-            }
-
-            if (targetArgs.Length == 0) {
-                var allTypes = ModUtils.GetTypes();
-                foreach ((string typeName, var type) in allTypes
-                             .Select(type => (type.CSharpName(), type))
-                             .Order(new NamespaceComparer()))
-                {
-                    if (
-                        // Filter-out types which probably aren't useful
-                        !type.IsClass || !type.IsPublic || type.FullName == null || type.Namespace == null || SetCommand.SetMeta.ignoredNamespaces.Any(ns => type.Namespace.StartsWith(ns)) ||
-
-                        // Filter-out compiler generated types
-                        !type.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() || type.FullName.Contains('<') || type.FullName.Contains('>') ||
-
-                        // Require either an entity, level, session
-                        !type.IsSameOrSubclassOf(typeof(Entity)) && !type.IsSameOrSubclassOf(typeof(Level)) && !type.IsSameOrSubclassOf(typeof(Session)) &&
-                        // Or type with static (invokable) methods
-                        !type.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
-                            .Any(IsInvokableMethod))
-                    {
-                        continue;
-                    }
-
-                    // Strip the namespace and add the @modname suffix if the typename isn't unique
-                    string uniqueTypeName = typeName;
-                    foreach (var otherType in allTypes) {
-                        if (otherType.FullName == null || otherType.Namespace == null) {
-                            continue;
-                        }
-
-                        string otherName = otherType.CSharpName();
-                        if (type != otherType && typeName == otherName) {
-                            uniqueTypeName = $"{typeName}@{ConsoleEnhancements.GetModName(type)}";
-                            break;
-                        }
-                    }
-
-                    yield return new CommandAutoCompleteEntry { Name = $"{uniqueTypeName}.", Extra = type.Namespace ?? string.Empty, IsDone = false };
-                }
-            } else if (targetArgs.Length >= 1 && TargetQuery.ResolveBaseTypes(targetArgs, out _, out _, out _) is { } types && types.IsNotEmpty()) {
-                // Assume the first type
-                foreach (var entry in GetInvokeTypeAutoCompleteEntries(types[0], targetArgs.Length == 1)) {
-                    yield return entry with { Name = entry.Name + (entry.IsDone ? "" : "."), Prefix = string.Join('.', targetArgs) + ".", HasNext = true };
-                }
-            }
+            // FIXME
+            // // Parameters
+            // if (args.Length > 1) {
+            //     using var enumerator = GetParameterAutoCompleteEntries(targetArgs, args.Length - 2);
+            //     while (enumerator.MoveNext()) {
+            //         yield return enumerator.Current;
+            //     }
+            //     yield break;
+            // }
+            //
+            // if (targetArgs.Length == 0) {
+            //     var allTypes = ModUtils.GetTypes();
+            //     foreach ((string typeName, var type) in allTypes
+            //                  .Select(type => (type.CSharpName(), type))
+            //                  .Order(new NamespaceComparer()))
+            //     {
+            //         if (
+            //             // Filter-out types which probably aren't useful
+            //             !type.IsClass || !type.IsPublic || type.FullName == null || type.Namespace == null || SetCommand.SetMeta.ignoredNamespaces.Any(ns => type.Namespace.StartsWith(ns)) ||
+            //
+            //             // Filter-out compiler generated types
+            //             !type.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() || type.FullName.Contains('<') || type.FullName.Contains('>') ||
+            //
+            //             // Require either an entity, level, session
+            //             !type.IsSameOrSubclassOf(typeof(Entity)) && !type.IsSameOrSubclassOf(typeof(Level)) && !type.IsSameOrSubclassOf(typeof(Session)) &&
+            //             // Or type with static (invokable) methods
+            //             !type.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
+            //                 .Any(IsInvokableMethod))
+            //         {
+            //             continue;
+            //         }
+            //
+            //         // Strip the namespace and add the @modname suffix if the typename isn't unique
+            //         string uniqueTypeName = typeName;
+            //         foreach (var otherType in allTypes) {
+            //             if (otherType.FullName == null || otherType.Namespace == null) {
+            //                 continue;
+            //             }
+            //
+            //             string otherName = otherType.CSharpName();
+            //             if (type != otherType && typeName == otherName) {
+            //                 uniqueTypeName = $"{typeName}@{ConsoleEnhancements.GetModName(type)}";
+            //                 break;
+            //             }
+            //         }
+            //
+            //         yield return new CommandAutoCompleteEntry { Name = $"{uniqueTypeName}.", Extra = type.Namespace ?? string.Empty, IsDone = false };
+            //     }
+            // } else if (targetArgs.Length >= 1 && TargetQuery.ResolveBaseTypes(targetArgs, out _, out _, out _) is { } types && types.IsNotEmpty()) {
+            //     // Assume the first type
+            //     foreach (var entry in GetInvokeTypeAutoCompleteEntries(types[0], targetArgs.Length == 1)) {
+            //         yield return entry with { Name = entry.Name + (entry.IsDone ? "" : "."), Prefix = string.Join('.', targetArgs) + ".", HasNext = true };
+            //     }
+            // }
         }
 
         private static IEnumerable<CommandAutoCompleteEntry> GetInvokeTypeAutoCompleteEntries(Type type, bool isRootType) {
@@ -105,17 +107,17 @@ public static class InvokeCommand {
 
         [MustDisposeResource]
         private static IEnumerator<CommandAutoCompleteEntry> GetParameterAutoCompleteEntries(string[] targetArgs, int parameterIndex) {
-            if (targetArgs.Length >= 1 && TargetQuery.ResolveBaseTypes(targetArgs, out string[] memberArgs, out _, out _) is { } types && types.IsNotEmpty() && memberArgs.Length == 1) {
-                // Assume the first type
-                var parameters = types[0].GetMethodInfo(memberArgs[0], logFailure: false)?.GetParameters() ?? [];
-                if (parameterIndex >= 0 && parameterIndex < parameters.Length) {
-                    // End arguments if further parameters aren't settable anymore
-                    bool final = parameterIndex == parameters.Length - 1 ||
-                                 parameterIndex < parameters.Length - 1 && !SetCommand.SetMeta.IsSettableType(parameters[parameterIndex].ParameterType);
-
-                    return SetCommand.SetMeta.GetParameterTypeAutoCompleteEntries(parameters[parameterIndex].ParameterType, hasNextArgument: !final);
-                }
-            }
+            // if (targetArgs.Length >= 1 && TargetQuery.ResolveBaseTypes(targetArgs, out string[] memberArgs, out _, out _) is { } types && types.IsNotEmpty() && memberArgs.Length == 1) {
+            //     // Assume the first type
+            //     var parameters = types[0].GetMethodInfo(memberArgs[0], logFailure: false)?.GetParameters() ?? [];
+            //     if (parameterIndex >= 0 && parameterIndex < parameters.Length) {
+            //         // End arguments if further parameters aren't settable anymore
+            //         bool final = parameterIndex == parameters.Length - 1 ||
+            //                      parameterIndex < parameters.Length - 1 && !SetCommand.SetMeta.IsSettableType(parameters[parameterIndex].ParameterType);
+            //
+            //         return SetCommand.SetMeta.GetParameterTypeAutoCompleteEntries(parameters[parameterIndex].ParameterType, hasNextArgument: !final);
+            //     }
+            // }
 
             return Enumerable.Empty<CommandAutoCompleteEntry>().GetEnumerator();
         }
@@ -181,58 +183,58 @@ public static class InvokeCommand {
         string query = args[0];
         string[] queryArgs = query.Split('.');
 
-        var baseTypes = TargetQuery.ResolveBaseTypes(queryArgs, out string[] memberArgs, out var componentTypes, out var entityId);
-        if (baseTypes.IsEmpty()) {
-            ReportError($"Failed to find base type for query '{query}'");
-            return;
-        }
-        if (memberArgs.IsEmpty()) {
-            ReportError("No members specified");
-            return;
-        }
-
-        foreach (var type in baseTypes) {
-            if (componentTypes.IsNotEmpty()) {
-                foreach (var componentType in componentTypes) {
-                    var methodResult = TargetQuery.ResolveMemberMethod(componentType, memberArgs);
-                    if (methodResult.Failure) {
-                        ReportError(methodResult);
-                        return;
-                    }
-
-                    var valuesResult = TargetQuery.ResolveValues(args[1..], methodResult.Value.GetParameters().Select(param => param.ParameterType).ToArray());
-                    if (valuesResult.Failure) {
-                        ReportError(valuesResult);
-                        return;
-                    }
-
-                    var instances = TargetQuery.ResolveTypeInstances(type, [componentType], entityId);
-                    var invokeResult = TargetQuery.InvokeMemberMethods(componentType, instances, valuesResult, memberArgs);
-                    if (invokeResult.Failure) {
-                        ReportError($"Failed to invoke method '{string.Join('.', memberArgs)}' on type '{componentType}' to with parameters '{string.Join(';', valuesResult.Value)}':\n{invokeResult.Error}");
-                        return;
-                    }
-                }
-            } else {
-                var methodResult = TargetQuery.ResolveMemberMethod(type, memberArgs);
-                if (methodResult.Failure) {
-                    ReportError(methodResult);
-                    return;
-                }
-
-                var valuesResult = TargetQuery.ResolveValues(args[1..], methodResult.Value.GetParameters().Select(param => param.ParameterType).ToArray());
-                if (valuesResult.Failure) {
-                    ReportError(valuesResult);
-                    return;
-                }
-
-                var instances = TargetQuery.ResolveTypeInstances(type, componentTypes, entityId);
-                var invokeResult = TargetQuery.InvokeMemberMethods(type, instances, valuesResult, memberArgs);
-                if (invokeResult.Failure) {
-                    ReportError($"Failed to invoke method '{string.Join('.', memberArgs)}' on type '{type}' to with parameters '{string.Join(';', valuesResult.Value)}':\n{invokeResult.Error}");
-                    return;
-                }
-            }
-        }
+        // var baseTypes = TargetQuery.ResolveBaseTypes(queryArgs, out string[] memberArgs, out var componentTypes, out var entityId);
+        // if (baseTypes.IsEmpty()) {
+        //     ReportError($"Failed to find base type for query '{query}'");
+        //     return;
+        // }
+        // if (memberArgs.IsEmpty()) {
+        //     ReportError("No members specified");
+        //     return;
+        // }
+        //
+        // foreach (var type in baseTypes) {
+        //     if (componentTypes.IsNotEmpty()) {
+        //         foreach (var componentType in componentTypes) {
+        //             var methodResult = TargetQuery.ResolveMemberMethod(componentType, memberArgs);
+        //             if (methodResult.Failure) {
+        //                 ReportError(methodResult);
+        //                 return;
+        //             }
+        //
+        //             var valuesResult = TargetQuery.ResolveValues(args[1..], methodResult.Value.GetParameters().Select(param => param.ParameterType).ToArray());
+        //             if (valuesResult.Failure) {
+        //                 ReportError(valuesResult);
+        //                 return;
+        //             }
+        //
+        //             var instances = TargetQuery.ResolveTypeInstances(type, [componentType], entityId);
+        //             var invokeResult = TargetQuery.InvokeMemberMethods(componentType, instances, valuesResult, memberArgs);
+        //             if (invokeResult.Failure) {
+        //                 ReportError($"Failed to invoke method '{string.Join('.', memberArgs)}' on type '{componentType}' to with parameters '{string.Join(';', valuesResult.Value)}':\n{invokeResult.Error}");
+        //                 return;
+        //             }
+        //         }
+        //     } else {
+        //         var methodResult = TargetQuery.ResolveMemberMethod(type, memberArgs);
+        //         if (methodResult.Failure) {
+        //             ReportError(methodResult);
+        //             return;
+        //         }
+        //
+        //         var valuesResult = TargetQuery.ResolveValues(args[1..], methodResult.Value.GetParameters().Select(param => param.ParameterType).ToArray());
+        //         if (valuesResult.Failure) {
+        //             ReportError(valuesResult);
+        //             return;
+        //         }
+        //
+        //         var instances = TargetQuery.ResolveTypeInstances(type, componentTypes, entityId);
+        //         var invokeResult = TargetQuery.InvokeMemberMethods(type, instances, valuesResult, memberArgs);
+        //         if (invokeResult.Failure) {
+        //             ReportError($"Failed to invoke method '{string.Join('.', memberArgs)}' on type '{type}' to with parameters '{string.Join(';', valuesResult.Value)}':\n{invokeResult.Error}");
+        //             return;
+        //         }
+        //     }
+        // }
     }
 }

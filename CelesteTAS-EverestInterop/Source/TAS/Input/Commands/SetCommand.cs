@@ -69,105 +69,105 @@ public static class SetCommand {
             }
             yield break;
 
-            // Parameter
-            if (args.Length > 1) {
-                using var enumerator = GetParameterAutoCompleteEntries(targetArgs);
-                while (enumerator.MoveNext()) {
-                    yield return enumerator.Current;
-                }
-                yield break;
-            }
-
-            if (targetArgs.Length == 0) {
-                // Vanilla settings. Manually selected to filter out useless entries
-                // var vanillaSettings = ((string[])["DisableFlashes", "ScreenShake", "GrabMode", "CrouchDashMode", "SpeedrunClock", "Pico8OnMainMenu", "VariantsUnlocked"]).Select(e => typeof(Settings).GetFieldInfo(e)!);
-                // var vanillaSaveData = ((string[])["CheatMode", "AssistMode", "VariantMode", "UnlockedAreas", "RevealedChapter9", "DebugMode"]).Select(e => typeof(SaveData).GetFieldInfo(e)!);
-                //
-                // foreach (var f in vanillaSettings) {
-                //     yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Settings)", IsDone = true };
-                // }
-                // foreach (var f in vanillaSaveData) {
-                //     yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Save Data)", IsDone = true };
-                // }
-                // foreach (var f in typeof(Assists).GetFields()) {
-                //     yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Assists)", IsDone = true };
-                // }
-
-                // Mod settings
-                // foreach (var mod in Everest.Modules) {
-                //     if (mod.SettingsType != null && (mod.SettingsType.GetAllFieldInfos().Any() ||
-                //                                      mod.SettingsType.GetAllPropertyInfos().Any(p => p.SetMethod != null)))
-                //     {
-                //         yield return new CommandAutoCompleteEntry { Name = $"{mod.Metadata.Name}.", Extra = "Mod Setting", IsDone = false };
-                //     }
-                // }
-
-                var allTypes = ModUtils.GetTypes();
-                foreach ((string typeName, var type) in allTypes
-                             .Select(type => (type.CSharpName(), type))
-                             .Order(new NamespaceComparer()))
-                {
-                    if (
-                        // Filter-out types which probably aren't useful
-                        !type.IsClass || !type.IsPublic || type.FullName == null || type.Namespace == null || ignoredNamespaces.Any(ns => type.Namespace.StartsWith(ns)) ||
-
-                        // Filter-out compiler generated types
-                        !type.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() || type.FullName.Contains('<') || type.FullName.Contains('>') ||
-
-                        // Require either an entity, level, session
-                        !type.IsSameOrSubclassOf(typeof(Entity)) && !type.IsSameOrSubclassOf(typeof(Level)) && !type.IsSameOrSubclassOf(typeof(Session)) &&
-                        // Or type with static (settable) variables
-                        type.GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
-                            .All(f => f.IsInitOnly || !IsSettableType(f.FieldType)) &&
-                        type.GetProperties(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
-                            .All(p => !IsSettableType(p.PropertyType) || p.SetMethod == null))
-                    {
-                        continue;
-                    }
-
-                    // Strip the namespace and add the @modname suffix if the typename isn't unique
-                    string uniqueTypeName = typeName;
-                    foreach (var otherType in allTypes) {
-                        if (otherType.FullName == null || otherType.Namespace == null) {
-                            continue;
-                        }
-
-                        string otherName = otherType.CSharpName();
-                        if (type != otherType && typeName == otherName) {
-                            uniqueTypeName = $"{typeName}@{ConsoleEnhancements.GetModName(type)}";
-                            break;
-                        }
-                    }
-
-                    yield return new CommandAutoCompleteEntry { Name = $"{uniqueTypeName}.", Extra = type.Namespace ?? string.Empty, IsDone = false };
-                }
-            } else if (targetArgs.Length == 1 && targetArgs[0] == "ExtendedVariantMode") {
-                // Special case for setting extended variants
-                if (ExtendedVariantsInterop.GetVariantsEnum() is { } variantsEnum) {
-                    foreach (object variant in Enum.GetValues(variantsEnum)) {
-                        string typeName = string.Empty;
-                        try {
-                            var variantType = ExtendedVariantsInterop.GetVariantType(new Lazy<object?>(variant));
-                            if (variantType != null) {
-                                typeName = variantType.CSharpName();
-                            }
-                        } catch {
-                            // ignore
-                        }
-
-                        yield return new CommandAutoCompleteEntry { Name = variant.ToString()!, Prefix = "ExtendedVariantMode.", Extra = typeName, IsDone = true, HasNext = true };
-                    }
-                }
-            } /*else if (targetArgs.Length >= 1 && Everest.Modules.FirstOrDefault(m => m.Metadata.Name == targetArgs[0] && m.SettingsType != null) is { } mod) {
-                foreach (var entry in GetSetTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, args), isRootType: targetArgs.Length == 1)) {
-                    yield return entry with { Name = entry.Name + (entry.IsDone ? "" : "."), Prefix = string.Join('.', targetArgs) + ".", HasNext = true };
-                }
-            } */else if (targetArgs.Length >= 1 && TargetQuery.ResolveBaseTypes(targetArgs, out string[] memberArgs, out _, out _) is { } types && types.IsNotEmpty()) {
-                // Assume the first type
-                foreach (var entry in GetSetTypeAutoCompleteEntries(RecurseSetType(types[0], memberArgs), isRootType: targetArgs.Length == 1)) {
-                    yield return entry with { Name = entry.Name + (entry.IsDone ? "" : "."), Prefix = string.Join('.', targetArgs) + ".", HasNext = true };
-                }
-            }
+            // // Parameter
+            // if (args.Length > 1) {
+            //     using var enumerator = GetParameterAutoCompleteEntries(targetArgs);
+            //     while (enumerator.MoveNext()) {
+            //         yield return enumerator.Current;
+            //     }
+            //     yield break;
+            // }
+            //
+            // if (targetArgs.Length == 0) {
+            //     // Vanilla settings. Manually selected to filter out useless entries
+            //     // var vanillaSettings = ((string[])["DisableFlashes", "ScreenShake", "GrabMode", "CrouchDashMode", "SpeedrunClock", "Pico8OnMainMenu", "VariantsUnlocked"]).Select(e => typeof(Settings).GetFieldInfo(e)!);
+            //     // var vanillaSaveData = ((string[])["CheatMode", "AssistMode", "VariantMode", "UnlockedAreas", "RevealedChapter9", "DebugMode"]).Select(e => typeof(SaveData).GetFieldInfo(e)!);
+            //     //
+            //     // foreach (var f in vanillaSettings) {
+            //     //     yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Settings)", IsDone = true };
+            //     // }
+            //     // foreach (var f in vanillaSaveData) {
+            //     //     yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Save Data)", IsDone = true };
+            //     // }
+            //     // foreach (var f in typeof(Assists).GetFields()) {
+            //     //     yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Assists)", IsDone = true };
+            //     // }
+            //
+            //     // Mod settings
+            //     // foreach (var mod in Everest.Modules) {
+            //     //     if (mod.SettingsType != null && (mod.SettingsType.GetAllFieldInfos().Any() ||
+            //     //                                      mod.SettingsType.GetAllPropertyInfos().Any(p => p.SetMethod != null)))
+            //     //     {
+            //     //         yield return new CommandAutoCompleteEntry { Name = $"{mod.Metadata.Name}.", Extra = "Mod Setting", IsDone = false };
+            //     //     }
+            //     // }
+            //
+            //     var allTypes = ModUtils.GetTypes();
+            //     foreach ((string typeName, var type) in allTypes
+            //                  .Select(type => (type.CSharpName(), type))
+            //                  .Order(new NamespaceComparer()))
+            //     {
+            //         if (
+            //             // Filter-out types which probably aren't useful
+            //             !type.IsClass || !type.IsPublic || type.FullName == null || type.Namespace == null || ignoredNamespaces.Any(ns => type.Namespace.StartsWith(ns)) ||
+            //
+            //             // Filter-out compiler generated types
+            //             !type.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() || type.FullName.Contains('<') || type.FullName.Contains('>') ||
+            //
+            //             // Require either an entity, level, session
+            //             !type.IsSameOrSubclassOf(typeof(Entity)) && !type.IsSameOrSubclassOf(typeof(Level)) && !type.IsSameOrSubclassOf(typeof(Session)) &&
+            //             // Or type with static (settable) variables
+            //             type.GetFields(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
+            //                 .All(f => f.IsInitOnly || !IsSettableType(f.FieldType)) &&
+            //             type.GetProperties(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
+            //                 .All(p => !IsSettableType(p.PropertyType) || p.SetMethod == null))
+            //         {
+            //             continue;
+            //         }
+            //
+            //         // Strip the namespace and add the @modname suffix if the typename isn't unique
+            //         string uniqueTypeName = typeName;
+            //         foreach (var otherType in allTypes) {
+            //             if (otherType.FullName == null || otherType.Namespace == null) {
+            //                 continue;
+            //             }
+            //
+            //             string otherName = otherType.CSharpName();
+            //             if (type != otherType && typeName == otherName) {
+            //                 uniqueTypeName = $"{typeName}@{ConsoleEnhancements.GetModName(type)}";
+            //                 break;
+            //             }
+            //         }
+            //
+            //         yield return new CommandAutoCompleteEntry { Name = $"{uniqueTypeName}.", Extra = type.Namespace ?? string.Empty, IsDone = false };
+            //     }
+            // } else if (targetArgs.Length == 1 && targetArgs[0] == "ExtendedVariantMode") {
+            //     // Special case for setting extended variants
+            //     if (ExtendedVariantsInterop.GetVariantsEnum() is { } variantsEnum) {
+            //         foreach (object variant in Enum.GetValues(variantsEnum)) {
+            //             string typeName = string.Empty;
+            //             try {
+            //                 var variantType = ExtendedVariantsInterop.GetVariantType(new Lazy<object?>(variant));
+            //                 if (variantType != null) {
+            //                     typeName = variantType.CSharpName();
+            //                 }
+            //             } catch {
+            //                 // ignore
+            //             }
+            //
+            //             yield return new CommandAutoCompleteEntry { Name = variant.ToString()!, Prefix = "ExtendedVariantMode.", Extra = typeName, IsDone = true, HasNext = true };
+            //         }
+            //     }
+            // } /*else if (targetArgs.Length >= 1 && Everest.Modules.FirstOrDefault(m => m.Metadata.Name == targetArgs[0] && m.SettingsType != null) is { } mod) {
+            //     foreach (var entry in GetSetTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, args), isRootType: targetArgs.Length == 1)) {
+            //         yield return entry with { Name = entry.Name + (entry.IsDone ? "" : "."), Prefix = string.Join('.', targetArgs) + ".", HasNext = true };
+            //     }
+            // } */else if (targetArgs.Length >= 1 && TargetQuery.ResolveBaseTypes(targetArgs, out string[] memberArgs, out _, out _) is { } types && types.IsNotEmpty()) {
+            //     // Assume the first type
+            //     foreach (var entry in GetSetTypeAutoCompleteEntries(RecurseSetType(types[0], memberArgs), isRootType: targetArgs.Length == 1)) {
+            //         yield return entry with { Name = entry.Name + (entry.IsDone ? "" : "."), Prefix = string.Join('.', targetArgs) + ".", HasNext = true };
+            //     }
+            // }
         }
 
         private static IEnumerable<CommandAutoCompleteEntry> GetSetTypeAutoCompleteEntries(Type type, bool isRootType) {
@@ -221,10 +221,10 @@ public static class SetCommand {
             if (targetArgs.Length >= 1 && Everest.Modules.FirstOrDefault(m => m.Metadata.Name == targetArgs[0] && m.SettingsType != null) is { } mod) {
                 return GetParameterTypeAutoCompleteEntries(RecurseSetType(mod.SettingsType, targetArgs[1..]));
             }
-            if (targetArgs.Length >= 1 && TargetQuery.ResolveBaseTypes(targetArgs, out string[] memberArgs, out _, out _) is { } types && types.IsNotEmpty()) {
-                // Assume the first type
-                return GetParameterTypeAutoCompleteEntries(RecurseSetType(types[0], memberArgs));
-            }
+            // if (targetArgs.Length >= 1 && TargetQuery.ResolveBaseTypes(targetArgs, out string[] memberArgs, out _, out _) is { } types && types.IsNotEmpty()) {
+            //     // Assume the first type
+            //     return GetParameterTypeAutoCompleteEntries(RecurseSetType(types[0], memberArgs));
+            // }
 
             return Enumerable.Empty<CommandAutoCompleteEntry>().GetEnumerator();
         }
@@ -322,73 +322,74 @@ public static class SetCommand {
         string query = args[0];
         string[] queryArgs = query.Split('.');
 
-        var baseTypes = TargetQuery.ResolveBaseTypes(queryArgs, out string[]? memberArgs, out var componentTypes, out var entityId);
-        if (baseTypes.IsEmpty()) {
-            ReportError($"Failed to find base type for query '{query}'");
-            return;
-        }
-        if (memberArgs.IsEmpty()) {
-            ReportError("No members specified");
-            return;
-        }
-
-        // Handle special cases
-        if (baseTypes.Count == 1 && (baseTypes[0] == typeof(Settings) || baseTypes[0] == typeof(SaveData) || baseTypes[0] == typeof(Assists))) {
-            SetGameSetting(memberArgs[0], args[1..]);
-            return;
-        }
-        if (baseTypes.Count == 1 &&
-            baseTypes[0].IsSameOrSubclassOf(typeof(EverestModuleSettings)) &&
-            Everest.Modules.FirstOrDefault(mod => mod.SettingsType == baseTypes[0]) is { } module &&
-            module.Metadata.Name == "ExtendedVariantMode")
-        {
-            SetExtendedVariant(memberArgs[0], args[1..]);
-            return;
-        }
-
-        foreach (var type in baseTypes) {
-            if (componentTypes.IsNotEmpty()) {
-                foreach (var componentType in componentTypes) {
-                    var typeResult = TargetQuery.ResolveMemberType(componentType, memberArgs);
-                    if (typeResult.Failure) {
-                        ReportError(typeResult);
-                        return;
-                    }
-
-                    var valuesResult = TargetQuery.ResolveValues(args[1..], [typeResult]);
-                    if (valuesResult.Failure) {
-                        ReportError(valuesResult);
-                        return;
-                    }
-
-                    var instances = TargetQuery.ResolveTypeInstances(type, [componentType], entityId);
-                    var setResult = TargetQuery.SetMemberValues(componentType, instances, valuesResult.Value[0], memberArgs);
-                    if (setResult.Failure) {
-                        ReportError($"Failed to set members '{string.Join('.', memberArgs)}' of type '{typeResult.Value}' on type '{componentType}' to '{valuesResult.Value[0]}':\n{setResult.Error}");
-                        return;
-                    }
-                }
-            } else {
-                var targetResult = TargetQuery.ResolveMemberType(type, memberArgs);
-                if (targetResult.Failure) {
-                    ReportError(targetResult);
-                    return;
-                }
-
-                var valuesResult = TargetQuery.ResolveValues(args[1..], [targetResult]);
-                if (valuesResult.Failure) {
-                    ReportError(valuesResult);
-                    return;
-                }
-
-                var instances = TargetQuery.ResolveTypeInstances(type, componentTypes, entityId);
-                var setResult = TargetQuery.SetMemberValues(type, instances, valuesResult.Value[0], memberArgs);
-                if (setResult.Failure) {
-                    ReportError($"Failed to set members '{string.Join('.', memberArgs)}' of type '{targetResult.Value}' on type '{type}' to '{valuesResult.Value[0]}':\n{setResult.Error}");
-                    return;
-                }
-            }
-        }
+        // FIXME
+        // var baseTypes = TargetQuery.ResolveBaseTypes(queryArgs, out string[]? memberArgs, out var componentTypes, out var entityId);
+        // if (baseTypes.IsEmpty()) {
+        //     ReportError($"Failed to find base type for query '{query}'");
+        //     return;
+        // }
+        // if (memberArgs.IsEmpty()) {
+        //     ReportError("No members specified");
+        //     return;
+        // }
+        //
+        // // Handle special cases
+        // if (baseTypes.Count == 1 && (baseTypes[0] == typeof(Settings) || baseTypes[0] == typeof(SaveData) || baseTypes[0] == typeof(Assists))) {
+        //     SetGameSetting(memberArgs[0], args[1..]);
+        //     return;
+        // }
+        // if (baseTypes.Count == 1 &&
+        //     baseTypes[0].IsSameOrSubclassOf(typeof(EverestModuleSettings)) &&
+        //     Everest.Modules.FirstOrDefault(mod => mod.SettingsType == baseTypes[0]) is { } module &&
+        //     module.Metadata.Name == "ExtendedVariantMode")
+        // {
+        //     SetExtendedVariant(memberArgs[0], args[1..]);
+        //     return;
+        // }
+        //
+        // foreach (var type in baseTypes) {
+        //     if (componentTypes.IsNotEmpty()) {
+        //         foreach (var componentType in componentTypes) {
+        //             var typeResult = TargetQuery.ResolveMemberType(componentType, memberArgs);
+        //             if (typeResult.Failure) {
+        //                 ReportError(typeResult);
+        //                 return;
+        //             }
+        //
+        //             var valuesResult = TargetQuery.ResolveValues(args[1..], [typeResult]);
+        //             if (valuesResult.Failure) {
+        //                 ReportError(valuesResult);
+        //                 return;
+        //             }
+        //
+        //             var instances = TargetQuery.ResolveTypeInstances(type, [componentType], entityId);
+        //             var setResult = TargetQuery.SetMemberValues(componentType, instances, valuesResult.Value[0], memberArgs);
+        //             if (setResult.Failure) {
+        //                 ReportError($"Failed to set members '{string.Join('.', memberArgs)}' of type '{typeResult.Value}' on type '{componentType}' to '{valuesResult.Value[0]}':\n{setResult.Error}");
+        //                 return;
+        //             }
+        //         }
+        //     } else {
+        //         var targetResult = TargetQuery.ResolveMemberType(type, memberArgs);
+        //         if (targetResult.Failure) {
+        //             ReportError(targetResult);
+        //             return;
+        //         }
+        //
+        //         var valuesResult = TargetQuery.ResolveValues(args[1..], [targetResult]);
+        //         if (valuesResult.Failure) {
+        //             ReportError(valuesResult);
+        //             return;
+        //         }
+        //
+        //         var instances = TargetQuery.ResolveTypeInstances(type, componentTypes, entityId);
+        //         var setResult = TargetQuery.SetMemberValues(type, instances, valuesResult.Value[0], memberArgs);
+        //         if (setResult.Failure) {
+        //             ReportError($"Failed to set members '{string.Join('.', memberArgs)}' of type '{targetResult.Value}' on type '{type}' to '{valuesResult.Value[0]}':\n{setResult.Error}");
+        //             return;
+        //         }
+        //     }
+        // }
     }
 
     private static void SetGameSetting(string settingName, string[] valueArgs) {
