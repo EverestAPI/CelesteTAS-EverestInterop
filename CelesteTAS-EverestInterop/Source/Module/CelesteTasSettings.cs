@@ -16,7 +16,7 @@ using Camera = TAS.Gameplay.CenterCamera;
 namespace TAS.Module;
 
 public class CelesteTasSettings : EverestModuleSettings {
-    public static CelesteTasSettings Instance { get; private set; }
+    public static CelesteTasSettings Instance { get; private set; } = null!;
 
     public CelesteTasSettings() {
         Instance = this;

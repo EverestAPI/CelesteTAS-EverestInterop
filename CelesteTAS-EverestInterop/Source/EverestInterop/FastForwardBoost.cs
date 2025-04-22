@@ -14,7 +14,7 @@ using TAS.Utils;
 namespace TAS.EverestInterop;
 
 public static class FastForwardBoost {
-    private static Type creditsType;
+    private static Type? creditsType;
 
     [Initialize]
     private static void Initialize() {
@@ -33,13 +33,13 @@ public static class FastForwardBoost {
         if (ilCursor.TryGotoNext(ins => ins.OpCode == OpCodes.Callvirt,
                 ins => ins.OpCode == OpCodes.Callvirt,
                 ins => ins.OpCode == OpCodes.Call,
-                ins => ins.OpCode == OpCodes.Call && ins.Operand.ToString().Contains("Enumerable::FirstOrDefault")
+                ins => ins.OpCode == OpCodes.Call && ins.Operand.ToString()!.Contains("Enumerable::FirstOrDefault")
             )) {
             ilCursor.RemoveRange(4).EmitDelegate(ReduceLinq);
         }
     }
 
-    private static Entity ReduceLinq(Level level) {
+    private static Entity? ReduceLinq(Level level) {
         foreach (Entity entity in level.Entities.ToAdd) {
             if (entity.GetType() == creditsType) {
                 return entity;
@@ -158,14 +158,14 @@ public static class FastForwardBoost {
 
     private static void SkipUpdateMethod(ILContext il) {
         ILCursor ilCursor = new(il);
-        Instruction start = ilCursor.Next;
-        ilCursor.Emit(OpCodes.Call, typeof(Manager).GetPropertyInfo(nameof(Manager.FastForwarding), BindingFlags.Public | BindingFlags.Static)!.GetMethod);
+        Instruction start = ilCursor.Next!;
+        ilCursor.Emit(OpCodes.Call, typeof(Manager).GetPropertyInfo(nameof(Manager.FastForwarding), BindingFlags.Public | BindingFlags.Static)!.GetMethod!);
         ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
     }
 
     private static void LightningRendererOnUpdate(ILContext il) {
         ILCursor ilCursor = new(il);
-        Instruction start = ilCursor.Next;
+        Instruction start = ilCursor.Next!;
         ilCursor.EmitDelegate<Func<bool>>(IsSkipLightningRendererUpdate);
         ilCursor.Emit(OpCodes.Brfalse, start).Emit(OpCodes.Ret);
     }
@@ -206,7 +206,7 @@ public static class FastForwardBoost {
         ILCursor ilCursor = new(il);
         if (ilCursor.TryGotoNext(ins => ins.MatchCall(typeof(GC), "Collect"),
                 ins => ins.MatchCall(typeof(GC), "WaitForPendingFinalizers"))) {
-            Instruction afterGc = ilCursor.Next.Next.Next;
+            Instruction afterGc = ilCursor.Next!.Next.Next;
             ilCursor.EmitDelegate<Func<bool>>(IsIgnoreGcCollect);
             ilCursor.Emit(OpCodes.Brtrue, afterGc);
         }

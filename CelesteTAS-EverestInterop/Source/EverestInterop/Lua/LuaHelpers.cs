@@ -176,13 +176,13 @@ public static class LuaHelpers {
 
     /// Returns the current level
     [UsedImplicitly]
-    public static Level GetLevel() {
+    public static Level? GetLevel() {
         return Engine.Scene.GetLevel();
     }
 
     /// Returns the current session
     [UsedImplicitly]
-    public static Session GetSession() {
+    public static Session? GetSession() {
         return Engine.Scene.GetSession();
     }
 

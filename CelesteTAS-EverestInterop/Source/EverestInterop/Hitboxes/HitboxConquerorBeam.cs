@@ -8,11 +8,11 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxConquerorBeam {
-    private static GetDelegate<Entity, float> GetChargeTimer;
-    private static GetDelegate<Entity, float> GetActiveTimer;
-    private static GetDelegate<Entity, float> GetAngle;
-    private static GetDelegate<Entity, Entity> GetBoss;
-    private static Type conquerorBeamType;
+    private static GetDelegate<Entity, float>? GetChargeTimer;
+    private static GetDelegate<Entity, float>? GetActiveTimer;
+    private static GetDelegate<Entity, float>? GetAngle;
+    private static GetDelegate<Entity, Entity>? GetBoss;
+    private static Type? conquerorBeamType;
 
     [Initialize]
     private static void Initialize() {
@@ -40,9 +40,9 @@ public static class HitboxConquerorBeam {
 
         orig(self, camera);
 
-        if (self.GetType() == conquerorBeamType && GetChargeTimer(self) <= 0f && GetActiveTimer(self) > 0f) {
-            float angle = GetAngle(self);
-            Entity boss = GetBoss(self);
+        if (self.GetType() == conquerorBeamType && GetChargeTimer!(self) <= 0f && GetActiveTimer!(self) > 0f) {
+            float angle = GetAngle!(self);
+            Entity boss = GetBoss!(self);
             Vector2 vector = boss.Center + Calc.AngleToVector(angle, 12f);
             Vector2 vector2 = boss.Center + Calc.AngleToVector(angle, 2000f);
             Vector2 value = (vector2 - vector).Perpendicular().SafeNormalize(2f);

@@ -10,9 +10,9 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxTriggerSpikes {
-    private static Type groupedTriggerSpikesType;
-    private static GetDelegate<object, bool> groupedTriggerSpikesTriggered;
-    private static GetDelegate<object, float> groupedTriggerSpikesLerp;
+    private static Type? groupedTriggerSpikesType;
+    private static GetDelegate<object, bool>? groupedTriggerSpikesTriggered;
+    private static GetDelegate<object, float>? groupedTriggerSpikesLerp;
 
     [Initialize]
     private static void Initialize() {
@@ -42,7 +42,7 @@ public static class HitboxTriggerSpikes {
         }
 
         self.Collider.Render(camera, HitboxColor.EntityColorInverselyLessAlpha);
-        if (groupedTriggerSpikesTriggered(self) && groupedTriggerSpikesLerp(self) >= 1f) {
+        if (groupedTriggerSpikesTriggered!(self) && groupedTriggerSpikesLerp!(self) >= 1f) {
             self.Collider.Render(camera, HitboxColor.EntityColor);
         }
     }

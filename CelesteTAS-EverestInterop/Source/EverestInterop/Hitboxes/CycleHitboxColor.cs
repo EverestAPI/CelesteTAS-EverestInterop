@@ -40,8 +40,8 @@ public static class CycleHitboxColor {
     private static void Initialize() {
         Dictionary<Type, string> types = new();
 
-        Type frostSpinnerType = ModUtils.GetType("FrostHelper", "FrostHelper.CustomSpinner");
-        Func<Entity, bool> noCycles = null;
+        Type? frostSpinnerType = ModUtils.GetType("FrostHelper", "FrostHelper.CustomSpinner");
+        Func<Entity, bool>? noCycles= null;
 
         if (frostSpinnerType != null) {
             types.Add(frostSpinnerType, "offset");
@@ -100,7 +100,7 @@ public static class CycleHitboxColor {
                 _ => null
             };
 
-            if (offset == null && OffsetGetters.TryGetValue(self.GetType(), out Func<Entity, float?> getter)) {
+            if (offset == null && OffsetGetters.TryGetValue(self.GetType(), out var getter)) {
                 offset = getter(self);
             }
 

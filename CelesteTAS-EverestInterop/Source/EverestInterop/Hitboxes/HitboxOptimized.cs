@@ -27,15 +27,15 @@ public static class HitboxOptimized {
             { } methodInfo) {
             methodInfo.IlHook((cursor, context) => {
                 if (cursor.TryGotoNext(MoveType.After, ins => ins.OpCode == OpCodes.Callvirt)) {
-                    Instruction cursorNext = cursor.Next;
+                    Instruction cursorNext = cursor.Next!;
                     cursor.EmitDelegate<Func<bool>>(IsShowHitboxes);
                     cursor.Emit(OpCodes.Brfalse, cursorNext).Emit(OpCodes.Ret);
                 }
             });
         }
 
-        typeof(Puffer).GetMethodInfo("Explode").HookBefore<Puffer>(self => pufferPushRadius.Add(new Circle(40f, self.X, self.Y)));
-        typeof(Puffer).GetMethodInfo("Render").IlHook((cursor, context) => {
+        typeof(Puffer).GetMethodInfo("Explode")!.HookBefore<Puffer>(self => pufferPushRadius.Add(new Circle(40f, self.X, self.Y)));
+        typeof(Puffer).GetMethodInfo("Render")!.IlHook((cursor, context) => {
             if (cursor.TryGotoNext(i => i.MatchLdloc(out _), i => i.MatchLdcI4(28))) {
                 cursor.Index++;
                 cursor.EmitDelegate(HidePufferWhiteLine);
@@ -210,7 +210,7 @@ public static class HitboxOptimized {
     }
 
     private static void EntityListOnDebugRender(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
-        Level level = self.Scene as Level;
+        Level? level = self.Scene as Level;
         if (TasSettings.ShowHitboxes && level != null) {
             AddSpawnPointHitbox(level);
         }

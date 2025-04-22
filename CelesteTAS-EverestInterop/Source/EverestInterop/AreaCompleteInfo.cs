@@ -25,7 +25,7 @@ public static class AreaCompleteInfo {
 
     private const string TasWasRun = "CelesteTAS_TAS_Was_Run";
     private const string AlwaysShowInfo = nameof(AlwaysShowInfo);
-    private static string text;
+    private static string? text;
     private static readonly Dictionary<string, StringBuilder> completeInfos = new();
     private static readonly Vector2 position = new(10, 10);
 
@@ -98,7 +98,7 @@ public static class AreaCompleteInfo {
         DrawText(ease);
     }
 
-    private static void InitText(Session session) {
+    private static void InitText(Session? session) {
         session ??= Engine.Scene.GetSession();
 
         if (session == null) {
@@ -195,7 +195,7 @@ public static class AreaCompleteInfo {
         }
     }
 
-    public static string CreateCommand() {
+    public static string? CreateCommand() {
         if (Engine.Scene.GetSession() is not { } session) {
             return null;
         }
