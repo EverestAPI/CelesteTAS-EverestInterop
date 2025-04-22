@@ -94,17 +94,16 @@ public static class ExportGameInfo {
         streamWriter.WriteLine(string.Join("\t", "Line", "Inputs", "Frames", "Time", "Position", "Speed", "State", "Statuses", "Room", "Entities"));
         trackedEntities = new Dictionary<string, Func<List<Entity>>>();
         foreach (string typeName in tracked) {
-            // FIXME
-            // var types = TargetQuery.ResolveBaseTypes(typeName.Split('.'), out _, out _, out _);
-            // if (types.IsEmpty()) {
-            //     continue;
-            // }
-            //
-            // foreach (var type in types) {
-            //     if (type.IsSameOrSubclassOf(typeof(Entity)) && type.FullName != null) {
-            //         trackedEntities[type.FullName] = () => TargetQuery.ResolveTypeInstances(type, [], EntityID.None).Cast<Entity>().ToList();
-            //     }
-            // }
+            var types = TargetQuery.ResolveBaseTypes(typeName.Split('.'), out _);
+            if (types.IsEmpty()) {
+                continue;
+            }
+
+            foreach (var type in types) {
+                if (type.IsSameOrSubclassOf(typeof(Entity)) && type.FullName != null) {
+                    trackedEntities[type.FullName] = () => TargetQuery.ResolveTypeInstances(type).Cast<Entity>().ToList();
+                }
+            }
         }
     }
 

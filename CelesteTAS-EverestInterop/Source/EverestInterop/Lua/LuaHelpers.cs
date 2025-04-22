@@ -26,24 +26,30 @@ public static class LuaHelpers {
     /// Resolves the first entity which matches the specified target-query, e.g. "Player" or "Celeste.Player"
     [UsedImplicitly]
     public static Entity? GetEntity(string targetQuery) {
-        // FIXME
-        // if (TryGetEntityTypeWithId(targetQuery, out var type, out var entityId)) {
-        //     return (Entity?) TargetQuery.ResolveTypeInstances(type, [], entityId).FirstOrDefault();
-        // } else {
-        //     return null;
-        // }
-        return null;
+        var result = TargetQuery.GetMemberValues(targetQuery);
+        if (result.Failure) {
+            result.Error.ToString().ConsoleLog(LogLevel.Warn);
+            return null;
+        }
+
+        return (Entity?) result.Value
+            .Select(entry => entry.Value)
+            .FirstOrDefault(value => value is Entity);
     }
 
     /// Resolves all entities which match the specified target-query, e.g. "Player" or "Celeste.Player"
     [UsedImplicitly]
-    public static List<Entity> GetEntities(string targetQuery) {
-        // if (TryGetEntityTypeWithId(targetQuery, out var type, out var entityId)) {
-        //     return TargetQuery.ResolveTypeInstances(type, [], entityId).Cast<Entity>().ToList();
-        // } else {
-        //     return [];
-        // }
-        return null;
+    public static List<Entity>? GetEntities(string targetQuery) {
+        var result = TargetQuery.GetMemberValues(targetQuery);
+        if (result.Failure) {
+            result.Error.ToString().ConsoleLog(LogLevel.Warn);
+            return null;
+        }
+
+        return result.Value
+            .Where(entry => entry.Value is Entity)
+            .Select(entry => (Entity) entry.Value!)
+            .ToList();
     }
 
     /// Gets the value of a (private) field / property
@@ -149,7 +155,7 @@ public static class LuaHelpers {
     /// Resolves the enum value for an ordinal or name
     [UsedImplicitly]
     public static object? GetEnum(string enumTargetQuery, object value) {
-        if (TargetQuery.ResolveBaseTypes(enumTargetQuery.Split('.'), out _, out _) is { } types && types.IsNotEmpty() &&
+        if (TargetQuery.ResolveBaseTypes(enumTargetQuery.Split('.'), out _) is { } types && types.IsNotEmpty() &&
             types.FirstOrDefault(t => t.IsEnum) is { } type)
         {
             if (value is long longValue || long.TryParse(value.ToString(), out longValue)) {
@@ -192,33 +198,21 @@ public static class LuaHelpers {
     }
 
     private static bool TryGetInstance(object? instanceOrTargetQuery, [NotNullWhen(true)] out Type? type, out object? instance) {
-        // if (instanceOrTargetQuery is string targetQuery) {
-        //     if (TargetQuery.ResolveBaseTypes(targetQuery.Split('.'), out _, out _) is { } types && types.IsNotEmpty()) {
-        //         type = types[0];
-        //         instance = TargetQuery.ResolveTypeInstances(types[0], [], EntityID.None).FirstOrDefault();
-        //         return true;
-        //     } else {
+        if (instanceOrTargetQuery is string targetQuery) {
+            if (TargetQuery.ResolveBaseTypes(targetQuery.Split('.'), out _) is { } types && types.IsNotEmpty()) {
+                type = types[0];
+                instance = TargetQuery.ResolveTypeInstances(types[0]).FirstOrDefault();
+                return true;
+            } else {
                 type = null;
                 instance = null;
                 return false;
-        //     }
-        // } else {
-        //     type = instanceOrTargetQuery?.GetType()!;
-        //     instance = instanceOrTargetQuery;
-        //     return true;
-        // }
-    }
-
-    private static bool TryGetEntityTypeWithId(string targetQuery, [NotNullWhen(true)] out Type? type, out EntityID? entityId) {
-        // if (TargetQuery.ResolveBaseTypes(targetQuery.Split('.'), out _, out _, out var id) is { } types && types.IsNotEmpty()) {
-        //     type = types.FirstOrDefault(t => t.IsSameOrSubclassOf(typeof(Entity)));
-        //     entityId = id;
-        //     return type != null;
-        // } else {
-            type = null;
-            entityId = EntityID.None;
-            return false;
-        // }
+            }
+        } else {
+            type = instanceOrTargetQuery?.GetType()!;
+            instance = instanceOrTargetQuery;
+            return true;
+        }
     }
 
     /// Tries to convert the value to the target type

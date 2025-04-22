@@ -548,18 +548,18 @@ internal static class TypeExtensions {
     }
 
     /// Implicitly converts the current object to the target
-    public static object? CoerceTo(this object? obj, Type target) {
+    public static Result<object?, string> CoerceTo(this object? obj, Type target) {
         if (obj == null) {
             return target.IsValueType
-                ? null
-                : throw new Exception($"Cannot coerce null into a value type '{target}'");
+                ? Result<object?, string>.Ok(null)
+                : Result<object?, string>.Fail($"Cannot coerce null into a value type '{target}'");
         }
 
         var type = obj.GetType();
 
         // Trivial case
         if (type.IsAssignableTo(target)) {
-            return obj;
+            return Result<object?, string>.Ok(obj);
         }
 
         // Implicit conversion operators
@@ -569,11 +569,11 @@ internal static class TypeExtensions {
                 method.GetParameters() is { Length: 1 } parameters &&
                 parameters[0].ParameterType.IsAssignableFrom(type)
             ) {
-                return method.Invoke(null, [obj]);
+                return Result<object?, string>.Ok(method.Invoke(null, [obj]));
             }
         }
 
-        throw new Exception($"Value of type '{type}' into '{target}'");
+        return Result<object?, string>.Fail($"Cannot coerce value of type '{type}' into '{target}'");
     }
 }
 

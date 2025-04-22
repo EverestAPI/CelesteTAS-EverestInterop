@@ -19,7 +19,6 @@ namespace TAS.InfoHUD;
 
 internal class SettingsQueryHandler : TargetQuery.Handler {
     public override bool CanResolveInstances(Type type) => type == typeof(Settings);
-    public override bool CanResolveMembers(Type type) => false;
 
     public override (List<Type> Types, string[] MemberArgs)? ResolveBaseTypes(string[] queryArgs) {
         // Vanilla settings don't need a prefix
@@ -79,7 +78,6 @@ internal class SettingsQueryHandler : TargetQuery.Handler {
 
 internal class SaveDataQueryHandler : TargetQuery.Handler {
     public override bool CanResolveInstances(Type type) => type == typeof(SaveData);
-    public override bool CanResolveMembers(Type type) => false;
 
     public override (List<Type> Types, string[] MemberArgs)? ResolveBaseTypes(string[] queryArgs) {
         // Vanilla settings don't need a prefix
@@ -137,7 +135,6 @@ internal class SaveDataQueryHandler : TargetQuery.Handler {
 
 internal class AssistsQueryHandler : TargetQuery.Handler {
     public override bool CanResolveInstances(Type type) => type == typeof(Assists);
-    public override bool CanResolveMembers(Type type) => false;
 
     public override (List<Type> Types, string[] MemberArgs)? ResolveBaseTypes(string[] queryArgs) {
         // Vanilla settings don't need a prefix
@@ -205,9 +202,6 @@ internal class AssistsQueryHandler : TargetQuery.Handler {
 }
 
 internal class ExtendedVariantsQueryHandler : TargetQuery.Handler {
-    public override bool CanResolveInstances(Type type) => false;
-    public override bool CanResolveMembers(Type type) => false;
-
     public override Result<bool, TargetQuery.MemberAccessError> ResolveMember(object? instance, out object? value, Type type, int memberIdx, string[] memberArgs) {
         if (!type.IsSameOrSubclassOf(typeof(EverestModuleSettings)) ||
             Everest.Modules.FirstOrDefault(mod => mod.SettingsType == type) is not { } module ||
@@ -222,7 +216,7 @@ internal class ExtendedVariantsQueryHandler : TargetQuery.Handler {
         var variantType = ExtendedVariantsInterop.GetVariantType(variant);
         if (variantType is null) {
             value = null;
-            return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(module.SettingsType, memberIdx, memberArgs, $"Extended Variant '{variantName}' not found"));
+            return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(module.SettingsType, memberIdx, $"Extended Variant '{variantName}' not found"));
         }
 
         value = ExtendedVariantsInterop.GetCurrentVariantValue(variant);
@@ -243,7 +237,7 @@ internal class ExtendedVariantsQueryHandler : TargetQuery.Handler {
         var variantType = ExtendedVariantsInterop.GetVariantType(variant);
         if (variantType is null) {
             targetTypes = null!;
-            return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(module.SettingsType, memberIdx, memberArgs, $"Extended Variant '{variantName}' not found"));
+            return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(module.SettingsType, memberIdx, $"Extended Variant '{variantName}' not found"));
         }
 
         targetTypes = [variantType];
@@ -268,7 +262,6 @@ internal class ExtendedVariantsQueryHandler : TargetQuery.Handler {
 
 internal class EverestModuleSettingsQueryHandler : TargetQuery.Handler {
     public override bool CanResolveInstances(Type type) => type.IsSameOrSubclassOf(typeof(EverestModuleSettings));
-    public override bool CanResolveMembers(Type type) => false;
 
     public override (List<Type> Types, string[] MemberArgs)? ResolveBaseTypes(string[] queryArgs) {
         if (Everest.Modules.FirstOrDefault(mod => mod.SettingsType != null && mod.Metadata.Name == queryArgs[0]) is { } module) {
@@ -345,19 +338,14 @@ internal class EntityQueryHandler : TargetQuery.Handler {
     private const string ComponentKey = "ComponentAccess";
 
     public override bool CanResolveInstances(Type type) => type.IsSameOrSubclassOf(typeof(Entity));
-    public override bool CanResolveMembers(Type type) => type.IsSameOrSubclassOf(typeof(Entity));
+    public override bool CanResolveValue(Type type) => type == typeof(SubpixelComponent) || type == typeof(SubpixelPosition);
     public override bool CanEnumerateMemberEntries(Type type, TargetQuery.Variant variant) => type == typeof(SubpixelPosition);
 
-    public override (List<Type> Types, string[] MemberArgs, object? UserData)? ResolveBaseTypesWithUserData(string[] queryArgs) {
+    public override (List<Type> Types, string[] MemberArgs)? ResolveBaseTypes(string[] queryArgs) {
         // Both special cases use colons, so check for them to early-exit
         if (queryArgs.All(arg => !arg.Contains(':'))) {
             return null;
         }
-
-        SubpixelComponent a = default;
-        float b = a;
-        SubpixelComponent c = b;
-        // typeof(SubpixelComponent).Get
 
         var newQueryArgs = new List<string>(capacity: queryArgs.Length);
         foreach (string arg in queryArgs) {
@@ -366,7 +354,12 @@ internal class EntityQueryHandler : TargetQuery.Handler {
                 newQueryArgs.Add($"{EntityIDKey}{SpecialSeparator}{entityMatch.Groups[2].Value}{SpecialSeparator}{id}");
 
                 if (ComponentRegex.Match(entityMatch.Groups[4].Value) is { Success: true} componentMatch) {
+                    if (!string.IsNullOrWhiteSpace(componentMatch.Groups[1].Value)) {
+                        return ([], queryArgs); // Invalid
+                    }
                     newQueryArgs.Add($"{ComponentKey}{SpecialSeparator}{componentMatch.Groups[2].Value}");
+                } else if (!string.IsNullOrWhiteSpace(entityMatch.Groups[4].Value)) {
+                    return ([], queryArgs); // Invalid
                 }
             } else if (ComponentRegex.Match(arg) is { Success: true} componentMatch) {
                 newQueryArgs.Add(componentMatch.Groups[1].Value);
@@ -377,64 +370,20 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         }
 
         var baseTypes = TargetQuery.ParseGenericBaseTypes(newQueryArgs.ToArray(), out string[] memberArgs);
-        return (baseTypes, memberArgs, UserData: null);
-
-        // // Split component access into own member
-        // string[] splitQueryArgs = queryArgs
-        //     .SelectMany<string, string>(arg => EntityIDRegex.Match(arg) is { Success: true } match && int.TryParse(match.Groups[3].Value, out int id)
-        //         ? [match.Groups[1].Value, $"{EntityIDKey}{SpecialSeparator}{match.Groups[2].Value}{SpecialSeparator}{id}"]
-        //         : [arg])
-        //     .SelectMany<string, string>(arg => ComponentRegex.Match(arg) is { Success: true } match
-        //         ? [match.Groups[1].Value, $"{ComponentKey}{SpecialSeparator}{match.Groups[2].Value}"]
-        //         : [arg])
-        //     .ToArray();
-        //
-        // // // Search for entity ID
-        // // for (int i = 0; i < splitQueryArgs.Length; i++) {
-        // //     if (EntityIDRegex.Match(splitQueryArgs[i]) is not { Success: true } match) {
-        // //         continue;
-        // //     }
-        // //
-        // //     var baseTypes = TargetQuery.ParseGenericBaseTypes([..splitQueryArgs[..i], match.Groups[1].Value], out string[] memberArgs);
-        // //     var entityId = int.TryParse(match.Groups[3].Value, out int id) ? new EntityID(match.Groups[2].Value, id) : EntityID.None;
-        // //     return (baseTypes, memberArgs, entityId);
-        // // }
-        //
-        // if (splitQueryArgs.Length != queryArgs.Length) {
-        //     var baseTypes = TargetQuery.ParseGenericBaseTypes(splitQueryArgs, out string[] memberArgs);
-        //     return (baseTypes, memberArgs, UserData: null);
-        // }
-        //
-        // // No component access
-        // return null;
+        return (baseTypes, memberArgs);
     }
 
-    public override object[] ResolveInstancesWithUserData(Type type, object? userData) {
-        var entityId = userData as EntityID?;
-
+    public override object[] ResolveInstances(Type type) {
         IEnumerable<Entity> entityInstances;
         if (Engine.Scene.Tracker.Entities.TryGetValue(type, out var entities)) {
-            entityInstances = entities
-                .Where(e => entityId == null || e.GetEntityData()?.ToEntityId().Key == entityId.Value.Key);
+            entityInstances = entities;
         } else {
-            entityInstances = Engine.Scene.Entities
-                .Where(e => e.GetType().IsSameOrSubclassOf(type) && (entityId == null || e.GetEntityData()?.ToEntityId().Key == entityId.Value.Key));
+            entityInstances = Engine.Scene.Entities.Where(e => e.GetType().IsSameOrSubclassOf(type));
         }
 
         return entityInstances
             .Select(object (e) => e)
             .ToArray();
-
-        // if (data == null || data.ComponentTypes.IsEmpty()) {
-        //     return entityInstances
-        //         .Select(object (e) => e)
-        //         .ToArray();
-        // } else {
-        //     return entityInstances
-        //         .SelectMany(e => e.Components.Where(c => data.ComponentTypes.Any(componentType => c.GetType().IsSameOrSubclassOf(componentType))))
-        //         .Select(object (c) => c)
-        //         .ToArray();
-        // }
     }
 
     public override Result<bool, TargetQuery.QueryError> ResolveMemberValues(ref object?[] values, ref int memberIdx, string[] memberArgs) {
@@ -623,19 +572,21 @@ internal class EntityQueryHandler : TargetQuery.Handler {
     }
 
     public override Result<bool, TargetQuery.QueryError> ResolveValue(Type targetType, ref int argIdx, string[] valueArgs, out object? value) {
-        if (targetType == typeof(SubpixelComponent)) {
-            double doubleValue = double.Parse(valueArgs[argIdx]);
-
+        if (targetType == typeof(SubpixelComponent) &&
+            double.TryParse(valueArgs[argIdx], out double doubleValue)
+        ) {
             int position = (int) Math.Round(doubleValue);
             float remainder = (float) (doubleValue - position);
 
             value = new SubpixelComponent(position, remainder);
             return Result<bool, TargetQuery.QueryError>.Ok(true);
         }
-        if (targetType == typeof(SubpixelPosition)) {
-            double doubleValueX = double.Parse(valueArgs[argIdx]);
+
+        if (targetType == typeof(SubpixelPosition) &&
+            double.TryParse(valueArgs[argIdx+0], out double doubleValueX) &&
+            double.TryParse(valueArgs[argIdx+1], out double doubleValueY)
+        ) {
             argIdx++;
-            double doubleValueY = double.Parse(valueArgs[argIdx]);
 
             int positionX = (int) Math.Round(doubleValueX);
             int positionY = (int) Math.Round(doubleValueY);
@@ -662,7 +613,6 @@ internal class EntityQueryHandler : TargetQuery.Handler {
 
 internal class ComponentQueryHandler : TargetQuery.Handler {
     public override bool CanResolveInstances(Type type) => type.IsSameOrSubclassOf(typeof(Component));
-    public override bool CanResolveMembers(Type type) => false;
 
     public override object[] ResolveInstances(Type type) {
         IEnumerable<Component> componentInstances;
@@ -687,8 +637,8 @@ internal class SpecialValueQueryHandler : TargetQuery.Handler {
         public readonly HashSet<MInput.MouseData.MouseButtons> MouseButtons = [];
     }
 
-    public override bool CanResolveInstances(Type type) => false;
-    public override bool CanResolveMembers(Type type) => false;
+    public override bool CanResolveValue(Type type) => type == typeof(Vector2) || type == typeof(Vector3) || type == typeof(Vector4) || type == typeof(Random) || type == typeof(ButtonBinding);
+    public override bool CanEnumerateTypeEntries(Type type, TargetQuery.Variant variant) => type == typeof(ButtonBinding);
 
     public override Result<bool, TargetQuery.MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
         var bindingFlags = memberArgs.Length == 1
@@ -732,7 +682,7 @@ internal class SpecialValueQueryHandler : TargetQuery.Handler {
                                 nodes.AddRange(data.KeyboardKeys.Select(_ => new VirtualButton.MouseMiddleButton()));
                                 break;
                             case MInput.MouseData.MouseButtons.XButton1 or MInput.MouseData.MouseButtons.XButton2:
-                                return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(type, memberIdx, memberArgs, "X1 and X2 are not supported before Everest adding mouse support"));
+                                return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(type, memberIdx, "X1 and X2 are not supported before Everest adding mouse support"));
                         }
                     }
                 }
@@ -810,5 +760,20 @@ internal class SpecialValueQueryHandler : TargetQuery.Handler {
 
         value = null;
         return Result<bool, TargetQuery.QueryError>.Ok(false);
+    }
+
+    public override IEnumerator<CommandAutoCompleteEntry> EnumerateTypeEntries(Type type, TargetQuery.Variant variant) {
+        if (type == typeof(ButtonBinding)) {
+            foreach (var button in Enum.GetValues<MButtons>()) {
+                yield return new CommandAutoCompleteEntry { Name = button.ToString(), Extra = "Mouse", IsDone = true };
+            }
+            foreach (var key in Enum.GetValues<Keys>()) {
+                if (key is Keys.Left or Keys.Right) {
+                    // These keys can't be used, since the mouse buttons already use that name
+                    continue;
+                }
+                yield return new CommandAutoCompleteEntry { Name = key.ToString(), Extra = "Key", IsDone = true };
+            }
+        }
     }
 }
