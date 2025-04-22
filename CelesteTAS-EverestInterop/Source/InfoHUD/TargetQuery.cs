@@ -40,6 +40,7 @@ public static class TargetQuery {
     internal abstract class Handler {
         public abstract bool CanResolveInstances(Type type);
         public abstract bool CanResolveMembers(Type type);
+        public virtual bool CanEnumerateMemberEntries(Type type, Variant variant) => false;
 
         public virtual object[] ResolveInstances(Type type) => [];
         public virtual (List<Type> Types, string[] MemberArgs)? ResolveBaseTypes(string[] queryArgs) => null;
@@ -60,7 +61,7 @@ public static class TargetQuery {
             value = null;
             return Result<bool, MemberAccessError>.Ok(false);
         }
-        public virtual Result<bool, MemberAccessError> ResolveTargetTypes(object? instance, out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
+        public virtual Result<bool, MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
             targetTypes = [];
             return Result<bool, MemberAccessError>.Ok(false);
         }
@@ -79,32 +80,12 @@ public static class TargetQuery {
         }
 
         [MustDisposeResource]
-        public virtual IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(Variant variant) {
+        public virtual IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, Variant variant, Type[]? targetTypeFilter) {
             yield break;
         }
         [MustDisposeResource]
         public virtual IEnumerator<CommandAutoCompleteEntry> EnumerateMemberEntries(Type type, Variant variant) {
-            foreach (var field in EnumerateUsableFields(type, variant, ReflectionExtensions.StaticInstanceAnyVisibility).OrderBy(f => f.Name)) {
-                yield return new CommandAutoCompleteEntry {
-                    Name = field.Name,
-                    Extra = field.FieldType.CSharpName(),
-                    IsDone = IsFinalTarget(field.FieldType)
-                };
-            }
-            foreach (var property in EnumerateUsableProperties(type, variant, ReflectionExtensions.StaticInstanceAnyVisibility).OrderBy(p => p.Name)) {
-                yield return new CommandAutoCompleteEntry {
-                    Name = property.Name,
-                    Extra = property.PropertyType.CSharpName(),
-                    IsDone = IsFinalTarget(property.PropertyType)
-                };
-            }
-            foreach (var method in EnumerateUsableMethods(type, variant, ReflectionExtensions.StaticInstanceAnyVisibility).OrderBy(m => m.Name)) {
-                yield return new CommandAutoCompleteEntry {
-                    Name = method.Name,
-                    Extra = $"({string.Join(", ", method.GetParameters().Select(p => p.HasDefaultValue ? $"[{p.ParameterType.CSharpName()}]" : p.ParameterType.CSharpName()))})",
-                    IsDone = true,
-                };
-            }
+            yield break;
         }
     }
 
@@ -158,32 +139,102 @@ public static class TargetQuery {
         };
     }
 
-    internal static IEnumerable<FieldInfo> EnumerateUsableFields(Type type, Variant variant, BindingFlags bindingFlags) {
+    internal static bool IsTypeViable(Type type, Variant variant, bool isRoot, Type[]? targetTypeFilter, int maxDepth) {
+        // Filter-out types which probably aren't useful / possible
+        if (!(type.IsClass || type.IsStructType()) || type.IsGenericType || type.FullName == null || type.Namespace == null || ignoredNamespaces.Any(ns => type.Namespace!.StartsWith(ns))) {
+            return false;
+        }
+        // Filter-out compiler generated types
+        if (type.GetCustomAttributes<CompilerGeneratedAttribute>().IsNotEmpty() || type.FullName!.Contains('<') || type.FullName.Contains('>')) {
+            return false;
+        }
+
+        if (maxDepth <= 0) {
+            return true; // Dont recurse further
+        }
+
+        // Require some viable members
+        var bindingFlags = isRoot
+            ? Handlers.Any(handler => handler.CanResolveInstances(type))
+                ? ReflectionExtensions.StaticInstanceAnyVisibility
+                : ReflectionExtensions.StaticAnyVisibility
+            : ReflectionExtensions.InstanceAnyVisibility;
+
+        return EnumerateViableFields(type, variant, bindingFlags, targetTypeFilter, maxDepth).Any() ||
+               EnumerateViableProperties(type, variant, bindingFlags, targetTypeFilter, maxDepth).Any() ||
+               EnumerateViableMethods(type, variant, bindingFlags, targetTypeFilter, maxDepth).Any();
+    }
+    internal static bool IsFieldViable(FieldInfo field, Variant variant, bool isFinal, Type[]? targetTypeFilter, int maxDepth) {
+        return IsFieldUsable(field, variant, isFinal) && variant switch {
+            Variant.Get or Variant.Set =>
+                targetTypeFilter == null
+                || targetTypeFilter.Any(type => field.FieldType.CanCoerceTo(type))
+                || IsTypeViable(field.FieldType, variant, isRoot: false, targetTypeFilter, maxDepth - 1),
+            // We don't know the return type of the delegate, so assume viable
+            Variant.Invoke =>
+                isFinal
+                || targetTypeFilter == null
+                || targetTypeFilter.Any(type => field.FieldType.CanCoerceTo(type))
+                || IsTypeViable(field.FieldType, variant, isRoot: false, targetTypeFilter, maxDepth - 1),
+            _ => throw new ArgumentOutOfRangeException(nameof(variant), variant, null)
+        };
+    }
+    internal static bool IsPropertyViable(PropertyInfo property, Variant variant, bool isFinal, Type[]? targetTypeFilter, int maxDepth) {
+        return IsPropertyUsable(property, variant, isFinal) && variant switch {
+            Variant.Get or Variant.Set =>
+                targetTypeFilter == null
+                || targetTypeFilter.Any(type => property.PropertyType.CanCoerceTo(type))
+                || IsTypeViable(property.PropertyType, variant, isRoot: false, targetTypeFilter, maxDepth - 1),
+            // We don't know the return type of the delegate, so assume viable
+            Variant.Invoke =>
+                isFinal
+                || targetTypeFilter == null
+                || targetTypeFilter.Any(type => property.PropertyType.CanCoerceTo(type))
+                || IsTypeViable(property.PropertyType, variant, isRoot: false, targetTypeFilter, maxDepth - 1),
+            _ => throw new ArgumentOutOfRangeException(nameof(variant), variant, null)
+        };
+    }
+    internal static bool IsMethodViable(MethodInfo method, Variant variant, bool isFinal, Type[]? targetTypeFilter, int maxDepth) {
+        return IsMethodUsable(method, variant, isFinal) && variant switch {
+            Variant.Get or Variant.Set =>
+                targetTypeFilter == null
+                || targetTypeFilter.Any(type => method.ReturnType.CanCoerceTo(type))
+                || IsTypeViable(method.ReturnType, variant, isRoot: false, targetTypeFilter, maxDepth - 1),
+            Variant.Invoke =>
+                isFinal
+                || targetTypeFilter == null
+                || targetTypeFilter.Any(type => method.ReturnType.CanCoerceTo(type))
+                || IsTypeViable(method.ReturnType, variant, isRoot: false, targetTypeFilter, maxDepth - 1),
+            _ => throw new ArgumentOutOfRangeException(nameof(variant), variant, null)
+        };
+    }
+
+    internal static IEnumerable<FieldInfo> EnumerateViableFields(Type type, Variant variant, BindingFlags bindingFlags, Type[]? targetTypeFilter, int maxDepth) {
         return type
             .GetAllFieldInfos(bindingFlags)
             .Where(f =>
                 // Filter-out compiler generated fields
                 f.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !f.Name.Contains('<') && !f.Name.Contains('>') &&
-                // Require to be usable
-                IsFieldUsable(f, variant, IsFinalTarget(f.FieldType)));
+                // Require to be viable
+                IsFieldViable(f, variant, IsFinalTarget(f.FieldType), targetTypeFilter, maxDepth));
     }
-    internal static IEnumerable<PropertyInfo> EnumerateUsableProperties(Type type, Variant variant, BindingFlags bindingFlags) {
+    internal static IEnumerable<PropertyInfo> EnumerateViableProperties(Type type, Variant variant, BindingFlags bindingFlags, Type[]? targetTypeFilter, int maxDepth) {
         return type
             .GetAllPropertyInfos(bindingFlags)
             .Where(p =>
                 // Filter-out compiler generated properties
                 p.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !p.Name.Contains('<') && !p.Name.Contains('>') &&
-                // Require to be usable
-                IsPropertyUsable(p, variant, IsFinalTarget(p.PropertyType)));
+                // Require to be viable
+                IsPropertyViable(p, variant, IsFinalTarget(p.PropertyType), targetTypeFilter, maxDepth));
     }
-    internal static IEnumerable<MethodInfo> EnumerateUsableMethods(Type type, Variant variant, BindingFlags bindingFlags) {
+    internal static IEnumerable<MethodInfo> EnumerateViableMethods(Type type, Variant variant, BindingFlags bindingFlags, Type[]? targetTypeFilter, int maxDepth) {
         return type
             .GetAllMethodInfos(bindingFlags)
             .Where(m =>
                 // Filter-out compiler generated fields
                 m.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !m.Name.Contains('<') && !m.Name.Contains('>') &&
-                // Require to be usable
-                IsMethodUsable(m, variant, isFinal: true));
+                // Require to be viable
+                IsMethodViable(m, variant, isFinal: true, targetTypeFilter, maxDepth));
     }
 
     /// Guesses whether the target type is reasonably the final part of a target-query
@@ -355,78 +406,89 @@ public static class TargetQuery {
 
     internal static readonly string[] ignoredNamespaces = ["System", "StudioCommunication", "TAS", "SimplexNoise", "FMOD", "MonoMod", "Snowberry"];
 
-    internal static IEnumerator<CommandAutoCompleteEntry> ResolveAutoCompleteEntries(string[] queryArgs, Variant variant) {
+    private const int MaxTypeViabilityRecursion = 3;
+
+    internal static IEnumerator<CommandAutoCompleteEntry> ResolveAutoCompleteEntries(string[] queryArgs, Variant variant, Type[]? targetTypeFilter = null) {
+        string queryPrefix = queryArgs.Length != 0 ? $"{string.Join('.', queryArgs)}." : "";
+
         {
-            using var enumerator = ResolveBaseTypeAutoCompleteEntries(queryArgs, variant);
+            using var enumerator = ResolveBaseTypeAutoCompleteEntries(queryArgs, queryPrefix, variant, targetTypeFilter);
             while (enumerator.MoveNext()) {
                 yield return enumerator.Current;
             }
         }
 
         var baseTypes = ResolveBaseTypes(queryArgs, out string[] memberArgs, out var userData);
-        foreach (var type in baseTypes) {
-            foreach (var handler in Handlers.Where(handler => handler.CanResolveInstances(type))) {
-                using var enumerator = handler.EnumerateMemberEntries(type, variant);
+        foreach (var baseType in baseTypes) {
+            // Recurse type
+            var currentType = RecurseMemberType(baseType, memberArgs, variant);
+            if (currentType == null) {
+                yield break;
+            }
+
+            foreach (var handler in Handlers.Where(handler => handler.CanEnumerateMemberEntries(currentType, variant))) {
+                using var enumerator = handler.EnumerateMemberEntries(currentType, variant);
                 while (enumerator.MoveNext()) {
-                    yield return enumerator.Current;
+                    yield return enumerator.Current with {
+                        Name = enumerator.Current.IsDone ? enumerator.Current.Name : enumerator.Current.Name + ".",
+                        Prefix = queryPrefix,
+                    };
                 }
                 goto NextType;
             }
 
             // Generic handler
-            foreach (var field in EnumerateUsableFields(type, variant, ReflectionExtensions.StaticInstanceAnyVisibility).OrderBy(f => f.Name)) {
-                yield return new CommandAutoCompleteEntry {
-                    Name = field.Name,
-                    Extra = field.FieldType.CSharpName(),
-                    IsDone = IsFinalTarget(field.FieldType)
-                };
-            }
-            foreach (var property in EnumerateUsableProperties(type, variant, ReflectionExtensions.StaticInstanceAnyVisibility).OrderBy(p => p.Name)) {
-                yield return new CommandAutoCompleteEntry {
-                    Name = property.Name,
-                    Extra = property.PropertyType.CSharpName(),
-                    IsDone = IsFinalTarget(property.PropertyType)
-                };
-            }
-            foreach (var method in EnumerateUsableMethods(type, variant, ReflectionExtensions.StaticInstanceAnyVisibility).OrderBy(m => m.Name)) {
-                yield return new CommandAutoCompleteEntry {
-                    Name = method.Name,
-                    Extra = $"({string.Join(", ", method.GetParameters().Select(p => p.HasDefaultValue ? $"[{p.ParameterType.CSharpName()}]" : p.ParameterType.CSharpName()))})",
-                    IsDone = true,
-                };
+            {
+                var bindingFlags = memberArgs.Length == 0
+                    ? Handlers.Any(handler => handler.CanResolveInstances(currentType))
+                        ? ReflectionExtensions.StaticInstanceAnyVisibility
+                        : ReflectionExtensions.StaticAnyVisibility
+                    : ReflectionExtensions.InstanceAnyVisibility;
+
+                foreach (var field in EnumerateViableFields(currentType, variant, bindingFlags, targetTypeFilter, maxDepth: MaxTypeViabilityRecursion).OrderBy(f => f.Name)) {
+                    bool isFinal = IsFinalTarget(field.FieldType) && (targetTypeFilter == null || targetTypeFilter.Any(type => field.FieldType.CanCoerceTo(type)));
+                    yield return new CommandAutoCompleteEntry {
+                        Name = isFinal ? field.Name : field.Name + ".",
+                        Extra = field.FieldType.CSharpName(),
+                        Prefix = queryPrefix,
+                        IsDone = isFinal,
+                    };
+                }
+                foreach (var property in EnumerateViableProperties(currentType, variant, bindingFlags, targetTypeFilter, maxDepth: MaxTypeViabilityRecursion).OrderBy(p => p.Name)) {
+                    bool isFinal = IsFinalTarget(property.PropertyType) && (targetTypeFilter == null || targetTypeFilter.Any(type => property.PropertyType.CanCoerceTo(type)));
+                    yield return new CommandAutoCompleteEntry {
+                        Name = isFinal ? property.Name : property.Name + ".",
+                        Extra = property.PropertyType.CSharpName(),
+                        Prefix = queryPrefix,
+                        IsDone = isFinal,
+                    };
+                }
+                foreach (var method in EnumerateViableMethods(currentType, variant, bindingFlags, targetTypeFilter, maxDepth: MaxTypeViabilityRecursion).OrderBy(m => m.Name)) {
+                    yield return new CommandAutoCompleteEntry {
+                        Name = method.Name,
+                        Extra = $"({string.Join(", ", method.GetParameters().Select(p => p.HasDefaultValue ? $"[{p.ParameterType.CSharpName()}]" : p.ParameterType.CSharpName()))})",
+                        Prefix = queryPrefix,
+                        IsDone = true,
+                    };
+                }
             }
 
             NextType:;
         }
     }
-    private static IEnumerator<CommandAutoCompleteEntry> ResolveBaseTypeAutoCompleteEntries(string[] queryArgs, Variant variant) {
+    private static IEnumerator<CommandAutoCompleteEntry> ResolveBaseTypeAutoCompleteEntries(string[] queryArgs, string queryPrefix, Variant variant, Type[]? targetTypeFilter) {
         foreach (var handler in Handlers) {
-            using var enumerator = handler.ProvideGlobalEntries(variant);
+            using var enumerator = handler.ProvideGlobalEntries(queryArgs, queryPrefix, variant, targetTypeFilter);
             while (enumerator.MoveNext()) {
                 yield return enumerator.Current;
             }
         }
 
-        string queryPrefix = queryArgs.Length != 0 ? $"{string.Join('.', queryArgs)}." : "";
-
         var types = ModUtils.GetTypes()
             .Where(type =>
-                // Filter-out types which probably aren't useful
-                (type.IsClass || type.IsStructType()) && type.FullName != null && type.Namespace != null && !ignoredNamespaces.Any(ns => type.Namespace.StartsWith(ns)) &&
-                // Filter-out compiler generated types
-                type.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() & !type.FullName.Contains('<') && !type.FullName.Contains('>') &&
+                IsTypeViable(type, variant, isRoot: true, targetTypeFilter, maxDepth: MaxTypeViabilityRecursion) &&
                 // Require query-arguments to match namespace
-                type.FullName.StartsWith(queryPrefix))
-            .Where(type => {
-                var bindingFlags = Handlers.Any(handler => handler.CanResolveInstances(type))
-                    ? ReflectionExtensions.StaticInstanceAnyVisibility
-                    : ReflectionExtensions.StaticAnyVisibility;
-
-                // Require some viable members
-                return EnumerateUsableFields(type, variant, bindingFlags).Any() ||
-                       EnumerateUsableProperties(type, variant, bindingFlags).Any() ||
-                       EnumerateUsableMethods(type, variant, bindingFlags).Any();
-            })
+                type.FullName!.StartsWith(queryPrefix))
             .OrderBy(t => (t.CSharpName(), t), new NamespaceComparer())
             .ToArray();
 
@@ -495,6 +557,41 @@ public static class TargetQuery {
                 yield return new CommandAutoCompleteEntry { Name = $"{shortName}@{assemblyName}.", Extra = type.Namespace ?? string.Empty, Prefix = queryPrefix, IsDone = false };
             }
         }
+    }
+
+    internal static Type? RecurseMemberType(Type baseType, string[] memberArgs, Variant variant) {
+        var currentType = baseType;
+        for (int memberIdx = 0; memberIdx < memberArgs.Length; memberIdx++) {
+            foreach (var handler in Handlers) {
+                var result = handler.ResolveTargetTypes(out var targetTypes, currentType, memberIdx, memberArgs);
+                if (result.Success && result.Value) {
+                    currentType = targetTypes[0]; // Ignore others
+                    goto NextMember;
+                }
+                if (result.Failure) {
+                    return null;
+                }
+            }
+
+            string member = memberArgs[memberIdx];
+            var bindingFlags = memberIdx == 0
+                ? Handlers.Any(handler => handler.CanResolveInstances(currentType))
+                    ? ReflectionExtensions.StaticInstanceAnyVisibility
+                    : ReflectionExtensions.StaticAnyVisibility
+                : ReflectionExtensions.InstanceAnyVisibility;
+
+            if (currentType.GetFieldInfo(member, bindingFlags, logFailure: false) is { } field && IsFieldUsable(field, variant, isFinal: false)) {
+                currentType = field.FieldType;
+                continue;
+            }
+            if (currentType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property && IsPropertyUsable(property, variant, isFinal: false)) {
+                currentType = property.PropertyType;
+                continue;
+            }
+
+            NextMember:;
+        }
+        return currentType;
     }
 
     #endregion
@@ -1370,7 +1467,7 @@ public static class TargetQuery {
 
         try {
             foreach (var handler in Handlers) {
-                var result = handler.ResolveTargetTypes(instance, out var targetTypes, type, memberIdx, memberArgs);
+                var result = handler.ResolveTargetTypes(out var targetTypes, type, memberIdx, memberArgs);
                 if (result.Success && result.Value) {
                     return Result<Type[], MemberAccessError>.Ok(targetTypes);
                 }

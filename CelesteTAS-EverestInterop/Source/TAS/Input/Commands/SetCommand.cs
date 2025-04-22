@@ -55,19 +55,40 @@ public static class SetCommand {
         public bool HasArguments => true;
 
         public int GetHash(string[] args, string filePath, int fileLine) {
-            int hash = GetTargetArgs(args)
-                .Aggregate(17, (current, arg) => 31 * current + arg.GetStableHashCode());
-            // The other argument don't influence each other, so just the length matters
-            return 31 * hash + 17 * args.Length;
+            var hash = new HashCode();
+            hash.Add(GetQueryArgs(args, 0).Aggregate(new HashCode(), (argHash, arg) => argHash.Append(arg.GetStableHashCode())).ToHashCode());
+            hash.Add(GetQueryArgs(args, 1).Aggregate(new HashCode(), (argHash, arg) => argHash.Append(arg.GetStableHashCode())).ToHashCode());
+            hash.Add(args.Length);
+            return hash.ToHashCode();
         }
 
         public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
-            var targetArgs = GetTargetArgs(args).ToArray();
-            using var enumerator2 = TargetQuery.ResolveAutoCompleteEntries(targetArgs, TargetQuery.Variant.Set);
-            while (enumerator2.MoveNext()) {
-                yield return enumerator2.Current;
+            // Target
+            string[] targetQueryArgs = GetQueryArgs(args, 0).ToArray();
+            if (args.Length <= 1) {
+
+                using var enumerator = TargetQuery.ResolveAutoCompleteEntries(targetQueryArgs, TargetQuery.Variant.Set);
+                while (enumerator.MoveNext()) {
+                    yield return enumerator.Current with { HasNext = true };
+                }
+                yield break;
             }
-            yield break;
+
+            // Parameter
+            {
+                string[] paramQueryArgs = GetQueryArgs(args, 1).ToArray();
+                var baseTypes = TargetQuery.ResolveBaseTypes(targetQueryArgs, out string[] memberArgs, out var userData);
+                var targetTypes = baseTypes
+                    .Select(type => TargetQuery.RecurseMemberType(type, memberArgs, TargetQuery.Variant.Set))
+                    .Where(type => type != null)
+                    .ToArray();
+
+                using var enumerator = TargetQuery.ResolveAutoCompleteEntries(paramQueryArgs, TargetQuery.Variant.Get, targetTypes!);
+                while (enumerator.MoveNext()) {
+                    yield return enumerator.Current;
+                }
+            }
+
 
             // // Parameter
             // if (args.Length > 1) {
@@ -270,15 +291,15 @@ public static class SetCommand {
         internal static bool IsSettableType(Type type) => !type.IsSameOrSubclassOf(typeof(Delegate));
         private static bool IsFinalTarget(Type type) => type == typeof(string) || type == typeof(Vector2) || type == typeof(Random) || type == typeof(ButtonBinding) || type.IsEnum || type.IsPrimitive;
 
-        internal static IEnumerable<string> GetTargetArgs(string[] args) {
-            if (args.Length == 0) {
+        internal static IEnumerable<string> GetQueryArgs(string[] args, int index) {
+            if (args.Length <= index) {
                 return [];
             }
 
-            return args[0]
+            return args[index]
                 .Split('.')
                 // Only skip last part if we're currently editing that
-                .SkipLast(args.Length == 1 ? 1 : 0);
+                .SkipLast(args.Length == index + 1 ? 1 : 0);
         }
     }
 

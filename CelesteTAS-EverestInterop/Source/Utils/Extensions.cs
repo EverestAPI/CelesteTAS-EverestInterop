@@ -498,6 +498,11 @@ internal static class HashCodeExtensions {
             return hash;
         }
     }
+
+    public static HashCode Append<T>(this HashCode hash, T value) {
+        hash.Add(value);
+        return hash;
+    }
 }
 
 internal static class TypeExtensions {
@@ -519,6 +524,56 @@ internal static class TypeExtensions {
 
     public static bool IsConst(this FieldInfo fieldInfo) {
         return fieldInfo.IsLiteral && !fieldInfo.IsInitOnly;
+    }
+
+    /// Checks if the current type could be implicitly converted to the target type
+    public static bool CanCoerceTo(this Type type, Type target) {
+        // Trivial case
+        if (type.IsAssignableTo(target)) {
+            return true;
+        }
+
+        // Implicit conversion operators
+        foreach (var method in type.GetAllMethodInfos(ReflectionExtensions.StaticAnyVisibility).Concat(target.GetAllMethodInfos(ReflectionExtensions.StaticAnyVisibility))) {
+            if (method.Name == "op_Implicit" &&
+                method.ReturnType.IsAssignableTo(target) &&
+                method.GetParameters() is { Length: 1 } parameters &&
+                parameters[0].ParameterType.IsAssignableFrom(type)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// Implicitly converts the current object to the target
+    public static object? CoerceTo(this object? obj, Type target) {
+        if (obj == null) {
+            return target.IsValueType
+                ? null
+                : throw new Exception($"Cannot coerce null into a value type '{target}'");
+        }
+
+        var type = obj.GetType();
+
+        // Trivial case
+        if (type.IsAssignableTo(target)) {
+            return obj;
+        }
+
+        // Implicit conversion operators
+        foreach (var method in type.GetAllMethodInfos(ReflectionExtensions.StaticAnyVisibility).Concat(target.GetAllMethodInfos(ReflectionExtensions.StaticAnyVisibility))) {
+            if (method.Name == "op_Implicit" &&
+                method.ReturnType.IsAssignableTo(target) &&
+                method.GetParameters() is { Length: 1 } parameters &&
+                parameters[0].ParameterType.IsAssignableFrom(type)
+            ) {
+                return method.Invoke(null, [obj]);
+            }
+        }
+
+        throw new Exception($"Value of type '{type}' into '{target}'");
     }
 }
 

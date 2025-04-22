@@ -62,15 +62,17 @@ internal class SettingsQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
     }
 
-    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(TargetQuery.Variant variant) {
-        if (variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
+    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+        if (queryArgs.Length != 0 || variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
             yield break;
         }
 
         // Manually selected to filter out useless entries
         var vanillaSettings = ((string[])["DisableFlashes", "ScreenShake", "GrabMode", "CrouchDashMode", "SpeedrunClock", "Pico8OnMainMenu", "VariantsUnlocked"]).Select(e => typeof(Settings).GetFieldInfo(e)!);
         foreach (var f in vanillaSettings) {
-            yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Settings)", IsDone = true };
+            if (targetTypeFilter == null || targetTypeFilter.Any(type => f.FieldType.CanCoerceTo(type))) {
+                yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Settings)", IsDone = true };
+            }
         }
     }
 }
@@ -117,15 +119,18 @@ internal class SaveDataQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
     }
 
-    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(TargetQuery.Variant variant) {
-        if (variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
+    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, TargetQuery.Variant variant,
+        Type[]? targetTypeFilter) {
+        if (queryArgs.Length != 0 || variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
             yield break;
         }
 
         // Manually selected to filter out useless entries
         var vanillaSaveData = ((string[])["CheatMode", "AssistMode", "VariantMode", "UnlockedAreas", "RevealedChapter9", "DebugMode"]).Select(e => typeof(SaveData).GetFieldInfo(e)!);
         foreach (var f in vanillaSaveData) {
-            yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Save Data)", IsDone = true };
+            if (targetTypeFilter == null || targetTypeFilter.Any(type => f.FieldType.CanCoerceTo(type))) {
+                yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Save Data)", IsDone = true };
+            }
         }
     }
 }
@@ -162,13 +167,16 @@ internal class AssistsQueryHandler : TargetQuery.Handler {
         }
     }
 
-    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(TargetQuery.Variant variant) {
-        if (variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
+    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, TargetQuery.Variant variant,
+        Type[]? targetTypeFilter) {
+        if (queryArgs.Length != 0 || variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
             yield break;
         }
 
         foreach (var f in typeof(Assists).GetAllFieldInfos()) {
-            yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Assists)", IsDone = true };
+            if (targetTypeFilter == null || targetTypeFilter.Any(type => f.FieldType.CanCoerceTo(type))) {
+                yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Assists)", IsDone = true };
+            }
         }
     }
 
@@ -221,7 +229,7 @@ internal class ExtendedVariantsQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
     }
 
-    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(object? instance, out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
         if (!type.IsSameOrSubclassOf(typeof(EverestModuleSettings)) ||
             Everest.Modules.FirstOrDefault(mod => mod.SettingsType == type) is not { } module ||
             module.Metadata.Name != "ExtendedVariantMode"
@@ -273,16 +281,13 @@ internal class EverestModuleSettingsQueryHandler : TargetQuery.Handler {
         return Everest.Modules.FirstOrDefault(mod => mod.SettingsType == type) is { } module ? [module._Settings] : [];
     }
 
-    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(TargetQuery.Variant variant) {
-        if (variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
+    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+        if (queryArgs.Length != 0 || variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
             yield break;
         }
 
         foreach (var mod in Everest.Modules) {
-            if (mod.SettingsType != null &&
-                (mod.SettingsType.GetAllFieldInfos().Any() ||
-                 mod.SettingsType.GetAllPropertyInfos().Any(p => variant == TargetQuery.Variant.Get ? p.CanRead : p.CanWrite)))
-            {
+            if (mod.SettingsType != null && TargetQuery.IsTypeViable(mod.SettingsType, variant, isRoot: true, targetTypeFilter, maxDepth: 3)) {
                 yield return new CommandAutoCompleteEntry { Name = $"{mod.Metadata.Name}.", Extra = "Mod Setting", IsDone = false };
             }
         }
@@ -293,10 +298,39 @@ internal class EntityQueryHandler : TargetQuery.Handler {
     internal record Data(List<Type> ComponentTypes, EntityID? EntityID);
 
     /// Holds a position with integer and fractional part separated
-    internal record struct SubpixelPosition(SubpixelComponent X, SubpixelComponent Y);
+    internal struct SubpixelPosition(SubpixelComponent x, SubpixelComponent y) {
+        public SubpixelComponent X = x;
+        public SubpixelComponent Y = y;
+
+        public static implicit operator Vector2(SubpixelPosition value) {
+            return new Vector2(value.X, value.Y);
+        }
+        public static implicit operator SubpixelPosition(Vector2 value) {
+            return new SubpixelPosition(value.X, value.Y);
+        }
+    }
 
     /// Holds a single axis with integer and fractional part separated
-    internal record struct SubpixelComponent(float Position, float Remainder);
+    internal record struct SubpixelComponent(float position, float remainder) {
+        public float Position = position;
+        public float Remainder = remainder;
+
+        public static implicit operator float(SubpixelComponent value) {
+            return value.Position;
+        }
+        public static implicit operator SubpixelComponent(float value) {
+            int position = (int) Math.Round(value);
+            float remainder = value - position;
+
+            return new(position, remainder);
+        }
+        public static implicit operator SubpixelComponent(double value) {
+            int position = (int) Math.Round(value);
+            float remainder = (float) (value - position);
+
+            return new(position, remainder);
+        }
+    }
 
     /// Matches an EntityID specification on the base type
     /// e.g. `BaseType[Room:ID]`
@@ -312,12 +346,18 @@ internal class EntityQueryHandler : TargetQuery.Handler {
 
     public override bool CanResolveInstances(Type type) => type.IsSameOrSubclassOf(typeof(Entity));
     public override bool CanResolveMembers(Type type) => type.IsSameOrSubclassOf(typeof(Entity));
+    public override bool CanEnumerateMemberEntries(Type type, TargetQuery.Variant variant) => type == typeof(SubpixelPosition);
 
     public override (List<Type> Types, string[] MemberArgs, object? UserData)? ResolveBaseTypesWithUserData(string[] queryArgs) {
         // Both special cases use colons, so check for them to early-exit
         if (queryArgs.All(arg => !arg.Contains(':'))) {
             return null;
         }
+
+        SubpixelComponent a = default;
+        float b = a;
+        SubpixelComponent c = b;
+        // typeof(SubpixelComponent).Get
 
         var newQueryArgs = new List<string>(capacity: queryArgs.Length);
         foreach (string arg in queryArgs) {
@@ -503,8 +543,8 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
     }
 
-    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(object? instance, out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
-        if (instance is Actor or Platform) {
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
+        if (type.IsSameOrSubclassOf(typeof(Actor)) || type.IsSameOrSubclassOf(typeof(Platform))) {
             switch (memberArgs[memberIdx]) {
                 case nameof(Entity.X):
                 case nameof(Entity.Y):
@@ -610,6 +650,13 @@ internal class EntityQueryHandler : TargetQuery.Handler {
 
         value = null;
         return Result<bool, TargetQuery.QueryError>.Ok(false);
+    }
+
+    public override IEnumerator<CommandAutoCompleteEntry> EnumerateMemberEntries(Type type, TargetQuery.Variant variant) {
+        if (type == typeof(SubpixelPosition)) {
+            yield return new CommandAutoCompleteEntry { Name = "X", Extra = typeof(float).CSharpName(), IsDone = true };
+            yield return new CommandAutoCompleteEntry { Name = "Y", Extra = typeof(float).CSharpName(), IsDone = true };
+        }
     }
 }
 

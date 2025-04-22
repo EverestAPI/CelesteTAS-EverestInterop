@@ -23,15 +23,43 @@ public static class InvokeCommand {
         public bool HasArguments => true;
 
         public int GetHash(string[] args, string filePath, int fileLine) {
-            int hash = SetCommand.SetMeta.GetTargetArgs(args)
-                .Aggregate(17, (current, arg) => 31 * current + arg.GetStableHashCode());
-            // The other argument don't influence each other, so just the length matters
-            return 31 * hash + 17 * args.Length;
+            int hash = SetCommand.SetMeta.GetQueryArgs(args, 0).Aggregate(17, (current, arg) => 31 * current + arg.GetStableHashCode());
+
+            for (int i = 1; i < args.Length; i++) {
+                int argHash = SetCommand.SetMeta.GetQueryArgs(args, i).Aggregate(17, (current, arg) => 31 * current + arg.GetStableHashCode());
+                hash = 31 * hash + 17 * argHash;
+            }
+
+            return hash;
         }
 
         public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
-            var targetArgs = SetCommand.SetMeta.GetTargetArgs(args).ToArray();
-            yield break;
+            // Target
+            string[] targetQueryArgs = SetCommand.SetMeta.GetQueryArgs(args, 0).ToArray();
+            if (args.Length <= 1) {
+
+                using var enumerator = TargetQuery.ResolveAutoCompleteEntries(targetQueryArgs, TargetQuery.Variant.Invoke);
+                while (enumerator.MoveNext()) {
+                    yield return enumerator.Current with { HasNext = true };
+                }
+                yield break;
+            }
+
+            // Parameters
+            string[] paramQueryArgs = SetCommand.SetMeta.GetQueryArgs(args, 1).ToArray();
+            var baseTypes = TargetQuery.ResolveBaseTypes(targetQueryArgs, out string[] memberArgs, out var userData);
+            var targetTypes = baseTypes
+                .Select(type => TargetQuery.RecurseMemberType(type, memberArgs, TargetQuery.Variant.Invoke))
+                .Where(type => type != null)
+                .ToArray();
+
+            for (int i = 1; i < Math.Min(args.Length, targetTypes.Length + 1); i++) {
+                using var enumerator = TargetQuery.ResolveAutoCompleteEntries(paramQueryArgs, TargetQuery.Variant.Get, [targetTypes[i - 1]!]);
+                while (enumerator.MoveNext()) {
+                    yield return enumerator.Current with { HasNext = i < targetTypes.Length };
+                }
+            }
+
 
             // FIXME
             // // Parameters
