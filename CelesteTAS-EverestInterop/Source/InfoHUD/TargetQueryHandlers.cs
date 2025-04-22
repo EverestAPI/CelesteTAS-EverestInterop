@@ -221,12 +221,12 @@ internal class ExtendedVariantsQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
     }
 
-    public override Result<bool, TargetQuery.MemberAccessError> ResolveMemberType(object? instance, out Type memberType, Type type, int memberIdx, string[] memberArgs) {
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(object? instance, out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
         if (!type.IsSameOrSubclassOf(typeof(EverestModuleSettings)) ||
             Everest.Modules.FirstOrDefault(mod => mod.SettingsType == type) is not { } module ||
             module.Metadata.Name != "ExtendedVariantMode"
         ) {
-            memberType = null!;
+            targetTypes = [];
             return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
         }
 
@@ -234,11 +234,11 @@ internal class ExtendedVariantsQueryHandler : TargetQuery.Handler {
         var variant = new Lazy<object?>(ExtendedVariantsInterop.ParseVariant(variantName));
         var variantType = ExtendedVariantsInterop.GetVariantType(variant);
         if (variantType is null) {
-            memberType = null!;
+            targetTypes = null!;
             return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(module.SettingsType, memberIdx, memberArgs, $"Extended Variant '{variantName}' not found"));
         }
 
-        memberType = variantType;
+        targetTypes = [variantType];
         return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
     }
 
@@ -503,21 +503,21 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
     }
 
-    public override Result<bool, TargetQuery.MemberAccessError> ResolveMemberType(object? instance, out Type memberType, Type type, int memberIdx, string[] memberArgs) {
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(object? instance, out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
         if (instance is Actor or Platform) {
             switch (memberArgs[memberIdx]) {
                 case nameof(Entity.X):
                 case nameof(Entity.Y):
-                    memberType = typeof(SubpixelComponent);
+                    targetTypes = [typeof(SubpixelComponent)];
                     return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
 
                 case nameof(Entity.Position):
-                    memberType = typeof(SubpixelPosition);
+                    targetTypes = [typeof(SubpixelPosition)];
                     return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
             }
         }
 
-        memberType = null!;
+        targetTypes = null!;
         return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
     }
 

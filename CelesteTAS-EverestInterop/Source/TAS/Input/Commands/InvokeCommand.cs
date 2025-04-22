@@ -183,6 +183,68 @@ public static class InvokeCommand {
         string query = args[0];
         string[] queryArgs = query.Split('.');
 
+        var baseTypes = TargetQuery.ResolveBaseTypes(queryArgs, out string[] memberArgs, out object? userData);
+        if (baseTypes.IsEmpty()) {
+            ReportError(new TargetQuery.QueryError.NoBaseTypes(query).ToString());
+            return;
+        }
+        if (memberArgs.IsEmpty()) {
+            ReportError("No members specified");
+            return;
+        }
+
+        bool anySuccessful = false;
+        TargetQuery.MemberAccessError? error = null;
+
+        var targetValueCache = new Dictionary<Type[], object?[]>();
+
+        foreach (var baseType in baseTypes) {
+            object[] instances = TargetQuery.ResolveTypeInstances(baseType, userData);
+            foreach (object instance in instances) {
+                var memberResult = TargetQuery.PrepareMemberValue(instance, memberArgs[..^1]);
+                if (memberResult.Failure) {
+                    if (memberResult.Error is TargetQuery.MemberAccessError accessError) {
+                        error = TargetQuery.MemberAccessError.Aggregate(error, accessError);
+                    } else {
+                        ReportError(memberResult.Error.ToString());
+                        return;
+                    }
+
+                    continue;
+                }
+
+                foreach (object? target in memberResult.Value.Where(value => value != null && value != TargetQuery.InvalidValue && value is not TargetQuery.QueryError)) {
+                    var targetTypeResult = TargetQuery.ResolveMemberTargetTypes(target!, memberArgs.Length - 1, memberArgs, TargetQuery.Variant.Invoke);
+                    if (targetTypeResult.Failure) {
+                        error = TargetQuery.MemberAccessError.Aggregate(error, targetTypeResult.Error);
+                        continue;
+                    }
+
+                    var targetTypes = targetTypeResult.Value;
+                    if (!targetValueCache.TryGetValue(targetTypes, out object?[] values)) {
+                        var valueResult = TargetQuery.ResolveValue(args[1..], targetTypes);
+                        if (valueResult.Failure) {
+                            ReportError(valueResult.Error.ToString());
+                            return;
+                        }
+
+                        targetValueCache[targetTypes] = values = valueResult.Value;
+                    }
+
+                    var invokeResult = TargetQuery.InvokeMember(target!, values, memberArgs);
+                    if (invokeResult.Failure) {
+                        error = TargetQuery.MemberAccessError.Aggregate(error, invokeResult.Error);
+                    } else {
+                        anySuccessful = true;
+                    }
+                }
+            }
+        }
+
+        if (!anySuccessful && error != null) {
+            ReportError(error.ToString());
+        }
+
         // var baseTypes = TargetQuery.ResolveBaseTypes(queryArgs, out string[] memberArgs, out var componentTypes, out var entityId);
         // if (baseTypes.IsEmpty()) {
         //     ReportError($"Failed to find base type for query '{query}'");

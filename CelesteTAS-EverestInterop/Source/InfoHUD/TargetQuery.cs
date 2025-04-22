@@ -60,12 +60,16 @@ public static class TargetQuery {
             value = null;
             return Result<bool, MemberAccessError>.Ok(false);
         }
-        public virtual Result<bool, MemberAccessError> ResolveMemberType(object? instance, out Type memberType, Type type, int memberIdx, string[] memberArgs) {
-            memberType = null!;
+        public virtual Result<bool, MemberAccessError> ResolveTargetTypes(object? instance, out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
+            targetTypes = [];
             return Result<bool, MemberAccessError>.Ok(false);
         }
 
         public virtual Result<bool, MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
+            return Result<bool, MemberAccessError>.Ok(false);
+        }
+
+        public virtual Result<bool, MemberAccessError> InvokeMember(object? instance, object?[] parameterValue, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
             return Result<bool, MemberAccessError>.Ok(false);
         }
 
@@ -131,7 +135,7 @@ public static class TargetQuery {
             Variant.Set => isFinal
                 ? (field.Attributes & (FieldAttributes.InitOnly | FieldAttributes.Literal)) == 0 && IsSettableType(field.FieldType)
                 : (field.Attributes & (FieldAttributes.InitOnly | FieldAttributes.Literal)) == 0 || !field.FieldType.IsValueType,
-            Variant.Invoke => !isFinal,
+            Variant.Invoke => !isFinal || field.FieldType.IsSameOrSubclassOf(typeof(Delegate)),
             _ => throw new ArgumentOutOfRangeException(nameof(variant), variant, null)
         };
     }
@@ -141,15 +145,15 @@ public static class TargetQuery {
             Variant.Set => isFinal
                 ? property.CanWrite && IsSettableType(property.PropertyType)
                 : property.CanRead && (property.CanWrite || !property.PropertyType.IsValueType),
-            Variant.Invoke => !isFinal,
+            Variant.Invoke => !isFinal || property.PropertyType.IsSameOrSubclassOf(typeof(Delegate)),
             _ => throw new ArgumentOutOfRangeException(nameof(variant), variant, null)
         };
     }
-    internal static bool IsMethodUsable(MethodInfo method, Variant variant) {
+    internal static bool IsMethodUsable(MethodInfo method, Variant variant, bool isFinal) {
         return variant switch {
             Variant.Get => false,
             Variant.Set => false,
-            Variant.Invoke => IsInvokableMethod(method),
+            Variant.Invoke => isFinal && IsInvokableMethod(method),
             _ => throw new ArgumentOutOfRangeException(nameof(variant), variant, null)
         };
     }
@@ -179,7 +183,7 @@ public static class TargetQuery {
                 // Filter-out compiler generated fields
                 m.GetCustomAttributes<CompilerGeneratedAttribute>().IsEmpty() && !m.Name.Contains('<') && !m.Name.Contains('>') &&
                 // Require to be usable
-                IsMethodUsable(m, variant));
+                IsMethodUsable(m, variant, isFinal: true));
     }
 
     /// Guesses whether the target type is reasonably the final part of a target-query
@@ -1047,43 +1051,7 @@ public static class TargetQuery {
         }
     }
 
-    internal static Result<Type, QueryError> ResolveLastMemberType(object targetObject, string[] memberArgs) {
-        object target = (targetObject as BoxedValueHolder)?.ValueStack.Peek() ?? targetObject;
-        var targetType = target as Type ?? target.GetType();
-
-        string member = memberArgs[^1];
-
-        var bindingFlags = memberArgs.Length == 1
-            ? target is Type
-                ? ReflectionExtensions.StaticAnyVisibility
-                : ReflectionExtensions.StaticInstanceAnyVisibility
-            : ReflectionExtensions.InstanceAnyVisibility;
-
-        try {
-            foreach (var handler in Handlers) {
-                var result = handler.ResolveMemberType(target, out Type memberType, targetType, memberArgs.Length - 1, memberArgs);
-                if (result.Success && result.Value) {
-                    return Result<Type, QueryError>.Ok(memberType);
-                }
-                if (result.Failure) {
-                    return Result<Type, QueryError>.Fail(result.Error);
-                }
-            }
-
-            if (targetType.GetFieldInfo(member, bindingFlags, logFailure: false) is { } field && IsFieldUsable(field, Variant.Set, isFinal: true)) {
-                return Result<Type, QueryError>.Ok(field.FieldType);
-            }
-            if (targetType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property && IsPropertyUsable(property, Variant.Set, isFinal: true)) {
-                return Result<Type, QueryError>.Ok(property.PropertyType);
-            }
-
-            return Result<Type, QueryError>.Fail(new MemberAccessError.MemberNotFound(targetType, memberArgs.Length - 1, memberArgs, bindingFlags));
-        } catch (Exception ex) {
-            return Result<Type, QueryError>.Fail(new MemberAccessError.UnknownException(targetType, memberArgs.Length - 1, memberArgs, ex));
-        }
-    }
-
-    internal static VoidResult<MemberAccessError> SetMemberValue(object targetObject, object? value, string[] memberArgs, bool forceAllowCodeExecution = false) {
+    internal static VoidResult<MemberAccessError> SetMember(object targetObject, object? value, string[] memberArgs, bool forceAllowCodeExecution = false) {
         object target = (targetObject as BoxedValueHolder)?.ValueStack.Peek() ?? targetObject;
         var targetType = target as Type ?? target.GetType();
 
@@ -1112,6 +1080,8 @@ public static class TargetQuery {
                 } else {
                     field.SetValue(target, value);
                 }
+
+                goto PropagateValueTypeStack;
             } else if (targetType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property && IsPropertyUsable(property, Variant.Set, isFinal: true)) {
                 if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
                     return VoidResult<MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(targetType, memberArgs.Length - 1, memberArgs));
@@ -1122,7 +1092,11 @@ public static class TargetQuery {
                 } else {
                     property.SetValue(target, value);
                 }
+
+                goto PropagateValueTypeStack;
             }
+
+            return VoidResult<MemberAccessError>.Fail(new MemberAccessError.MemberNotFound(targetType, memberArgs.Length - 1, memberArgs, bindingFlags));
         } catch (Exception ex) {
             return VoidResult<MemberAccessError>.Fail(new MemberAccessError.UnknownException(targetType, memberArgs.Length - 1, memberArgs, ex));
         }
@@ -1140,7 +1114,7 @@ public static class TargetQuery {
 
                 try {
                     foreach (var handler in Handlers) {
-                        var result = handler.SetMember(target, value, currentTargetType, memberArgs.Length - 1, memberArgs, forceAllowCodeExecution);
+                        var result = handler.SetMember(currentTarget, currentValue, currentTargetType, memberIdx, memberArgs, forceAllowCodeExecution);
                         if (result.Success && result.Value) {
                             goto NextValue;
                         }
@@ -1226,6 +1200,219 @@ public static class TargetQuery {
         }
 
         return VoidResult<MemberAccessError>.Ok;
+    }
+
+    internal static VoidResult<MemberAccessError> InvokeMember(object targetObject, object?[] parameterValues, string[] memberArgs, bool forceAllowCodeExecution = false) {
+        object target = (targetObject as BoxedValueHolder)?.ValueStack.Peek() ?? targetObject;
+        var targetType = target as Type ?? target.GetType();
+
+        if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
+            return VoidResult<MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(targetType, memberArgs.Length - 1, memberArgs));
+        }
+
+        try {
+            string member = memberArgs[^1];
+
+            var bindingFlags = memberArgs.Length == 1
+                ? target is Type
+                    ? ReflectionExtensions.StaticAnyVisibility
+                    : ReflectionExtensions.StaticInstanceAnyVisibility
+                : ReflectionExtensions.InstanceAnyVisibility;
+
+            foreach (var handler in Handlers) {
+                var result = handler.InvokeMember(target, parameterValues, targetType, memberArgs.Length - 1, memberArgs, forceAllowCodeExecution);
+                if (result.Success && result.Value) {
+                    goto PropagateValueTypeStack;
+                }
+                if (result.Failure) {
+                    return VoidResult<MemberAccessError>.Fail(result.Error);
+                }
+            }
+
+            if (targetType.GetFieldInfo(member, bindingFlags, logFailure: false) is { } field && field.FieldType.IsSameOrSubclassOf(typeof(Delegate))) {
+                var del = (Delegate?) (field.IsStatic ? field.GetValue(null) : field.GetValue(target));
+                del?.DynamicInvoke(parameterValues);
+
+                goto PropagateValueTypeStack;
+            } else if (targetType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property && property.PropertyType.IsSameOrSubclassOf(typeof(Delegate))) {
+                var del = (Delegate?) (property.IsStatic() ? property.GetValue(null) : property.GetValue(target));
+                del?.DynamicInvoke(parameterValues);
+
+                goto PropagateValueTypeStack;
+            } else if (targetType.GetMethodInfo(member, parameterTypes: null, bindingFlags, logFailure: false) is { } method) {
+                if (method.IsStatic) {
+                    method.Invoke(null, parameterValues);
+                } else {
+                    method.Invoke(target, parameterValues);
+                }
+
+                goto PropagateValueTypeStack;
+            }
+
+            return VoidResult<MemberAccessError>.Fail(new MemberAccessError.MemberNotFound(targetType, memberArgs.Length - 1, memberArgs, bindingFlags));
+        } catch (Exception ex) {
+            return VoidResult<MemberAccessError>.Fail(new MemberAccessError.UnknownException(targetType, memberArgs.Length - 1, memberArgs, ex));
+        }
+
+        PropagateValueTypeStack:
+
+        // Propagate value-type stack
+        if (targetObject is BoxedValueHolder holder) {
+            object currentValue = holder.ValueStack.Pop();
+
+            int memberIdx = memberArgs.Length - 2;
+            while (holder.ValueStack.TryPop(out object? currentTarget)) {
+                var currentTargetType = currentTarget as Type ?? currentTarget.GetType();
+                string member = memberArgs[memberIdx];
+
+                try {
+                    foreach (var handler in Handlers) {
+                        var result = handler.SetMember(currentTarget, currentValue, currentTargetType, memberIdx, memberArgs, forceAllowCodeExecution);
+                        if (result.Success && result.Value) {
+                            goto NextValue;
+                        }
+                        if (result.Failure) {
+                            return VoidResult<MemberAccessError>.Fail(result.Error);
+                        }
+                    }
+
+                    if (currentTargetType.GetFieldInfo(member, ReflectionExtensions.InstanceAnyVisibility, logFailure: false) is { } field) {
+                        if (field.IsStatic) {
+                            field.SetValue(null, currentValue);
+                        } else {
+                            field.SetValue(currentTarget, currentValue);
+                        }
+                    } else if (currentTargetType.GetPropertyInfo(member, ReflectionExtensions.InstanceAnyVisibility, logFailure: false) is { } property) {
+                        if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
+                            return VoidResult<MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(currentTargetType, memberIdx, memberArgs));
+                        }
+
+                        if (property.IsStatic()) {
+                            property.SetValue(null, currentValue);
+                        } else {
+                            property.SetValue(currentTarget, currentValue);
+                        }
+                    }
+
+                    NextValue:;
+                } catch (Exception ex) {
+                    return VoidResult<MemberAccessError>.Fail(new MemberAccessError.UnknownException(currentTargetType, memberIdx, memberArgs, ex));
+                }
+
+                currentValue = currentTarget;
+                memberIdx--;
+            }
+
+            if (holder.Index < 0) {
+                // Regular base instance
+                var baseTargetType = holder.BaseInstance as Type ?? holder.BaseInstance.GetType();
+                string member = memberArgs[memberIdx];
+
+                var bindingFlags = memberIdx == 0
+                    ? holder.BaseInstance is Type
+                        ? ReflectionExtensions.StaticAnyVisibility
+                        : ReflectionExtensions.StaticInstanceAnyVisibility
+                    : ReflectionExtensions.InstanceAnyVisibility;
+
+                try {
+                    foreach (var handler in Handlers) {
+                        var result = handler.SetMember(holder.BaseInstance, currentValue, baseTargetType, memberIdx, memberArgs, forceAllowCodeExecution);
+                        if (result.Success && result.Value) {
+                            return VoidResult<MemberAccessError>.Ok;
+                        }
+                        if (result.Failure) {
+                            return VoidResult<MemberAccessError>.Fail(result.Error);
+                        }
+                    }
+
+                    if (baseTargetType.GetFieldInfo(member, bindingFlags, logFailure: false) is { } field) {
+                        if (field.IsStatic) {
+                            field.SetValue(null, currentValue);
+                        } else {
+                            field.SetValue(holder.BaseInstance, currentValue);
+                        }
+                    } else if (baseTargetType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property) {
+                        if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
+                            return VoidResult<MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(baseTargetType, memberIdx, memberArgs));
+                        }
+
+                        if (property.IsStatic()) {
+                            property.SetValue(null, currentValue);
+                        } else {
+                            property.SetValue(holder.BaseInstance, currentValue);
+                        }
+                    }
+                } catch (Exception ex) {
+                    return VoidResult<MemberAccessError>.Fail(new MemberAccessError.UnknownException(baseTargetType, memberIdx, memberArgs, ex));
+                }
+            } else {
+                // List base instance
+                var baseList = (IList) holder.BaseInstance;
+                baseList[holder.Index] = currentValue;
+            }
+        }
+
+        return VoidResult<MemberAccessError>.Ok;
+    }
+
+    internal static Result<Type[], MemberAccessError> ResolveMemberTargetTypes(object instanceObject, int memberIdx, string[] memberArgs, Variant variant, bool forceAllowCodeExecution = false) {
+        object instance = (instanceObject as BoxedValueHolder)?.ValueStack.Peek() ?? instanceObject;
+        var type = instance as Type ?? instance.GetType();
+
+        string member = memberArgs[memberIdx];
+        bool isFinal = memberIdx == memberArgs.Length - 1;
+
+        var bindingFlags = memberIdx == 0
+            ? instance is Type
+                ? ReflectionExtensions.StaticAnyVisibility
+                : ReflectionExtensions.StaticInstanceAnyVisibility
+            : ReflectionExtensions.InstanceAnyVisibility;
+
+        try {
+            foreach (var handler in Handlers) {
+                var result = handler.ResolveTargetTypes(instance, out var targetTypes, type, memberIdx, memberArgs);
+                if (result.Success && result.Value) {
+                    return Result<Type[], MemberAccessError>.Ok(targetTypes);
+                }
+                if (result.Failure) {
+                    return Result<Type[], MemberAccessError>.Fail(result.Error);
+                }
+            }
+
+            if (type.GetFieldInfo(member, bindingFlags, logFailure: false) is { } field && IsFieldUsable(field, variant, isFinal)) {
+                if (field.FieldType.IsSameOrSubclassOf(typeof(Delegate))) {
+                    if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
+                        return Result<Type[], MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(type, memberArgs.Length - 1, memberArgs));
+                    }
+
+                    if ((field.IsStatic ? field.GetValue(null) : field.GetValue(instance)) is Delegate del) {
+                        return Result<Type[], MemberAccessError>.Ok(del.Method.GetParameters().Select(p => p.ParameterType).ToArray());
+                    }
+                } else {
+                    return Result<Type[], MemberAccessError>.Ok([field.FieldType]);
+                }
+            }
+            if (type.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property && IsPropertyUsable(property, variant, isFinal)) {
+                if (property.PropertyType.IsSameOrSubclassOf(typeof(Delegate))) {
+                    if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
+                        return Result<Type[], MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(type, memberArgs.Length - 1, memberArgs));
+                    }
+
+                    if ((property.IsStatic() ? property.GetValue(null) : property.GetValue(instance)) is Delegate del) {
+                        return Result<Type[], MemberAccessError>.Ok(del.Method.GetParameters().Select(p => p.ParameterType).ToArray());
+                    }
+                } else {
+                    return Result<Type[], MemberAccessError>.Ok([property.PropertyType]);
+                }
+            }
+            if (type.GetMethodInfo(member, parameterTypes: null, bindingFlags, logFailure: false) is { } method && IsMethodUsable(method, variant, isFinal)) {
+                return Result<Type[], MemberAccessError>.Ok(method.GetParameters().Select(p => p.ParameterType).ToArray());
+            }
+
+            return Result<Type[], MemberAccessError>.Fail(new MemberAccessError.MemberNotFound(type, memberIdx, memberArgs, bindingFlags));
+        } catch (Exception ex) {
+            return Result<Type[], MemberAccessError>.Fail(new MemberAccessError.UnknownException(type, memberIdx, memberArgs, ex));
+        }
     }
 
     internal static Result<object?[], QueryError> ResolveValue(string[] valueArgs, Type[] targetTypes) {

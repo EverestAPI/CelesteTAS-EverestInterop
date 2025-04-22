@@ -353,24 +353,24 @@ public static class SetCommand {
                 }
 
                 foreach (object? target in memberResult.Value.Where(value => value != null && value != TargetQuery.InvalidValue && value is not TargetQuery.QueryError)) {
-                    var targetTypeResult = TargetQuery.ResolveLastMemberType(target!, memberArgs);
+                    var targetTypeResult = TargetQuery.ResolveMemberTargetTypes(target!, memberArgs.Length - 1, memberArgs, TargetQuery.Variant.Set);
                     if (targetTypeResult.Failure) {
-                        ReportError(targetTypeResult.Error.ToString());
-                        return;
+                        error = TargetQuery.MemberAccessError.Aggregate(error, targetTypeResult.Error);
+                        continue;
                     }
 
-                    var targetType = targetTypeResult.Value;
-                    if (!targetValueCache.TryGetValue(targetType, out object? value)) {
-                        var valueResult = TargetQuery.ResolveValue(args[1..], [targetType]);
+                    var targetTypes = targetTypeResult.Value;
+                    if (!targetValueCache.TryGetValue(targetTypes[0], out object? value)) {
+                        var valueResult = TargetQuery.ResolveValue(args[1..], targetTypes);
                         if (valueResult.Failure) {
                             ReportError(valueResult.Error.ToString());
                             return;
                         }
 
-                        targetValueCache[targetType] = value = valueResult.Value[0];
+                        targetValueCache[targetTypes[0]] = value = valueResult.Value[0];
                     }
 
-                    var setResult = TargetQuery.SetMemberValue(target!, value, memberArgs);
+                    var setResult = TargetQuery.SetMember(target!, value, memberArgs);
                     if (setResult.Failure) {
                         error = TargetQuery.MemberAccessError.Aggregate(error, setResult.Error);
                     } else {
