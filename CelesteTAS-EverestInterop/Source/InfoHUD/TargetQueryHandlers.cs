@@ -1,5 +1,7 @@
 using Celeste;
 using Celeste.Mod;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using Monocle;
 using StudioCommunication;
 using StudioCommunication.Util;
@@ -8,6 +10,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using TAS.EverestInterop;
+using TAS.Gameplay;
+using TAS.Input.Commands;
+using TAS.ModInterop;
 using TAS.Utils;
 
 namespace TAS.InfoHUD;
@@ -26,6 +31,35 @@ internal class SettingsQueryHandler : TargetQuery.Handler {
 
     public override object[] ResolveInstances(Type type) {
         return [Settings.Instance];
+    }
+
+    public override Result<bool, TargetQuery.MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
+        if (instance is not Settings settings) {
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+        }
+
+        switch (memberArgs[memberIdx]) {
+            case nameof(Settings.Rumble):
+                settings.Rumble = (RumbleAmount) value!;
+                Celeste.Input.Rumble(RumbleStrength.Medium, RumbleLength.Medium);
+                return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+
+            case nameof(Settings.GrabMode):
+                settings.GrabMode = (GrabModes) value!;
+                Celeste.Input.ResetGrab();
+                return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+
+            case nameof(Settings.Fullscreen):
+            case nameof(Settings.WindowScale):
+            case nameof(Settings.VSync):
+            case nameof(Settings.MusicVolume):
+            case nameof(Settings.SFXVolume):
+            case nameof(Settings.Language):
+                // Intentional no-op. A TAS should not modify these user preferences
+                return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+        }
+
+        return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
     }
 
     public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(TargetQuery.Variant variant) {
@@ -57,6 +91,32 @@ internal class SaveDataQueryHandler : TargetQuery.Handler {
         return SaveData.Instance != null ? [SaveData.Instance] : [];
     }
 
+    public override Result<bool, TargetQuery.MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
+        if (instance is not SaveData saveData) {
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+        }
+
+        switch (memberArgs[memberIdx]) {
+            case nameof(SaveData.VariantMode):
+                saveData.VariantMode = (bool) value!;
+                saveData.AssistMode = false;
+                if (!saveData.VariantMode) {
+                    AssistsQueryHandler.ApplyAssists(Assists.Default);
+                }
+                break;
+
+            case nameof(SaveData.AssistMode):
+                saveData.AssistMode = (bool) value!;
+                saveData.VariantMode = false;
+                if (!saveData.AssistMode) {
+                    AssistsQueryHandler.ApplyAssists(Assists.Default);
+                }
+                break;
+        }
+
+        return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+    }
+
     public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(TargetQuery.Variant variant) {
         if (variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
             yield break;
@@ -77,13 +137,29 @@ internal class AssistsQueryHandler : TargetQuery.Handler {
     public override (List<Type> Types, string[] MemberArgs)? ResolveBaseTypes(string[] queryArgs) {
         // Vanilla settings don't need a prefix
         if (typeof(Assists).GetFields().FirstOrDefault(f => f.Name == queryArgs[0]) != null) {
-            return ([typeof(Assists)], queryArgs);
+            return ([typeof(SaveData)], [nameof(SaveData.Assists), ..queryArgs]);
         }
         return null;
     }
 
     public override object[] ResolveInstances(Type type) {
         return SaveData.Instance != null ? [SaveData.Instance.Assists] : [];
+    }
+
+    public override Result<bool, TargetQuery.MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
+        switch (instance) {
+            case SaveData saveData when memberArgs[memberIdx] == nameof(SaveData.Assists):
+                saveData.Assists = (Assists) value!;
+                ApplyAssists(saveData.Assists);
+                return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+
+            case Assists when memberArgs[memberIdx] == nameof(Assists.Invincible) && Manager.Running && TasSettings.BetterInvincible:
+                BetterInvincible.Invincible = (bool) value!;
+                return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+
+            default:
+                return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+        }
     }
 
     public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(TargetQuery.Variant variant) {
@@ -94,6 +170,91 @@ internal class AssistsQueryHandler : TargetQuery.Handler {
         foreach (var f in typeof(Assists).GetAllFieldInfos()) {
             yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Assists)", IsDone = true };
         }
+    }
+
+    public static void ApplyAssists(Assists assists) {
+        Engine.TimeRateB = assists.GameSpeed / 10.0f;
+        Celeste.Input.Feather.InvertedX = Celeste.Input.Aim.InvertedX = Celeste.Input.MoveX.Inverted = assists.MirrorMode;
+
+        if (Engine.Scene.GetPlayer() is { } player) {
+            var mode = assists.PlayAsBadeline
+                ? PlayerSpriteMode.MadelineAsBadeline
+                : player.DefaultSpriteMode;
+
+            // player.Sprite is captured in IntroWakeUpCoroutine(),
+            // so resetting the sprite would cause the player to be stuck in StIntroWakeUp
+            if (player.StateMachine.State != Player.StIntroWakeUp) {
+                if (player.Active) {
+                    player.ResetSpriteNextFrame(mode);
+                } else {
+                    player.ResetSprite(mode);
+                }
+            }
+
+            player.Dashes = Math.Min(player.Dashes, player.MaxDashes);
+        }
+    }
+}
+
+internal class ExtendedVariantsQueryHandler : TargetQuery.Handler {
+    public override bool CanResolveInstances(Type type) => false;
+    public override bool CanResolveMembers(Type type) => false;
+
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveMember(object? instance, out object? value, Type type, int memberIdx, string[] memberArgs) {
+        if (!type.IsSameOrSubclassOf(typeof(EverestModuleSettings)) ||
+            Everest.Modules.FirstOrDefault(mod => mod.SettingsType == type) is not { } module ||
+            module.Metadata.Name != "ExtendedVariantMode"
+        ) {
+            value = null;
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+        }
+
+        string variantName = memberArgs[memberIdx];
+        var variant = new Lazy<object?>(ExtendedVariantsInterop.ParseVariant(variantName));
+        var variantType = ExtendedVariantsInterop.GetVariantType(variant);
+        if (variantType is null) {
+            value = null;
+            return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(module.SettingsType, memberIdx, memberArgs, $"Extended Variant '{variantName}' not found"));
+        }
+
+        value = ExtendedVariantsInterop.GetCurrentVariantValue(variant);
+        return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+    }
+
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveMemberType(object? instance, out Type memberType, Type type, int memberIdx, string[] memberArgs) {
+        if (!type.IsSameOrSubclassOf(typeof(EverestModuleSettings)) ||
+            Everest.Modules.FirstOrDefault(mod => mod.SettingsType == type) is not { } module ||
+            module.Metadata.Name != "ExtendedVariantMode"
+        ) {
+            memberType = null!;
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+        }
+
+        string variantName = memberArgs[memberIdx];
+        var variant = new Lazy<object?>(ExtendedVariantsInterop.ParseVariant(variantName));
+        var variantType = ExtendedVariantsInterop.GetVariantType(variant);
+        if (variantType is null) {
+            memberType = null!;
+            return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(module.SettingsType, memberIdx, memberArgs, $"Extended Variant '{variantName}' not found"));
+        }
+
+        memberType = variantType;
+        return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+    }
+
+    public override Result<bool, TargetQuery.MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
+        if (!type.IsSameOrSubclassOf(typeof(EverestModuleSettings)) ||
+            Everest.Modules.FirstOrDefault(mod => mod.SettingsType == type) is not { } module ||
+            module.Metadata.Name != "ExtendedVariantMode"
+        ) {
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+        }
+
+        string variantName = memberArgs[memberIdx];
+        var variant = new Lazy<object?>(ExtendedVariantsInterop.ParseVariant(variantName));
+
+        ExtendedVariantsInterop.SetVariantValue(variant, value);
+        return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
     }
 }
 
@@ -130,6 +291,12 @@ internal class EverestModuleSettingsQueryHandler : TargetQuery.Handler {
 
 internal class EntityQueryHandler : TargetQuery.Handler {
     internal record Data(List<Type> ComponentTypes, EntityID? EntityID);
+
+    /// Holds a position with integer and fractional part separated
+    internal record struct SubpixelPosition(SubpixelComponent X, SubpixelComponent Y);
+
+    /// Holds a single axis with integer and fractional part separated
+    internal record struct SubpixelComponent(float Position, float Remainder);
 
     /// Matches an EntityID specification on the base type
     /// e.g. `BaseType[Room:ID]`
@@ -230,7 +397,7 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         // }
     }
 
-    public override Result<bool, TargetQuery.QueryError> ResolveMember(ref object?[] values, ref int memberIdx, string[] memberArgs) {
+    public override Result<bool, TargetQuery.QueryError> ResolveMemberValues(ref object?[] values, ref int memberIdx, string[] memberArgs) {
         string[] parts = memberArgs[memberIdx].Split(SpecialSeparator);
         if (parts.Length == 0) {
             return Result<bool, TargetQuery.QueryError>.Ok(false);
@@ -290,6 +457,311 @@ internal class EntityQueryHandler : TargetQuery.Handler {
                 return Result<bool, TargetQuery.QueryError>.Ok(true);
         }
 
+        return Result<bool, TargetQuery.QueryError>.Ok(false);
+    }
+
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveMember(object? instance, out object? value, Type type, int memberIdx, string[] memberArgs) {
+        switch (instance) {
+            case Actor actor:
+                switch (memberArgs[memberIdx]) {
+                    case nameof(Actor.X):
+                        value = new SubpixelComponent(actor.X, actor.movementCounter.X);
+                        return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+
+                    case nameof(Actor.Y):
+                        value = new SubpixelComponent(actor.Y, actor.movementCounter.Y);
+                        return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+
+                    case nameof(Actor.Position):
+                        value = new SubpixelPosition(
+                            new SubpixelComponent(actor.X, actor.movementCounter.X),
+                            new SubpixelComponent(actor.Y, actor.movementCounter.Y));
+                        return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+                }
+                break;
+
+            case Platform platform:
+                switch (memberArgs[memberIdx]) {
+                    case nameof(Platform.X):
+                        value = new SubpixelComponent(platform.X, platform.movementCounter.X);
+                        return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+
+                    case nameof(Platform.Y):
+                        value = new SubpixelComponent(platform.Y, platform.movementCounter.Y);
+                        return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+
+                    case nameof(Platform.Position):
+                        value = new SubpixelPosition(
+                            new SubpixelComponent(platform.X, platform.movementCounter.X),
+                            new SubpixelComponent(platform.Y, platform.movementCounter.Y));
+                        return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+                }
+                break;
+        }
+
+        value = null;
+        return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+    }
+
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveMemberType(object? instance, out Type memberType, Type type, int memberIdx, string[] memberArgs) {
+        if (instance is Actor or Platform) {
+            switch (memberArgs[memberIdx]) {
+                case nameof(Entity.X):
+                case nameof(Entity.Y):
+                    memberType = typeof(SubpixelComponent);
+                    return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+
+                case nameof(Entity.Position):
+                    memberType = typeof(SubpixelPosition);
+                    return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+            }
+        }
+
+        memberType = null!;
+        return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+    }
+
+    public override Result<bool, TargetQuery.MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx,
+        string[] memberArgs, bool forceAllowCodeExecution) {
+        switch (instance) {
+            case Actor actor:
+                switch (memberArgs[memberIdx]) {
+                    case nameof(Actor.X): {
+                        var component = (SubpixelComponent) value!;
+                        actor.Position.X = component.Position;
+                        actor.movementCounter.X = component.Remainder;
+                        return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+                    }
+
+                    case nameof(Actor.Y): {
+                        var component = (SubpixelComponent) value!;
+                        actor.Position.Y = component.Position;
+                        actor.movementCounter.Y = component.Remainder;
+                        return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+                    }
+
+                    case nameof(Actor.Position): {
+                        var position = (SubpixelPosition) value!;
+                        actor.Position.X = position.X.Position;
+                        actor.Position.Y = position.Y.Position;
+                        actor.movementCounter.X = position.X.Remainder;
+                        actor.movementCounter.Y = position.Y.Remainder;
+                        return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+                    }
+                }
+                break;
+
+            case Platform platform:
+                switch (memberArgs[memberIdx]) {
+                    case nameof(Actor.X): {
+                        var component = (SubpixelComponent) value!;
+                        platform.Position.X = component.Position;
+                        platform.movementCounter.X = component.Remainder;
+                        return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+                    }
+
+                    case nameof(Actor.Y): {
+                        var component = (SubpixelComponent) value!;
+                        platform.Position.Y = component.Position;
+                        platform.movementCounter.Y = component.Remainder;
+                        return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+                    }
+
+                    case nameof(Actor.Position): {
+                        var position = (SubpixelPosition) value!;
+                        platform.Position.X = position.X.Position;
+                        platform.Position.Y = position.Y.Position;
+                        platform.movementCounter.X = position.X.Remainder;
+                        platform.movementCounter.Y = position.Y.Remainder;
+                        return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+                    }
+                }
+                break;
+        }
+
+        return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+    }
+
+    public override Result<bool, TargetQuery.QueryError> ResolveValue(Type targetType, ref int argIdx, string[] valueArgs, out object? value) {
+        if (targetType == typeof(SubpixelComponent)) {
+            double doubleValue = double.Parse(valueArgs[argIdx]);
+
+            int position = (int) Math.Round(doubleValue);
+            float remainder = (float) (doubleValue - position);
+
+            value = new SubpixelComponent(position, remainder);
+            return Result<bool, TargetQuery.QueryError>.Ok(true);
+        }
+        if (targetType == typeof(SubpixelPosition)) {
+            double doubleValueX = double.Parse(valueArgs[argIdx]);
+            argIdx++;
+            double doubleValueY = double.Parse(valueArgs[argIdx]);
+
+            int positionX = (int) Math.Round(doubleValueX);
+            int positionY = (int) Math.Round(doubleValueY);
+            float remainderX = (float) (doubleValueX - positionX);
+            float remainderY = (float) (doubleValueY - positionY);
+
+            value = new SubpixelPosition(
+                new SubpixelComponent(positionX, remainderX),
+                new SubpixelComponent(positionY, remainderY));
+            return Result<bool, TargetQuery.QueryError>.Ok(true);
+        }
+
+        value = null;
+        return Result<bool, TargetQuery.QueryError>.Ok(false);
+    }
+}
+
+internal class ComponentQueryHandler : TargetQuery.Handler {
+    public override bool CanResolveInstances(Type type) => type.IsSameOrSubclassOf(typeof(Component));
+    public override bool CanResolveMembers(Type type) => false;
+
+    public override object[] ResolveInstances(Type type) {
+        IEnumerable<Component> componentInstances;
+        if (Engine.Scene.Tracker.Components.TryGetValue(type, out var components)) {
+            componentInstances = components;
+        } else {
+            componentInstances = Engine.Scene.Entities
+                .SelectMany(e => e.Components)
+                .Where(c => c.GetType().IsSameOrSubclassOf(type));
+        }
+
+        return componentInstances
+            .Select(object (c) => c)
+            .ToArray();
+    }
+}
+
+internal class SpecialValueQueryHandler : TargetQuery.Handler {
+    /// Data-class to hold parsed ButtonBinding data, before it being set
+    private class ButtonBindingData {
+        public readonly HashSet<Keys> KeyboardKeys = [];
+        public readonly HashSet<MInput.MouseData.MouseButtons> MouseButtons = [];
+    }
+
+    public override bool CanResolveInstances(Type type) => false;
+    public override bool CanResolveMembers(Type type) => false;
+
+    public override Result<bool, TargetQuery.MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
+        var bindingFlags = memberArgs.Length == 1
+            ? instance is Type
+                ? ReflectionExtensions.StaticAnyVisibility
+                : ReflectionExtensions.StaticInstanceAnyVisibility
+            : ReflectionExtensions.InstanceAnyVisibility;
+
+        if (type.GetPropertyInfo(memberArgs[memberIdx], bindingFlags, logFailure: false) is { } property && property.PropertyType == typeof(ButtonBinding)) {
+            if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
+                return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.CodeExecutionNotAllowed(type, memberArgs.Length - 1, memberArgs));
+            }
+
+            var binding = (ButtonBinding) property.GetValue(instance)!;
+
+            var nodes = binding.Button.Nodes;
+            var mouseButtons = binding.Button.Binding.Mouse;
+            var data = (ButtonBindingData) value!;
+
+            if (data.KeyboardKeys.IsNotEmpty()) {
+                nodes.RemoveAll(node => node is VirtualButton.KeyboardKey);
+                nodes.AddRange(data.KeyboardKeys.Select(key => new VirtualButton.KeyboardKey(key)));
+            }
+            if (data.MouseButtons.IsNotEmpty()) {
+                nodes.RemoveAll(node => node is VirtualButton.MouseLeftButton or VirtualButton.MouseMiddleButton or VirtualButton.MouseRightButton);
+
+                if (mouseButtons != null) {
+                    mouseButtons.Clear();
+                    mouseButtons.AddRange(data.MouseButtons);
+                } else {
+                    foreach (var button in data.MouseButtons) {
+                        switch (button)
+                        {
+                            case MInput.MouseData.MouseButtons.Left:
+                                nodes.AddRange(data.KeyboardKeys.Select(_ => new VirtualButton.MouseLeftButton()));
+                                break;
+                            case MInput.MouseData.MouseButtons.Right:
+                                nodes.AddRange(data.KeyboardKeys.Select(_ => new VirtualButton.MouseRightButton()));
+                                break;
+                            case MInput.MouseData.MouseButtons.Middle:
+                                nodes.AddRange(data.KeyboardKeys.Select(_ => new VirtualButton.MouseMiddleButton()));
+                                break;
+                            case MInput.MouseData.MouseButtons.XButton1 or MInput.MouseData.MouseButtons.XButton2:
+                                return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(type, memberIdx, memberArgs, "X1 and X2 are not supported before Everest adding mouse support"));
+                        }
+                    }
+                }
+            }
+
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+        }
+
+        return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+    }
+
+    public override Result<bool, TargetQuery.QueryError> ResolveValue(Type targetType, ref int argIdx, string[] valueArgs, out object? value) {
+        if (targetType == typeof(Vector2)) {
+            float x = float.Parse(valueArgs[argIdx]);
+            argIdx++;
+            float y = float.Parse(valueArgs[argIdx]);
+
+            value = new Vector2(x, y);
+            return Result<bool, TargetQuery.QueryError>.Ok(true);
+        }
+        if (targetType == typeof(Vector3)) {
+            float x = float.Parse(valueArgs[argIdx]);
+            argIdx++;
+            float y = float.Parse(valueArgs[argIdx]);
+            argIdx++;
+            float z = float.Parse(valueArgs[argIdx]);
+
+            value = new Vector3(x, y, z);
+            return Result<bool, TargetQuery.QueryError>.Ok(true);
+        }
+        if (targetType == typeof(Vector4)) {
+            float x = float.Parse(valueArgs[argIdx]);
+            argIdx++;
+            float y = float.Parse(valueArgs[argIdx]);
+            argIdx++;
+            float z = float.Parse(valueArgs[argIdx]);
+            argIdx++;
+            float w = float.Parse(valueArgs[argIdx]);
+
+            value = new Vector4(x, y, z, w);
+            return Result<bool, TargetQuery.QueryError>.Ok(true);
+        }
+
+        if (targetType == typeof(Random)) {
+            value = new Random(int.Parse(valueArgs[argIdx]));
+            return Result<bool, TargetQuery.QueryError>.Ok(true);
+        }
+
+        if (targetType == typeof(ButtonBinding)) {
+            var data = new ButtonBindingData();
+
+            // Parse all possible keys
+            int j = argIdx;
+            for (; j < valueArgs.Length; j++) {
+                // Parse mouse first, so Mouse.Left is not parsed as Keys.Left
+                if (Enum.TryParse<MInput.MouseData.MouseButtons>(valueArgs[j], ignoreCase: true, out var button)) {
+                    data.MouseButtons.Add(button);
+                } else if (Enum.TryParse<Keys>(valueArgs[j], ignoreCase: true, out var key)) {
+                    data.KeyboardKeys.Add(key);
+                } else {
+                    if (j == argIdx) {
+                        value = null;
+                        return Result<bool, TargetQuery.QueryError>.Fail(new TargetQuery.QueryError.Custom($"'{valueArgs[j]}' is not a valid keyboard key or mouse button"));
+                    }
+
+                    break;
+                }
+            }
+            argIdx = j - 1;
+
+            value = data;
+            return Result<bool, TargetQuery.QueryError>.Ok(true);
+        }
+
+
+        value = null;
         return Result<bool, TargetQuery.QueryError>.Ok(false);
     }
 }

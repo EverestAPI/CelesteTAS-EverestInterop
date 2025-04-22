@@ -322,6 +322,68 @@ public static class SetCommand {
         string query = args[0];
         string[] queryArgs = query.Split('.');
 
+        var baseTypes = TargetQuery.ResolveBaseTypes(queryArgs, out string[] memberArgs, out object? userData);
+        if (baseTypes.IsEmpty()) {
+            ReportError(new TargetQuery.QueryError.NoBaseTypes(query).ToString());
+            return;
+        }
+        if (memberArgs.IsEmpty()) {
+            ReportError("No members specified");
+            return;
+        }
+
+        bool anySuccessful = false;
+        TargetQuery.MemberAccessError? error = null;
+
+        var targetValueCache = new Dictionary<Type, object?>();
+
+        foreach (var baseType in baseTypes) {
+            object[] instances = TargetQuery.ResolveTypeInstances(baseType, userData);
+            foreach (object instance in instances) {
+                var memberResult = TargetQuery.PrepareMemberValue(instance, memberArgs[..^1]);
+                if (memberResult.Failure) {
+                    if (memberResult.Error is TargetQuery.MemberAccessError accessError) {
+                        error = TargetQuery.MemberAccessError.Aggregate(error, accessError);
+                    } else {
+                        ReportError(memberResult.Error.ToString());
+                        return;
+                    }
+
+                    continue;
+                }
+
+                foreach (object? target in memberResult.Value.Where(value => value != null && value != TargetQuery.InvalidValue && value is not TargetQuery.QueryError)) {
+                    var targetTypeResult = TargetQuery.ResolveLastMemberType(target!, memberArgs);
+                    if (targetTypeResult.Failure) {
+                        ReportError(targetTypeResult.Error.ToString());
+                        return;
+                    }
+
+                    var targetType = targetTypeResult.Value;
+                    if (!targetValueCache.TryGetValue(targetType, out object? value)) {
+                        var valueResult = TargetQuery.ResolveValue(args[1..], [targetType]);
+                        if (valueResult.Failure) {
+                            ReportError(valueResult.Error.ToString());
+                            return;
+                        }
+
+                        targetValueCache[targetType] = value = valueResult.Value[0];
+                    }
+
+                    var setResult = TargetQuery.SetMemberValue(target!, value, memberArgs);
+                    if (setResult.Failure) {
+                        error = TargetQuery.MemberAccessError.Aggregate(error, setResult.Error);
+                    } else {
+                        anySuccessful = true;
+                    }
+                }
+            }
+        }
+
+        if (!anySuccessful && error != null) {
+            ReportError(error.ToString());
+        }
+
         // FIXME
         // var baseTypes = TargetQuery.ResolveBaseTypes(queryArgs, out string[]? memberArgs, out var componentTypes, out var entityId);
         // if (baseTypes.IsEmpty()) {
