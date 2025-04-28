@@ -1,8 +1,11 @@
 using System.Collections.Generic;
 using Celeste;
 using Celeste.Mod;
+using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Monocle;
 using System;
+using System.Runtime.CompilerServices;
+using TAS.InfoHUD;
 using TAS.Input.Commands;
 using TAS.ModInterop;
 using TAS.Module;
@@ -46,7 +49,17 @@ internal static class RestoreSettings {
                 continue;
             }
 
-            origModSettings.Add(module, module._Settings.ShallowClone());
+            // When using savestates, need to deep clone settings, to avoid issues with ButtonBindings breaking
+            if (SpeedrunToolInterop.Installed) {
+                origModSettings.Add(module, DeepClone(module._Settings));
+            } else {
+                origModSettings.Add(module, module._Settings.ShallowClone());
+            }
+            continue;
+
+            // Need separate method to avoid crash if SRT isn't installed
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static T DeepClone<T>(T obj) => obj.DeepCloneShared();
         }
 
         origExtendedVariants.Clear();
@@ -72,7 +85,7 @@ internal static class RestoreSettings {
 
         if (origAssists != null) {
             SaveData.Instance.Assists = origAssists.Value;
-            SetCommand.ResetVariants(origAssists.Value);
+            AssistsQueryHandler.ApplyAssists(origAssists.Value);
             origAssists = null;
         }
 

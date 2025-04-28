@@ -10,7 +10,6 @@ using Monocle;
 using MonoMod.Cil;
 using StudioCommunication;
 using TAS.Input;
-using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
 
@@ -26,7 +25,7 @@ public static class EvalLuaCommand {
 
     private const string CommandName = "EvalLua";
     private static readonly Regex commandAndSeparatorRegex = new(@$"^{CommandName}[ |,]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-    private static readonly FieldInfo DebugRClogFieldInfo = typeof(Commands).GetFieldInfo("debugRClog");
+    private static readonly FieldInfo DebugRClogFieldInfo = typeof(Commands).GetFieldInfo("debugRClog")!;
 
     [Load]
     private static void Load() {
@@ -34,7 +33,7 @@ public static class EvalLuaCommand {
     }
 
     private static void HookEverestDebugRc() {
-        var methods = typeof(Everest.DebugRC).GetNestedType("<>c", BindingFlags.NonPublic)
+        var methods = typeof(Everest.DebugRC).GetNestedType("<>c", BindingFlags.NonPublic)!
             .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic);
         foreach (var method in methods) {
             var methodBody = method.GetMethodBody();
@@ -43,7 +42,7 @@ public static class EvalLuaCommand {
             }
 
             foreach (var localVariable in methodBody.LocalVariables) {
-                if (localVariable.LocalType?.FullName != "Monocle.Commands+CommandData") {
+                if (localVariable.LocalType.FullName != "Monocle.Commands+CommandData") {
                     continue;
                 }
 
@@ -53,7 +52,7 @@ public static class EvalLuaCommand {
                         cursor.Emit(OpCodes.Ldloc_0).EmitDelegate<Func<string[], string, string[]>>(
                             (commandAndArgs, rawCommand) => {
                                 if (commandAndArgs[0].ToLower() == CommandName && commandAndArgs.Length >= 2) {
-                                    return new[] {CommandName, commandAndSeparatorRegex.Replace(rawCommand, "")};
+                                    return [CommandName, commandAndSeparatorRegex.Replace(rawCommand, "")];
                                 }
 
                                 return commandAndArgs;
@@ -66,8 +65,8 @@ public static class EvalLuaCommand {
         }
     }
 
-    private static string ReadContent(string assetPath) {
-        ModAsset modAsset = Everest.Content.Get(assetPath, true);
+    private static string? ReadContent(string assetPath) {
+        ModAsset? modAsset = Everest.Content.Get(assetPath, true);
         if (modAsset != null) {
             using StreamReader streamReader = new(modAsset.Stream);
             return streamReader.ReadToEnd();
@@ -86,14 +85,14 @@ public static class EvalLuaCommand {
 
     [Monocle.Command(CommandName, "Evaluate lua code (CelesteTAS)")]
     private static void EvalLua(string code) {
-        string firstHistory = Engine.Commands.commandHistory.FirstOrDefault();
+        string? firstHistory = Engine.Commands.commandHistory.FirstOrDefault();
         if (DebugRClogFieldInfo.GetValue(Engine.Commands) == null &&
             firstHistory?.StartsWith(CommandName, StringComparison.InvariantCultureIgnoreCase) == true) {
             code = commandAndSeparatorRegex.Replace(firstHistory, "");
         }
 
         ConsoleCommandRunning = true;
-        object[] result = EvalLuaImpl(code);
+        object?[]? result = EvalLuaImpl(code);
         ConsoleCommandRunning = false;
         LogResult(result);
     }
@@ -109,7 +108,7 @@ public static class EvalLuaCommand {
     }
 
     public static object?[]? EvalLuaImpl(string code) {
-        string localCode = ReadContent("bin/env");
+        string localCode = ReadContent("bin/env")!;
         code = $"{localCode}\n{code}";
 
         object?[]? objects;
@@ -123,7 +122,7 @@ public static class EvalLuaCommand {
         return objects;
     }
 
-    private static void LogResult(object[] objects) {
+    private static void LogResult(object?[]? objects) {
         var result = new List<string>();
 
         if (objects == null || objects.Length == 0) {

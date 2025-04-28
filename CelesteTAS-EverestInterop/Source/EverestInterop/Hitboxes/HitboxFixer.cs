@@ -151,17 +151,19 @@ internal static class HitboxFixer {
         Draw.SpriteBatch.Draw(Draw.Pixel.Texture.Texture, rect, Draw.Pixel.ClipRect, color);
     }
 
-    private delegate void orig_ShapeHitbox_Render(Collider self, Camera camera, Color color);
+    #region Mod Compatibilty
+
+    private delegate void orig_Entity_DebugRender(Entity self, Camera camera);
+    private delegate void orig_Collider_Render(Collider self, Camera camera, Color color);
 
     [ModOnHook("FrostHelper", "FrostHelper.Colliders.ShapeHitbox", "Render")]
-    private static void AccurateShapeHitbox(orig_ShapeHitbox_Render orig, Collider self, Camera camera, Color color) {
+    private static void AccurateShapeHitbox(orig_Collider_Render orig, Collider self, Camera camera, Color color) {
         if (!TasSettings.ShowHitboxes || !DrawingHitboxes) {
             orig(self, camera, color);
             return;
         }
 
         var points = self.GetFieldValue<Vector2[]>("Points")!;
-
         for (int i = 0; i < points.Length - 1; i++) {
             DrawExactLine(points[i], points[i + 1], color);
         }
@@ -169,6 +171,21 @@ internal static class HitboxFixer {
             DrawExactLine(points[0], points[^1], color);
         }
     }
+
+    [ModOnHook("CrystallineHelper", "vitmod.ForceField", "DebugRender")]
+    private static void AccurateForceFieldHitbox(orig_Entity_DebugRender orig, Entity self, Camera camera) {
+        if (!TasSettings.ShowHitboxes || !DrawingHitboxes) {
+            orig(self, camera);
+            return;
+        }
+
+        var nodes = self.GetFieldValue<Vector2[]>("nodes")!;
+        for (int i = 0; i < nodes.Length; i++) {
+            DrawExactLine(i > 0 ? nodes[i - 1] : self.Position, nodes[i], Color.Red);
+        }
+    }
+
+    #endregion
 
     /// Draws an exact line, filling all pixels the line actually intersects
     /// Based on the logic of Collide.LineToRect and with the assumption that other colliders are grid-aligned
@@ -222,10 +239,12 @@ internal static class HitboxFixer {
         DrawSegment(to.X,   to.Y,   endX,   endY);
 
         int steps = (int) Math.Min(MathF.Round(Math.Abs(endX - startX)), MathF.Round(Math.Abs(endY - startY)));
-
-        float x = startX, y = startY;
-        for (int i = 0; i < steps; i++, x += dx, y += dy) {
-            DrawSegment(x, y, x + dx, y + dy);
+        for (int i = 0; i < steps; i++) {
+            DrawSegment(
+                startX + i * dx,
+                startY + i * dy,
+                startX + (i + 1) * dx,
+                startY + (i + 1) * dy);
         }
         void DrawSegment(float ax, float ay, float bx, float by) {
             if (horizontal) {

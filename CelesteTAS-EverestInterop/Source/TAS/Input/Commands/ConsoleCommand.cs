@@ -84,11 +84,11 @@ public static class ConsoleCommand {
 
     private static Vector2 initRemainder;
     private static Vector2 initSpeed;
-    private static List<Action<Entity>> bugFixers;
+    private static List<Action<Entity>>? bugFixers;
 
     [Load]
     private static void Load() {
-        typeof(Level).GetMethodInfo(nameof(Level.orig_LoadLevel)).IlHook(HookLevelOrigLoadLevel);
+        typeof(Level).GetMethodInfo(nameof(Level.orig_LoadLevel))!.IlHook(HookLevelOrigLoadLevel);
         On.Celeste.Player.IntroRespawnEnd += PlayerOnIntroRespawnEnd;
         IL.Celeste.NPC06_Theo_Plateau.Awake += NPC06_Theo_PlateauOnAwake;
         On.Celeste.Level.End += LevelOnEnd;
@@ -133,7 +133,7 @@ public static class ConsoleCommand {
             return;
         }
 
-        Instruction skipCs06Campfire = ilCursor.Next.Next;
+        Instruction skipCs06Campfire = ilCursor.Next!.Next;
         if (!ilCursor.TryGotoPrev(MoveType.After, ins => ins.MatchCall<Entity>("Awake"))) {
             return;
         }
@@ -144,7 +144,7 @@ public static class ConsoleCommand {
 
     private static bool FixCh6FirstRoomLoad() {
         Vector2 startPoint = new(-176, 312);
-        Session session = Engine.Scene.GetSession();
+        Session session = Engine.Scene.GetSession()!;
         bool skip = TasSettings.Enabled && (session.GetFlag("campfire_chat") || session.RespawnPoint != startPoint);
         if (skip && Engine.Scene.GetLevel() is { } level && level.GetPlayer() is { } player &&
             level.Entities.FindFirst<NPC06_Theo_Plateau>() is { } theo && level.Tracker.GetEntity<Bonfire>() is { } bonfire) {
@@ -379,7 +379,7 @@ public static class ConsoleCommand {
         }
     }
 
-    private static void Load(AreaMode mode, int areaId, string screen = null, int? spawnPoint = null) {
+    private static void Load(AreaMode mode, int areaId, string? screen = null, int? spawnPoint = null) {
         AreaKey areaKey = new(areaId, mode);
         Session session = AreaData.GetCheckpoint(areaKey, screen) != null ? new Session(areaKey, screen) : new Session(areaKey);
 
@@ -463,7 +463,7 @@ public static class ConsoleCommand {
         }
 
         AreaKey area = level.Session.Area;
-        string mode = null;
+        string mode;
         switch (area.Mode) {
             case AreaMode.Normal:
                 mode = "load";
@@ -474,6 +474,8 @@ public static class ConsoleCommand {
             case AreaMode.CSide:
                 mode = "rmx2";
                 break;
+            default:
+                throw new ArgumentOutOfRangeException();
         }
 
         string id = area.ID <= 10 ? area.ID.ToString() : area.GetSID();

@@ -18,10 +18,10 @@ namespace TAS;
 public static class Savestates {
     // These fields can't just be pulled from the current frame and therefore need to be saved too
     private static readonly Dictionary<FieldInfo, object?> SavedGameInfo = new() {
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPos)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastDiff)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerPos)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerDiff)), null},
+        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPos))!, null},
+        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastDiff))!, null},
+        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerPos))!, null},
+        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerDiff))!, null},
     };
 
     private static bool savedByBreakpoint;

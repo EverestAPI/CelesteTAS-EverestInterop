@@ -39,6 +39,7 @@ internal static class ModUtils {
             var type = asm.GetType(fullTypeName);
             if (type == null) {
                 $"Failed to find type '{fullTypeName}' in assembly '{asm}'".Log(LogLevel.Error);
+                continue;
             }
 
             yield return type;

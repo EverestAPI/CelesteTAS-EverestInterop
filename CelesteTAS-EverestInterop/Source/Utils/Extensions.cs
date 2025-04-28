@@ -8,11 +8,13 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Celeste;
 using Celeste.Mod;
+using JetBrains.Annotations;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Utils;
 using StudioCommunication;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using TAS.ModInterop;
 using Platform = Celeste.Platform;
 
@@ -32,8 +34,8 @@ internal static class FastReflection {
 
     private static readonly ConcurrentDictionary<DelegateKey, Delegate> CachedFieldGetDelegates = new();
 
-    private static GetDelegate<TInstance, TReturn> CreateGetDelegateImpl<TInstance, TReturn>(Type type, string name) {
-        FieldInfo field = type.GetFieldInfo(name);
+    private static GetDelegate<TInstance, TReturn>? CreateGetDelegateImpl<TInstance, TReturn>(Type type, string name) {
+        FieldInfo? field = type.GetFieldInfo(name);
         if (field == null) {
             return null;
         }
@@ -50,9 +52,8 @@ internal static class FastReflection {
         }
 
         if (field.IsConst()) {
-            object value = field.GetValue(null);
-            TReturn returnValue = value == null ? default : (TReturn) value;
-            Func<TInstance, TReturn> func = _ => returnValue;
+            TReturn value = (TReturn) field.GetValue(null)!;
+            Func<TInstance, TReturn> func = _ => value;
 
             GetDelegate<TInstance, TReturn> getDelegate =
                 (GetDelegate<TInstance, TReturn>) func.Method.CreateDelegate(typeof(GetDelegate<TInstance, TReturn>), func.Target);
@@ -60,14 +61,14 @@ internal static class FastReflection {
             return getDelegate;
         }
 
-        var method = new DynamicMethod($"{field} Getter", returnType, new[] {typeof(TInstance)}, field.DeclaringType, true);
+        var method = new DynamicMethod($"{field} Getter", returnType, [typeof(TInstance)], field.DeclaringType!, true);
         var il = method.GetILGenerator();
 
         if (field.IsStatic) {
             il.Emit(OpCodes.Ldsfld, field);
         } else {
             il.Emit(OpCodes.Ldarg_0);
-            if (field.DeclaringType.IsValueType && !typeof(TInstance).IsValueType) {
+            if (field.DeclaringType!.IsValueType && !typeof(TInstance).IsValueType) {
                 il.Emit(OpCodes.Unbox_Any, field.DeclaringType);
             }
 
@@ -84,11 +85,11 @@ internal static class FastReflection {
         return (GetDelegate<TInstance, TReturn>) result;
     }
 
-    public static GetDelegate<TInstance, TResult> CreateGetDelegate<TInstance, TResult>(this Type type, string fieldName) {
+    public static GetDelegate<TInstance, TResult>? CreateGetDelegate<TInstance, TResult>(this Type type, string fieldName) {
         return CreateGetDelegateImpl<TInstance, TResult>(type, fieldName);
     }
 
-    public static GetDelegate<TInstance, TResult> CreateGetDelegate<TInstance, TResult>(string fieldName) {
+    public static GetDelegate<TInstance, TResult>? CreateGetDelegate<TInstance, TResult>(string fieldName) {
         return CreateGetDelegate<TInstance, TResult>(typeof(TInstance), fieldName);
     }
 }
@@ -100,8 +101,11 @@ internal static class ReflectionExtensions {
     internal const BindingFlags StaticInstanceAnyVisibility = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
     internal const BindingFlags InstanceAnyVisibilityDeclaredOnly = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
+    [UsedImplicitly]
     private readonly record struct MemberKey(Type Type, string Name);
+    [UsedImplicitly]
     private readonly record struct AllMemberKey(Type Type, BindingFlags BindingFlags);
+    [UsedImplicitly]
     private readonly record struct MethodKey(Type Type, string Name, long ParameterHash);
 
     private static readonly ConcurrentDictionary<MemberKey, MemberInfo?> CachedMemberInfos = new();
@@ -498,6 +502,11 @@ internal static class HashCodeExtensions {
             return hash;
         }
     }
+
+    public static HashCode Append<T>(this HashCode hash, T value) {
+        hash.Add(value);
+        return hash;
+    }
 }
 
 internal static class TypeExtensions {
@@ -519,6 +528,56 @@ internal static class TypeExtensions {
 
     public static bool IsConst(this FieldInfo fieldInfo) {
         return fieldInfo.IsLiteral && !fieldInfo.IsInitOnly;
+    }
+
+    /// Checks if the current type could be implicitly converted to the target type
+    public static bool CanCoerceTo(this Type type, Type target) {
+        // Trivial case
+        if (type.IsAssignableTo(target)) {
+            return true;
+        }
+
+        // Implicit conversion operators
+        foreach (var method in type.GetAllMethodInfos(ReflectionExtensions.StaticAnyVisibility).Concat(target.GetAllMethodInfos(ReflectionExtensions.StaticAnyVisibility))) {
+            if (method.Name == "op_Implicit" &&
+                method.ReturnType.IsAssignableTo(target) &&
+                method.GetParameters() is { Length: 1 } parameters &&
+                parameters[0].ParameterType.IsAssignableFrom(type)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// Implicitly converts the current object to the target
+    public static Result<object?, string> CoerceTo(this object? obj, Type target) {
+        if (obj == null) {
+            return target.IsValueType
+                ? Result<object?, string>.Ok(null)
+                : Result<object?, string>.Fail($"Cannot coerce null into a value type '{target}'");
+        }
+
+        var type = obj.GetType();
+
+        // Trivial case
+        if (type.IsAssignableTo(target)) {
+            return Result<object?, string>.Ok(obj);
+        }
+
+        // Implicit conversion operators
+        foreach (var method in type.GetAllMethodInfos(ReflectionExtensions.StaticAnyVisibility).Concat(target.GetAllMethodInfos(ReflectionExtensions.StaticAnyVisibility))) {
+            if (method.Name == "op_Implicit" &&
+                method.ReturnType.IsAssignableTo(target) &&
+                method.GetParameters() is { Length: 1 } parameters &&
+                parameters[0].ParameterType.IsAssignableFrom(type)
+            ) {
+                return Result<object?, string>.Ok(method.Invoke(null, [obj]));
+            }
+        }
+
+        return Result<object?, string>.Fail($"Cannot coerce value of type '{type}' into '{target}'");
     }
 }
 
@@ -556,11 +615,11 @@ internal static class StringExtensions {
         return LineBreakRegex.Replace(text, replacement);
     }
 
-    public static bool IsNullOrEmpty(this string text) {
+    public static bool IsNullOrEmpty(this string? text) {
         return string.IsNullOrEmpty(text);
     }
 
-    public static bool IsNotNullOrEmpty(this string text) {
+    public static bool IsNotNullOrEmpty([NotNullWhen(true)] this string? text) {
         return !string.IsNullOrEmpty(text);
     }
 
@@ -578,7 +637,7 @@ internal static class EnumerableExtensions {
         return !enumerable.Any();
     }
 
-    public static bool IsNullOrEmpty<T>(this IEnumerable<T> enumerable) {
+    public static bool IsNullOrEmpty<T>(this IEnumerable<T>? enumerable) {
         return enumerable == null || !enumerable.Any();
     }
 
@@ -588,6 +647,47 @@ internal static class EnumerableExtensions {
 
     public static bool IsNotNullOrEmpty<T>(this IEnumerable<T> enumerable) {
         return !enumerable.IsNullOrEmpty();
+    }
+
+    /// Checks if the first sequence starts with the second sequence
+    public static bool SequenceStartsWith<T>(this IEnumerable<T> first, IEnumerable<T> second, IEqualityComparer<T>? comparer = null) {
+        // Optimize for certain cases
+        if (first is ICollection<T> firstCollection && second is ICollection<T> secondCollection) {
+            if (firstCollection.Count < secondCollection.Count) {
+                return false;
+            }
+
+            if (first is T[] firstArray && second is T[] secondArray) {
+                int count = secondArray.Length;
+                return ((ReadOnlySpan<T>)firstArray)[..count].SequenceEqual((ReadOnlySpan<T>) secondArray, comparer);
+            }
+
+            if (first is IList<T> firstList && second is IList<T> secondList) {
+                comparer ??= EqualityComparer<T>.Default;
+
+                int count = secondList.Count;
+                for (int i = 0; i < count; ++i) {
+                    if (!comparer.Equals(firstList[i], secondList[i])) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+
+        // Generic case
+        comparer ??= EqualityComparer<T>.Default;
+
+        using var firstEnumerator = first.GetEnumerator();
+        using var secondEnumerator = second.GetEnumerator();
+
+        while (secondEnumerator.MoveNext()) {
+            if (!firstEnumerator.MoveNext() || !comparer.Equals(firstEnumerator.Current, secondEnumerator.Current)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     // public static IEnumerable<T> SkipLast<T>(this IEnumerable<T> source, int n = 1) {
@@ -606,21 +706,21 @@ internal static class EnumerableExtensions {
 }
 
 internal static class ListExtensions {
-    public static T GetValueOrDefault<T>(this IList<T> list, int index, T defaultValue = default) {
+    public static T? GetValueOrDefault<T>(this IList<T> list, int index, T? defaultValue = default) {
         return index >= 0 && index < list.Count ? list[index] : defaultValue;
     }
 }
 
 internal static class DictionaryExtensions {
-    public static TValue GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key, TValue defaultValue = default) {
-        return dict.TryGetValue(key, out TValue value) ? value : defaultValue;
+    public static TValue GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key, TValue defaultValue) {
+        return dict.TryGetValue(key, out var value) ? value : defaultValue;
     }
 
-    public static TKey LastKeyOrDefault<TKey, TValue>(this SortedDictionary<TKey, TValue> dict) {
+    public static TKey? LastKeyOrDefault<TKey, TValue>(this SortedDictionary<TKey, TValue> dict) where TKey : notnull {
         return dict.Count > 0 ? dict.Last().Key : default;
     }
 
-    public static TValue LastValueOrDefault<TKey, TValue>(this SortedDictionary<TKey, TValue> dict) {
+    public static TValue? LastValueOrDefault<TKey, TValue>(this SortedDictionary<TKey, TValue> dict) where TKey : notnull {
         return dict.Count > 0 ? dict.Last().Value : default;
     }
 
@@ -721,21 +821,21 @@ internal static class Vector2Extensions {
 internal static class SceneExtensions {
     public static Player GetPlayer(this Scene scene) => scene.Tracker.GetEntity<Player>();
 
-    public static Level GetLevel(this Scene scene) {
+    public static Level? GetLevel(this Scene scene) {
         return scene switch {
             Level level => level,
             LevelLoader levelLoader => levelLoader.Level,
-            _ => null
+            _ => null,
         };
     }
 
-    public static Session GetSession(this Scene scene) {
+    public static Session? GetSession(this Scene scene) {
         return scene switch {
             Level level => level.Session,
             LevelLoader levelLoader => levelLoader.session,
             LevelExit levelExit => levelExit.session,
             AreaComplete areaComplete => areaComplete.Session,
-            _ => null
+            _ => null,
         };
     }
 }
@@ -840,7 +940,7 @@ internal static class CloneUtil<T> {
     private static readonly Func<T, object> Clone;
 
     static CloneUtil() {
-        MethodInfo cloneMethod = typeof(T).GetMethodInfo("MemberwiseClone", parameterTypes: null, BindingFlags.Instance | BindingFlags.NonPublic);
+        MethodInfo cloneMethod = typeof(T).GetMethodInfo("MemberwiseClone", parameterTypes: null, BindingFlags.Instance | BindingFlags.NonPublic)!;
         Clone = (Func<T, object>) cloneMethod.CreateDelegate(typeof(Func<T, object>));
     }
 
@@ -856,7 +956,7 @@ internal static class CloneUtil {
         }
 
         foreach (FieldInfo fieldInfo in to.GetType().GetAllFieldInfos()) {
-            object fromValue = fieldInfo.GetValue(from);
+            object? fromValue = fieldInfo.GetValue(from);
             if (onlyDifferent && fromValue == fieldInfo.GetValue(to)) {
                 continue;
             }
@@ -875,7 +975,7 @@ internal static class CloneUtil {
                 continue;
             }
 
-            object fromValue = propertyInfo.GetValue(from);
+            object? fromValue = propertyInfo.GetValue(from);
             if (onlyDifferent && fromValue == propertyInfo.GetValue(to)) {
                continue;
             }
@@ -909,7 +1009,6 @@ internal static class EnumerableExtension {
     }
 
     /// Sorts the elements according to the comparision function
-    /// <list type="table"><listheader><term> Value</term><description> Meaning</description></listheader><item><term> Less than zero</term><description><paramref name="x" /> is less than <paramref name="y" />.</description></item><item><term> Zero</term><description><paramref name="x" /> equals <paramref name="y" />.</description></item><item><term> Greater than zero</term><description><paramref name="x" /> is greater than <paramref name="y" />.</description></item></list>
     public static IEnumerable<T> Sort<T>(this IEnumerable<T> enumerable, Func<T, T, int> compare) {
         return enumerable.Order(new DynamicComparer<T>(compare));
     }

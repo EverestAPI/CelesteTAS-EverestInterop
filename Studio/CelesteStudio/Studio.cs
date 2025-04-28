@@ -383,11 +383,20 @@ public sealed class Studio : Form {
         }
 
         if (showConfirmation) {
-            var confirm = MessageBox.Show("""
-                                                    You have unsaved changes.
-                                                    Are you sure you want to discard them?
-                                                    """, MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.No);
-            return confirm == DialogResult.Yes;
+            switch (DiscardSaveDialog.Show()) {
+                case null:
+                    return false;
+
+                case true:
+                    return true;
+
+                case false when Editor.Document.FilePath == Document.ScratchFile:
+                    return OnSaveFileAs(openTargetFile: false);
+
+                case false:
+                    Editor.Document.Save();
+                    return true;
+            }
         }
 
         return true;
@@ -452,7 +461,7 @@ public sealed class Studio : Form {
     private static readonly ActionBinding OpenFile = new("File_Open", "&Open File...", Binding.Category.File, Hotkey.KeyCtrl(Keys.O), () => Instance.OnOpenFile());
     private static readonly ActionBinding OpenPreviousFile = new("File_OpenPrevious", "Open &Previous File", Binding.Category.File, Hotkey.KeyAlt(Keys.Left), () => Instance.OnOpenPreviousFile());
     private static readonly ActionBinding SaveFile = new("File_Save", "Save", Binding.Category.File, Hotkey.KeyCtrl(Keys.S), () => Instance.OnSaveFile());
-    private static readonly ActionBinding SaveFileAs = new("File_SaveAs", "&Save As...", Binding.Category.File, Hotkey.KeyCtrl(Keys.Shift | Keys.S), () => Instance.OnSaveFileAs());
+    private static readonly ActionBinding SaveFileAs = new("File_SaveAs", "&Save As...", Binding.Category.File, Hotkey.KeyCtrl(Keys.Shift | Keys.S), () => Instance.OnSaveFileAs(openTargetFile: true));
     private static readonly ActionBinding ShowFile = new("File_Show", "Show in &File Explorer...", Binding.Category.File, Hotkey.None, () => Instance.OnShowFile());
     private static readonly ActionBinding RecordTAS = new("File_RecordTAS", "&Record TAS...", Binding.Category.File, Hotkey.None, () => Instance.OnRecordTAS());
     private static readonly ActionBinding Quit = new("File_Quit", "Quit", Binding.Category.File, Hotkey.None, () => Application.Instance.Quit());
@@ -568,7 +577,7 @@ public sealed class Studio : Form {
 
     private void OnSaveFile() {
         if (Editor.Document.FilePath == Document.ScratchFile) {
-            OnSaveFileAs();
+            OnSaveFileAs(openTargetFile: true);
             return;
         }
 
@@ -576,18 +585,20 @@ public sealed class Studio : Form {
         Title = TitleBarText;
     }
 
-    private void OnSaveFileAs() {
+    private bool OnSaveFileAs(bool openTargetFile) {
         var dialog = new SaveFileDialog {
             Filters = { new FileFilter("TAS", ".tas") },
             Directory = new Uri(GetFilePickerDirectory()),
         };
 
-        if (dialog.ShowDialog(this) != DialogResult.Ok)
-            return;
+        if (dialog.ShowDialog(this) != DialogResult.Ok) {
+            return false;
+        }
 
         var filePath = dialog.FileName;
-        if (Path.GetExtension(filePath) != ".tas")
+        if (Path.GetExtension(filePath) != ".tas") {
             filePath += ".tas";
+        }
 
         // Remove scratch file from recent files
         if (Settings.Instance.RecentFiles.FirstOrDefault() == Document.ScratchFile) {
@@ -595,7 +606,10 @@ public sealed class Studio : Form {
         }
 
         File.WriteAllText(filePath, Editor.Document.Text);
-        OpenFileInEditor(filePath);
+        if (openTargetFile) {
+            OpenFileInEditor(filePath);
+        }
+        return true;
     }
 
     private void OnShowFile() {
@@ -899,4 +913,3 @@ public sealed class Studio : Form {
 
     #endregion
 }
-
