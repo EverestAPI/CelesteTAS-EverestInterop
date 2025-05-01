@@ -24,10 +24,10 @@ jobs:
           source .venv/bin/activate
           pip install requests
 
-      - name: Generate release-changelog
+      - name: Generate changelog
         run: |
           source .venv/bin/activate
-          python Scripts/generate_release.py "$(git log -1 --pretty=%B)" version_info.txt gamebanana_changelog.json github_changelog.md studio_changelog.md
+          python Scripts/generate_changelog.py "$(git log -1 --pretty=%B)" CHANGELOG.md version_info.txt gamebanana_changelog.json github_changelog.md studio_changelog.json
         env:
           GITHUB_REPO: ${{ github.repository }}
           GITHUB_TOKEN: ${{ github.token }}
@@ -51,7 +51,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: changelog-studio
-          path: studio_changelog.md
+          path: studio_changelog.json
 
 
   build-studio:
