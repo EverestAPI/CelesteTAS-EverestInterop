@@ -9,6 +9,9 @@ using System.Diagnostics;
 namespace CelesteStudio;
 
 public static class FontManager {
+    // TODO: Don't hardcode this
+    public const float DPI = 96.0f / 72.0f;
+
     public const string FontFamilyBuiltin = "<builtin>";
     public const string FontFamilyBuiltinDisplayName = "JetBrains Mono (builtin)";
 
@@ -40,9 +43,6 @@ public static class FontManager {
     }
 
     public static SKFont CreateSKFont(string fontFamily, float size, FontStyle style = FontStyle.None) {
-        // TODO: Don't hardcode this
-        const float dpi = 96.0f / 72.0f;
-
         if (fontFamily == FontFamilyBuiltin) {
             var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(style switch {
                 FontStyle.None => "JetBrainsMono/JetBrainsMono-Regular",
@@ -53,7 +53,7 @@ public static class FontManager {
             });
             var typeface = SKTypeface.FromStream(stream);
 
-            return new SKFont(typeface, size * dpi) { LinearMetrics = true, Subpixel = true, Edging = SKFontEdging.SubpixelAntialias };
+            return new SKFont(typeface, size * DPI) { LinearMetrics = true, Subpixel = true, Edging = SKFontEdging.SubpixelAntialias };
         } else {
             var typeface = style switch {
                 FontStyle.None => SKTypeface.FromFamilyName(fontFamily, SKFontStyleWeight.Light, SKFontStyleWidth.Normal, SKFontStyleSlant.Upright),
@@ -63,7 +63,7 @@ public static class FontManager {
                 _ => throw new UnreachableException(),
             };
 
-            return new SKFont(typeface, size * dpi) { LinearMetrics = true, Subpixel = true, Edging = SKFontEdging.SubpixelAntialias };
+            return new SKFont(typeface, size * DPI) { LinearMetrics = true, Subpixel = true, Edging = SKFontEdging.SubpixelAntialias };
         }
     }
 

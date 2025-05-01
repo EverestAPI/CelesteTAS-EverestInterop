@@ -84,7 +84,7 @@ public class SkiaDrawableHandler : GtkPanel<Gtk.EventBox, SkiaDrawable, Control.
             }
 
             if (imageSurface != null) {
-                args.Cr.SetSourceSurface(imageSurface, drawable.DrawX, drawable.DrawY);
+                args.Cr.SetSourceSurface(imageSurface, drawable.DrawX + drawable.Padding.Left, drawable.DrawY + drawable.Padding.Top);
                 args.Cr.Paint();
             }
         }
