@@ -11,7 +11,7 @@ public class WhatsNewDialog : Eto.Forms.Dialog {
     private const int ImageWidth = 450;
 
     private WhatsNewDialog(string title, string markdownContent) {
-        var pages = Markdown.Parse(markdownContent, new Size(PageWidth, PageHeight));
+        var pages = LegacyMarkdown.Parse(markdownContent, new Size(PageWidth, PageHeight));
         int currentPage = 0;
 
         Content = GenerateContent();

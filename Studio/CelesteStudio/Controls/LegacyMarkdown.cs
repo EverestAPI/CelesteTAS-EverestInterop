@@ -20,7 +20,7 @@ namespace CelesteStudio.Controls;
 /// - Hyperlinks
 /// - Images
 /// - Page breaks
-public class Markdown : Drawable {
+public class LegacyMarkdown : Drawable {
     // TODO: Please refactor. Thanks :)
 
     private static Color TextColor => Eto.Platform.Instance.IsWpf && Settings.Instance.Theme.DarkMode
@@ -75,7 +75,7 @@ public class Markdown : Drawable {
 
     /// Describes a combination of text of a certain kind, for example paragraphs, headings, etc.
     private interface TextComponent {
-        public void Draw(Graphics graphics, Markdown markdown);
+        public void Draw(Graphics graphics, LegacyMarkdown markdown);
         public void Flush(string text, TextState state, PointF position, bool newLine);
         public SizeF Measure(string text, TextState state);
     }
@@ -102,7 +102,7 @@ public class Markdown : Drawable {
         private readonly List<List<TextPart>> lines = [];
         private float lineY;
 
-        public void Draw(Graphics graphics, Markdown markdown) {
+        public void Draw(Graphics graphics, LegacyMarkdown markdown) {
             var baseFont = SystemFonts.Default();
 
             foreach (var line in lines) {
@@ -187,7 +187,7 @@ public class Markdown : Drawable {
 
         public readonly List<(string Text, TextState State, PointF Position)> Parts = [];
 
-        public void Draw(Graphics graphics, Markdown markdown) {
+        public void Draw(Graphics graphics, LegacyMarkdown markdown) {
             foreach ((string text, var state, var position) in Parts) {
                 var font = state.GetFont();
 
@@ -288,13 +288,13 @@ public class Markdown : Drawable {
     }
 
     private static readonly Regex MetaRegex = new(@"\$\$(\S+)\$\$", RegexOptions.Compiled);
-    public static List<(Markdown Page, List<string> Meta)> Parse(string markdownContent, Size pageSize) {
+    public static List<(LegacyMarkdown Page, List<string> Meta)> Parse(string markdownContent, Size pageSize) {
         var markdown = Markdig.Markdown.Parse(markdownContent, trackTrivia: true);
 
         const float lineSpacing = 1.2f;
 
-        var pages = new List<(Markdown Page, List<string> Meta)>();
-        var currentPage = new Markdown { Size = pageSize };
+        var pages = new List<(LegacyMarkdown Page, List<string> Meta)>();
+        var currentPage = new LegacyMarkdown { Size = pageSize };
         var currentMeta = new List<string>();
         var currentPosition = new PointF(0.0f, 0.0f);
 
@@ -324,7 +324,7 @@ public class Markdown : Drawable {
                 FlushLine(newLine: true);
                 currentPage.components.Add(currentComponent);
             } else if (item is ThematicBreakBlock) {
-                currentPage = new Markdown { Size = pageSize };
+                currentPage = new LegacyMarkdown { Size = pageSize };
                 currentMeta = new List<string>();
                 currentPosition = new PointF(0.0f, 0.0f);
 
