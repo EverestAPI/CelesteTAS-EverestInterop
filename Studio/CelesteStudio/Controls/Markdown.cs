@@ -42,14 +42,14 @@ public class Markdown : SkiaDrawable {
         // Height = (int) Renderer.Height;
     }
 
-    #region Renderers
-
     private class SkiaRenderer : RendererBase {
         public readonly struct StyleConfig(SKFont font, SKColor color, SKTextAlign align) {
             public readonly SKFont Font = font;
             public readonly SKPaint Paint = new(font) {
                 Color = color,
                 TextAlign = align,
+                IsAntialias = true,
+                SubpixelText = true,
             };
 
             public StyleConfig WithFont(SKFont font) {
@@ -84,6 +84,7 @@ public class Markdown : SkiaDrawable {
             // Block renderers
             ObjectRenderers.Add(new ParagraphBlockRenderer());
             ObjectRenderers.Add(new HeadingBlockRenderer());
+            ObjectRenderers.Add(new ListBlockRenderer());
 
             // Inline renderers
             ObjectRenderers.Add(new LiteralInlineRenderer());
@@ -252,6 +253,8 @@ public class Markdown : SkiaDrawable {
         }
     }
 
+    #region Renderers
+
     private abstract class SkiaObjectRenderer<TObject> : MarkdownObjectRenderer<SkiaRenderer, TObject> where TObject : MarkdownObject;
 
     private const float BlockMarginBottom = 16.0f;
@@ -299,6 +302,31 @@ public class Markdown : SkiaDrawable {
             }
 
             renderer.Pop();
+        }
+    }
+    private class ListBlockRenderer : SkiaObjectRenderer<ListBlock> {
+        protected override void Write(SkiaRenderer renderer, ListBlock block) {
+            Console.WriteLine($"Bullet '{block.BulletType}' Start '{block.OrderedStart}' DefaultStart '{block.DefaultOrderedStart}'");
+            var style = renderer.CurrentStyle;
+
+            string? startIdxText = block.OrderedStart ?? block.DefaultOrderedStart;
+            if (string.IsNullOrEmpty(startIdxText) || !int.TryParse(startIdxText, out int startIdx)) {
+                startIdx = 1;
+            }
+
+            for (int idx = 0; idx < block.Count; idx++) {
+                if (block.IsOrdered) {
+                    renderer.X = 5.0f;
+                    renderer.WriteText($"{idx + startIdx}. ");
+                } else {
+                    renderer.Canvas.DrawCircle(10.0f, renderer.Y + style.Font.LineHeight() / 1.75f, 2.5f, style.Paint);
+                    renderer.X = 20.0f;
+                }
+
+                renderer.Write(block[idx]);
+                renderer.Y = renderer.Height;
+            }
+            renderer.NextLine();
         }
     }
 
