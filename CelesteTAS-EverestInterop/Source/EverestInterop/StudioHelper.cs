@@ -1,5 +1,6 @@
 ﻿// ReSharper disable HeuristicUnreachableCode
 #pragma warning disable CS0162 // Unreachable code detected
+#define INSTALL_STUDIO
 
 using System;
 using System.Diagnostics;
@@ -31,12 +32,12 @@ public static class StudioHelper {
     private const string DownloadURL_MacOS_ARM64 = "##URL_MACOS_ARM64##";
 
     private const string FileName_Windows_x64    = "##FILENAME_WINDOWS_x64##";
-    private const string FileName_Linux_x64      = "##FILENAME_LINUX_x64##";
+    private const string FileName_Linux_x64      = "CelesteStudio-linux-x64.zip";
     private const string FileName_MacOS_x64      = "##FILENAME_MACOS_x64##";
     private const string FileName_MacOS_ARM64    = "##FILENAME_MACOS_ARM64##";
 
     private const string Checksum_Windows_x64    = "##CHECKSUM_WINDOWS_x64##";
-    private const string Checksum_Linux_x64      = "##CHECKSUM_LINUX_x64##";
+    private const string Checksum_Linux_x64      = "ba05639be7bf096c36b4993512fee75f";
     private const string Checksum_MacOS_x64      = "##CHECKSUM_MACOS_x64##";
     private const string Checksum_MacOS_ARM64    = "##CHECKSUM_MACOS_ARM64##";
 
@@ -344,6 +345,48 @@ public static class StudioHelper {
                 StudioUpdateBanner.CurrentState = StudioUpdateBanner.State.Failure;
                 StudioUpdateBanner.FadeoutTimer = 5.0f;
                 return;
+            }
+        }
+
+        // Copy over assets
+        // lock (Everest.Content.Map) {
+        //     foreach (string key in Everest.Content.Map.Keys.Where(key => key.StartsWith("CelesteTAS:/Assets"))) {
+        //         if (Everest.Content.Map[key] is not { } asset) {
+        //             continue;
+        //         }
+        //
+        //         // TODO: Figure out correct path for macOS
+        //         string targetPath = Path.Combine(TempStudioInstallDirectory, asset.PathVirtual);
+        //         if (Path.GetDirectoryName(targetPath) is { } targetDirectory) {
+        //             Directory.CreateDirectory(targetDirectory);
+        //         }
+        //
+        //         using var file = File.Create(targetPath);
+        //         asset.Stream.CopyTo(file);
+        //     }
+        // }
+        var metadata = CelesteTasModule.Instance.Metadata;
+        if (!string.IsNullOrEmpty(metadata.PathArchive)) {
+            using var zip = ZipFile.OpenRead(metadata.PathArchive);
+            foreach (var entry in zip.Entries.Where(entry => entry.FullName.StartsWith("Assets"))) {
+                // TODO: Figure out correct path for macOS
+                string targetPath = Path.Combine(TempStudioInstallDirectory, entry.FullName);
+                if (Path.GetDirectoryName(targetPath) is { } targetDirectory) {
+                    Directory.CreateDirectory(targetDirectory);
+                }
+
+                entry.ExtractToFile(targetPath);
+            }
+        } else if (!string.IsNullOrEmpty(metadata.PathDirectory)) {
+            string assetsDir = Path.Combine(metadata.PathDirectory, "Assets");
+            foreach (string path in Directory.GetFiles(assetsDir, "*", new EnumerationOptions { RecurseSubdirectories = true })) {
+                // TODO: Figure out correct path for macOS
+                string targetPath = Path.Combine(TempStudioInstallDirectory, "Assets", Path.GetRelativePath(assetsDir, path));
+                if (Path.GetDirectoryName(targetPath) is { } targetDirectory) {
+                    Directory.CreateDirectory(targetDirectory);
+                }
+
+                File.Copy(path, targetPath);
             }
         }
 

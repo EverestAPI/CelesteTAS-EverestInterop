@@ -5,6 +5,7 @@ import json
 import requests
 import dataclasses
 from dataclasses import dataclass, field
+from typing import Optional
 
 # from rich import print as print
 
@@ -36,11 +37,38 @@ conventional_commit_types = {
 }
 
 @dataclass
+class Image:
+    src: str
+    align: str
+    width: int
+    height: int
+
+    def as_dict(self):
+        return {
+            "source": self.src,
+            "align": self.align,
+            "width": self.width,
+            "height": self.height,
+        }
+
+@dataclass
+class Page:
+    text: str
+    image: Optional[Image] = None
+
+    def as_dict(self):
+        return {
+            "text": self.text.strip(),
+            "image": self.image.as_dict() if self.image else None,
+        }
+
+
+@dataclass
 class Version:
     celestetas_version: str
     studio_version: str
     
-    pages: list[str] = field(default_factory=list)
+    pages: list[Page] = field(default_factory=list)
     
     change_list: list[tuple[str, str]] = field(default_factory=list)
     change_category: dict[str, list[str]] = field(default_factory=lambda: Version._init_change_category())
@@ -51,7 +79,7 @@ class Version:
         return {
             "celesteTasVersion": self.celestetas_version,
             "studioVersion": self.studio_version,
-            "pages": self.pages,
+            "pages": [page.as_dict() for page in self.pages],
             "changes": self.change_category,
         }
     
@@ -74,16 +102,6 @@ class Commit:
     message: str
     author: str
     pull_requests: list[PullRequest]
-
-
-def encode_value(x):
-    if dataclasses.is_dataclass(x):
-        return dataclasses.asdict(x)
-
-    return x
-
-def serialize(x):
-    return json.dumps(x, default=encode_value)
 
 
 def main():
@@ -119,6 +137,7 @@ def main():
                 continue
 
             change_match = re.search(r"-\s+([a-zA-Z]+)\s*:\s*(.+)", line)
+            image_match = re.search(r"<!-- IMAGE (right|left) (\d+) (\d+) ([\w/.]+) -->", line)
             if change_match:
                 change_type, change_message = change_match.group(1).lower(), change_match.group(2).strip()
                 if change_type not in current_version.change_category:
@@ -126,37 +145,25 @@ def main():
                     continue
                 current_version.change_list.append((change_type, change_message))
                 current_version.change_category[change_type].append(change_message)
+            elif image_match:
+                if not current_page:
+                    current_page = Page(text="")
+                current_page.image = Image(image_match.group(4), image_match.group(1), int(image_match.group(2)), int(image_match.group(3)))
             elif current_page:
                 if line.startswith("---"):
-                    current_version.pages.append(current_page.strip())
+                    current_version.pages.append(current_page)
                     current_page = None
                 else:
-                    current_page += line
+                    current_page.text += line
             elif line and line.strip():
-                current_page = line
+                current_page = Page(text=line)
             
         if current_page:
-            current_version.pages.append(current_page.strip())
+            current_version.pages.append(current_page)
         if current_version:
             versions.append(current_version)
                 
     for version in versions:
-        # Convert to MarkDown
-        markdown = ""
-        for page in version.pages:
-            markdown += f"{page}\n\n---\n\n"
-        for category in version.change_category:
-            changes = version.change_category[category]
-            if len(changes) == 0:
-                continue
-
-            markdown += f"## {categories[category][1]}\n"
-            for change in changes:
-                markdown += f"- {change}\n"
-            markdown += "\n"
-
-        version.markdown_text = markdown.strip()
-
         if version.celestetas_version != celestetas_version or version.studio_version != studio_version:
             continue
 
@@ -172,7 +179,7 @@ def main():
 
         with open(gb_changelog_file, "w") as f:
             f.write(json.dumps(gb_changelog))
-                
+               
         # Generate commit overview from the current to previous tag
         gh_repo = os.getenv("GITHUB_REPO")
         gh_token = os.getenv("GITHUB_TOKEN")
@@ -229,28 +236,48 @@ def main():
                 break # No more pages left
             break
 
+        # Convert to GitHub MarkDown
+        gh_markdown = ""
+        for page in version.pages:
+            if page.image:
+                gh_markdown += f"<img src=\"https://raw.githubusercontent.com/{gh_repo}/{current_tag["commit"]["sha"]}/{page.image.src}\" width=\"{page.image.width}\" height=\"{page.image.width}\" align=\"{page.image.align}\">\n"
+                gh_markdown += f"{page.text.strip()}\n<br clear=\"{page.image.align}\"/> <hr/>\n\n"
+            else:
+                gh_markdown += f"{page.text.strip()}\n\n---\n\n"
+
+        for category in version.change_category:
+            changes = version.change_category[category]
+            if len(changes) == 0:
+                continue
+
+            gh_markdown += f"## {categories[category][1]}\n"
+            for change in changes:
+                gh_markdown += f"- {change}\n"
+            gh_markdown += "\n"
+
+
         # Generate commit details
-        markdown += "<details>\n"
-        markdown += "<summary><h3>Commit Details</h3></summary>\n"
+        gh_markdown += "<details>\n"
+        gh_markdown += "<summary><h3>Commit Details</h3></summary>\n"
 
         for commit_type in parsed_commits:
             commits = parsed_commits[commit_type]
             if len(commits) == 0:
                 continue
 
-            if len(markdown) != 0:
-                markdown += "\n"
+            if len(gh_markdown) != 0:
+                gh_markdown += "\n"
 
-            markdown += f"### {conventional_commit_types[commit_type]}\n"
+            gh_markdown += f"### {conventional_commit_types[commit_type]}\n"
             for commit in commits:
                 prs = [f"[#{pull_request.id}]({pull_request.url})" for pull_request in commit.pull_requests]
                 scope = f"**{commit.scope}**: " if commit.scope else ""
-                markdown += f"- {commit.sha[0:7]} {scope}{commit.message} (@{commit.author}) {", ".join(prs)}\n"
+                gh_markdown += f"- {commit.sha[0:7]} {scope}{commit.message} (@{commit.author}) {", ".join(prs)}\n"
 
-        markdown += "</details>\n"
+        gh_markdown += "</details>\n"
 
         with open(gh_changelog_file, "w") as f:
-            f.write(markdown)
+            f.write(gh_markdown)
 
     with open(studio_changelog_file, "w") as f:
         json.dump({

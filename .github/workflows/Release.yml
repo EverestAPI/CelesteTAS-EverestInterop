@@ -53,13 +53,11 @@ jobs:
           name: changelog-studio
           path: studio_changelog.json
 
-
   build-studio:
     name: Release Celeste Studio
     uses: ./.github/workflows/Build.CelesteStudio.yml
     with:
       build-cfg: Release
-    needs: generate-changelog
 
   release:
     name: Release CelesteTAS
@@ -117,6 +115,15 @@ jobs:
             CelesteStudio-macos-arm64.zip
           key: ${{ needs.build-studio.outputs.macos_cache_key }}
 
+      - name: Download changelogs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: changelog-*#
+      - name: Copy Studio changelog into correct location
+        run: |
+          cp changelog-studio/studio_changelog.json Assets/version_history.json
+          cp changelog-version/version_info.txt Assets/current_version.txt
+
       - name: Fill-in download info
         run: |
           sed -i "s\\false; //DOUBLE_ZIP_ARCHIVE\\false;\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
@@ -138,11 +145,6 @@ jobs:
       - name: Build
         run: |
           dotnet build CelesteTAS-EverestInterop -c Release -p:DefineConstants=INSTALL_STUDIO -p:UseSymlinks=false
-
-      - name: Download changelogs
-        uses: actions/download-artifact@v4
-        with:
-          pattern: changelog-*
 
       - name: Setup Python environment
         run: |
