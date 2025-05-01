@@ -2,6 +2,7 @@ using CelesteStudio.Editing;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
+using Markdig;
 using Markdig.Helpers;
 using Markdig.Renderers;
 using Markdig.Renderers.Normalize;
@@ -20,7 +21,11 @@ public class Markdown : SkiaDrawable {
     private readonly SkiaRenderer Renderer;
 
     public Markdown(string content) {
-        Document = Markdig.Markdown.Parse(content);
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseEmphasisExtras()
+            .Build();
+
+        Document = Markdig.Markdown.Parse(content, pipeline);
 
         Renderer = new SkiaRenderer();
         Renderer.ObjectWriteBefore += (_, obj) => Console.WriteLine($"Render: '{obj}' ({obj.GetType()})");
@@ -43,8 +48,11 @@ public class Markdown : SkiaDrawable {
     }
 
     private class SkiaRenderer : RendererBase {
-        public readonly struct StyleConfig(SKFont font, SKColor color, SKTextAlign align) {
+        public struct StyleConfig(SKFont font, SKColor color, SKTextAlign align, FontStyle fontStyle, FontDecoration fontDecoration) {
             public readonly SKFont Font = font;
+            public readonly FontStyle FontStyle = fontStyle;
+            public FontDecoration FontDecoration = fontDecoration;
+
             public readonly SKPaint Paint = new(font) {
                 Color = color,
                 TextAlign = align,
@@ -53,7 +61,19 @@ public class Markdown : SkiaDrawable {
             };
 
             public StyleConfig WithFont(SKFont font) {
-                return new StyleConfig(font, Paint.Color, Paint.TextAlign);
+                return new StyleConfig(font, Paint.Color, Paint.TextAlign, FontStyle, FontDecoration);
+            }
+            public StyleConfig WithFontStyle(FontStyle fontStyle) {
+                return new StyleConfig(new SKFont(SKFontManager.Default.MatchTypeface(Font.Typeface, fontStyle switch {
+                    FontStyle.None => SKFontStyle.Normal,
+                    FontStyle.Bold => SKFontStyle.Bold,
+                    FontStyle.Italic => SKFontStyle.Italic,
+                    FontStyle.Bold | FontStyle.Italic => SKFontStyle.BoldItalic,
+                    _ => throw new ArgumentOutOfRangeException(nameof(fontStyle), fontStyle, null)
+                }), Font.Size, Font.ScaleX, Font.SkewX), Paint.Color, Paint.TextAlign, fontStyle, FontDecoration);
+            }
+            public StyleConfig WithFontDecoration(FontDecoration fontDecoration) {
+                return this with { FontDecoration = fontDecoration };
             }
 
             public StyleConfig WithColor(SKColor color) {
@@ -89,6 +109,7 @@ public class Markdown : SkiaDrawable {
             // Inline renderers
             ObjectRenderers.Add(new LiteralInlineRenderer());
             ObjectRenderers.Add(new LineBreakInlineRenderer());
+            ObjectRenderers.Add(new EmphasisInlineRenderer());
         }
 
         public void Reset(SKSurface surface, float maxWidth) {
@@ -102,7 +123,7 @@ public class Markdown : SkiaDrawable {
             Canvas = surface.Canvas;
 
             styleStack.Clear();
-            styleStack.Push(new StyleConfig(new SKFont(SKTypeface.Default, Settings.Instance.EditorFontSize * FontManager.DPI), SKColors.White, SKTextAlign.Left));
+            styleStack.Push(new StyleConfig(new SKFont(SKTypeface.Default, Settings.Instance.EditorFontSize * FontManager.DPI), SKColors.White, SKTextAlign.Left, FontStyle.None, FontDecoration.None));
         }
 
         public override object Render(MarkdownObject markdownObject) {
@@ -146,7 +167,7 @@ public class Markdown : SkiaDrawable {
                     SKTextAlign.Center => X + (MaxLineWidth - style.Paint.MeasureText(iterator.Current)) / 2.0f,
                     _ => throw new ArgumentOutOfRangeException()
                 };
-                Canvas.DrawText(iterator.Current, firstRenderX, Y + style.Font.Offset(), style.Font, style.Paint);
+                DrawTextWithStyle(iterator.Current, firstRenderX, Y, style);
 
                 // Iterate remaining lines
                 while (iterator.MoveNext()) {
@@ -158,7 +179,7 @@ public class Markdown : SkiaDrawable {
                     };
 
                     Y += style.Font.LineHeight();
-                    Canvas.DrawText(iterator.Current, wrapRenderX, Y + style.Font.Offset(), style.Font, style.Paint);
+                    DrawTextWithStyle(iterator.Current, wrapRenderX, Y, style);
                 }
 
                 X = style.Paint.MeasureText(iterator.Current);
@@ -171,13 +192,39 @@ public class Markdown : SkiaDrawable {
                     _ => throw new ArgumentOutOfRangeException()
                 };
 
-                Canvas.DrawText(text, renderX, Y + style.Font.Offset(), style.Font, style.Paint);
+                DrawTextWithStyle(text, renderX, Y, style);
 
                 X += advance;
                 Width = Math.Max(Width, X);
             }
 
             Height = Y + style.Font.LineHeight();
+        }
+        private void DrawTextWithStyle(ReadOnlySpan<char> text, float x, float y, StyleConfig style) {
+            y += style.Font.Offset();
+            Canvas.DrawText(text, x, y, style.Font, style.Paint);
+
+            if (style.FontDecoration == FontDecoration.None) {
+                return;
+            }
+
+            float oldStrokeWidth = style.Paint.StrokeWidth;
+
+            float width = style.Paint.MeasureText(text);
+            var metrics = style.Font.Metrics;
+
+            if (style.FontDecoration.HasFlag(FontDecoration.Strikethrough)) {
+                float lineY = y + (metrics.StrikeoutPosition ?? style.Font.LineHeight() / -4.0f);
+                style.Paint.StrokeWidth = metrics.StrikeoutThickness ?? 1.0f;
+                Canvas.DrawLine(x, lineY, x + width, lineY, style.Paint);
+            }
+            if (style.FontDecoration.HasFlag(FontDecoration.Underline)) {
+                float lineY = y + (metrics.UnderlinePosition ?? style.Font.LineHeight() / 10.0f);
+                style.Paint.StrokeWidth = metrics.UnderlineThickness ?? 1.0f;
+                Canvas.DrawLine(x, lineY, x + width, lineY, style.Paint);
+            }
+
+            style.Paint.StrokeWidth = oldStrokeWidth;
         }
 
         /// Advances to the start of the next line
@@ -331,21 +378,52 @@ public class Markdown : SkiaDrawable {
     }
 
     private class LiteralInlineRenderer : SkiaObjectRenderer<LiteralInline> {
-        protected override void Write(SkiaRenderer renderer, LiteralInline obj) {
-            renderer.WriteText(obj.Content);
+        protected override void Write(SkiaRenderer renderer, LiteralInline literal) {
+            renderer.WriteText(literal.Content);
         }
     }
     private class LineBreakInlineRenderer : SkiaObjectRenderer<LineBreakInline> {
-        protected override void Write(SkiaRenderer renderer, LineBreakInline obj) {
-            Console.WriteLine($" - Line Break: Hard {obj.IsHard} Backslash {obj.IsBackslash} NewLine {obj.NewLine}");
-            if (obj.IsHard) {
+        protected override void Write(SkiaRenderer renderer, LineBreakInline lineBreak) {
+            Console.WriteLine($" - Line Break: Hard {lineBreak.IsHard} Backslash {lineBreak.IsBackslash} NewLine {lineBreak.NewLine}");
+            if (lineBreak.IsHard) {
                 renderer.NextLine();
             } else {
                 renderer.WriteText(" ");
             }
         }
     }
+    private class EmphasisInlineRenderer : SkiaObjectRenderer<EmphasisInline> {
+        protected override void Write(SkiaRenderer renderer, EmphasisInline emphasis) {
+            var style = renderer.CurrentStyle;
 
+            var fontStyle = style.FontStyle;
+            var fontDecoration = style.FontDecoration;
+
+            switch (emphasis.DelimiterChar) {
+                case '*':
+                case '_':
+                    if (emphasis.DelimiterCount == 2) {
+                        fontStyle |= FontStyle.Bold;
+                    } else {
+                        fontStyle |= FontStyle.Italic;
+                    }
+                    break;
+                case '~':
+                    fontDecoration |= FontDecoration.Strikethrough;
+                    break;
+                case '+':
+                    fontDecoration |= FontDecoration.Underline;
+                    break;
+            }
+
+            renderer.PushStyle(style
+                .WithFontStyle(fontStyle)
+                .WithFontDecoration(fontDecoration));
+            // renderer.PushFont(new SKFont(SKFontManager.Default.MatchTypeface(style.Font.Typeface, SKFontStyle.Bold), style.Font.Size, style.Font.ScaleX, style.Font.SkewX));
+            renderer.WriteChildren(emphasis);
+            renderer.Pop();
+        }
+    }
 
     #endregion
 }
