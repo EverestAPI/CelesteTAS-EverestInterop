@@ -60,6 +60,9 @@ public static class FileRefactor {
         if (CommandLine.TryParse(line, out var commandLine)) {
             return commandLine.Format(CommunicationWrapper.Commands, forceCommandCasing ?? StyleConfig.Current.ForceCorrectCommandCasing, commandSeparator ?? StyleConfig.Current.CommandArgumentSeparator);
         }
+        if (FastForwardLine.TryParse(line, out var fastForwardLine)) {
+            return fastForwardLine.Format();
+        }
 
         return line.Trim();
     }

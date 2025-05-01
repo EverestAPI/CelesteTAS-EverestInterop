@@ -23,14 +23,14 @@ public class CelesteTasModule : EverestModule {
         AttributeUtils.CollectOwnMethods<InitializeAttribute>();
     }
 
-    public static CelesteTasModule Instance { get; private set; }
+    public static CelesteTasModule Instance { get; private set; } = null!;
 
     public override Type SettingsType => typeof(CelesteTasSettings);
 
     public override void Initialize() {
         AttributeUtils.Invoke<InitializeAttribute>();
 
-        // required run after TasCommandAttribute.CollectMethods()
+        // required to be run after TasCommandAttribute.CollectMethods()
         if (TasSettings.AttemptConnectStudio) {
             CommunicationWrapper.Start();
         }
@@ -120,12 +120,12 @@ public class CelesteTasModule : EverestModule {
 
 /// Invokes the target method when the module is loaded
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-internal class LoadAttribute : Attribute;
+internal class LoadAttribute(int priority = 0) : EventAttribute(priority);
 
 /// Invokes the target method when the module is unloaded
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-internal class UnloadAttribute : Attribute;
+internal class UnloadAttribute(int priority = 0) : EventAttribute(priority);
 
 /// Invokes the target method when the module is initialized
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-internal class InitializeAttribute : Attribute;
+internal class InitializeAttribute(int priority = 0) : EventAttribute(priority);

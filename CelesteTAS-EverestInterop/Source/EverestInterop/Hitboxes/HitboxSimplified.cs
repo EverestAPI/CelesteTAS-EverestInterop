@@ -31,7 +31,7 @@ public static class HitboxSimplified {
         typeof(FloatingDebris),
         typeof(HangingLamp),
         typeof(MoonCreature),
-        typeof(MoveBlock).GetNestedType("Debris", BindingFlags.NonPublic),
+        typeof(MoveBlock).GetNestedType("Debris", BindingFlags.NonPublic)!,
         typeof(PlaybackBillboard),
         typeof(ResortLantern),
         typeof(Torch),
@@ -67,7 +67,7 @@ public static class HitboxSimplified {
 
     [Load]
     private static void Load() {
-        typeof(Entity).GetMethodInfo(nameof(Entity.DebugRender)).SkipMethod<Entity>(HideHitbox);
+        typeof(Entity).GetMethodInfo(nameof(Entity.DebugRender))!.SkipMethod<Entity>(HideHitbox);
 
         On.Monocle.Hitbox.Render += ModHitbox;
         On.Monocle.Grid.Render += CombineGridHitbox;
@@ -148,7 +148,7 @@ public static class HitboxSimplified {
         orig(hitbox, camera, color);
     }
 
-    private static void CombineGridHitbox(On.Monocle.Grid.orig_Render orig, Grid self, Camera camera, Color color) {
+    private static void CombineGridHitbox(On.Monocle.Grid.orig_Render orig, Grid self, Camera? camera, Color color) {
         if (!TasSettings.ShowHitboxes || !TasSettings.SimplifiedHitboxes) {
             orig(self, camera, color);
             return;

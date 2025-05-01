@@ -39,6 +39,7 @@ internal static class ModUtils {
             var type = asm.GetType(fullTypeName);
             if (type == null) {
                 $"Failed to find type '{fullTypeName}' in assembly '{asm}'".Log(LogLevel.Error);
+                continue;
             }
 
             yield return type;
@@ -46,7 +47,7 @@ internal static class ModUtils {
     }
 
     /// Returns the specified method from the given mod, if the mod is present
-    public static MethodInfo? GetMethod(string modName, string fullTypeName, string methodName) {
+    public static MethodInfo? GetMethod(string modName, string fullTypeName, string methodName, Type?[]? parameterTypes = null) {
         var asm = GetAssembly(modName);
         if (asm == null) {
             return null;
@@ -58,7 +59,7 @@ internal static class ModUtils {
             return null;
         }
 
-        var method = type.GetMethodInfo(methodName);
+        var method = type.GetMethodInfo(methodName, parameterTypes);
         if (method == null) {
             $"Failed to find method '{methodName}' in type '{type}'".Log(LogLevel.Error);
             return null;

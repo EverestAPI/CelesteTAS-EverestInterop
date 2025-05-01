@@ -23,7 +23,7 @@ public static class AutoInputCommand {
         public readonly int StartLine;
         public readonly int CycleLength;
         public int CycleOffset;
-        public List<string> Inputs;
+        public List<string>? Inputs;
         public bool Inserting;
         public bool SkipNextInput;
         public int SkipFrames;
@@ -83,7 +83,6 @@ public static class AutoInputCommand {
 
     [TasCommand("StartAutoInput", ExecuteTiming = ExecuteTiming.Parse)]
     private static void StartAutoInput(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
-        string[] args = commandLine.Arguments;
         string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\n";
         if (!AutoInputArgs.TryGetValue(filePath, out var arguments)) {
             AbortTas($"{errorText}StartAutoInput command does not have a paired AutoInput command");
@@ -106,7 +105,7 @@ public static class AutoInputCommand {
 
     public static void EndAutoInputImpl(string filePath, int fileLine, string name, string pairedName) {
         string errorText = $"{Path.GetFileName(filePath)} line {fileLine}\n";
-        if (!AutoInputArgs.TryGetValue(filePath, out Arguments arguments)) {
+        if (!AutoInputArgs.TryGetValue(filePath, out var arguments)) {
             AbortTas($"{errorText}{name} command does not have a paired {pairedName} command");
             return;
         }
@@ -161,11 +160,11 @@ public static class AutoInputCommand {
     }
 
     public static bool TryInsert(string filePath, string lineText, int studioLine, int repeatIndex, int repeatCount) {
-        if (!InputFrame.TryParse(lineText, studioLine, null, out InputFrame inputFrame)) {
+        if (!InputFrame.TryParse(lineText, studioLine, null, out var inputFrame)) {
             return false;
         }
 
-        if (!AutoInputArgs.TryGetValue(filePath, out Arguments arguments) || arguments.Inputs == null || arguments.Inputs.IsEmpty()) {
+        if (!AutoInputArgs.TryGetValue(filePath, out var arguments) || arguments.Inputs == null || arguments.Inputs.IsEmpty()) {
             return false;
         }
 
@@ -224,7 +223,7 @@ public static class AutoInputCommand {
 
         arguments.Inserting = true;
         Manager.Controller.ReadLines(
-            arguments.Inputs,
+            arguments.Inputs!,
             filePath,
             arguments.StartLine,
             filePath == Manager.Controller.FilePath ? arguments.StartLine - 1 : studioLine,

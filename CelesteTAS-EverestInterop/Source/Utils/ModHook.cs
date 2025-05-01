@@ -25,7 +25,13 @@ internal class ModOnHook(string Mod, string Type, string Method) : Attribute {
                 .Where(info => info.GetCustomAttribute<ModOnHook>() != null))
             .ForEach(info => {
                 var attr = info.GetCustomAttribute<ModOnHook>()!;
-                if (ModUtils.GetMethod(attr.Mod, attr.Type, attr.Method) is not { } target) {
+                var parameterTypes = info.
+                    GetParameters()
+                    .Skip(2) // orig, self
+                    .Select(param => param.ParameterType)
+                    .ToArray();
+
+                if (ModUtils.GetMethod(attr.Mod, attr.Type, attr.Method, parameterTypes) is not { } target) {
                     return;
                 }
 

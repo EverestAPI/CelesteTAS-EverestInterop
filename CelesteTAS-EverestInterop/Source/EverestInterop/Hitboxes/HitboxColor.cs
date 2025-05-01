@@ -142,14 +142,11 @@ public static class HitboxColor {
             return color;
         }
 
-        Color customColor = Color.Red; // i hate warning CS0165
-        bool found = false;
-
-        customColor = entity switch {
+        Color customColor = entity switch {
             Trigger => TriggerHitbox.GetHitboxColor(entity),
             Platform => TasSettings.PlatformHitboxColor,
             LookoutBlocker => Color.Green,
-            _ => TasSettings.EntityHitboxColor
+            _ => TasSettings.EntityHitboxColor,
         };
 
         if (TasSettings.ShowActualCollideHitboxes != ActualCollideHitboxType.Off && entity.LoadActualCollidable() is { } actualCollidable) {

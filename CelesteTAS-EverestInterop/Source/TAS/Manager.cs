@@ -416,10 +416,10 @@ public static class Manager {
 
         var writer = Console.Out;
         for (int i = 0; i < Controller.Inputs.Count;) {
-            foreach (var comment in Controller.Comments!.GetValueOrDefault(i) ?? []) {
+            foreach (var comment in Controller.Comments.GetValueOrDefault(i, [])) {
                 writer.WriteLine($"#{comment.Text}");
             }
-            foreach (var command in Controller.Commands!.GetValueOrDefault(i) ?? []) {
+            foreach (var command in Controller.Commands.GetValueOrDefault(i, [])) {
                 if (command.Attribute.ExecuteTiming == ExecuteTiming.Parse) {
                     // Comment-out parse-only commands
                     writer.WriteLine($"# {command.CommandLine.ToString()}");

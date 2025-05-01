@@ -8,7 +8,6 @@ using FMOD.Studio;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
-using StudioCommunication;
 using TAS.Module;
 using TAS.Utils;
 
@@ -69,11 +68,11 @@ public static class AutoMute {
     private static bool hasMuted;
     private static bool ShouldBeMuted => Manager.Running && Manager.PlaybackSpeed >= 2.0f && !settingMusic;
     private static bool FrameStep => Manager.CurrState is Manager.State.Paused or Manager.State.FrameAdvance;
-    private static WeakReference<EventInstance> dummy;
+    private static WeakReference<EventInstance>? dummy;
 
     private static EventInstance DummyEventInstance {
         get {
-            if (dummy == null || !dummy.TryGetTarget(out EventInstance dummyInstance)) {
+            if (dummy == null || !dummy.TryGetTarget(out EventInstance? dummyInstance)) {
                 // this sound does exist, but is silent if we don't set any audio param to it.
                 bool temp = settingMusic;
                 settingMusic = true;
@@ -183,7 +182,7 @@ public static class AutoMute {
             if (LoopAudioInstances.Count > 0) {
                 WeakReference<EventInstance>[] copy = LoopAudioInstances.Keys.ToArray();
                 foreach (WeakReference<EventInstance> loopAudioInstance in copy) {
-                    if (loopAudioInstance.TryGetTarget(out EventInstance eventInstance)) {
+                    if (loopAudioInstance.TryGetTarget(out EventInstance? eventInstance)) {
                         if (LoopAudioInstances[loopAudioInstance] <= 0) {
                             eventInstance.setVolume(0);
                             LoopAudioInstances.Remove(loopAudioInstance);

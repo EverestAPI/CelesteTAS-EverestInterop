@@ -99,6 +99,7 @@ public sealed class Editor : SkiaDrawable {
                 lastModification = DateTime.UtcNow;
 
                 FormatLines(insertions.Keys);
+                FixInvalidInputs();
 
                 // Adjust total frame count
                 foreach (string deletion in deletions.Values) {
@@ -1479,17 +1480,18 @@ public sealed class Editor : SkiaDrawable {
     }
 
     private void UpdateAutoComplete(bool open = true) {
-        string line = Document.Lines[Document.Caret.Row];
-        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, line.Length);
-
-        // Ignore text to the right of the caret to auto-completion
-        line = line[..Document.Caret.Col].TrimStart();
+        string fullLine = Document.Lines[Document.Caret.Row];
+        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, fullLine.Length);
 
         // Don't auto-complete on comments or action lines
-        if (line.StartsWith('#') || line.StartsWith('*') || ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) {
+        string fullLineTrimmed = fullLine.TrimStart();
+        if (fullLineTrimmed.StartsWith('#') || fullLineTrimmed.StartsWith('*') || ActionLine.TryParse(fullLineTrimmed, out _)) {
             CloseAutoCompletePopup();
             return;
         }
+
+        // Ignore text to the right of the caret to auto-completion
+        string line = fullLine[..Document.Caret.Col].TrimStart();
 
         if (open) {
             ActivePopupMenu = autoCompleteMenu;
@@ -1501,7 +1503,7 @@ public sealed class Editor : SkiaDrawable {
 
         // Use auto-complete entries for current command
         var commandLine = CommandLine.Parse(line);
-        var fullCommandLine = CommandLine.Parse(Document.Lines[Document.Caret.Row]);
+        var fullCommandLine = CommandLine.Parse(fullLine);
 
         if (commandLine == null || commandLine.Value.Arguments.Length == 0 ||
             fullCommandLine == null || fullCommandLine.Value.Arguments.Length == 0)
@@ -2128,14 +2130,24 @@ public sealed class Editor : SkiaDrawable {
                 int frameDigits = actionLine.Frames.Length;
                 Document.Caret.Col += ActionLine.MaxFramesDigits - (leadingSpaces + frameDigits);
             }
+        } else {
+            line = Document.Lines[Document.Caret.Row];
         }
 
         char typedCharacter = char.ToUpper(e.Text[0]);
-
         var oldCaret = Document.Caret;
 
-        // If it's an action line, handle it ourselves
-        if (TryParseAndFormatActionLine(Document.Caret.Row, out actionLine) && e.Text.Length == 1) {
+        // Create breakpoints
+        if (typedCharacter == '*' && !line.TrimStart().StartsWith('#') && !FastForwardLine.TryParse(line, out _)) {
+            if (string.IsNullOrWhiteSpace(line)) {
+                Document.ReplaceLine(Document.Caret.Row, "***");
+                Document.Caret.Col = "***".Length;
+            } else {
+                InsertLine("***");
+            }
+        }
+        // Manually handle action line
+        else if (TryParseAndFormatActionLine(Document.Caret.Row, out actionLine) && e.Text.Length == 1) {
             ClearQuickEdits();
 
             line = Document.Lines[Document.Caret.Row];
@@ -2248,6 +2260,21 @@ public sealed class Editor : SkiaDrawable {
             FinishEdit:
             Document.Caret = ClampCaret(Document.Caret);
         }
+        // Manually handle breakpoints
+        else if (FastForwardLine.TryParse(Document.Lines[Document.Caret.Row], out var fastForward)) {
+            if (char.ToUpper(typedCharacter) == 'S') {
+                fastForward.SaveState = !fastForward.SaveState;
+                if (fastForward.SaveState) {
+                    Document.Caret.Col++;
+                } else {
+                    Document.Caret.Col--;
+                }
+
+                Document.ReplaceLine(Document.Caret.Row, fastForward.ToString());
+            } else if (typedCharacter is >= '0' and <= '9' or '.') {
+                Document.Insert(e.Text);
+            }
+        }
         // Just write it as text
         else {
             // Encourage having a space before comments (so they aren't labels)
@@ -2316,7 +2343,9 @@ public sealed class Editor : SkiaDrawable {
 
             // Handle frame count
             if (caret.Col == ActionLine.MaxFramesDigits && direction is CaretMovementType.WordLeft or CaretMovementType.CharLeft ||
-                caret.Col < ActionLine.MaxFramesDigits) {
+                caret.Col < ActionLine.MaxFramesDigits
+            ) {
+                line = actionLine.ToString();
                 int leadingSpaces = line.Length - line.TrimStart().Length;
                 int caretIndex = Math.Clamp(caret.Col - leadingSpaces, 0, actionLine.Frames.Length);
 
@@ -2419,6 +2448,13 @@ public sealed class Editor : SkiaDrawable {
 
             Document.ReplaceLine(caret.Row, line);
             Document.Caret = ClampCaret(caret);
+        } else if (FastForwardLine.TryParse(line, out _) &&
+                   SnapColumnToFastForward(Document.Caret.Col) is var snappedCol &&
+                       (snappedCol == 0            && direction is CaretMovementType.CharRight or CaretMovementType.WordRight ||
+                        snappedCol == "***".Length && direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft)
+        ) {
+            // Remove breakpoint
+            Document.RemoveLine(Document.Caret.Row);
         } else {
             Document.Caret = GetNewTextCaretPosition(direction);
 
@@ -2434,6 +2470,9 @@ public sealed class Editor : SkiaDrawable {
 
                 RemoveRange(min, max);
                 Document.Caret = min;
+
+                // Ensure new line is correctly formatted
+                Document.ReplaceLine(Document.Caret.Row, FileRefactor.FormatLine(Document.Lines[Document.Caret.Row], StyleConfig.Current.ForceCorrectCommandCasing, StyleConfig.Current.CommandArgumentSeparator));
 
                 ActivePopupMenu = null;
             }
@@ -2544,8 +2583,9 @@ public sealed class Editor : SkiaDrawable {
     }
 
     private void OnPaste() {
-        if (!Clipboard.Instance.ContainsText)
+        if (!Clipboard.Instance.ContainsText) {
             return;
+        }
 
         using var __ = Document.Update();
 
@@ -2555,16 +2595,16 @@ public sealed class Editor : SkiaDrawable {
             Document.Selection.Clear();
         }
 
-        var clipboardText = Clipboard.Instance.Text.ReplaceLineEndings(Document.NewLine.ToString());
+        string line = Document.Lines[Document.Caret.Row];
+        string clipboardText = Clipboard.Instance.Text.ReplaceLineEndings(Document.NewLine.ToString());
 
         // Prevent splitting the action-line in half or inserting garbage into the middle
-        if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _)) {
+        if (ActionLine.TryParse(line, out _)) {
             // Trim leading / trailing blank lines
-            var insertLines = clipboardText.Trim(Document.NewLine).SplitDocumentLines();
+            string[] insertLines = clipboardText.Trim(Document.NewLine).SplitDocumentLines();
 
             // Insert into the action-line if it stays valid
             if (insertLines.Length == 1) {
-                string oldLine = Document.Lines[Document.Caret.Row];
                 Document.Insert(insertLines[0]);
 
                 if (ActionLine.TryParseStrict(Document.Lines[Document.Caret.Row], out var actionLine)) {
@@ -2581,8 +2621,8 @@ public sealed class Editor : SkiaDrawable {
                     }
 
                     // Account for frame count not moving
-                    string line = Document.Lines[Document.Caret.Row];
-                    int leadingSpaces = line.Length - line.TrimStart().Length;
+                    string newLine = Document.Lines[Document.Caret.Row];
+                    int leadingSpaces = newLine.Length - newLine.TrimStart().Length;
                     int frameDigits = actionLine.Frames.Length;
                     Document.Caret.Col += ActionLine.MaxFramesDigits - (leadingSpaces + frameDigits);
 
@@ -2591,7 +2631,33 @@ public sealed class Editor : SkiaDrawable {
                     return;
                 }
 
-                Document.ReplaceLine(Document.Caret.Row, oldLine);
+                // Revert
+                Document.ReplaceLine(Document.Caret.Row, line);
+            }
+
+            // Otherwise insert below
+            Document.InsertLines(Document.Caret.Row + 1, insertLines);
+            Document.Caret.Row += insertLines.Length;
+            Document.Caret.Col = Document.Lines[Document.Caret.Row].Length;
+        }
+        // Apply similar logic to breakpoints
+        else if (FastForwardLine.TryParse(line, out var prevFastForward)) {
+            string[] insertLines = clipboardText.Trim(Document.NewLine).SplitDocumentLines();
+
+            if (insertLines.Length == 1) {
+                Document.Insert(insertLines[0]);
+
+                if (FastForwardLine.TryParse(Document.Lines[Document.Caret.Row], out var nextFastForward)
+                    && prevFastForward.SaveState == nextFastForward.SaveState
+                    && nextFastForward.SpeedText.All(c => c is >= '0' and <= '9' or '.')
+                ) {
+                    // Still valid
+                    Document.ReplaceLine(Document.Caret.Row, nextFastForward.ToString());
+                    return;
+                }
+
+                // Revert
+                Document.ReplaceLine(Document.Caret.Row, line);
             }
 
             // Otherwise insert below
@@ -3048,6 +3114,10 @@ public sealed class Editor : SkiaDrawable {
         if (ActionLine.TryParse(line, out var actionLine)) {
             position.Col = Math.Min(line.Length, SnapColumnToActionLine(actionLine, position.Col, direction));
         }
+        // Clamp to breakpoint if possible
+        if (FastForwardLine.TryParse(line, out _)) {
+            position.Col = Math.Min(line.Length, SnapColumnToFastForward(position.Col, direction));
+        }
 
         return position;
     }
@@ -3109,10 +3179,11 @@ public sealed class Editor : SkiaDrawable {
     }
 
     private void MoveCaret(CaretMovementType direction, bool updateSelection) {
-        var line = Document.Lines[Document.Caret.Row];
+        string line = Document.Lines[Document.Caret.Row];
         var oldCaret = Document.Caret;
 
-        ActionLine? currentActionLine = ActionLine.Parse(line);
+        var currentActionLine = ActionLine.Parse(line);
+        var currentFastForward = FastForwardLine.Parse(line);
         if (currentActionLine is { } actionLine) {
             Document.Caret.Col = Math.Min(line.Length, SnapColumnToActionLine(actionLine, Document.Caret.Col));
             int leadingSpaces = ActionLine.MaxFramesDigits - actionLine.Frames.Length;
@@ -3123,7 +3194,7 @@ public sealed class Editor : SkiaDrawable {
             {
                 Document.Caret.Row = GetNextVisualLinePosition(-1, Document.Caret).Row;
                 Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
-            } else if (Document.Caret.Row < Document.Lines.Count - 1 && Document.Caret.Col == Document.Lines[Document.Caret.Row].Length &&
+            } else if (Document.Caret.Row < Document.Lines.Count - 1 && Document.Caret.Col == line.Length &&
                        direction is CaretMovementType.CharRight or CaretMovementType.WordRight)
             {
                 Document.Caret.Row = GetNextVisualLinePosition( 1, Document.Caret).Row;
@@ -3136,6 +3207,32 @@ public sealed class Editor : SkiaDrawable {
                     CaretMovementType.WordLeft  => ClampCaret(new CaretPosition(Document.Caret.Row, GetHardSnapColumns(actionLine).Reverse().FirstOrDefault(c => c < Document.Caret.Col, Document.Caret.Col)), wrapLine: true),
                     CaretMovementType.WordRight => ClampCaret(new CaretPosition(Document.Caret.Row, GetHardSnapColumns(actionLine).FirstOrDefault(c => c > Document.Caret.Col, Document.Caret.Col)), wrapLine: true),
                     CaretMovementType.LineStart => ClampCaret(new CaretPosition(Document.Caret.Row, leadingSpaces)),
+                    CaretMovementType.LineEnd   => ClampCaret(new CaretPosition(Document.Caret.Row, line.Length)),
+                    _ => GetNewTextCaretPosition(direction),
+                };
+            }
+        } else if (currentFastForward != null) {
+            Document.Caret.Col = Math.Min(line.Length, SnapColumnToFastForward(Document.Caret.Col));
+
+            // Line wrapping
+            if (Document.Caret.Row > 0 && Document.Caret.Col == 0 &&
+                direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft)
+            {
+                Document.Caret.Row = GetNextVisualLinePosition(-1, Document.Caret).Row;
+                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+            } else if (Document.Caret.Row < Document.Lines.Count - 1 && Document.Caret.Col == line.Length &&
+                       direction is CaretMovementType.CharRight or CaretMovementType.WordRight)
+            {
+                Document.Caret.Row = GetNextVisualLinePosition( 1, Document.Caret).Row;
+                Document.Caret.Col = desiredVisualCol = 0;
+            } else {
+                // Regular breakpoint movement
+                Document.Caret = direction switch {
+                    CaretMovementType.CharLeft  => ClampCaret(new CaretPosition(Document.Caret.Row, Document.Caret.Col == "***".Length ? 0 : Document.Caret.Col - 1), wrapLine: true),
+                    CaretMovementType.CharRight => ClampCaret(new CaretPosition(Document.Caret.Row, Document.Caret.Col == 0 ? "***".Length : Document.Caret.Col + 1), wrapLine: true),
+                    CaretMovementType.WordLeft  => ClampCaret(new CaretPosition(Document.Caret.Row, Document.Caret.Col > "***".Length ? "***".Length : 0), wrapLine: true),
+                    CaretMovementType.WordRight => ClampCaret(new CaretPosition(Document.Caret.Row, Document.Caret.Col < "***".Length ? "***".Length : line.Length), wrapLine: true),
+                    CaretMovementType.LineStart => ClampCaret(new CaretPosition(Document.Caret.Row, 0)),
                     CaretMovementType.LineEnd   => ClampCaret(new CaretPosition(Document.Caret.Row, line.Length)),
                     _ => GetNewTextCaretPosition(direction),
                 };
@@ -4015,6 +4112,24 @@ public sealed class Editor : SkiaDrawable {
 
             _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
         };
+    }
+    private static int SnapColumnToFastForward(int column, SnappingDirection direction = SnappingDirection.Ignore) {
+        if (column == 1) {
+            return direction switch {
+                SnappingDirection.Ignore or SnappingDirection.Left => 0,
+                SnappingDirection.Right => "***".Length,
+                _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
+            };
+        }
+        if (column == 2) {
+            return direction switch {
+                SnappingDirection.Left => 0,
+                SnappingDirection.Ignore or SnappingDirection.Right => "***".Length,
+                _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
+            };
+        }
+
+        return column;
     }
 
     #endregion
