@@ -11,6 +11,7 @@ using Markdig.Syntax.Inlines;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 
@@ -53,6 +54,11 @@ public class Markdown : SkiaDrawable {
             public readonly FontStyle FontStyle = fontStyle;
             public FontDecoration FontDecoration = fontDecoration;
 
+            public delegate void DrawTextDelegate(SkiaRenderer renderer, ReadOnlySpan<char> text, ref float x, ref float y);
+            public delegate void MeasureTextDelegate(SkiaRenderer renderer, ReadOnlySpan<char> text, ref float width);
+            public DrawTextDelegate? ModifyDrawText;
+            public MeasureTextDelegate? ModifyMeasureText;
+
             public readonly SKPaint Paint = new(font) {
                 Color = color,
                 TextAlign = align,
@@ -84,6 +90,9 @@ public class Markdown : SkiaDrawable {
                 Paint.TextAlign = align;
                 return this;
             }
+            public StyleConfig WithCallback(DrawTextDelegate? modifyDraw, MeasureTextDelegate? modifyMeasure) {
+                return this with { ModifyDrawText = ModifyDrawText + modifyDraw, ModifyMeasureText = ModifyMeasureText + modifyMeasure };
+            }
         }
 
         public float X { get; set; }
@@ -105,11 +114,13 @@ public class Markdown : SkiaDrawable {
             ObjectRenderers.Add(new ParagraphBlockRenderer());
             ObjectRenderers.Add(new HeadingBlockRenderer());
             ObjectRenderers.Add(new ListBlockRenderer());
+            ObjectRenderers.Add(new CodeBlockRenderer());
 
             // Inline renderers
             ObjectRenderers.Add(new LiteralInlineRenderer());
             ObjectRenderers.Add(new LineBreakInlineRenderer());
             ObjectRenderers.Add(new EmphasisInlineRenderer());
+            ObjectRenderers.Add(new CodeInlineRenderer());
         }
 
         public void Reset(SKSurface surface, float maxWidth) {
@@ -154,17 +165,17 @@ public class Markdown : SkiaDrawable {
         public void WriteText(ReadOnlySpan<char> text) {
             var style = CurrentStyle;
 
-            float advance = style.Paint.MeasureText(text);
+            float advance = MeasureTextWithStyle(text, style);
             if (X + advance > MaxLineWidth) {
                 // Warp lines
-                var iterator = new WrapLineIterator(text, X, MaxLineWidth, style.Paint);
+                var iterator = new WrapLineIterator(this, text, X, MaxLineWidth, style);
 
                 // First iteration shouldn't start at a new line
                 iterator.MoveNext();
                 float firstRenderX = style.Paint.TextAlign switch {
                     SKTextAlign.Left => X,
-                    SKTextAlign.Right => X + MaxLineWidth - style.Paint.MeasureText(iterator.Current),
-                    SKTextAlign.Center => X + (MaxLineWidth - style.Paint.MeasureText(iterator.Current)) / 2.0f,
+                    SKTextAlign.Right => X + MaxLineWidth - MeasureTextWithStyle(iterator.Current, style),
+                    SKTextAlign.Center => X + (MaxLineWidth - MeasureTextWithStyle(iterator.Current, style)) / 2.0f,
                     _ => throw new ArgumentOutOfRangeException()
                 };
                 DrawTextWithStyle(iterator.Current, firstRenderX, Y, style);
@@ -173,8 +184,8 @@ public class Markdown : SkiaDrawable {
                 while (iterator.MoveNext()) {
                     float wrapRenderX = style.Paint.TextAlign switch {
                         SKTextAlign.Left => 0.0f,
-                        SKTextAlign.Right => MaxLineWidth - style.Paint.MeasureText(iterator.Current),
-                        SKTextAlign.Center => (MaxLineWidth - style.Paint.MeasureText(iterator.Current)) / 2.0f,
+                        SKTextAlign.Right => MaxLineWidth - MeasureTextWithStyle(iterator.Current, style),
+                        SKTextAlign.Center => (MaxLineWidth - MeasureTextWithStyle(iterator.Current, style)) / 2.0f,
                         _ => throw new ArgumentOutOfRangeException()
                     };
 
@@ -182,7 +193,7 @@ public class Markdown : SkiaDrawable {
                     DrawTextWithStyle(iterator.Current, wrapRenderX, Y, style);
                 }
 
-                X = style.Paint.MeasureText(iterator.Current);
+                X = MeasureTextWithStyle(iterator.Current, style);
                 Width = MaxLineWidth;
             } else {
                 float renderX = style.Paint.TextAlign switch {
@@ -201,6 +212,8 @@ public class Markdown : SkiaDrawable {
             Height = Y + style.Font.LineHeight();
         }
         private void DrawTextWithStyle(ReadOnlySpan<char> text, float x, float y, StyleConfig style) {
+            style.ModifyDrawText?.Invoke(this, text, ref x, ref y);
+
             y += style.Font.Offset();
             Canvas.DrawText(text, x, y, style.Font, style.Paint);
 
@@ -227,11 +240,27 @@ public class Markdown : SkiaDrawable {
             style.Paint.StrokeWidth = oldStrokeWidth;
         }
 
+        /// Measures the text in the current style
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public float MeasureText(StringSlice text) => MeasureText(text.AsSpan());
+
+        /// Measures the text in the current style
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public float MeasureText(ReadOnlySpan<char> text) => MeasureTextWithStyle(text, CurrentStyle);
+
+        private float MeasureTextWithStyle(ReadOnlySpan<char> text, StyleConfig style) {
+            float width = style.Paint.MeasureText(text);
+            style.ModifyMeasureText?.Invoke(this, text, ref width);
+            return width;
+        }
+
         /// Advances to the start of the next line
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void NextLine() {
+            var font = CurrentStyle.Font;
+
             X = 0.0f;
-            Y += CurrentStyle.Font.LineHeight();
+            Y += font.LineHeight() + font.Metrics.Leading;
         }
 
         /// Writes the inlines of a leaf inline.
@@ -245,7 +274,7 @@ public class Markdown : SkiaDrawable {
         }
 
         /// Wraps lines which are too long
-        private ref struct WrapLineIterator(ReadOnlySpan<char> text, float startOffset, float maxLineWidth, SKPaint paint) {
+        private ref struct WrapLineIterator(SkiaRenderer renderer, ReadOnlySpan<char> text, float startOffset, float maxLineWidth, StyleConfig style) {
             private ReadOnlySpan<char> text = text;
             private int startIdx = 0;
             private bool firstIteration = true;
@@ -269,7 +298,7 @@ public class Markdown : SkiaDrawable {
                         continue;
                     }
 
-                    float width = paint.MeasureText(text[startIdx..i]);
+                    float width = renderer.MeasureTextWithStyle(text[startIdx..i], style);
                     if (width <= maxWidth) {
                         lastValidEnd = i;
 
@@ -331,7 +360,7 @@ public class Markdown : SkiaDrawable {
                 .WithFont(style.Font.WithSize(style.Font.Size * scale))
                 .WithAlign(obj.Level == 1 ? SKTextAlign.Center : SKTextAlign.Left));
 
-            renderer.Y = renderer.Height + HeadingMarginTop;
+            renderer.Y = Math.Max(renderer.Y, renderer.Height + HeadingMarginTop);
             renderer.WriteLeafInline(obj);
             renderer.NextLine();
             renderer.Y += BlockMarginBottom;
@@ -374,6 +403,49 @@ public class Markdown : SkiaDrawable {
                 renderer.Y = renderer.Height;
             }
             renderer.NextLine();
+        }
+    }
+    private class CodeBlockRenderer : SkiaObjectRenderer<CodeBlock> {
+        protected override void Write(SkiaRenderer renderer, CodeBlock code) {
+            const float hPadding = 5.0f;
+            const float vPadding = 2.5f;
+            const float cornerRadius = 7.5f;
+
+            int actualLines = code.Lines.Lines
+                .Select(line => (int) Math.Ceiling(renderer.MeasureText(line.Slice) / (renderer.MaxLineWidth - hPadding * 2.0f)))
+                .Sum();
+
+            renderer.WriteText($"{code.Lines.Count} | {actualLines}");
+            renderer.NextLine();
+
+            renderer.PushStyle(renderer.CurrentStyle
+                .WithFont(FontManager.SKEditorFontRegular)
+                .WithCallback(ModifyDraw, ModifyMeasure));
+
+            var style = renderer.CurrentStyle;
+            var backgroundPaint = new SKPaint {
+                Color = style.Paint.Color.WithAlpha(byte.MaxValue / 8),
+                IsAntialias = true,
+            };
+            renderer.Canvas.DrawRoundRect(renderer.X, renderer.Y + style.Font.Metrics.Descent / 4.0f, renderer.MaxLineWidth, actualLines * style.Font.LineHeight() + vPadding * 2.0f, cornerRadius, cornerRadius, backgroundPaint);
+
+            renderer.Y += vPadding;
+            foreach (var line in code.Lines.Lines) {
+                renderer.WriteText(line.Slice);
+                renderer.NextLine();
+            }
+            renderer.Height += vPadding;
+
+            renderer.Pop();
+
+            return;
+
+            static void ModifyDraw(SkiaRenderer renderer, ReadOnlySpan<char> text, ref float x, ref float y) {
+                x += hPadding;
+            }
+            static void ModifyMeasure(SkiaRenderer renderer, ReadOnlySpan<char> text, ref float width) {
+                width += hPadding * 2.0f;
+            }
         }
     }
 
@@ -422,6 +494,36 @@ public class Markdown : SkiaDrawable {
             // renderer.PushFont(new SKFont(SKFontManager.Default.MatchTypeface(style.Font.Typeface, SKFontStyle.Bold), style.Font.Size, style.Font.ScaleX, style.Font.SkewX));
             renderer.WriteChildren(emphasis);
             renderer.Pop();
+        }
+    }
+    private class CodeInlineRenderer : SkiaObjectRenderer<CodeInline> {
+        protected override void Write(SkiaRenderer renderer, CodeInline code) {
+            const float hPadding = 5.0f;
+            const float vPadding = 0.0f;
+            const float cornerRadius = 7.5f;
+
+            renderer.PushStyle(renderer.CurrentStyle
+                .WithFont(FontManager.SKEditorFontRegular)
+                .WithCallback(ModifyDraw, ModifyMeasure));
+            renderer.WriteText(code.Content);
+            renderer.Pop();
+
+            return;
+
+            static void ModifyDraw(SkiaRenderer renderer, ReadOnlySpan<char> text, ref float x, ref float y) {
+                var style = renderer.CurrentStyle;
+                var backgroundPaint = new SKPaint {
+                    Color = style.Paint.Color.WithAlpha(byte.MaxValue / 8),
+                    IsAntialias = true,
+                };
+
+                float width = style.Paint.MeasureText(text);
+                renderer.Canvas.DrawRoundRect(x, y + style.Font.Metrics.Descent / 4.0f, width + hPadding * 2.0f, style.Font.LineHeight() + vPadding * 2.0f, cornerRadius, cornerRadius, backgroundPaint);
+                x += hPadding;
+            }
+            static void ModifyMeasure(SkiaRenderer renderer, ReadOnlySpan<char> text, ref float width) {
+                width += hPadding * 2.0f;
+            }
         }
     }
 
