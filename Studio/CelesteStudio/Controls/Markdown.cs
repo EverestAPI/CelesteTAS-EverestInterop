@@ -9,6 +9,7 @@ using Markdig.Renderers.Normalize;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using SkiaSharp;
+using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,7 @@ public class Markdown : SkiaDrawable {
     public Markdown(string content) {
         var pipeline = new MarkdownPipelineBuilder()
             .UseEmphasisExtras()
+            .UseAutoLinks()
             .Build();
 
         Document = Markdig.Markdown.Parse(content, pipeline);
@@ -48,14 +50,34 @@ public class Markdown : SkiaDrawable {
         // Height = (int) Renderer.Height;
     }
 
+    protected override void OnMouseMove(MouseEventArgs e) {
+        foreach (var entry in Renderer.ActionBoxes) {
+            if (entry.Region.Contains(e.Location.X - Padding.Left, e.Location.Y - Padding.Top)) {
+                Cursor = Cursors.Pointer;
+                return;
+            }
+        }
+
+        Cursor = null;
+    }
+
+    protected override void OnMouseUp(MouseEventArgs e) {
+        foreach (var entry in Renderer.ActionBoxes) {
+            if (entry.Region.Contains(e.Location.X - Padding.Left, e.Location.Y - Padding.Top)) {
+                entry.OnClick();
+                return;
+            }
+        }
+    }
+
     private class SkiaRenderer : RendererBase {
         public struct StyleConfig(SKFont font, SKColor color, SKTextAlign align, FontStyle fontStyle, FontDecoration fontDecoration) {
             public readonly SKFont Font = font;
             public readonly FontStyle FontStyle = fontStyle;
             public FontDecoration FontDecoration = fontDecoration;
 
-            public delegate void DrawTextDelegate(SkiaRenderer renderer, ReadOnlySpan<char> text, ref float x, ref float y);
-            public delegate void MeasureTextDelegate(SkiaRenderer renderer, ReadOnlySpan<char> text, ref float width);
+            public delegate void DrawTextDelegate(ReadOnlySpan<char> text, ref float x, ref float y);
+            public delegate void MeasureTextDelegate(ReadOnlySpan<char> text, ref float width);
             public DrawTextDelegate? ModifyDrawText;
             public MeasureTextDelegate? ModifyMeasureText;
 
@@ -82,8 +104,15 @@ public class Markdown : SkiaDrawable {
                 return this with { FontDecoration = fontDecoration };
             }
 
+            public StyleConfig Clone() {
+                return new StyleConfig(Font, Paint.Color, Paint.TextAlign, FontStyle, FontDecoration);
+            }
             public StyleConfig WithColor(SKColor color) {
                 Paint.Color = color;
+                return this;
+            }
+            public StyleConfig WithColor(SKColorF color) {
+                Paint.ColorF = color;
                 return this;
             }
             public StyleConfig WithAlign(SKTextAlign align) {
@@ -106,6 +135,8 @@ public class Markdown : SkiaDrawable {
 
         public float MaxLineWidth { get; private set; }
 
+        public readonly List<(SKRect Region, Action OnClick)> ActionBoxes = [];
+
         public StyleConfig CurrentStyle => styleStack.Peek();
         private Stack<StyleConfig> styleStack = new();
 
@@ -121,6 +152,7 @@ public class Markdown : SkiaDrawable {
             ObjectRenderers.Add(new LineBreakInlineRenderer());
             ObjectRenderers.Add(new EmphasisInlineRenderer());
             ObjectRenderers.Add(new CodeInlineRenderer());
+            ObjectRenderers.Add(new LinkInlineRenderer());
         }
 
         public void Reset(SKSurface surface, float maxWidth) {
@@ -132,6 +164,8 @@ public class Markdown : SkiaDrawable {
 
             Surface = surface;
             Canvas = surface.Canvas;
+
+            ActionBoxes.Clear();
 
             styleStack.Clear();
             styleStack.Push(new StyleConfig(new SKFont(SKTypeface.Default, Settings.Instance.EditorFontSize * FontManager.DPI), SKColors.White, SKTextAlign.Left, FontStyle.None, FontDecoration.None));
@@ -212,7 +246,7 @@ public class Markdown : SkiaDrawable {
             Height = Y + style.Font.LineHeight();
         }
         private void DrawTextWithStyle(ReadOnlySpan<char> text, float x, float y, StyleConfig style) {
-            style.ModifyDrawText?.Invoke(this, text, ref x, ref y);
+            style.ModifyDrawText?.Invoke(text, ref x, ref y);
 
             y += style.Font.Offset();
             Canvas.DrawText(text, x, y, style.Font, style.Paint);
@@ -250,7 +284,7 @@ public class Markdown : SkiaDrawable {
 
         private float MeasureTextWithStyle(ReadOnlySpan<char> text, StyleConfig style) {
             float width = style.Paint.MeasureText(text);
-            style.ModifyMeasureText?.Invoke(this, text, ref width);
+            style.ModifyMeasureText?.Invoke(text, ref width);
             return width;
         }
 
@@ -409,6 +443,7 @@ public class Markdown : SkiaDrawable {
         protected override void Write(SkiaRenderer renderer, CodeBlock code) {
             const float hPadding = 5.0f;
             const float vPadding = 2.5f;
+            const float vSpacing = 5.0f;
             const float cornerRadius = 7.5f;
 
             int actualLines = code.Lines.Lines
@@ -427,23 +462,24 @@ public class Markdown : SkiaDrawable {
                 Color = style.Paint.Color.WithAlpha(byte.MaxValue / 8),
                 IsAntialias = true,
             };
-            renderer.Canvas.DrawRoundRect(renderer.X, renderer.Y + style.Font.Metrics.Descent / 4.0f, renderer.MaxLineWidth, actualLines * style.Font.LineHeight() + vPadding * 2.0f, cornerRadius, cornerRadius, backgroundPaint);
+            renderer.Canvas.DrawRoundRect(renderer.X, renderer.Y + style.Font.Metrics.Descent / 4.0f + vSpacing, renderer.MaxLineWidth, actualLines * style.Font.LineHeight() + vPadding * 2.0f, cornerRadius, cornerRadius, backgroundPaint);
 
-            renderer.Y += vPadding;
-            foreach (var line in code.Lines.Lines) {
+            renderer.Y += vPadding + vSpacing;
+            foreach (StringLine line in code.Lines) {
                 renderer.WriteText(line.Slice);
                 renderer.NextLine();
             }
-            renderer.Height += vPadding;
+            renderer.Y += vPadding + vSpacing;
+            renderer.Height += vPadding + vSpacing;
 
             renderer.Pop();
 
             return;
 
-            static void ModifyDraw(SkiaRenderer renderer, ReadOnlySpan<char> text, ref float x, ref float y) {
+            static void ModifyDraw(ReadOnlySpan<char> text, ref float x, ref float y) {
                 x += hPadding;
             }
-            static void ModifyMeasure(SkiaRenderer renderer, ReadOnlySpan<char> text, ref float width) {
+            static void ModifyMeasure(ReadOnlySpan<char> text, ref float width) {
                 width += hPadding * 2.0f;
             }
         }
@@ -510,7 +546,7 @@ public class Markdown : SkiaDrawable {
 
             return;
 
-            static void ModifyDraw(SkiaRenderer renderer, ReadOnlySpan<char> text, ref float x, ref float y) {
+            void ModifyDraw(ReadOnlySpan<char> text, ref float x, ref float y) {
                 var style = renderer.CurrentStyle;
                 var backgroundPaint = new SKPaint {
                     Color = style.Paint.Color.WithAlpha(byte.MaxValue / 8),
@@ -521,8 +557,40 @@ public class Markdown : SkiaDrawable {
                 renderer.Canvas.DrawRoundRect(x, y + style.Font.Metrics.Descent / 4.0f, width + hPadding * 2.0f, style.Font.LineHeight() + vPadding * 2.0f, cornerRadius, cornerRadius, backgroundPaint);
                 x += hPadding;
             }
-            static void ModifyMeasure(SkiaRenderer renderer, ReadOnlySpan<char> text, ref float width) {
+            void ModifyMeasure(ReadOnlySpan<char> text, ref float width) {
                 width += hPadding * 2.0f;
+            }
+        }
+    }
+    private class LinkInlineRenderer : SkiaObjectRenderer<LinkInline> {
+        protected override void Write(SkiaRenderer renderer, LinkInline link) {
+            Console.WriteLine($"Link: {link.Label} | {link.Url} | {link.Title}: {new LinkButton().TextColor}");
+            // renderer.WriteText(link.LabelWithTrivia);
+
+            if (link.Url is not { } url || !Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)) {
+                // Invalid URL
+                renderer.WriteChildren(link);
+                return;
+            }
+
+            Action clickAction = () => ProcessHelper.OpenInDefaultApp(link.Url!);
+
+            var style = renderer.CurrentStyle;
+            renderer.PushStyle(style
+                .Clone()
+                .WithColor(new SKColor(0xFF3281EA))
+                .WithFontDecoration(style.FontDecoration | FontDecoration.Underline)
+                .WithCallback(ModifyDraw, null));
+            renderer.WriteChildren(link);
+            renderer.Pop();
+
+            return;
+
+            void ModifyDraw(ReadOnlySpan<char> text, ref float x, ref float y) {
+                var currStyle = renderer.CurrentStyle;
+                float width = currStyle.Paint.MeasureText(text);
+
+                renderer.ActionBoxes.Add((new SKRect(x, y, x + width, y + currStyle.Font.LineHeight()), clickAction));
             }
         }
     }
