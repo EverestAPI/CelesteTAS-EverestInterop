@@ -108,7 +108,7 @@ public static class FontManager {
     }
     // Apply +/- 1.0f for better visuals
     public static float LineHeight(this SKFont font) {
-        return font.Spacing + 0.6f;
+        return font.Spacing * 1.05f;
     }
     public static float Offset(this SKFont font) {
         return -font.Metrics.Ascent + 0.7f;

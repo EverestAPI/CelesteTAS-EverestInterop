@@ -85,6 +85,7 @@ public static class Extensions
 
 public static class SkiaSharpExtensions {
     public static SKColorF ToSkia(this Color color) => new(color.R, color.G, color.B, color.A);
+    public static SKColor ToSkiaPacked(this Color color) => new((byte) (color.R * byte.MaxValue), (byte) (color.G * byte.MaxValue), (byte) (color.B * byte.MaxValue), (byte) (color.A * byte.MaxValue));
     public static Color ToEto(this SKColorF color) => new(color.Red, color.Green, color.Blue, color.Alpha);
 
     /// Overload to draw text from a ReadOnlySpan

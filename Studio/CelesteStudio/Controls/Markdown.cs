@@ -1,11 +1,9 @@
-using CelesteStudio.Editing;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
 using Markdig;
 using Markdig.Helpers;
 using Markdig.Renderers;
-using Markdig.Renderers.Normalize;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using SkiaSharp;
@@ -14,10 +12,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading.Channels;
 
 namespace CelesteStudio.Controls;
 
+/// Markdown renderer supporting regular text styling
 public class Markdown : SkiaDrawable {
     private readonly MarkdownDocument Document;
     private readonly SkiaRenderer Renderer;
@@ -29,25 +27,12 @@ public class Markdown : SkiaDrawable {
             .Build();
 
         Document = Markdig.Markdown.Parse(content, pipeline);
-
         Renderer = new SkiaRenderer();
-        Renderer.ObjectWriteBefore += (_, obj) => Console.WriteLine($"Render: '{obj}' ({obj.GetType()})");
-        // Renderer.Render(Document);
-
-        Padding = 10;
     }
 
     public override void Draw(SKSurface surface) {
-        // surface.Canvas.DrawText("Hallo Welt", 0, 0 + FontManager.SKStatusFont.Offset(), FontManager.SKStatusFont, new SKPaint(FontManager.SKStatusFont) { Color = SKColors.White });
-
         Renderer.Reset(surface, Width - Padding.Horizontal);
         Renderer.Render(Document);
-        //
-        // Size = new Size((int) Renderer.Width, (int) Renderer.Height);
-        // Size = new Size(100, 200);
-
-        // Width = (int) Renderer.Width;
-        // Height = (int) Renderer.Height;
     }
 
     protected override void OnMouseMove(MouseEventArgs e) {
@@ -111,10 +96,6 @@ public class Markdown : SkiaDrawable {
                 Paint.Color = color;
                 return this;
             }
-            public StyleConfig WithColor(SKColorF color) {
-                Paint.ColorF = color;
-                return this;
-            }
             public StyleConfig WithAlign(SKTextAlign align) {
                 Paint.TextAlign = align;
                 return this;
@@ -126,19 +107,17 @@ public class Markdown : SkiaDrawable {
 
         public float X { get; set; }
         public float Y { get; set; }
-
-        public SKSurface Surface { get; private set; } = null!;
-        public SKCanvas Canvas { get; private set; } = null!;
-
         public float Width { get; set; }
         public float Height { get; set; }
 
         public float MaxLineWidth { get; private set; }
 
+        public SKCanvas Canvas { get; private set; } = null!;
+
         public readonly List<(SKRect Region, Action OnClick)> ActionBoxes = [];
 
+        private readonly Stack<StyleConfig> styleStack = new();
         public StyleConfig CurrentStyle => styleStack.Peek();
-        private Stack<StyleConfig> styleStack = new();
 
         public SkiaRenderer() {
             // Block renderers
@@ -162,33 +141,30 @@ public class Markdown : SkiaDrawable {
             Height = 0.0f;
             MaxLineWidth = maxWidth;
 
-            Surface = surface;
             Canvas = surface.Canvas;
 
             ActionBoxes.Clear();
 
+            var textColor = Eto.Platform.Instance.IsWpf && Settings.Instance.Theme.DarkMode
+                ? new Color(1.0f - SystemColors.ControlText.R, 1.0f - SystemColors.ControlText.G, 1.0f - SystemColors.ControlText.B)
+                : SystemColors.ControlText;
+
             styleStack.Clear();
-            styleStack.Push(new StyleConfig(new SKFont(SKTypeface.Default, Settings.Instance.EditorFontSize * FontManager.DPI), SKColors.White, SKTextAlign.Left, FontStyle.None, FontDecoration.None));
+            styleStack.Push(new StyleConfig(new SKFont(SKTypeface.Default, Settings.Instance.EditorFontSize * FontManager.DPI), textColor.ToSkiaPacked(), SKTextAlign.Left, FontStyle.None, FontDecoration.None));
         }
 
         public override object Render(MarkdownObject markdownObject) {
-            Console.WriteLine($"Start");
             Write(markdownObject);
-            Console.WriteLine($"Finish: {X} {Y}");
-
             return null!;
         }
 
         /// Pushes a new style
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void PushStyle(StyleConfig config) => styleStack.Push(config);
-        /// Pushes a new font
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void PushFont(SKFont font) => PushStyle(CurrentStyle.WithFont(font));
 
         /// Pops the current style
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Pop() => styleStack.Pop();
+        public void PopStyle() => styleStack.Pop();
 
         /// Writes the text in the current style
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -223,7 +199,7 @@ public class Markdown : SkiaDrawable {
                         _ => throw new ArgumentOutOfRangeException()
                     };
 
-                    Y += style.Font.LineHeight();
+                    Y += GetLineSpacing(style);
                     DrawTextWithStyle(iterator.Current, wrapRenderX, Y, style);
                 }
 
@@ -243,7 +219,7 @@ public class Markdown : SkiaDrawable {
                 Width = Math.Max(Width, X);
             }
 
-            Height = Y + style.Font.LineHeight();
+            Height = Y + GetLineSpacing(style);
         }
         private void DrawTextWithStyle(ReadOnlySpan<char> text, float x, float y, StyleConfig style) {
             style.ModifyDrawText?.Invoke(text, ref x, ref y);
@@ -291,11 +267,12 @@ public class Markdown : SkiaDrawable {
         /// Advances to the start of the next line
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void NextLine() {
-            var font = CurrentStyle.Font;
-
             X = 0.0f;
-            Y += font.LineHeight() + font.Metrics.Leading;
+            Y += GetLineSpacing(CurrentStyle);
         }
+
+        /// Calculates the current effective line height
+        public float GetLineSpacing(StyleConfig style) => style.Font.LineHeight() * 1.25f;
 
         /// Writes the inlines of a leaf inline.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -314,6 +291,7 @@ public class Markdown : SkiaDrawable {
             private bool firstIteration = true;
 
             public ReadOnlySpan<char> Current { get; private set; } = ReadOnlySpan<char>.Empty;
+            // ReSharper disable once UnusedMember.Local
             public WrapLineIterator GetEnumerator() => this;
 
             public bool MoveNext() {
@@ -391,10 +369,16 @@ public class Markdown : SkiaDrawable {
 
             var style = renderer.CurrentStyle;
             renderer.PushStyle(style
-                .WithFont(style.Font.WithSize(style.Font.Size * scale))
+                .WithFont(new SKFont(SKFontManager.Default.MatchTypeface(style.Font.Typeface, style.FontStyle switch {
+                    FontStyle.None or FontStyle.Bold => SKFontStyle.Bold,
+                    FontStyle.Italic or FontStyle.Bold | FontStyle.Italic => SKFontStyle.BoldItalic,
+                    _ => throw new ArgumentOutOfRangeException(nameof(style.FontStyle), style.FontStyle, null)
+                }), style.Font.Size * scale))
                 .WithAlign(obj.Level == 1 ? SKTextAlign.Center : SKTextAlign.Left));
 
-            renderer.Y = Math.Max(renderer.Y, renderer.Height + HeadingMarginTop);
+            if (renderer.Height > 0.0f) {
+                renderer.Y = Math.Max(renderer.Y, renderer.Height + HeadingMarginTop);
+            }
             renderer.WriteLeafInline(obj);
             renderer.NextLine();
             renderer.Y += BlockMarginBottom;
@@ -411,12 +395,11 @@ public class Markdown : SkiaDrawable {
                 renderer.Canvas.DrawLine(0.0f, lineY, renderer.MaxLineWidth, lineY, linePaint);
             }
 
-            renderer.Pop();
+            renderer.PopStyle();
         }
     }
     private class ListBlockRenderer : SkiaObjectRenderer<ListBlock> {
         protected override void Write(SkiaRenderer renderer, ListBlock block) {
-            Console.WriteLine($"Bullet '{block.BulletType}' Start '{block.OrderedStart}' DefaultStart '{block.DefaultOrderedStart}'");
             var style = renderer.CurrentStyle;
 
             string? startIdxText = block.OrderedStart ?? block.DefaultOrderedStart;
@@ -450,9 +433,6 @@ public class Markdown : SkiaDrawable {
                 .Select(line => (int) Math.Ceiling(renderer.MeasureText(line.Slice) / (renderer.MaxLineWidth - hPadding * 2.0f)))
                 .Sum();
 
-            renderer.WriteText($"{code.Lines.Count} | {actualLines}");
-            renderer.NextLine();
-
             renderer.PushStyle(renderer.CurrentStyle
                 .WithFont(FontManager.SKEditorFontRegular)
                 .WithCallback(ModifyDraw, ModifyMeasure));
@@ -462,7 +442,7 @@ public class Markdown : SkiaDrawable {
                 Color = style.Paint.Color.WithAlpha(byte.MaxValue / 8),
                 IsAntialias = true,
             };
-            renderer.Canvas.DrawRoundRect(renderer.X, renderer.Y + style.Font.Metrics.Descent / 4.0f + vSpacing, renderer.MaxLineWidth, actualLines * style.Font.LineHeight() + vPadding * 2.0f, cornerRadius, cornerRadius, backgroundPaint);
+            renderer.Canvas.DrawRoundRect(renderer.X, renderer.Y + style.Font.Metrics.Descent / 4.0f + vSpacing, renderer.MaxLineWidth, actualLines * renderer.GetLineSpacing(style) + vPadding * 2.0f, cornerRadius, cornerRadius, backgroundPaint);
 
             renderer.Y += vPadding + vSpacing;
             foreach (StringLine line in code.Lines) {
@@ -472,7 +452,7 @@ public class Markdown : SkiaDrawable {
             renderer.Y += vPadding + vSpacing;
             renderer.Height += vPadding + vSpacing;
 
-            renderer.Pop();
+            renderer.PopStyle();
 
             return;
 
@@ -492,7 +472,6 @@ public class Markdown : SkiaDrawable {
     }
     private class LineBreakInlineRenderer : SkiaObjectRenderer<LineBreakInline> {
         protected override void Write(SkiaRenderer renderer, LineBreakInline lineBreak) {
-            Console.WriteLine($" - Line Break: Hard {lineBreak.IsHard} Backslash {lineBreak.IsBackslash} NewLine {lineBreak.NewLine}");
             if (lineBreak.IsHard) {
                 renderer.NextLine();
             } else {
@@ -527,22 +506,21 @@ public class Markdown : SkiaDrawable {
             renderer.PushStyle(style
                 .WithFontStyle(fontStyle)
                 .WithFontDecoration(fontDecoration));
-            // renderer.PushFont(new SKFont(SKFontManager.Default.MatchTypeface(style.Font.Typeface, SKFontStyle.Bold), style.Font.Size, style.Font.ScaleX, style.Font.SkewX));
             renderer.WriteChildren(emphasis);
-            renderer.Pop();
+            renderer.PopStyle();
         }
     }
     private class CodeInlineRenderer : SkiaObjectRenderer<CodeInline> {
         protected override void Write(SkiaRenderer renderer, CodeInline code) {
             const float hPadding = 5.0f;
-            const float vPadding = 0.0f;
+            const float vPadding = 2.5f;
             const float cornerRadius = 7.5f;
 
             renderer.PushStyle(renderer.CurrentStyle
                 .WithFont(FontManager.SKEditorFontRegular)
                 .WithCallback(ModifyDraw, ModifyMeasure));
             renderer.WriteText(code.Content);
-            renderer.Pop();
+            renderer.PopStyle();
 
             return;
 
@@ -554,7 +532,7 @@ public class Markdown : SkiaDrawable {
                 };
 
                 float width = style.Paint.MeasureText(text);
-                renderer.Canvas.DrawRoundRect(x, y + style.Font.Metrics.Descent / 4.0f, width + hPadding * 2.0f, style.Font.LineHeight() + vPadding * 2.0f, cornerRadius, cornerRadius, backgroundPaint);
+                renderer.Canvas.DrawRoundRect(x, y + style.Font.Metrics.Descent / 4.0f - vPadding, width + hPadding * 2.0f, style.Font.LineHeight() + vPadding * 2.0f, cornerRadius, cornerRadius, backgroundPaint);
                 x += hPadding;
             }
             void ModifyMeasure(ReadOnlySpan<char> text, ref float width) {
@@ -564,9 +542,6 @@ public class Markdown : SkiaDrawable {
     }
     private class LinkInlineRenderer : SkiaObjectRenderer<LinkInline> {
         protected override void Write(SkiaRenderer renderer, LinkInline link) {
-            Console.WriteLine($"Link: {link.Label} | {link.Url} | {link.Title}: {new LinkButton().TextColor}");
-            // renderer.WriteText(link.LabelWithTrivia);
-
             if (link.Url is not { } url || !Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)) {
                 // Invalid URL
                 renderer.WriteChildren(link);
@@ -582,7 +557,7 @@ public class Markdown : SkiaDrawable {
                 .WithFontDecoration(style.FontDecoration | FontDecoration.Underline)
                 .WithCallback(ModifyDraw, null));
             renderer.WriteChildren(link);
-            renderer.Pop();
+            renderer.PopStyle();
 
             return;
 
