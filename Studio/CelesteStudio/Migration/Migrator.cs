@@ -132,16 +132,15 @@ public static class Migrator {
         }
 
         // Show changelog
-        // if (oldCelesteTasVersion < newCelesteTasVersion && oldCelesteTasVersion != InvalidVersion) {
+        if (oldCelesteTasVersion < newCelesteTasVersion && oldCelesteTasVersion != InvalidVersion) {
             string versionHistoryPath = Path.Combine(Studio.InstallDirectory, "Assets", "version_history.json");
             if (File.Exists(versionHistoryPath)) {
                 using var fs = File.OpenRead(versionHistoryPath);
 
                 Console.WriteLine($"Showing changelog from v{oldCelesteTasVersion.ToString(3)} to v{newCelesteTasVersion.ToString(3)}...");
-                //ChangelogDialog.Show(fs, oldCelesteTasVersion, newCelesteTasVersion);
-                ChangelogDialog.Show(fs, new Version(3, 43, 8), new Version(3, 44, 0));
+                ChangelogDialog.Show(fs, oldCelesteTasVersion, newCelesteTasVersion);
             }
-        // }
+        }
     }
 
     public static void ApplyPostLoadMigrations() {

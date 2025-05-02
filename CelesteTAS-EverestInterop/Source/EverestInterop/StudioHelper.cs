@@ -349,27 +349,10 @@ public static class StudioHelper {
         }
 
         // Copy over assets
-        // lock (Everest.Content.Map) {
-        //     foreach (string key in Everest.Content.Map.Keys.Where(key => key.StartsWith("CelesteTAS:/Assets"))) {
-        //         if (Everest.Content.Map[key] is not { } asset) {
-        //             continue;
-        //         }
-        //
-        //         // TODO: Figure out correct path for macOS
-        //         string targetPath = Path.Combine(TempStudioInstallDirectory, asset.PathVirtual);
-        //         if (Path.GetDirectoryName(targetPath) is { } targetDirectory) {
-        //             Directory.CreateDirectory(targetDirectory);
-        //         }
-        //
-        //         using var file = File.Create(targetPath);
-        //         asset.Stream.CopyTo(file);
-        //     }
-        // }
         var metadata = CelesteTasModule.Instance.Metadata;
         if (!string.IsNullOrEmpty(metadata.PathArchive)) {
             using var zip = ZipFile.OpenRead(metadata.PathArchive);
             foreach (var entry in zip.Entries.Where(entry => entry.FullName.StartsWith("Assets"))) {
-                // TODO: Figure out correct path for macOS
                 string targetPath = Path.Combine(TempStudioInstallDirectory, entry.FullName);
                 if (Path.GetDirectoryName(targetPath) is { } targetDirectory) {
                     Directory.CreateDirectory(targetDirectory);
@@ -380,7 +363,6 @@ public static class StudioHelper {
         } else if (!string.IsNullOrEmpty(metadata.PathDirectory)) {
             string assetsDir = Path.Combine(metadata.PathDirectory, "Assets");
             foreach (string path in Directory.GetFiles(assetsDir, "*", new EnumerationOptions { RecurseSubdirectories = true })) {
-                // TODO: Figure out correct path for macOS
                 string targetPath = Path.Combine(TempStudioInstallDirectory, "Assets", Path.GetRelativePath(assetsDir, path));
                 if (Path.GetDirectoryName(targetPath) is { } targetDirectory) {
                     Directory.CreateDirectory(targetDirectory);
