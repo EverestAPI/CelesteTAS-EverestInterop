@@ -46,6 +46,7 @@ public class ChangelogDialog : Eto.Forms.Dialog {
     private readonly Button prevButton;
     private readonly Label pageLabel;
     private readonly DynamicLayout buttonsLayout;
+    private readonly Scrollable scrollable;
 
     // Honestly.. idk why those scalars are like that.. they kinda just work..
     private int ContentWidth => Math.Max(1, Width - PaddingSize * 3);
@@ -54,8 +55,7 @@ public class ChangelogDialog : Eto.Forms.Dialog {
     private ChangelogDialog(VersionHistory versionHistory, List<Page> pages, Dictionary<string, List<string>> changes, Version oldVersion, Version newVersion) {
         string title = $"# CelesteTAS v{newVersion.ToString(3)}";
         Version? oldStudioVersion = null;
-        for (int i = 0; i < versionHistory.Versions.Count; i++) {
-            var version = versionHistory.Versions[i];
+        foreach (var version in versionHistory.Versions) {
             if (version.CelesteTasVersion == oldVersion) {
                 oldStudioVersion = version.StudioVersion;
             }
@@ -76,7 +76,16 @@ public class ChangelogDialog : Eto.Forms.Dialog {
             contentPages[i] = new LazyValue<ContentPage>(() => {
                 var page = pages[currIdx];
 
-                var markdown = new Markdown($"{title}\n{pages[currIdx].Text}");
+                var markdown = new Markdown($"{title}\n{pages[currIdx].Text}", scrollable);
+
+                int prevHeight = -1;
+                markdown.PostDraw += () => {
+                    if (prevHeight != markdown.RequiredHeight) {
+                        prevHeight = markdown.RequiredHeight;
+                        ApplySize(null, EventArgs.Empty);
+                    }
+                };
+
                 if (page.Image is not { } image) {
                     return (markdown, markdown, null);
                 }
@@ -111,7 +120,15 @@ public class ChangelogDialog : Eto.Forms.Dialog {
                 }
             }
 
-            var markdown = new Markdown(builder.ToString());
+            var markdown = new Markdown(builder.ToString(), scrollable);
+
+            int prevHeight = -1;
+            markdown.PostDraw += () => {
+                if (prevHeight != markdown.RequiredHeight) {
+                    prevHeight = markdown.RequiredHeight;
+                    ApplySize(null, EventArgs.Empty);
+                }
+            };
             return (markdown, markdown, null);
         });
 
@@ -135,6 +152,23 @@ public class ChangelogDialog : Eto.Forms.Dialog {
 
         SizeChanged += ApplySize;
         Shown += ApplySize;
+
+        Content = new StackLayout {
+            Padding = PaddingSize,
+            Spacing = PaddingSize,
+            Items = {
+                new StackLayoutItem {
+                    Control = (scrollable = new Scrollable {
+                        Border = BorderType.None
+                        // Content = contentPages[page].Value.Control
+                    }),
+                    HorizontalAlignment = HorizontalAlignment.Center
+                },
+                buttonsLayout,
+            }
+        };
+        // Content.SizeChanged += (_,_) => Console.WriteLine($"hallo: {ContentWidth}");
+        // Content.SizeChanged += ApplySize;
 
         SwitchToPage(0);
 
@@ -165,23 +199,15 @@ public class ChangelogDialog : Eto.Forms.Dialog {
             nextButton.Text = "Close";
         }
 
-        var prevStack = (StackLayout?) Content;
-        prevStack?.Items.Clear();
+        bool firstLoad = scrollable.Content == null;
+        scrollable.Content = null;
+        scrollable.Content = contentPages[page].Value.Control;
 
-        Content = new StackLayout {
-            Padding = PaddingSize,
-            Spacing = PaddingSize,
-            Items = {
-                new StackLayoutItem {
-                    Control = contentPages[page].Value.Control,
-                    HorizontalAlignment = HorizontalAlignment.Center
-                },
-                buttonsLayout,
-            }
-        };
+        // var prevStack = (StackLayout?) Content;
+        // prevStack?.Items.Clear();
 
         // Applying the proper size for the first page is already handle in the constructor
-        if (prevStack != null) {
+        if (!firstLoad) {
             UpdateLayout();
             ApplySize(null, EventArgs.Empty);
         }
@@ -190,8 +216,15 @@ public class ChangelogDialog : Eto.Forms.Dialog {
         int width = ContentWidth, height = ContentHeight;
 
         var (_, content, image) = contentPages[currentPage].Value;
-        content.Height = height;
-        content.Width = width - (image?.Width ?? 0);
+
+        // Gotta love the scrollable experience
+        content.UpdateLayout();
+        content.Width = width - (image?.Width ?? 0) - 20;
+        if (content.RequiredHeight != 0) {
+            content.Height = Math.Max(height, content.RequiredHeight);
+        }
+
+        scrollable.Height = height;
         buttonsLayout.Width = width;
     }
 
@@ -218,8 +251,9 @@ public class ChangelogDialog : Eto.Forms.Dialog {
             return;
         }
 
-        newVersion ??= versionHistory.Versions[^1].CelesteTasVersion;
-        oldVersion ??= versionHistory.Versions.Count >= 2 ? versionHistory.Versions[^2].CelesteTasVersion : new Version(0, 0, 0);
+        newVersion ??= versionHistory.Versions[0].CelesteTasVersion;
+        oldVersion ??= versionHistory.Versions.Count >= 2 ? versionHistory.Versions[1].CelesteTasVersion : new Version(0, 0, 0);
+        Console.WriteLine($"From {newVersion} to {oldVersion}");
 
         // Collect pages and changes
         List<Page> pages = [];

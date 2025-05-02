@@ -16,11 +16,22 @@ using System.Runtime.CompilerServices;
 namespace CelesteStudio.Controls;
 
 /// Markdown renderer supporting regular text styling
+/// TODO: Natively support images, instead of requiring additional support
+/// TODO: Improve performance for longer documents
 public class Markdown : SkiaDrawable {
+    public event Action? PostDraw;
+    public int RequiredHeight { get; private set; }
+
     private readonly MarkdownDocument Document;
     private readonly SkiaRenderer Renderer;
+    private readonly Scrollable? Scrollable;
 
-    public Markdown(string content) {
+    public override int DrawX => Scrollable?.ScrollPosition.X ?? 0;
+    public override int DrawY => Scrollable?.ScrollPosition.Y ?? 0;
+    public override int DrawWidth => (Scrollable?.Width ?? Width) - Padding.Horizontal;
+    public override int DrawHeight => (Scrollable?.Height ?? Height) - Padding.Vertical;
+
+    public Markdown(string content, Scrollable? scrollable) {
         var pipeline = new MarkdownPipelineBuilder()
             .UseEmphasisExtras()
             .UseAutoLinks()
@@ -28,11 +39,16 @@ public class Markdown : SkiaDrawable {
 
         Document = Markdig.Markdown.Parse(content, pipeline);
         Renderer = new SkiaRenderer();
+        Scrollable = scrollable;
     }
 
     public override void Draw(SKSurface surface) {
         Renderer.Reset(surface, Width - Padding.Horizontal);
         Renderer.Render(Document);
+
+        RequiredHeight = (int) Renderer.Height;
+        MinimumSize = new Size(0, (int) Renderer.Height);
+        PostDraw?.Invoke();
     }
 
     protected override void OnMouseMove(MouseEventArgs e) {
