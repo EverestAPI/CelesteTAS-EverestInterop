@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Lua;
 using TAS.Utils;
+using StudioCommunication.Util;
 using StringExtensions = StudioCommunication.Util.StringExtensions;
 
 namespace TAS.InfoHUD;

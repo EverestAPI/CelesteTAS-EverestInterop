@@ -47,15 +47,6 @@ public static class Migrator {
         // Need to check .toml since .exe and .pdb were already deleted by CelesteTAS
         bool studioV2Present = File.Exists(Path.Combine(Studio.CelesteDirectory ?? string.Empty, "Celeste Studio.toml"));
 
-        // Find install directory
-        string installDirectory;
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-            installDirectory = AppDomain.CurrentDomain.BaseDirectory;
-        } else {
-            // Inside .app bundle
-            installDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..");
-        }
-
 #if DEBUG
         // Update to the next migration in debug builds
         var asmVersion = Assembly.GetExecutingAssembly().GetName().Version!;
@@ -63,7 +54,7 @@ public static class Migrator {
             ? migrations[^1].Version
             : asmVersion;
 #else
-        string currentVersionPath = Path.Combine(installDirectory, "Assets", "current_version.txt");
+        string currentVersionPath = Path.Combine(Studio.InstallDirectory, "Assets", "current_version.txt");
         if (File.Exists(currentVersionPath) && File.ReadAllLines(currentVersionPath) is { Length: >= 2} currentVersionLines) {
             newCelesteTasVersion = Version.TryParse(currentVersionLines[0], out var celesteTasVersion) ? celesteTasVersion : InvalidVersion;
             newStudioVersion = Version.TryParse(currentVersionLines[1], out var studioVersion) ? studioVersion : Assembly.GetExecutingAssembly().GetName().Version!;
@@ -142,7 +133,7 @@ public static class Migrator {
 
         // Show changelog
         // if (oldCelesteTasVersion < newCelesteTasVersion && oldCelesteTasVersion != InvalidVersion) {
-            string versionHistoryPath = Path.Combine(installDirectory, "Assets", "version_history.json");
+            string versionHistoryPath = Path.Combine(Studio.InstallDirectory, "Assets", "version_history.json");
             if (File.Exists(versionHistoryPath)) {
                 using var fs = File.OpenRead(versionHistoryPath);
 

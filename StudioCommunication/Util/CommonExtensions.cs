@@ -219,3 +219,22 @@ public static class TypeExtensions {
         return type.FullName[namespaceLen..];
     }
 }
+
+public static class DictionaryExtensions {
+    /// Adds an element to the list stored under the specified key
+    public static void AddToKey<TKey, TValue>(this IDictionary<TKey, List<TValue>> dict, TKey key, TValue value) {
+        if (dict.TryGetValue(key, out var list)) {
+            list.Add(value);
+            return;
+        }
+        dict[key] = [value];
+    }
+    /// Adds all elements to the list stored under the specified key
+    public static void AddRangeToKey<TKey, TValue>(this IDictionary<TKey, List<TValue>> dict, TKey key, IEnumerable<TValue> values) {
+        if (dict.TryGetValue(key, out var list)) {
+            list.AddRange(values);
+            return;
+        }
+        dict[key] = [..values];
+    }
+}
