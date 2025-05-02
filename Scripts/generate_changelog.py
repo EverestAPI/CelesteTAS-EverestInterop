@@ -67,14 +67,14 @@ class Page:
 class Version:
     celestetas_version: str
     studio_version: str
-    
+
     pages: list[Page] = field(default_factory=list)
-    
+
     change_list: list[tuple[str, str]] = field(default_factory=list)
     change_category: dict[str, list[str]] = field(default_factory=lambda: Version._init_change_category())
 
     markdown_text: str = ""
-    
+
     def as_dict(self):
         return {
             "celesteTasVersion": self.celestetas_version,
@@ -82,7 +82,7 @@ class Version:
             "pages": [page.as_dict() for page in self.pages],
             "changes": self.change_category,
         }
-    
+
     def _init_change_category():
         changes = {}
         for cat in categories:
@@ -113,8 +113,8 @@ def main():
     studio_changelog_file = sys.argv[6]
 
     # Find CelesteTAS / Studio version
-    celestetas_version = re.search(r"CelesteTAS\s+(v[\d.]+)", commit_message).group(1)
-    studio_version = re.search(r"Studio\s+(v[\d.]+)", commit_message).group(1)
+    celestetas_version = re.search(r"CelesteTAS\s+v([\d.]+)", commit_message).group(1)
+    studio_version = re.search(r"Studio\s+v([\d.]+)", commit_message).group(1)
     with open(version_info_file, "w") as f:
         f.write(f"{celestetas_version.strip()}\n")
         f.write(f"{studio_version.strip()}\n")
@@ -125,8 +125,8 @@ def main():
         current_version = None
         current_page = None
         while line := f.readline():
-            celestetas_match = re.search(r"CelesteTAS\s+(v[\d.]+)", line)
-            studio_match = re.search(r"Studio\s+(v[\d.]+)", line)
+            celestetas_match = re.search(r"CelesteTAS\s+v([\d.]+)", line)
+            studio_match = re.search(r"Studio\s+v([\d.]+)", line)
             if celestetas_match and studio_match:
                 if current_version:
                     versions.append(current_version)
@@ -157,12 +157,12 @@ def main():
                     current_page.text += line
             elif line and line.strip():
                 current_page = Page(text=line)
-            
+
         if current_page:
             current_version.pages.append(current_page)
         if current_version:
             versions.append(current_version)
-                
+
     for version in versions:
         if version.celestetas_version != celestetas_version or version.studio_version != studio_version:
             continue
@@ -173,13 +173,13 @@ def main():
             # Entries have to be at least 10 characters, so lets cheat a bit with a ZWNBS
             if len(change_message) < 10:
                 change_message = change_message.ljust(9) + "\ufeff"
-    
+
             # Replace ` with ' since GB doesn't support code blocks
             gb_changelog.append({ "cat": categories[change_type][0], "text": change_message.replace('`', '\'') })
 
         with open(gb_changelog_file, "w") as f:
             f.write(json.dumps(gb_changelog))
-               
+
         # Generate commit overview from the current to previous tag
         gh_repo = os.getenv("GITHUB_REPO")
         gh_token = os.getenv("GITHUB_TOKEN")

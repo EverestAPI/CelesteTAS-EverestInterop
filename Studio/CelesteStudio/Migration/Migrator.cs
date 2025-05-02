@@ -1,3 +1,4 @@
+#undef DEBUG
 using CelesteStudio.Dialog;
 using Eto.Forms;
 using StudioCommunication.Util;
@@ -5,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Text.Json;
 using Tomlet.Models;
 
 namespace CelesteStudio.Migration;
@@ -18,7 +21,10 @@ public static class Migrator {
         (new Version(3, 2, 0), MigrateV3_2_0.PreLoad, null),
     ];
 
-    private static Version oldVersion = null!, newVersion = null!;
+    private static Version oldCelesteTasVersion = null!, newCelesteTasVersion = null!;
+    private static Version oldStudioVersion = null!, newStudioVersion = null!;
+    private static readonly Version InvalidVersion = new(0, 0, 0);
+
     private static readonly List<(string versionName, Stream stream)> changelogs = [];
 
     public static void WriteSettings(TomlDocument document) {
@@ -41,90 +47,115 @@ public static class Migrator {
         // Need to check .toml since .exe and .pdb were already deleted by CelesteTAS
         bool studioV2Present = File.Exists(Path.Combine(Studio.CelesteDirectory ?? string.Empty, "Celeste Studio.toml"));
 
+        // Find install directory
+        string installDirectory;
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+            installDirectory = AppDomain.CurrentDomain.BaseDirectory;
+        } else {
+            // Inside .app bundle
+            installDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..");
+        }
+
 #if DEBUG
         // Update to the next migration in debug builds
         var asmVersion = Assembly.GetExecutingAssembly().GetName().Version!;
-        newVersion = migrations[^1].Version > asmVersion
+        newStudioVersion = migrations[^1].Version > asmVersion
             ? migrations[^1].Version
             : asmVersion;
 #else
-        newVersion = Assembly.GetExecutingAssembly().GetName().Version!;
+        string currentVersionPath = Path.Combine(installDirectory, "Assets", "current_version.txt");
+        if (File.Exists(currentVersionPath) && File.ReadAllLines(currentVersionPath) is { Length: >= 2} currentVersionLines) {
+            newCelesteTasVersion = Version.TryParse(currentVersionLines[0], out var celesteTasVersion) ? celesteTasVersion : InvalidVersion;
+            newStudioVersion = Version.TryParse(currentVersionLines[1], out var studioVersion) ? studioVersion : Assembly.GetExecutingAssembly().GetName().Version!;
+        } else {
+            newCelesteTasVersion = InvalidVersion;
+            newStudioVersion = Assembly.GetExecutingAssembly().GetName().Version!;
+        }
 #endif
         if (firstV3Launch) {
             if (studioV2Present) {
-                oldVersion = new Version(2, 0, 0);
+                oldStudioVersion = new Version(2, 0, 0);
             } else {
-                oldVersion = newVersion;
+                oldStudioVersion = newStudioVersion;
                 // TODO: Show a "Getting started" guide
             }
         } else {
-            oldVersion = Version.TryParse(File.ReadAllText(LatestVersionPath), out var version) ? version : newVersion;
+            string[] latestVersionLines = File.ReadAllLines(LatestVersionPath);
+
+            oldStudioVersion = latestVersionLines.Length >= 1 && Version.TryParse(latestVersionLines[0], out var studioVersion)
+                ? studioVersion
+                : newStudioVersion;
+            oldCelesteTasVersion = latestVersionLines.Length >= 2 && Version.TryParse(latestVersionLines[1], out var celesteTasVersion)
+                ? celesteTasVersion
+                : new Version(3, 43, 8); // Latest version before it was stored in the file
         }
 #if DEBUG
         // Always apply the next migration in debug builds
-        if (migrations[^2].Version < oldVersion && newVersion == migrations[^1].Version) {
-            oldVersion = migrations[^2].Version;
+        if (migrations[^2].Version < oldStudioVersion && newStudioVersion == migrations[^1].Version) {
+            oldStudioVersion = migrations[^2].Version;
         }
 #endif
 
-        File.WriteAllText(LatestVersionPath, newVersion.ToString(3));
+        File.WriteAllLines(LatestVersionPath, [newStudioVersion.ToString(3), newCelesteTasVersion.ToString(3)]);
 
-        if (oldVersion.Major == newVersion.Major &&
-            oldVersion.Minor == newVersion.Minor &&
-            oldVersion.Build == newVersion.Build)
-        {
-            return;
-        }
+        // Apply settings migrations
+        if (oldStudioVersion < newStudioVersion) {
+            Console.WriteLine($"Migrating from v{oldStudioVersion.ToString(3)} to v{newStudioVersion.ToString(3)}...");
 
-        Console.WriteLine($"Migrating from v{oldVersion.ToString(3)} to v{newVersion.ToString(3)}...");
+            foreach (var (version, preLoad, _) in migrations) {
+                if (version > oldStudioVersion && version <= newStudioVersion) {
+                    TryAgain:
+                    try {
+                        preLoad?.Invoke();
+                    } catch (Exception ex) {
+                        Console.Error.WriteLine($"Failed to apply migration to v{version}");
+                        Console.Error.WriteLine(ex);
 
-        var asm = Assembly.GetExecutingAssembly();
+                        switch (SettingsErrorDialog.Show(ex)) {
+                            case SettingsErrorAction.TryAgain:
+                                goto TryAgain;
+                            case SettingsErrorAction.Reset:
+                                Settings.Reset();
+                                break;
+                            case SettingsErrorAction.Edit:
+                                ProcessHelper.OpenInDefaultApp(Settings.SettingsPath);
+                                MessageBox.Show(
+                                    $"""
+                                     The settings file should've opened itself.
+                                     If not, you can find it under the following path: {Settings.SettingsPath}
+                                     Once you're done, press OK.
+                                     """);
 
-        foreach (var (version, preLoad, _) in migrations) {
-            if (version > oldVersion && version <= newVersion) {
-                TryAgain:
-                try {
-                    preLoad?.Invoke();
-                } catch (Exception ex) {
-                    Console.Error.WriteLine($"Failed to apply migration to v{version}");
-                    Console.Error.WriteLine(ex);
+                                goto TryAgain;
+                            case SettingsErrorAction.Exit:
+                                Environment.Exit(1);
+                                return;
 
-                    switch (SettingsErrorDialog.Show(ex)) {
-                        case SettingsErrorAction.TryAgain:
-                            goto TryAgain;
-                        case SettingsErrorAction.Reset:
-                            Settings.Reset();
-                            break;
-                        case SettingsErrorAction.Edit:
-                            ProcessHelper.OpenInDefaultApp(Settings.SettingsPath);
-                            MessageBox.Show(
-                                $"""
-                                The settings file should've opened itself.
-                                If not, you can find it under the following path: {Settings.SettingsPath}
-                                Once you're done, press OK.
-                                """);
-
-                            goto TryAgain;
-                        case SettingsErrorAction.Exit:
-                            Environment.Exit(1);
-                            return;
-
-                        case SettingsErrorAction.None:
-                        default:
-                            throw new ArgumentOutOfRangeException();
+                            case SettingsErrorAction.None:
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
                     }
                 }
             }
         }
 
-        Studio.Instance.Shown += (_, _) => {
-            ChangelogDialog.Show();
-        };
+        // Show changelog
+        // if (oldCelesteTasVersion < newCelesteTasVersion && oldCelesteTasVersion != InvalidVersion) {
+            string versionHistoryPath = Path.Combine(installDirectory, "Assets", "version_history.json");
+            if (File.Exists(versionHistoryPath)) {
+                using var fs = File.OpenRead(versionHistoryPath);
+
+                Console.WriteLine($"Showing changelog from v{oldCelesteTasVersion.ToString(3)} to v{newCelesteTasVersion.ToString(3)}...");
+                //ChangelogDialog.Show(fs, oldCelesteTasVersion, newCelesteTasVersion);
+                ChangelogDialog.Show(fs, new Version(3, 43, 8), new Version(3, 44, 0));
+            }
+        // }
     }
 
     public static void ApplyPostLoadMigrations() {
         foreach (var (version, _, postLoad) in migrations) {
-            if (version > oldVersion && version <= newVersion) {
+            if (version > oldStudioVersion && version <= newStudioVersion) {
                 postLoad?.Invoke();
             }
         }

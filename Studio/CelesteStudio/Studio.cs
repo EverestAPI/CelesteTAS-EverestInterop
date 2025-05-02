@@ -811,7 +811,7 @@ public sealed class Studio : Form {
         var quitItem = Quit.CreateItem();
         var homeItem = MenuUtils.CreateAction("Open README...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop"));
         var wikiItem = MenuUtils.CreateAction("Open wiki...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki"));
-        var whatsNewItem = MenuUtils.CreateAction("What's new?", Keys.None, ChangelogDialog.Show);
+        var whatsNewItem = MenuUtils.CreateAction("What's new?", Keys.None, LegacyChangelogDialog.Show);
         whatsNewItem.Enabled = Assembly.GetExecutingAssembly().GetManifestResourceInfo("Changelog.md") != null;
         var aboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
             ShowAboutDialog(new AboutDialog {
