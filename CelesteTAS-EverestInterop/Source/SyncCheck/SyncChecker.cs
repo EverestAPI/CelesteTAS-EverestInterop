@@ -3,7 +3,6 @@ using Celeste.Mod;
 using Celeste.Mod.Core;
 using Celeste.Mod.UI;
 using Monocle;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.ExceptionServices;
@@ -27,6 +26,9 @@ internal static class SyncChecker {
     private static SyncCheckResult.AdditionalInfo currentAdditionalInformation = new();
 
     private static SyncCheckResult result = new();
+
+    private static string? CurrentFilePath => Manager.Controller.Current?.FilePath;
+    private static int? CurrentFileLine => Manager.Controller.Current?.FileLine;
 
     public static void AddFile(string file) {
         if (!File.Exists(file)) {
@@ -58,14 +60,11 @@ internal static class SyncChecker {
         Logger.Info("CelesteTAS/SyncCheck", $"Finished check for file: '{Manager.Controller.FilePath}'");
 
         // Check for desyncs
-        Console.WriteLine($"Curr Scene {Engine.Scene}");
-        if (Engine.Scene is Overworld ow) {
-            Console.WriteLine($"ow: {ow.Current}");
-        }
         if (currentStatus == SyncCheckResult.Status.Success && Engine.Scene is not (Level { Completed: true } or LevelExit or AreaComplete or Overworld { Current: OuiJournal })) {
             // TAS did not finish
             currentStatus = SyncCheckResult.Status.NotFinished;
-            currentAdditionalInformation.Abort = new SyncCheckResult.AbortInfo(Manager.Controller.Current.FilePath, Manager.Controller.Current.FileLine, Manager.Controller.Current.ToString());
+            currentAdditionalInformation.Clear();
+            currentAdditionalInformation.Abort = new SyncCheckResult.AbortInfo(CurrentFilePath, CurrentFileLine, Manager.Controller.Current?.ToString());
         }
 
         GameInfo.Update(updateVel: false);
@@ -95,6 +94,7 @@ internal static class SyncChecker {
 
         if (currentStatus != SyncCheckResult.Status.WrongTime) {
             currentStatus = SyncCheckResult.Status.WrongTime;
+            currentAdditionalInformation.Clear();
             currentAdditionalInformation.WrongTime = [];
         }
         currentAdditionalInformation.WrongTime!.Add(new SyncCheckResult.WrongTimeInfo(filePath, fileLine, oldTime, newTime));
@@ -109,7 +109,8 @@ internal static class SyncChecker {
         Logger.Error("CelesteTAS/SyncCheck", "Detected unsafe action");
 
         currentStatus = SyncCheckResult.Status.UnsafeAction;
-        currentAdditionalInformation.Abort = new SyncCheckResult.AbortInfo(Manager.Controller.Current.FilePath, Manager.Controller.Current.FileLine, Manager.Controller.Current.ToString());
+        currentAdditionalInformation.Clear();
+        currentAdditionalInformation.Abort = new SyncCheckResult.AbortInfo(CurrentFilePath, CurrentFileLine, Manager.Controller.Current?.ToString());
     }
 
     /// Indicates that an Assert-command failed
@@ -121,6 +122,7 @@ internal static class SyncChecker {
         Logger.Error("CelesteTAS/SyncCheck", $"Detected failed assertion '{lineText}' in file '{filePath}' line {fileLine}: Expected '{expected}', got '{actual}'");
 
         currentStatus = SyncCheckResult.Status.UnsafeAction;
+        currentAdditionalInformation.Clear();
         currentAdditionalInformation.AssertFailed = new SyncCheckResult.AssertFailedInfo(filePath, fileLine, actual, expected);
     }
 
@@ -133,7 +135,8 @@ internal static class SyncChecker {
         Logger.Error("CelesteTAS/SyncCheck", $"Detected a crash: {ex}");
 
         currentStatus = SyncCheckResult.Status.Crash;
-        currentAdditionalInformation.Crash = new SyncCheckResult.CrashInfo(Manager.Controller.Current.FilePath, Manager.Controller.Current.FileLine, ex);
+        currentAdditionalInformation.Clear();
+        currentAdditionalInformation.Crash = new SyncCheckResult.CrashInfo(CurrentFilePath, CurrentFileLine, ex);
     }
 
     [Initialize]
@@ -154,12 +157,12 @@ internal static class SyncChecker {
 
         // Skip intro animation
         typeof(GameLoader)
-            .GetMethodInfo(nameof(GameLoader.Begin))
+            .GetMethodInfo(nameof(GameLoader.Begin))!
             .HookAfter((GameLoader loader) => loader.skipped = true);
 
         // Skip auto updates
         typeof(GameLoader)
-            .GetMethodInfo("_GetNextScene")
+            .GetMethodInfo(nameof(GameLoader._GetNextScene))!
             .IlHook((cursor, _) => {
                 cursor.EmitLdarg0();
                 cursor.EmitLdarg1();
@@ -169,18 +172,18 @@ internal static class SyncChecker {
 
         // Skip OOBE
         typeof(OuiOOBE)
-            .GetMethodInfo(nameof(OuiOOBE.IsStart))
+            .GetMethodInfo(nameof(OuiOOBE.IsStart))!
             .IlHook((cursor, _) => {
                 cursor.EmitLdcI4(/* false */ 0);
                 cursor.EmitRet();
             });
         typeof(OuiTitleScreen)
-            .GetMethodInfo(nameof(OuiTitleScreen.IsStart))
+            .GetMethodInfo(nameof(OuiTitleScreen.IsStart))!
             .IlHook((cursor, _) => {
                 cursor.EmitLdarg0();
                 cursor.EmitLdarg1();
                 cursor.EmitLdarg2();
-                cursor.EmitCallvirt(typeof(OuiTitleScreen).GetMethodInfo($"orig_{nameof(OuiTitleScreen.IsStart)}"));
+                cursor.EmitCallvirt(typeof(OuiTitleScreen).GetMethodInfo($"orig_{nameof(OuiTitleScreen.IsStart)}")!);
                 cursor.EmitRet();
             });
     }
@@ -226,6 +229,11 @@ internal static class SyncChecker {
     [ParseFileEnd]
     private static void ParseFileEnd() {
         if (Active) {
+            if (Manager.Controller.Inputs.Count == 0) {
+                ReportRunFinished();
+                return;
+            }
+
             // Insert breakpoint at the end
             Manager.Controller.FastForwards[Manager.Controller.Inputs.Count] = new FastForward(Manager.Controller.Inputs.Count, "", Manager.Controller.Inputs[^1].StudioLine);
         }

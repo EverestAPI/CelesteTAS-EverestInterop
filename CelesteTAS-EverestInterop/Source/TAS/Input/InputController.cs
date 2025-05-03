@@ -38,7 +38,7 @@ public class InputController {
     public readonly SortedDictionary<int, FastForward> FastForwardLabels = new();
 
     public InputFrame? Previous => Inputs!.GetValueOrDefault(CurrentFrameInTas - 1);
-    public InputFrame Current => Inputs!.GetValueOrDefault(CurrentFrameInTas)!;
+    public InputFrame? Current => Inputs!.GetValueOrDefault(CurrentFrameInTas);
     public InputFrame? Next => Inputs!.GetValueOrDefault(CurrentFrameInTas + 1);
 
     public int CurrentFrameInTas { get; set; } = 0;

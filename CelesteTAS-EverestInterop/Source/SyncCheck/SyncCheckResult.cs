@@ -1,10 +1,7 @@
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-
-#nullable enable
 
 namespace TAS.SyncCheck;
 
@@ -26,56 +23,25 @@ public struct SyncCheckResult() {
     }
 
     // Additional information for the desync reason
-    public readonly record struct AbortInfo(string FilePath, int FileLine, string CurrentInput);
-    public readonly record struct CrashInfo(string FilePath, int FileLine, string Error);
-    public readonly record struct WrongTimeInfo(string FilePath, int FileLine, string OldTime, string NewTime);
-    public readonly record struct AssertFailedInfo(string FilePath, int FileLine, string Actual, string Expected);
+    public readonly record struct AbortInfo(string? FilePath, int? FileLine, string? CurrentInput);
+    public readonly record struct CrashInfo(string? FilePath, int? FileLine, string Error);
+    public readonly record struct WrongTimeInfo(string? FilePath, int? FileLine, string OldTime, string NewTime);
+    public readonly record struct AssertFailedInfo(string? FilePath, int? FileLine, string Actual, string Expected);
 
     /// "Union" type to hold additional information about an entry
-    public record struct AdditionalInfo()
-    {
+    public record struct AdditionalInfo() {
+        /// Clears all "union fields"
         public void Clear() {
-            abort = null;
-            crash = null;
-            wrongTime = null;
-            assertFailed = null;
+            Abort = null;
+            Crash = null;
+            WrongTime = null;
+            AssertFailed = null;
         }
 
-        private AbortInfo? abort = null;
-        public AbortInfo? Abort {
-            readonly get => abort;
-            set {
-                Clear();
-                abort = value;
-            }
-        }
-
-        private CrashInfo? crash = null;
-        public CrashInfo? Crash {
-            readonly get => crash;
-            set {
-                Clear();
-                crash = value;
-            }
-        }
-
-        private List<WrongTimeInfo>? wrongTime = null;
-        public List<WrongTimeInfo>? WrongTime {
-            readonly get => wrongTime;
-            set {
-                Clear();
-                wrongTime = value;
-            }
-        }
-
-        private AssertFailedInfo? assertFailed = null;
-        public AssertFailedInfo? AssertFailed {
-            readonly get => assertFailed;
-            set {
-                Clear();
-                assertFailed = value;
-            }
-        }
+        public AbortInfo? Abort = null;
+        public CrashInfo? Crash = null;
+        public List<WrongTimeInfo>? WrongTime = null;
+        public AssertFailedInfo? AssertFailed = null;
     }
 
     /// Sync-check result for a specific file
