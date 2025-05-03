@@ -19,7 +19,8 @@ namespace CelesteStudio.Tool;
 public sealed class RadelineSimForm : Form {
     [Flags]
     public enum InputAction {
-        None = 1 << 0,
+        None = 0,
+        Neutral = 1 << 0,
         Left = 1 << 1,
         Right = 1 << 2,
         Down = 1 << 3,
@@ -27,7 +28,7 @@ public sealed class RadelineSimForm : Form {
     }
     private static char CharForAction(InputAction action) {
         return action switch {
-            InputAction.None => ' ',
+            InputAction.Neutral => ' ',
             InputAction.Left => 'L',
             InputAction.Right => 'R',
             InputAction.Down => 'D',
@@ -62,7 +63,7 @@ public sealed class RadelineSimForm : Form {
     private readonly Config cfg;
     private InitialState initialState;
 
-    private InputAction availableActions = 0;
+    private InputAction availableActions = InputAction.None;
     private bool gotInitialState;
     private bool isRunning;
     private readonly List<Control> disabledControls;
@@ -621,7 +622,7 @@ public sealed class RadelineSimForm : Form {
 
             var input = new InputPermutation();
             int frameCounter = 0;
-            var prevAction = InputAction.None;
+            var prevAction = (InputAction) 0;
 
             while (frameCounter < cfg.Frames) {
                 int frames = random.Next(1, cfg.Frames - frameCounter + 1);
@@ -743,7 +744,7 @@ public sealed class RadelineSimForm : Form {
 
         var builder = new StringBuilder($"({position}, {speed}) ");
         foreach (var input in inputPermutation.inputs) {
-            if (input.Action == InputAction.None) {
+            if (input.Action == InputAction.Neutral) {
                 builder.Append($"{input.Frames} ");
             } else {
                 builder.Append($"{input.Frames},{CharForAction(input.Action)} ");
@@ -755,7 +756,7 @@ public sealed class RadelineSimForm : Form {
     private static string FormatInputPermutationKey(InputPermutation inputs) {
         var builder = new StringBuilder();
         foreach (var input in inputs) {
-            if (input.Action == InputAction.None) {
+            if (input.Action == InputAction.Neutral) {
                 builder.Append($"{input.Frames}\n");
             } else {
                 builder.Append($"{input.Frames},{CharForAction(input.Action)}\n");
