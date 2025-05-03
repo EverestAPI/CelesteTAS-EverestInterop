@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using TAS.ModInterop;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -24,6 +25,9 @@ internal static class SelectCampaignCommand {
 
             foreach (string levelSet in AreaData.Areas.Select(area => area.LevelSet).Distinct()) {
                 if (string.IsNullOrWhiteSpace(levelSet)) {
+                    continue;
+                }
+                if (CollabUtils2Interop.Lobby.IsCollabLevelSet?.Invoke(levelSet) ?? false) {
                     continue;
                 }
 
@@ -93,7 +97,12 @@ internal static class SelectCampaignCommand {
     public static void SelectCampaign(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         var controller = Manager.Controller;
 
-        if (!ParsingCommand) {
+        if (!Command.Parsing) {
+            if (EnforceLegalCommand.EnabledWhenRunning && Engine.Scene is not Overworld { Current: OuiTitleScreen }) {
+                AbortTas("SelectCampaign command must start on title screen when using EnforceLegal");
+                return;
+            }
+
             // Ensure inputs are up-to-date
             controller.RefreshInputs(forceRefresh: true);
             return;
@@ -115,6 +124,10 @@ internal static class SelectCampaignCommand {
             AbortTas($"Unknown campaign '{campaignName}'");
             return;
         }
+        if (CollabUtils2Interop.Lobby.IsCollabLevelSet?.Invoke(campaignName) ?? false) {
+            AbortTas($"Invalid campaign '{campaignName}'");
+            return;
+        }
         if (saveFileName.Length < OuiFileNaming.MinNameLength || saveFileName.Length > OuiFileNaming.MaxNameLengthNormal) {
             AbortTas($"Save-File name must be between {OuiFileNaming.MinNameLength} and {OuiFileNaming.MaxNameLengthNormal} characters long");
             return;
@@ -124,13 +137,9 @@ internal static class SelectCampaignCommand {
             return;
         }
 
-        if (controller.CurrentParsingFrame != 0) {
-            AbortTas("SelectCampaign command must be at beginning of file");
-            return;
-        }
-
         controller.ReadLine("Unsafe", filePath, fileLine, studioLine);
         controller.ReadLine("console titlescreen", filePath, fileLine, studioLine);
+
         controller.AddFrames("2", filePath, fileLine, studioLine);
         LibTasHelper.AddInputFrame("1,O");
         LibTasHelper.AddInputFrame("89");
@@ -156,7 +165,7 @@ internal static class SelectCampaignCommand {
         controller.AddFrames("1,D", filePath, fileLine, studioLine);
         InputName(controller, slot, saveFileName, filePath, fileLine, studioLine);
 
-        SwitchCampaign(controller, campaignName, filePath, fileLine, studioLine);
+        ChangeSelectedCampaign(controller, campaignName, filePath, fileLine, studioLine);
 
         // Runtime-assert for even more additional safety
         controller.ReadLine("Assert,Equal,True,[[local ui = scene.Current; return ui ~= nil and ui.SlotSelected and not ui.Slots[ui.SlotIndex].Exists and getValue(ui.Slots[ui.SlotIndex], \"buttonIndex\") == 0]]", filePath, fileLine, studioLine);
@@ -347,20 +356,56 @@ internal static class SelectCampaignCommand {
         controller.AddFrames("48", filePath, fileLine, studioLine);
     }
 
-    private static void SwitchCampaign(InputController controller, string campaignName, string filePath, int fileLine, int studioLine) {
-        string[] levelSets = AreaData.Areas.Select(area => area.LevelSet).Distinct().ToArray();
-
-        int currentIndex = Array.FindIndex(levelSets, set => set == CoreModule.Settings.DefaultStartingLevelSet);
-        if (currentIndex == -1) {
-            currentIndex = Array.FindIndex(levelSets, set => set == "Celeste");
+    private static void ChangeSelectedCampaign(InputController controller, string campaignName, string filePath, int fileLine, int studioLine) {
+        string startingLevelSet = "Celeste";
+        if (AreaData.Areas.Any(area => area.LevelSet == CoreModule.Settings.DefaultStartingLevelSet)) {
+            startingLevelSet = CoreModule.Settings.DefaultStartingLevelSet;
         }
 
-        int targetIndex = Array.FindIndex(levelSets, set => set == campaignName);
+        // Check both movement directions - Repeat move until level set is valid
+        int movesLeft = 0;
+        string currentLevelSet = startingLevelSet;
+        while (currentLevelSet != campaignName) {
+            int id = AreaData.Areas.FindIndex(area => area.LevelSet == currentLevelSet) - 1;
+            if (id >= AreaData.Areas.Count) {
+                id = 0;
+            }
+            if (id < 0) {
+                id = AreaData.Areas.Count - 1;
+            }
 
-        int shiftRight = currentIndex < targetIndex ? targetIndex - currentIndex : currentIndex - targetIndex;
-        int shiftLeft = (levelSets.Length + shiftRight) % levelSets.Length;
+            currentLevelSet = AreaData.Areas[id].LevelSet;
 
-        if (shiftRight == 0 && shiftLeft == 0) {
+            // Collab level sets aren't selectable and shouldn't be counted
+            if (CollabUtils2Interop.Lobby.IsCollabLevelSet?.Invoke(currentLevelSet) ?? false) {
+                continue;
+            }
+
+            movesLeft++;
+        }
+
+        int movesRight = 0;
+        currentLevelSet = startingLevelSet;
+        while (currentLevelSet != campaignName) {
+            int id = AreaData.Areas.FindLastIndex(area => area.LevelSet == currentLevelSet) + 1;
+            if (id >= AreaData.Areas.Count) {
+                id = 0;
+            }
+            if (id < 0) {
+                id = AreaData.Areas.Count - 1;
+            }
+
+            currentLevelSet = AreaData.Areas[id].LevelSet;
+
+            // Collab level sets aren't selectable and shouldn't be counted
+            if (CollabUtils2Interop.Lobby.IsCollabLevelSet?.Invoke(currentLevelSet) ?? false) {
+                continue;
+            }
+
+            movesRight++;
+        }
+
+        if (movesLeft == 0 && movesRight == 0) {
             // No need to change campaign. Return back to "Begin"
             controller.AddFrames("1,U", filePath, fileLine, studioLine);
             return;
@@ -369,13 +414,16 @@ internal static class SelectCampaignCommand {
         // "Rename" is currently selected
         controller.AddFrames("1,D", filePath, fileLine, studioLine);
         controller.AddFrames("1,F,180", filePath, fileLine, studioLine);
+        if (Settings.Instance.VariantsUnlocked) {
+            controller.AddFrames("1,D", filePath, fileLine, studioLine);
+        }
 
-        if (shiftRight >= shiftLeft) {
-            for (int i = 0; i < shiftRight; i++) {
+        if (movesRight <= movesLeft) {
+            for (int i = 0; i < movesRight; i++) {
                 controller.AddFrames(i % 2 == 0 ? "1,R" : "1,F,90", filePath, fileLine, studioLine);
             }
         } else {
-            for (int i = 0; i < shiftLeft; i++) {
+            for (int i = 0; i < movesLeft; i++) {
                 controller.AddFrames(i % 2 == 0 ? "1,L" : "1,F,270", filePath, fileLine, studioLine);
             }
         }
@@ -384,5 +432,8 @@ internal static class SelectCampaignCommand {
         controller.AddFrames("1,U", filePath, fileLine, studioLine);
         controller.AddFrames("1,F,0", filePath, fileLine, studioLine);
         controller.AddFrames("1,U", filePath, fileLine, studioLine);
+        if (Settings.Instance.VariantsUnlocked) {
+            controller.AddFrames("1,F,0", filePath, fileLine, studioLine);
+        }
     }
 }

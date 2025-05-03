@@ -12,46 +12,89 @@ using TAS.Utils;
 
 namespace TAS.Input.Commands;
 
-public static class MetadataCommands {
-    public static long? TasStartFileTime;
+/// Commands which don't influence gameplay at all and just provide information to the user
+internal static class MetadataCommands {
+    // Track starting conditions for TAS to properly calculate (Midway)FileTime
+    public static (long FileTimeTicks, int FileSlot)? TasStartInfo;
+
+    /// Total real-time frames in the TAS, without loading times
+    internal static (int FrameCount, int FileSlot)? RealTimeInfo = null;
 
     [Load]
     private static void Load() {
-        On.Celeste.Level.Begin += LevelOnBegin;
-        On.Celeste.Level.UpdateTime += LevelOnUpdateTime;
         Everest.Events.Level.OnComplete += UpdateChapterTime;
+
+        typeof(Level)
+            .GetMethodInfo(nameof(Level.Begin))!
+            .HookAfter(StartFileTime);
+        typeof(Level)
+            .GetMethodInfo(nameof(Level.UpdateTime))!
+            .HookAfter(StartFileTime);
+
+        typeof(Celeste.Celeste)
+            .GetMethodInfo(nameof(Celeste.Celeste.Update))!
+            .HookBefore(() => {
+                if (!Manager.Running || SaveData.Instance is not { } saveData) {
+                    return;
+                }
+
+                // Advance real-time
+                if (RealTimeInfo != null && (Manager.CurrState != Manager.State.Paused || Manager.IsLoading()) && !Manager.IsActuallyLoading()) {
+                    RealTimeInfo = RealTimeInfo.Value with { FrameCount = RealTimeInfo.Value.FrameCount + 1 };
+                }
+
+                if (RealTimeInfo == null || RealTimeInfo.Value.FileSlot != saveData.FileSlot) {
+                    RealTimeInfo = (0, saveData.FileSlot);
+                }
+            });
+
+        static void StartFileTime() {
+            if (!Manager.Running || SaveData.Instance is not { } saveData) {
+                return;
+            }
+
+            if (TasStartInfo == null || TasStartInfo.Value.FileSlot != saveData.FileSlot) {
+                TasStartInfo = (saveData.Time, saveData.FileSlot);
+            }
+        }
     }
 
     [Unload]
     private static void Unload() {
-        On.Celeste.Level.Begin -= LevelOnBegin;
-        On.Celeste.Level.UpdateTime -= LevelOnUpdateTime;
         Everest.Events.Level.OnComplete -= UpdateChapterTime;
     }
 
-    private static void LevelOnBegin(On.Celeste.Level.orig_Begin orig, Level self) {
-        orig(self);
-        StartFileTime();
-    }
-
-    private static void LevelOnUpdateTime(On.Celeste.Level.orig_UpdateTime orig, Level self) {
-        orig(self);
-        StartFileTime();
-    }
-
-    private static void StartFileTime() {
-        if (Manager.Running && TasStartFileTime == null) {
-            TasStartFileTime = SaveData.Instance?.Time;
-        }
+    [EnableRun]
+    private static void ResetRealTime() {
+        RealTimeInfo = null;
     }
 
     [DisableRun]
-    private static void UpdateFileTime() {
-        if (TasStartFileTime != null && SaveData.Instance != null && !Manager.Controller.CanPlayback) {
-            UpdateAllMetadata("FileTime", _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartFileTime.Value));
+    private static void UpdateTimes() {
+        if (TasStartInfo != null && SaveData.Instance != null && !Manager.Controller.CanPlayback) {
+            UpdateAllMetadata("FileTime", _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartInfo.Value.FileTimeTicks));
+        }
+        if (RealTimeInfo != null && !Manager.Controller.CanPlayback) {
+            UpdateAllMetadata("RealTime", _ => $"{TimeSpan.FromSeconds(RealTimeInfo.Value.FrameCount / 60.0f).ShortGameplayFormat()}({RealTimeInfo.Value.FrameCount})");
         }
 
-        TasStartFileTime = null;
+        TasStartInfo = null;
+        RealTimeInfo = null;
+    }
+
+    private static void UpdateChapterTime(Level level) {
+        if (!Manager.Running || !level.Session.StartedFromBeginning) {
+            return;
+        }
+
+        UpdateAllMetadata("ChapterTime", _ => GameInfo.GetChapterTime(level));
+    }
+
+    public static void UpdateRecordCount(InputController inputController) {
+        UpdateAllMetadata(
+            "RecordCount",
+            command => (int.Parse(command.Args.FirstOrDefault() ?? "0") + 1).ToString(),
+            command => int.TryParse(command.Args.FirstOrDefault() ?? "0", out int _));
     }
 
     private class RecordCountMeta : ITasCommandMeta {
@@ -74,18 +117,25 @@ public static class MetadataCommands {
         // dummy
     }
 
-    [TasCommand("MidwayFileTime", Aliases = ["MidwayFileTime:", "MidwayFileTime："], CalcChecksum = false)]
-    private static void MidwayFileTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
-        if (TasStartFileTime != null && SaveData.Instance != null) {
-            UpdateAllMetadata("MidwayFileTime",
-                _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartFileTime.Value),
-                command => Manager.Controller.CurrentCommands.Contains(command));
-        }
+    [TasCommand("RealTime", Aliases = ["RealTime:", "RealTime："], CalcChecksum = false)]
+    private static void RealTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        // dummy
     }
 
-    [TasCommand("MidwayChapterTime", Aliases = new[] {"MidwayChapterTime:", "MidwayChapterTime："}, CalcChecksum = false)]
+    [TasCommand("MidwayFileTime", Aliases = ["MidwayFileTime:", "MidwayFileTime："], CalcChecksum = false)]
+    private static void MidwayFileTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        if (TasStartInfo == null || SaveData.Instance == null) {
+            return;
+        }
+
+        UpdateAllMetadata("MidwayFileTime",
+            _ => GameInfo.FormatTime(SaveData.Instance.Time - TasStartInfo.Value.FileTimeTicks),
+            command => Manager.Controller.CurrentCommands.Contains(command));
+    }
+
+    [TasCommand("MidwayChapterTime", Aliases = ["MidwayChapterTime:", "MidwayChapterTime："], CalcChecksum = false)]
     private static void MidwayChapterTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
-        if (!Manager.Running || Engine.Scene is not Level level || !level.Session.StartedFromBeginning) {
+        if (!Manager.Running || Engine.Scene is not Level level) {
             return;
         }
 
@@ -94,22 +144,18 @@ public static class MetadataCommands {
             command => Manager.Controller.CurrentCommands.Contains(command));
     }
 
-    private static void UpdateChapterTime(Level level) {
-        if (!Manager.Running || !level.Session.StartedFromBeginning) {
+    [TasCommand("MidwayRealTime", Aliases = ["MidwayRealTime:", "MidwayRealTime："], CalcChecksum = false)]
+    private static void MidwayRealTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        if (RealTimeInfo == null) {
             return;
         }
 
-        UpdateAllMetadata("ChapterTime", _ => GameInfo.GetChapterTime(level));
+        UpdateAllMetadata("MidwayRealTime",
+            _ => $"{TimeSpan.FromSeconds(RealTimeInfo.Value.FrameCount / 60.0f).ShortGameplayFormat()}({RealTimeInfo.Value.FrameCount})",
+            command => Manager.Controller.CurrentCommands.Contains(command));
     }
 
-    public static void UpdateRecordCount(InputController inputController) {
-        UpdateAllMetadata(
-            "RecordCount",
-            command => (int.Parse(command.Args.FirstOrDefault() ?? "0") + 1).ToString(),
-            command => int.TryParse(command.Args.FirstOrDefault() ?? "0", out int _));
-    }
-
-    private static void UpdateAllMetadata(string commandName, Func<Command, string> getMetadata, Func<Command, bool> predicate = null) {
+    private static void UpdateAllMetadata(string commandName, Func<Command, string> getMetadata, Func<Command, bool>? predicate = null) {
         string tasFilePath = Manager.Controller.FilePath;
         var metadataCommands = Manager.Controller.Commands.SelectMany(pair => pair.Value)
             .Where(command => command.Is(commandName) && command.FilePath == Manager.Controller.FilePath)
@@ -150,7 +196,11 @@ public static class MetadataCommands {
 
         // Prevent a reload from being triggered by the file-system change
         bool needsReload = Manager.Controller.NeedsReload;
-        File.WriteAllLines(tasFilePath, allLines);
+        try {
+            File.WriteAllLines(tasFilePath, allLines);
+        } catch (IOException) {
+            // Something is blocking the TAS file. Just ignore it, the change should be reflected in Studio either way.
+        }
         Manager.Controller.NeedsReload = needsReload;
 
         CommunicationWrapper.SendUpdateLines(updateLines);

@@ -5,8 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using CelesteStudio.Communication;
-using CelesteStudio.Controls;
-using CelesteStudio.Data;
 using CelesteStudio.Dialog;
 using CelesteStudio.Editing;
 using CelesteStudio.Migration;
@@ -38,9 +36,6 @@ public sealed class Studio : Form {
     /// Platform-specific callback to handle new windows
     public readonly Action<Window> WindowCreationCallback;
 
-    /// Actions which aren't associated with any menu and only invokable by hotkey
-    public MenuItem[] GlobalHotkeys { get; private set; }
-
     /// Path to the Celeste install or null if it couldn't be found
     public static string? CelesteDirectory { get; private set; }
 
@@ -60,9 +55,9 @@ public sealed class Studio : Form {
     private ThemeEditor? themeEditorForm;
 
     private string TitleBarText => Editor.Document.FilePath == Document.ScratchFile
-        ? $"<Scratch> - Studio {Version}"
+        ? $"Studio {Version} - <Scratch>"
         // Hide username inside title bar
-        : $"{Editor.Document.FileName}{(Editor.Document.Dirty ? "*" : string.Empty)} - Studio {Version}   {Editor.Document.FilePath.Replace(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "~")}";
+        : $"Studio {Version} - {(Editor.Document.Dirty ? "*" : string.Empty)}{Editor.Document.FileName}    {Editor.Document.FilePath.Replace(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "~")}";
 
     /// Size of scroll bars, depending on the current platform
     public static int ScrollBarSize {
@@ -120,13 +115,7 @@ public sealed class Studio : Form {
         }
 
         Migrator.ApplyPreLoadMigrations();
-
-#if DEBUG
-        MenuEntryExtensions.VerifyData();
-#endif
-
         Settings.Load();
-
         Migrator.ApplyPostLoadMigrations();
 
         Size = Settings.Instance.LastSize;
@@ -157,13 +146,10 @@ public sealed class Studio : Form {
             };
         }
 
-        GlobalHotkeys = CreateGlobalHotkeys();
-
         // Needs to be registered before the editor is created
         Settings.Changed += ApplySettings;
         Settings.KeyBindingsChanged += () => {
             Menu = CreateMenu();
-            GlobalHotkeys = CreateGlobalHotkeys();
         };
         // Reflect changed game-settings
         CommunicationWrapper.SettingsChanged += _ => {
@@ -183,7 +169,7 @@ public sealed class Studio : Form {
             Editor.AllowDrop = true;
             Editor.DragDrop += (_, e) => {
                 if (e.Data.ContainsUris && e.Data.Uris.Length > 0) {
-                    OpenFile(Uri.UnescapeDataString(e.Data.Uris[0].AbsolutePath));
+                    OpenFileInEditor(Uri.UnescapeDataString(e.Data.Uris[0].AbsolutePath));
                 }
             };
             Editor.DragEnter += (_, e) => {
@@ -228,13 +214,13 @@ public sealed class Studio : Form {
 
         Load += (_, _) => {
             if (args.Length > 0) {
-                OpenFile(args[0]);
+                OpenFileInEditor(args[0]);
             } else if (Settings.Instance.RecentFiles.Count > 0 &&
                        !string.IsNullOrWhiteSpace(Settings.Instance.RecentFiles[0]) &&
                        File.Exists(Settings.Instance.RecentFiles[0]))
             {
                 // Re-open last file if possible
-                OpenFile(Settings.Instance.RecentFiles[0]);
+                OpenFileInEditor(Settings.Instance.RecentFiles[0]);
             } else {
                 OnNewFile();
             }
@@ -245,7 +231,7 @@ public sealed class Studio : Form {
 
     /// Properly registers a window
     public static void RegisterWindow(Window window, Window? parent = null, bool centerWindow = true) {
-        parent ??= Studio.Instance;
+        parent ??= Instance;
 
         window.Icon = Assets.AppIcon;
         window.ShowInTaskbar = true;
@@ -324,20 +310,11 @@ public sealed class Studio : Form {
         if (Eto.Platform.Instance.IsWpf) {
             var aboutHandler = (ThemedAboutDialogHandler)about.Handler;
             var dialog = aboutHandler.Control;
-            dialog.Load += (_, _) => Studio.Instance.WindowCreationCallback(dialog);
+            dialog.Load += (_, _) => Instance.WindowCreationCallback(dialog);
             dialog.Shown += (_, _) => dialog.Location = parent.Location + new Point((parent.Width - dialog.Width) / 2, (parent.Height - dialog.Height) / 2);
         }
 
         about.ShowDialog(parent);
-    }
-
-    private static MenuItem[] CreateGlobalHotkeys() {
-        return [
-            MenuEntry.Game_Start.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.Start)),
-            MenuEntry.Game_Pause.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.Pause)),
-            MenuEntry.Game_Restart.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.Restart)),
-            MenuEntry.Game_FrameAdvance.ToAction(() => CommunicationWrapper.SendHotkey(HotkeyID.FrameAdvance)),
-        ];
     }
 
     private void RecalculateLayout() {
@@ -406,11 +383,20 @@ public sealed class Studio : Form {
         }
 
         if (showConfirmation) {
-            var confirm = MessageBox.Show("""
-                                                    You have unsaved changes.
-                                                    Are you sure you want to discard them?
-                                                    """, MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.No);
-            return confirm == DialogResult.Yes;
+            switch (DiscardSaveDialog.Show()) {
+                case null:
+                    return false;
+
+                case true:
+                    return true;
+
+                case false when Editor.Document.FilePath == Document.ScratchFile:
+                    return OnSaveFileAs(openTargetFile: false);
+
+                case false:
+                    Editor.Document.Save();
+                    return true;
+            }
         }
 
         return true;
@@ -433,61 +419,99 @@ public sealed class Studio : Form {
         return Path.GetFullPath(dir);
     }
 
-    private void OnNewFile() {
-        if (!ShouldDiscardChanges())
-            return;
+    #region Bindings
 
-        string simpleConsoleCommand = CommunicationWrapper.GetConsoleCommand(simple: true);
-        LevelInfo? levelInfo = CommunicationWrapper.GetLevelInfo();
-
-        string initText = $"RecordCount: 1{Document.NewLine}";
-        if (levelInfo != null && !string.IsNullOrWhiteSpace(levelInfo?.ModUrl)) {
-            initText = levelInfo?.ModUrl + initText;
-        }
-        if (!string.IsNullOrWhiteSpace(simpleConsoleCommand)) {
-            initText += $"{Document.NewLine}{simpleConsoleCommand}{Document.NewLine}   1{Document.NewLine}";
-        }
-        initText += $"{Document.NewLine}#Start{Document.NewLine}";
-        if (levelInfo?.WakeupTime is { } wakeupTime) {
-            initText += wakeupTime.ToString().PadLeft(ActionLine.MaxFramesDigits) + Document.NewLine;
-        }
-
-        File.WriteAllText(Document.ScratchFile, initText);
-        OpenFile(Document.ScratchFile);
+    /// Provides all `Bindings` which exist in Studio
+    public static IEnumerable<Binding> GetAllStudioBindings() {
+        return AllBindings
+            .Concat(Editor.AllBindings)
+            .Concat(Editor.ContextActions.Select(contextAction => contextAction.ToBinding()))
+            .Concat(GameInfo.AllBindings)
+            .Concat(CommunicationWrapper.AllBindings);
     }
 
-    private void OnOpenFile() {
-        if (!ShouldDiscardChanges())
-            return;
+    private static BoolBinding CreateSettingToggle(string identifier, string displayName, Binding.Category category, Hotkey defaultToggleHotkey, string settingName) {
+        var property = typeof(Settings).GetProperty(settingName)!;
+        Debug.Assert(property.PropertyType == typeof(bool));
 
-        var dialog = new OpenFileDialog {
-            Filters = { new FileFilter("TAS", ".tas") },
-            MultiSelect = false,
-            Directory = new Uri(GetFilePickerDirectory()),
-        };
+        return new BoolBinding(identifier, displayName, category, defaultToggleHotkey,
+            () => (bool) property.GetValue(Settings.Instance)!,
+            value => {
+                property.SetValue(Settings.Instance, value);
 
-        if (dialog.ShowDialog(this) == DialogResult.Ok) {
-            OpenFile(dialog.Filenames.First());
-        }
+                Settings.OnChanged();
+                Settings.Save();
+            });
+    }
+    private static EnumBinding<T> CreateSettingOption<T>(string identifier, string displayName, Dictionary<T,string> valueDisplayNames, Binding.Category category, Hotkey defaultCycleForwardHotkey, Hotkey defaultCycleBackwardHotkey, Dictionary<T, Hotkey> defaultSetHotkeys, string settingName) where T : struct, Enum {
+        var property = typeof(Settings).GetProperty(settingName)!;
+        Debug.Assert(property.PropertyType == typeof(T));
+
+        return new EnumBinding<T>(identifier, displayName, valueDisplayNames, category, defaultCycleForwardHotkey, defaultCycleBackwardHotkey, defaultSetHotkeys,
+            () => (T) property.GetValue(Settings.Instance)!,
+            value => {
+                property.SetValue(Settings.Instance, value);
+
+                Settings.OnChanged();
+                Settings.Save();
+            });
     }
 
-    public void OpenFile(string filePath) {
-        if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
+    private static readonly ActionBinding NewFile = new("File_New", "&New File", Binding.Category.File, Hotkey.KeyCtrl(Keys.N), () => Instance.OnNewFile());
+    private static readonly ActionBinding OpenFile = new("File_Open", "&Open File...", Binding.Category.File, Hotkey.KeyCtrl(Keys.O), () => Instance.OnOpenFile());
+    private static readonly ActionBinding OpenPreviousFile = new("File_OpenPrevious", "Open &Previous File", Binding.Category.File, Hotkey.KeyAlt(Keys.Left), () => Instance.OnOpenPreviousFile());
+    private static readonly ActionBinding SaveFile = new("File_Save", "Save", Binding.Category.File, Hotkey.KeyCtrl(Keys.S), () => Instance.OnSaveFile());
+    private static readonly ActionBinding SaveFileAs = new("File_SaveAs", "&Save As...", Binding.Category.File, Hotkey.KeyCtrl(Keys.Shift | Keys.S), () => Instance.OnSaveFileAs(openTargetFile: true));
+    private static readonly ActionBinding ShowFile = new("File_Show", "Show in &File Explorer...", Binding.Category.File, Hotkey.None, () => Instance.OnShowFile());
+    private static readonly ActionBinding RecordTAS = new("File_RecordTAS", "&Record TAS...", Binding.Category.File, Hotkey.None, () => Instance.OnRecordTAS());
+    private static readonly ActionBinding Quit = new("File_Quit", "Quit", Binding.Category.File, Hotkey.None, () => Application.Instance.Quit());
+
+    private static readonly BoolBinding SendInputs = new("Settings_SendInputs", "&Send Inputs to Celeste", Binding.Category.Settings, Hotkey.KeyCtrl(Keys.D),
+        () => Settings.Instance.SendInputsToCeleste,
+        value => {
+            Instance.Editor.ShowToastMessage($"{(value ? "Enabled" : "Disabled")} Sending Inputs to Celeste", Editor.DefaultToastTime);
+            Settings.Instance.SendInputsToCeleste = value;
+        });
+
+    private static readonly EnumBinding<GameInfoType> ShowGameInfo = CreateSettingOption<GameInfoType>("View_ShowGameInfo", "Game Info", new(), Binding.Category.View, Hotkey.None, Hotkey.None, new(), nameof(Settings.GameInfo));
+    private static readonly BoolBinding ShowSubpixelIndicator = CreateSettingToggle("View_ShowSubpixelIndicator", "Show Subpixel Indicator",  Binding.Category.View, Hotkey.None, nameof(Settings.ShowSubpixelIndicator));
+    private static readonly BoolBinding AlwaysOnTop = CreateSettingToggle("View_AlwaysOnTop", "Always on Top", Binding.Category.View, Hotkey.None, nameof(Settings.AlwaysOnTop));
+    private static readonly BoolBinding WrapComments = CreateSettingToggle("View_WrapComments", "Word Wrap Comments", Binding.Category.View, Hotkey.None, nameof(Settings.WordWrapComments));
+    private static readonly BoolBinding ShowFoldingIndicator = CreateSettingToggle("View_ShowFoldingIndicator", "Show Fold Indicators", Binding.Category.View, Hotkey.None, nameof(Settings.ShowFoldIndicators));
+
+    public static readonly Binding[] AllBindings = [
+        NewFile, OpenFile, OpenPreviousFile, SaveFile, SaveFileAs, ShowFile, RecordTAS, Quit,
+        SendInputs,
+        ShowGameInfo, ShowSubpixelIndicator, AlwaysOnTop, WrapComments, ShowFoldingIndicator,
+    ];
+
+    public void OpenFileInEditor(string filePath) {
+        if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath)) {
             Settings.Instance.AddRecentFile(filePath);
-
-        var document = Document.Load(filePath);
-        if (document == null) {
-            MessageBox.Show($"An unexpected error occured while trying to open the file '{filePath}'", MessageBoxButtons.OK, MessageBoxType.Error);
-            return;
         }
 
-        if (Editor.Document is { } doc) {
-            doc.Dispose();
-            doc.TextChanged -= UpdateTitle;
-        }
+        FileRefactor.RefactorSemaphore.Wait();
 
-        Editor.Document = document;
-        Editor.Document.TextChanged += UpdateTitle;
+        try {
+            var document = Document.Load(filePath);
+            if (document == null) {
+                MessageBox.Show($"An unexpected error occured while trying to open the file '{filePath}'", MessageBoxButtons.OK, MessageBoxType.Error);
+                return;
+            }
+
+            if (Editor.Document is { } doc) {
+                doc.Dispose();
+                doc.TextChanged -= UpdateTitle;
+            }
+
+            Editor.Document = document;
+            Editor.Document.TextChanged += UpdateTitle;
+        } catch (Exception ex) {
+            Console.Error.WriteLine($"Failed to open file '{filePath}'");
+            Console.Error.WriteLine(ex);
+        } finally {
+            FileRefactor.RefactorSemaphore.Release();
+        }
 
         Title = TitleBarText;
         Menu = CreateMenu(); // Recreate menu to reflect changed "Recent Files"
@@ -503,9 +527,57 @@ public sealed class Studio : Form {
         }
     }
 
+    private void OnNewFile() {
+        if (!ShouldDiscardChanges()) {
+            return;
+        }
+
+        string simpleConsoleCommand = CommunicationWrapper.GetConsoleCommand(simple: true);
+        var levelInfo = CommunicationWrapper.GetLevelInfo();
+
+        string initText = $"RecordCount: 1{Document.NewLine}";
+        if (levelInfo != null && !string.IsNullOrWhiteSpace(levelInfo.Value.ModUrl)) {
+            initText = levelInfo.Value.ModUrl + initText;
+        }
+        if (!string.IsNullOrWhiteSpace(simpleConsoleCommand)) {
+            initText += $"{Document.NewLine}{simpleConsoleCommand}{Document.NewLine}   1{Document.NewLine}";
+        }
+        initText += $"{Document.NewLine}#Start{Document.NewLine}";
+        if (levelInfo?.WakeupTime is { } wakeupTime) {
+            initText += wakeupTime.ToString().PadLeft(ActionLine.MaxFramesDigits) + Document.NewLine;
+        }
+
+        File.WriteAllText(Document.ScratchFile, initText);
+        OpenFileInEditor(Document.ScratchFile);
+    }
+
+    private void OnOpenFile() {
+        if (!ShouldDiscardChanges()) {
+            return;
+        }
+
+        var dialog = new OpenFileDialog {
+            Filters = { new FileFilter("TAS", ".tas") },
+            MultiSelect = false,
+            Directory = new Uri(GetFilePickerDirectory()),
+        };
+
+        if (dialog.ShowDialog(this) == DialogResult.Ok) {
+            OpenFileInEditor(dialog.Filenames.First());
+        }
+    }
+
+    private void OnOpenPreviousFile() {
+        if (!ShouldDiscardChanges()) {
+            return;
+        }
+
+        OpenFileInEditor(Settings.Instance.RecentFiles[1]);
+    }
+
     private void OnSaveFile() {
         if (Editor.Document.FilePath == Document.ScratchFile) {
-            OnSaveFileAs();
+            OnSaveFileAs(openTargetFile: true);
             return;
         }
 
@@ -513,18 +585,20 @@ public sealed class Studio : Form {
         Title = TitleBarText;
     }
 
-    private void OnSaveFileAs() {
+    private bool OnSaveFileAs(bool openTargetFile) {
         var dialog = new SaveFileDialog {
             Filters = { new FileFilter("TAS", ".tas") },
             Directory = new Uri(GetFilePickerDirectory()),
         };
 
-        if (dialog.ShowDialog(this) != DialogResult.Ok)
-            return;
+        if (dialog.ShowDialog(this) != DialogResult.Ok) {
+            return false;
+        }
 
         var filePath = dialog.FileName;
-        if (Path.GetExtension(filePath) != ".tas")
+        if (Path.GetExtension(filePath) != ".tas") {
             filePath += ".tas";
+        }
 
         // Remove scratch file from recent files
         if (Settings.Instance.RecentFiles.FirstOrDefault() == Document.ScratchFile) {
@@ -532,30 +606,31 @@ public sealed class Studio : Form {
         }
 
         File.WriteAllText(filePath, Editor.Document.Text);
-        OpenFile(filePath);
+        if (openTargetFile) {
+            OpenFileInEditor(filePath);
+        }
+        return true;
     }
 
-    private void OnIntegrateReadFiles() {
-        var dialog = new SaveFileDialog {
-            Filters = { new FileFilter("TAS", ".tas") },
-            Directory = new Uri(GetFilePickerDirectory()),
-            FileName = Path.GetDirectoryName(Editor.Document.FilePath) + "/" + Path.GetFileNameWithoutExtension(Editor.Document.FilePath) + "_Integrated.tas"
-        };
-        Console.WriteLine($"f {Editor.Document.FilePath} & {Path.GetDirectoryName(Editor.Document.FilePath) + Path.GetFileNameWithoutExtension(Editor.Document.FilePath) + "_Integrated.tas"}");
-
-        if (dialog.ShowDialog(this) != DialogResult.Ok) {
+    private void OnShowFile() {
+        if (string.IsNullOrEmpty(Editor.Document.FilePath)) {
             return;
         }
 
-        string filePath = dialog.FileName;
-        if (Path.GetExtension(filePath) != ".tas") {
-            filePath += ".tas";
+        ProcessHelper.OpenInDefaultApp(Path.GetDirectoryName(Editor.Document.FilePath)!);
+    }
+
+    private void OnRecordTAS() {
+        if (!CommunicationWrapper.Connected) {
+            MessageBox.Show("This feature requires the support of the CelesteTAS mod, please launch the game.", MessageBoxButtons.OK);
+            return;
         }
 
-        IntegrateReadFiles.Generate(Editor.Document.FilePath, filePath);
-
-        OpenFile(filePath);
+        RecordDialog.Show();
     }
+
+    #endregion
+    #region Menu
 
     private MenuBar CreateMenu() {
         const int minDecimals = 2;
@@ -565,33 +640,14 @@ public sealed class Studio : Form {
         const float minSlowForwardSpeed = 0.1f;
         const float maxSlowForwardSpeed = 0.9f;
 
-        var recordTasButton = MenuEntry.File_RecordTAS.ToAction(() => {
-            if (!CommunicationWrapper.Connected) {
-                MessageBox.Show("This feature requires the support of the CelesteTAS mod, please launch the game.", MessageBoxButtons.OK);
-                return;
-            }
-
-            RecordDialog.Show();
-        });
-        recordTasButton.Enabled = CommunicationWrapper.Connected;
-
         // NOTE: Index 0 is the recent files is the current file, so that is skipped
-        var openPreviousFile = MenuEntry.File_OpenPrevious.ToAction(() => {
-            if (!ShouldDiscardChanges()) {
-                return;
-            }
-
-            OpenFile(Settings.Instance.RecentFiles[1]);
-        });
-        openPreviousFile.Enabled = Settings.Instance.RecentFiles.Count > 1;
-
         var recentFilesMenu = new SubMenuItem { Text = "Open &Recent" };
         for (int i = 1; i < Settings.Instance.RecentFiles.Count; i++) {
             string filePath = Settings.Instance.RecentFiles[i];
             if (filePath == Document.ScratchFile) {
-                recentFilesMenu.Items.Add(MenuUtils.CreateAction("<Scratch>", Keys.None, () => OpenFile(filePath)));
+                recentFilesMenu.Items.Add(MenuUtils.CreateAction("<Scratch>", Keys.None, () => OpenFileInEditor(filePath)));
             } else {
-                recentFilesMenu.Items.Add(MenuUtils.CreateAction(filePath, Keys.None, () => OpenFile(filePath)));
+                recentFilesMenu.Items.Add(MenuUtils.CreateAction(filePath, Keys.None, () => OpenFileInEditor(filePath)));
             }
         }
         recentFilesMenu.Items.Add(new SeparatorMenuItem());
@@ -605,8 +661,8 @@ public sealed class Studio : Form {
         recentFilesMenu.Enabled = Settings.Instance.RecentFiles.Count > 1;
 
         var backupsMenu = new SubMenuItem { Text = "Open &Backup" };
-        var backupDir = Editor.Document.BackupDirectory;
-        var backupFiles = Directory.Exists(backupDir) ? Directory.GetFiles(backupDir) : [];
+        string backupDir = Editor.Document.BackupDirectory;
+        string[] backupFiles = Directory.Exists(backupDir) ? Directory.GetFiles(backupDir) : [];
         for (int i = 0; i < backupFiles.Length; i++) {
             if (i >= 20 && backupFiles.Length - i >= 2) { // Only trigger where there are also at least 2 more files left
                 backupsMenu.Items.Add(new ButtonMenuItem { Text = $"{backupFiles.Length - i} files remaining...", Enabled = false });
@@ -614,7 +670,7 @@ public sealed class Studio : Form {
             }
 
             string filePath = backupFiles[i];
-            backupsMenu.Items.Add(MenuUtils.CreateAction(Path.GetFileName(filePath), Keys.None, () => OpenFile(filePath)));
+            backupsMenu.Items.Add(MenuUtils.CreateAction(Path.GetFileName(filePath), Keys.None, () => OpenFileInEditor(filePath)));
         }
         backupsMenu.Items.Add(new SeparatorMenuItem());
         backupsMenu.Items.Add(new Command((_, _) => ProcessHelper.OpenInDefaultApp(backupDir)) { MenuText = "Show All Files" });
@@ -642,27 +698,22 @@ public sealed class Studio : Form {
         inputSendingMenu.Items.Add(new SeparatorMenuItem());
         inputSendingMenu.Items.Add(MenuUtils.CreateSettingNumberInput("Typing Timeout", nameof(Settings.SendInputsTypingTimeout), 0.0f, 5.0f, 0.1f));
 
-        var autoIndexRoomLabels = MenuUtils.CreateSettingEnum<AutoRoomIndexing>("Auto-Index Room Labels", nameof(Settings.AutoIndexRoomLabels), ["Disabled", "Current File", "Include Read-commands"]);
-        var commandSeparator = MenuUtils.CreateSettingEnum<CommandSeparator>("Command Separator", nameof(Settings.CommandSeparator), ["Space (\" \")", "Comma (\",\")", "Space + Comma (\", \")"]);
-
-        autoIndexRoomLabels.Enabled = StyleConfig.Current.RoomLabelIndexing == null;
-        commandSeparator.Enabled = StyleConfig.Current.CommandArgumentSeparator == null;
-
         MenuItem[] items = [
             new SubMenuItem { Text = "&File", Items = {
-                MenuEntry.File_New.ToAction(OnNewFile),
+                NewFile,
                 new SeparatorMenuItem(),
-                MenuEntry.File_Open.ToAction(OnOpenFile),
-                openPreviousFile,
+                OpenFile,
+                OpenPreviousFile.CreateItem().Apply(item => item.Enabled = Settings.Instance.RecentFiles.Count > 1),
                 recentFilesMenu,
                 backupsMenu,
+                ShowFile.CreateItem().Apply(item => item.Enabled = !string.IsNullOrEmpty(Editor.Document.FilePath) && Editor.Document.FilePath != Document.ScratchFile),
                 new SeparatorMenuItem(),
-                MenuEntry.File_Save.ToAction(OnSaveFile),
-                MenuEntry.File_SaveAs.ToAction(OnSaveFileAs),
+                SaveFile,
+                SaveFileAs,
                 new SeparatorMenuItem(),
                 MenuUtils.CreateAction("&Convert to LibTAS Movie..."),
                 new SeparatorMenuItem(),
-                recordTasButton,
+                RecordTAS.CreateItem().Apply(item => item.Enabled = CommunicationWrapper.Connected),
             }},
             new SubMenuItem {Text = "&Settings", Items = {
                 new SubMenuItem {Text = "Automatic Backups", Items = {
@@ -673,36 +724,35 @@ public sealed class Studio : Form {
                 MenuUtils.CreateAction("Key Bindings...", Keys.None, KeyBindingDialog.Show),
                 MenuUtils.CreateAction("Snippets...", Keys.None, SnippetDialog.Show),
                 MenuUtils.CreateAction("Font...", Keys.None, FontDialog.Show),
-                CreateSettingTheme(),
+                CreateThemeMenu(),
                 MenuUtils.CreateAction("Open Settings File...", Keys.None, () => ProcessHelper.OpenInDefaultApp(Settings.SettingsPath)),
             }},
             new SubMenuItem { Text = "&Preferences", Items = {
                 MenuUtils.CreateSettingToggle("&Auto Save File", nameof(Settings.AutoSave)),
                 MenuUtils.CreateSettingToggle("Auto Remove Mutually Exclusive Actions", nameof(Settings.AutoRemoveMutuallyExclusiveActions)),
-                autoIndexRoomLabels,
+                MenuUtils.CreateSettingEnum<AutoRoomIndexing>("Auto-Index Room Labels", nameof(Settings.AutoIndexRoomLabels), ["Disabled", "Current File", "Include Read-commands"])
+                    .Apply(item => item.Enabled = StyleConfig.Current.RoomLabelIndexing == null),
                 MenuUtils.CreateSettingToggle("Auto-Select Full Input line", nameof(Settings.AutoSelectFullActionLine)),
                 MenuUtils.CreateSettingToggle("Auto-Multiline Comments", nameof(Settings.AutoMultilineComments)),
                 MenuUtils.CreateSettingToggle("Sync &Caret with Playback", nameof(Settings.SyncCaretWithPlayback)),
-                MenuEntry.Settings_SendInputs.ToSettingToggle(nameof(Settings.SendInputsToCeleste), enabled => {
-                    Editor.ShowToastMessage($"{(enabled ? "Enabled" : "Disabled")} Sending Inputs to Celeste", Editor.DefaultToastTime);
-                }),
+                SendInputs,
                 inputSendingMenu,
                 MenuUtils.CreateSettingNumberInput("Scroll Speed", nameof(Settings.ScrollSpeed), 0.0f, 30.0f, 1),
                 MenuUtils.CreateSettingNumberInput("Max Unfolded Lines", nameof(Settings.MaxUnfoldedLines), 0, int.MaxValue, 1),
                 MenuUtils.CreateSettingEnum<InsertDirection>("Insert Direction", nameof(Settings.InsertDirection), ["Above Current Line", "Below Current Line"]),
                 MenuUtils.CreateSettingEnum<CaretInsertPosition>("Caret Insert Position", nameof(Settings.CaretInsertPosition), ["After Inserted Text", "Keep at Previous Position"]),
-                commandSeparator,
+                MenuUtils.CreateSettingEnum<CommandSeparator>("Command Separator", nameof(Settings.CommandSeparator), ["Space (\" \")", "Comma (\",\")", "Space + Comma (\", \")"])
+                    .Apply(item => item.Enabled = StyleConfig.Current.CommandArgumentSeparator == null),
             }},
             new SubMenuItem { Text = "&View", Items = {
-                // TODO: Use MenuEntry.View_ShowGameInfo again
-                MenuUtils.CreateSettingEnum<GameInfoType>("Game Info", nameof(Settings.GameInfo), ["Disabled", "Panel", "Popout"]),
+                ShowGameInfo,
                 MenuUtils.CreateSettingNumberInput("Maximum Game Info Height", nameof(Settings.MaxGameInfoHeight), 0.1f, 0.9f, 0.05f, percent => $"{percent * 100.0f:F0}%"),
-                MenuEntry.View_ShowSubpixelIndicator.ToSettingToggle(nameof(Settings.ShowSubpixelIndicator)),
+                ShowSubpixelIndicator,
                 MenuUtils.CreateSettingNumberInput("Subpixel Indicator Scale", nameof(Settings.SubpixelIndicatorScale), 0.1f, 10.0f, 0.25f),
                 new SeparatorMenuItem(),
-                MenuEntry.View_AlwaysOnTop.ToSettingToggle(nameof(Settings.AlwaysOnTop)),
-                MenuEntry.View_WrapComments.ToSettingToggle(nameof(Settings.WordWrapComments)),
-                MenuEntry.View_ShowFoldingIndicator.ToSettingToggle(nameof(Settings.ShowFoldIndicators)),
+                AlwaysOnTop,
+                WrapComments,
+                ShowFoldingIndicator,
                 MenuUtils.CreateSettingEnum<LineNumberAlignment>("Line Number Alignment", nameof(Settings.LineNumberAlignment), ["Left", "Right"]),
                 MenuUtils.CreateSettingToggle("Compact Menu Bar", nameof(Settings.CompactMenuBar)),
             }},
@@ -719,6 +769,7 @@ public sealed class Studio : Form {
                 new SeparatorMenuItem(),
                 MenuUtils.CreateGameSettingToggle("&Center Camera", nameof(GameSettings.CenterCamera)),
                 MenuUtils.CreateGameSettingToggle("Center Camera Horizontally Only", nameof(GameSettings.CenterCameraHorizontallyOnly)),
+                MenuUtils.CreateGameSettingToggle("Enable Extended Camera Dynamics for Center Camera", nameof(GameSettings.EnableExCameraDynamicsForCenterCamera)),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateGameSettingToggle("&Info HUD", nameof(GameSettings.InfoHud)),
                 MenuUtils.CreateGameSettingToggle("TAS Input Info", nameof(GameSettings.InfoTasInput)),
@@ -741,7 +792,7 @@ public sealed class Studio : Form {
                 MenuUtils.CreateGameSettingNumberInput("Slow Forward Speed", nameof(GameSettings.SlowForwardSpeed), minSlowForwardSpeed, maxSlowForwardSpeed, 0.1f),
             }},
             new SubMenuItem { Text = "&Tools", Items = {
-                MenuUtils.CreateAction("&Project File Formatter", Keys.None, ProjectFileFormatterDialog.Show),
+                MenuUtils.CreateAction("&Project File Formatter", Keys.None, ProjectFileFormatterDialog.Show).Apply(item => item.Enabled = Editor.Document.FilePath != Document.ScratchFile),
                 MenuUtils.CreateAction("&Integrate Read Files", Keys.None, OnIntegrateReadFiles),
                 new SeparatorMenuItem(),
                 MenuUtils.CreateAction("&Jadderline", Keys.None, () => {
@@ -757,7 +808,7 @@ public sealed class Studio : Form {
             }},
         ];
 
-        var quitItem = MenuEntry.File_Quit.ToAction(Application.Instance.Quit);
+        var quitItem = Quit.CreateItem();
         var homeItem = MenuUtils.CreateAction("Open README...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop"));
         var wikiItem = MenuUtils.CreateAction("Open wiki...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki"));
         var whatsNewItem = MenuUtils.CreateAction("What's new?", Keys.None, ChangelogDialog.Show);
@@ -804,7 +855,7 @@ public sealed class Studio : Form {
         return menu;
     }
 
-    private MenuItem CreateSettingTheme() {
+    private MenuItem CreateThemeMenu() {
         var selector = new SubMenuItem { Text = "&Theme" };
 
         var edit = MenuUtils.CreateAction("&Edit Theme...", Keys.None, () => {
@@ -837,4 +888,28 @@ public sealed class Studio : Form {
             items.Add(item);
         }
     }
+
+    private void OnIntegrateReadFiles() {
+        var dialog = new SaveFileDialog {
+            Filters = { new FileFilter("TAS", ".tas") },
+            Directory = new Uri(GetFilePickerDirectory()),
+            FileName = Path.GetDirectoryName(Editor.Document.FilePath) + "/" + Path.GetFileNameWithoutExtension(Editor.Document.FilePath) + "_Integrated.tas"
+        };
+        Console.WriteLine($"f {Editor.Document.FilePath} & {Path.GetDirectoryName(Editor.Document.FilePath) + Path.GetFileNameWithoutExtension(Editor.Document.FilePath) + "_Integrated.tas"}");
+
+        if (dialog.ShowDialog(this) != DialogResult.Ok) {
+            return;
+        }
+
+        string filePath = dialog.FileName;
+        if (Path.GetExtension(filePath) != ".tas") {
+            filePath += ".tas";
+        }
+
+        IntegrateReadFiles.Generate(Editor.Document.FilePath, filePath);
+
+        OpenFileInEditor(filePath);
+    }
+
+    #endregion
 }

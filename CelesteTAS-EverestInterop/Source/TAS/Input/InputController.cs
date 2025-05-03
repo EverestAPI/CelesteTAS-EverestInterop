@@ -146,18 +146,19 @@ public class InputController {
     }
 
     /// Moves the controller 1 frame forward, updating inputs and triggering commands
-    public void AdvanceFrame() {
+    public void AdvanceFrame(out bool couldPlayback) {
         RefreshInputs();
 
+        couldPlayback = CanPlayback;
+
         foreach (var command in CurrentCommands) {
-            if (command.Attribute.ExecuteTiming.Has(ExecuteTiming.Runtime) &&
-                (!EnforceLegalCommand.EnabledWhenRunning || command.Attribute.LegalInFullGame))
-            {
+            if (command.Attribute.ExecuteTiming.Has(ExecuteTiming.Runtime)
+                && (!EnforceLegalCommand.EnabledWhenRunning || command.Attribute.LegalInFullGame)
+            ) {
                 command.Invoke();
             }
 
-            // These commands insert new inputs dynamically, so we can't continue executing the commands
-            // Moving following commands down is already handled.
+            // These commands insert new inputs dynamically
             // Since the generated inputs might've changed, the current position in the TAS need to be updated appropriately
             if (command.Attribute.Name is "SaveAndQuitReenter" or "SelectCampaign") {
                 var newCommand = Commands.Values
@@ -165,7 +166,6 @@ public class InputController {
                     .FirstOrDefault(cmd => cmd.FileLine == command.FileLine && cmd.FilePath == command.FilePath);
 
                 CurrentFrameInTas = newCommand.Frame;
-                break;
             }
         }
 
@@ -239,6 +239,7 @@ public class InputController {
                 Commands[commandParsingFrame] = commands = new List<Command>();
             }
             commands.Add(command);
+            command.Setup();
 
             if (command.Is("Play")) {
                 // Workaround for the 'Play' command:
@@ -269,8 +270,8 @@ public class InputController {
     }
 
     /// Parses the input line and adds it to the TAS
-    public void AddFrames(string line, string path, int fileLine, int studioLine, int repeatIndex = 0, int repeatCount = 0, int frameOffset = 0) {
-        if (InputFrame.TryParse(line, path, fileLine, studioLine, Inputs.LastOrDefault(), out var inputFrame, repeatIndex, repeatCount, frameOffset)) {
+    public void AddFrames(string line, string path, int fileLine, int studioLine, int repeatIndex = 0, int repeatCount = 0, int frameOffset = 0, Command? parentCommand = null) {
+        if (InputFrame.TryParse(line, path, fileLine, studioLine, Inputs.LastOrDefault(), out var inputFrame, repeatIndex, repeatCount, frameOffset, parentCommand)) {
             AddFrames(inputFrame);
         }
     }
@@ -311,6 +312,7 @@ public class InputController {
     public void Clear() {
         Inputs.Clear();
         Commands.Clear();
+        Comments.Clear();
         FastForwards.Clear();
         FastForwardLabels.Clear();
 

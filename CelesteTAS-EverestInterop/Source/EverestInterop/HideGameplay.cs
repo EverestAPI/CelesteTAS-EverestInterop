@@ -33,14 +33,14 @@ public static class HideGameplay {
         // Branch after calling Begin.
         c = new ILCursor(il).Goto(0);
         // GotoNext skips c.Next
-        if (!c.Next.MatchCall(typeof(GameplayRenderer), "Begin")) {
+        if (!c.Next!.MatchCall(typeof(GameplayRenderer), "Begin")) {
             c.GotoNext(i => i.MatchCall(typeof(GameplayRenderer), "Begin"));
         }
 
         c.Index++;
         c.EmitDelegate<Func<bool>>(IsHideGamePlay);
-        // c.Emit(OpCodes.Call, typeof(CelesteTASModule).GetMethod("get_Settings"));
-        // c.Emit(OpCodes.Callvirt, typeof(CelesteTASModuleSettings).GetMethod("get_HideGameplay"));
+        // c.Emit(OpCodes.Call, typeof(CelesteTASModule).GetMethodInfo("get_Settings"));
+        // c.Emit(OpCodes.Callvirt, typeof(CelesteTASModuleSettings).GetMethodInfo("get_HideGameplay"));
         c.Emit(OpCodes.Brtrue, lblAfterEntities);
     }
 

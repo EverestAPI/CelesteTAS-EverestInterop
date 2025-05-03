@@ -25,16 +25,24 @@ public static class DesyncFixer {
     [Initialize]
     private static void Initialize() {
         Dictionary<MethodInfo, int> methods = new() {
-            {typeof(Debris).GetMethod(nameof(Debris.orig_Init)), 1},
-            {typeof(Debris).GetMethod(nameof(Debris.Init), new[] {typeof(Vector2), typeof(char), typeof(bool)}), 1},
-            {typeof(Debris).GetMethod(nameof(Debris.BlastFrom)), 1},
+            {typeof(Debris).GetMethodInfo(nameof(Debris.orig_Init))!, 1},
+            {typeof(Debris).GetMethodInfo(nameof(Debris.Init), [typeof(Vector2), typeof(char), typeof(bool)])!, 1},
+            {typeof(Debris).GetMethodInfo(nameof(Debris.BlastFrom))!, 1},
         };
 
-        foreach (Type type in ModUtils.GetTypes()) {
-            if (type.Name.EndsWith("Debris") && type.GetMethodInfo("Init") is {IsStatic: false} method) {
+        foreach (var type in ModUtils.GetTypes()) {
+            if (!type.Name.EndsWith("Debris")) {
+                continue;
+            }
+
+            foreach (var method in type.GetAllMethodInfos()) {
+                if (method.Name != "Init" || method.IsStatic) {
+                    continue;
+                }
+
                 int index = 1;
-                foreach (ParameterInfo parameterInfo in method.GetParameters()) {
-                    if (parameterInfo.ParameterType == typeof(Vector2)) {
+                foreach (var param in method.GetParameters()) {
+                    if (param.ParameterType == typeof(Vector2)) {
                         methods[method] = index;
                         break;
                     }
@@ -49,11 +57,11 @@ public static class DesyncFixer {
         }
 
         if (ModUtils.GetModule("DeadzoneConfig")?.GetType() is { } deadzoneConfigModuleType) {
-            deadzoneConfigModuleType.GetMethod("OnInputInitialize").SkipMethod(SkipDeadzoneConfig);
+            deadzoneConfigModuleType.GetMethodInfo("OnInputInitialize")!.SkipMethod(SkipDeadzoneConfig);
         }
 
         if (ModUtils.GetType("StrawberryJam2021", "Celeste.Mod.StrawberryJam2021.Entities.CustomAscendManager") is { } ascendManagerType) {
-            ascendManagerType.GetMethodInfo("Routine")?.GetStateMachineTarget().IlHook(MakeRngConsistent);
+            ascendManagerType.GetMethodInfo("Routine")?.GetStateMachineTarget()!.IlHook(MakeRngConsistent);
         }
 
         // https://discord.com/channels/403698615446536203/519281383164739594/1154486504475869236
@@ -62,19 +70,19 @@ public static class DesyncFixer {
         }
 
         if (ModUtils.GetType("AuraHelper", "AuraHelper.Lantern") is { } auraLanternType) {
-            auraLanternType.GetConstructor(new Type[] { typeof(Vector2), typeof(string), typeof(int) })?.IlHook(SetupAuraHelperRandom);
-            auraLanternType.GetMethod("Update")?.IlHook(FixAuraEntityDesync);
-            ModUtils.GetType("AuraHelper", "AuraHelper.Generator")?.GetMethod("Update")?.IlHook(FixAuraEntityDesync);
+            auraLanternType.GetConstructor([typeof(Vector2), typeof(string), typeof(int)])?.IlHook(SetupAuraHelperRandom);
+            auraLanternType.GetMethodInfo("Update")?.IlHook(FixAuraEntityDesync);
+            ModUtils.GetType("AuraHelper", "AuraHelper.Generator")?.GetMethodInfo("Update")?.IlHook(FixAuraEntityDesync);
         }
     }
 
     [Load]
     private static void Load() {
-        typeof(DreamMirror).GetMethod("Added").HookAfter<DreamMirror>(FixDreamMirrorDesync);
+        typeof(DreamMirror).GetMethodInfo("Added")!.HookAfter<DreamMirror>(FixDreamMirrorDesync);
         typeof(CS03_Memo.MemoPage).GetConstructors()[0].HookAfter<CS03_Memo.MemoPage>(FixMemoPageCrash);
-        typeof(FinalBoss).GetMethod("Added").HookAfter<FinalBoss>(FixFinalBossDesync);
-        typeof(Entity).GetMethod("Update").HookAfter(AfterEntityUpdate);
-        typeof(AscendManager).GetMethodInfo("Routine").GetStateMachineTarget().IlHook(MakeRngConsistent);
+        typeof(FinalBoss).GetMethodInfo("Added")!.HookAfter<FinalBoss>(FixFinalBossDesync);
+        typeof(Entity).GetMethodInfo("Update")!.HookAfter(AfterEntityUpdate);
+        typeof(AscendManager).GetMethodInfo("Routine")!.GetStateMachineTarget()!.IlHook(MakeRngConsistent);
 
         // System.IndexOutOfRangeException: Index was outside the bounds of the array.
         // https://discord.com/channels/403698615446536203/1148931167983251466/1148931167983251466
@@ -127,9 +135,9 @@ public static class DesyncFixer {
     }
 
     private static void MakeRngConsistent(ILCursor ilCursor, ILContext ilContent) {
-        if (ilCursor.TryGotoNext(MoveType.After, ins => ins.OpCode == OpCodes.Stfld && ins.Operand.ToString().Contains("::<from>"))) {
+        if (ilCursor.TryGotoNext(MoveType.After, ins => ins.OpCode == OpCodes.Stfld && ins.Operand.ToString()!.Contains("::<from>"))) {
             ILCursor cursor = ilCursor.Clone();
-            if (ilCursor.TryGotoNext(ins => ins.OpCode == OpCodes.Newobj && ins.Operand.ToString().Contains("Fader::.ctor"))) {
+            if (ilCursor.TryGotoNext(ins => ins.OpCode == OpCodes.Newobj && ins.Operand.ToString()!.Contains("Fader::.ctor"))) {
                 cursor.EmitDelegate(AscendManagerPushRandom);
                 ilCursor.EmitDelegate(AscendManagerPopRandom);
             }
@@ -210,9 +218,9 @@ public static class DesyncFixer {
     private static void PreventEmoteMod(ILCursor ilCursor, ILContext ilContext) {
         if (ilCursor.TryGotoNext(
                 ins => ins.OpCode == OpCodes.Call,
-                ins => ins.OpCode == OpCodes.Callvirt && ins.Operand.ToString().Contains("::get_EmoteWheelBinding()"),
+                ins => ins.OpCode == OpCodes.Callvirt && ins.Operand.ToString()!.Contains("::get_EmoteWheelBinding()"),
                 ins => ins.OpCode == OpCodes.Callvirt,
-                ins => ins.OpCode == OpCodes.Callvirt && ins.Operand.ToString().Contains("::get_Count()")
+                ins => ins.OpCode == OpCodes.Callvirt && ins.Operand.ToString()!.Contains("::get_Count()")
             )) {
             ilCursor.Index += 2;
             ilCursor.Emit(OpCodes.Dup);

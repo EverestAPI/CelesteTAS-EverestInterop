@@ -4,21 +4,31 @@ using System.Reflection;
 using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.Helpers;
-using FMOD;
 using System.Collections.Generic;
 using TAS.Utils;
-using Debug = System.Diagnostics.Debug;
 
 namespace TAS.ModInterop;
 
 internal static class ModUtils {
     public static readonly Assembly VanillaAssembly = typeof(Player).Assembly;
 
-    public static Type? GetType(string modName, string name, bool throwOnError = false, bool ignoreCase = false) {
-        return GetAssembly(modName)?.GetType(name, throwOnError, ignoreCase);
+    /// Returns all specified type from the given mod, if the mod is present
+    public static Type? GetType(string modName, string fullTypeName) {
+        var asm = GetAssembly(modName);
+        if (asm == null) {
+            return null;
+        }
+
+        var type = asm.GetType(fullTypeName);
+        if (type == null) {
+            $"Failed to find type '{fullTypeName}' in assembly '{asm}'".Log(LogLevel.Error);
+            return null;
+        }
+
+        return type;
     }
 
-    /// Returns all specified types from the given mod, if present
+    /// Returns all specified types from the given mod, if the mod is present
     public static IEnumerable<Type> GetTypes(string modName, params string[] fullTypeNames) {
         var asm = GetAssembly(modName);
         if (asm == null) {
@@ -29,17 +39,33 @@ internal static class ModUtils {
             var type = asm.GetType(fullTypeName);
             if (type == null) {
                 $"Failed to find type '{fullTypeName}' in assembly '{asm}'".Log(LogLevel.Error);
-#if DEBUG
-                throw new TypeAccessException();
-#endif
+                continue;
             }
 
             yield return type;
         }
     }
 
-    public static Type? GetType(string name, bool throwOnError = false, bool ignoreCase = false) {
-        return FakeAssembly.GetFakeEntryAssembly().GetType(name, throwOnError, ignoreCase);
+    /// Returns the specified method from the given mod, if the mod is present
+    public static MethodInfo? GetMethod(string modName, string fullTypeName, string methodName, Type?[]? parameterTypes = null) {
+        var asm = GetAssembly(modName);
+        if (asm == null) {
+            return null;
+        }
+
+        var type = asm.GetType(fullTypeName);
+        if (type == null) {
+            $"Failed to find type '{fullTypeName}' in assembly '{asm}'".Log(LogLevel.Error);
+            return null;
+        }
+
+        var method = type.GetMethodInfo(methodName, parameterTypes);
+        if (method == null) {
+            $"Failed to find method '{methodName}' in type '{type}'".Log(LogLevel.Error);
+            return null;
+        }
+
+        return method;
     }
 
     public static Type[] GetTypes() {

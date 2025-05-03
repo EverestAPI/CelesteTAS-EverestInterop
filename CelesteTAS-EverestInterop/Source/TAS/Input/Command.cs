@@ -50,7 +50,7 @@ public class TasCommandAttribute(string name) : Attribute {
 #if DEBUG
     internal void Validate() {
         $"Validating command '{Name}'...".Log(LogLevel.Debug);
-        var executeMethod = typeof(TasCommandAttribute).GetMethod(nameof(Execute))!;
+        var executeMethod = typeof(TasCommandAttribute).GetMethodInfo(nameof(Execute))!;
         Debug.Assert(m_Execute != null);
         Debug.Assert(m_Execute.GetParameters().Length == executeMethod.GetParameters().Length);
         for (int i = 0; i < m_Execute.GetParameters().Length; i++) {
@@ -107,17 +107,20 @@ public readonly record struct Command(
                 return false;
             }
 
-            if (info.ExecuteTiming.Has(ExecuteTiming.Parse)) {
-                Parsing = true;
-                info.Execute(commandLine, studioLine, filePath, fileLine);
-                Parsing = false;
-            }
-
             command = new Command(commandLine, info, filePath, fileLine, studioLine, frame);
             return true;
         } catch (Exception e) {
             e.LogException(error);
             return false;
+        }
+    }
+
+    /// Invokes the command's target method if it should generate inputs
+    public void Setup() {
+        if (Attribute.ExecuteTiming.Has(ExecuteTiming.Parse)) {
+            Parsing = true;
+            Attribute.Execute(CommandLine, StudioLine, FilePath, FileLine);
+            Parsing = false;
         }
     }
 

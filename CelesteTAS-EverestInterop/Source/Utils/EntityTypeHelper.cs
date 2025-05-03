@@ -14,12 +14,12 @@ internal static class EntityTypeHelper {
     private static readonly Dictionary<string, Type> vanillaEntityNameToType = new();
     private static readonly Dictionary<string, Type> modEntityNameToType = new();
 
-    public static Type NameToType(string entityName) {
+    public static Type? NameToType(string entityName) {
         if (vanillaEntityNameToType.IsEmpty()) {
             CreateCache();
         }
 
-        if (vanillaEntityNameToType.TryGetValue(entityName, out Type ret)) {
+        if (vanillaEntityNameToType.TryGetValue(entityName, out var ret)) {
             return ret;
         }
 
@@ -242,7 +242,7 @@ internal static class EntityTypeHelper {
             }
 
             string idTrim = id.Trim();
-            if (vanillaEntityNameToType.TryGetValue(idTrim, out Type vanillaType)) {
+            if (vanillaEntityNameToType.TryGetValue(idTrim, out var vanillaType)) {
                 $"Found duplicate entity name {idTrim} - {type.FullName} vs {vanillaType.FullName}"
                     .Log(LogLevel.Warn);
             }

@@ -16,17 +16,19 @@ public static class ConsoleEnhancements {
     private static string clickedEntityInfo = string.Empty;
     private static readonly Dictionary<string, string> AllModNames = new();
 
-    [Initialize]
+    internal const int InitializePriority = 0;
+
+    [Initialize(InitializePriority)]
     private static void InitializeHelperMethods() {
-        AllModNames.Add(ModUtils.VanillaAssembly.FullName, "Celeste");
+        AllModNames.Add(ModUtils.VanillaAssembly.FullName!, "Celeste");
         foreach (EverestModule module in Everest.Modules) {
             if (module is NullModule) {
                 continue;
             }
 
-            string key = module.GetType().Assembly.FullName;
+            string key = module.GetType().Assembly.FullName!;
             if (!AllModNames.ContainsKey(key)) {
-                AllModNames.Add(key, module.Metadata?.Name);
+                AllModNames.Add(key, module.Metadata.Name);
             }
         }
     }
@@ -47,49 +49,37 @@ public static class ConsoleEnhancements {
         Engine.Commands.Open = false;
     }
 
-    internal static void UpdateMeta() {
+    [UpdateMeta]
+    private static void UpdateMeta() {
         if (!Manager.Running) {
-            return;
+            return; // Only allow inside a TAS, since outside it's already handled
         }
 
-        justClosed = false;
         if (Engine.Commands.Open) {
             Engine.Commands.UpdateOpen();
             if (!Engine.Commands.Open) {
-                justClosed = true;
+                return; // Avoid reopening console
             }
         } else if (Engine.Commands.Enabled) {
             Engine.Commands.UpdateClosed();
         }
-    }
 
-    private static bool justClosed = false;
-    internal static void OpenConsole() {
-        if (!Manager.Running) {
-            return; // Only allow inside a TAS, since outside it's already handled
-        }
-        if (Engine.Commands.Open) {
-            return;
-        }
-        if (justClosed) {
-            // when commands open, hotkeys are not updated (in Hotkeys.UpdateMeta(), updateKey = false)
-            // so if without this extra check:
-            // Gameloop 1: Commands open
-            // Gameloop 2: CoreModule.(Toggle)DebugConsole gets pressed (note this is not our OpenConsole hotkey), and Commands get closed
-            // Gameloop 3: Hotkeys find Commands are closed and decide to update, and find that OpenConsole gets pressed, so it Opens Console again!
+        if (!Engine.Commands.Enabled || Engine.Commands.Open) {
             return;
         }
 
-        // Copied from Commands.UpdateClosed
-        Engine.Commands.Open = true;
-        Engine.Commands.currentState = Keyboard.GetState();
-        if (!Engine.Commands.installedListener) {
-            Engine.Commands.installedListener = true;
-            TextInput.OnInput += Engine.Commands.HandleChar;
-        }
-        if (!Engine.Commands.printedInfoMessage) {
-            Engine.Commands.Log("Use the 'help' command for a list of debug commands. Press Esc or use the 'q' command to close the console.");
-            Engine.Commands.printedInfoMessage = true;
+        if (Hotkeys.OpenConsole.Pressed) {
+            // Copied from Commands.UpdateClosed
+            Engine.Commands.Open = true;
+            Engine.Commands.currentState = Keyboard.GetState();
+            if (!Engine.Commands.installedListener) {
+                Engine.Commands.installedListener = true;
+                TextInput.OnInput += Engine.Commands.HandleChar;
+            }
+            if (!Engine.Commands.printedInfoMessage) {
+                Engine.Commands.Log("Use the 'help' command for a list of debug commands. Press Esc or use the 'q' command to close the console.");
+                Engine.Commands.printedInfoMessage = true;
+            }
         }
     }
 
@@ -105,14 +95,14 @@ public static class ConsoleEnhancements {
     }
 
     private static string ShowExtraInfo(string text, object xObj, object yObj) {
-        Level level = Engine.Scene as Level;
+        Level level = (Engine.Scene as Level)!;
         int x = (int) xObj;
         int y = (int) yObj;
         int worldX = (int) Math.Round(x + level.LevelOffset.X);
         int worldY = (int) Math.Round(y + level.LevelOffset.Y);
 
-        if (MouseButtons.Left.Pressed) {
-            Entity clickedEntity = InfoWatchEntity.FindClickedEntity();
+        if (MouseInput.Left.Pressed) {
+            Entity? clickedEntity = InfoWatchEntity.FindClickedEntity();
             if (clickedEntity != null) {
                 Type type = clickedEntity.GetType();
                 clickedEntityInfo = "\n entity type: ";
@@ -135,7 +125,7 @@ public static class ConsoleEnhancements {
             } else {
                 clickedEntityInfo = string.Empty;
             }
-        } else if (MouseButtons.Right.Pressed) {
+        } else if (MouseInput.Right.Pressed) {
             clickedEntityInfo = string.Empty;
         }
 
@@ -145,8 +135,8 @@ public static class ConsoleEnhancements {
 
     public static string GetModName(Type type) {
         // tells you where that weird entity/trigger comes from
-        if (AllModNames.TryGetValue(type.Assembly.FullName, out string modName)) {
-            if (modName == "Celeste" && type.FullName.StartsWith("Celeste.Mod.")) {
+        if (AllModNames.TryGetValue(type.Assembly.FullName!, out string? modName)) {
+            if (modName == "Celeste" && type.FullName!.StartsWith("Celeste.Mod.")) {
                 modName = "Everest";
             }
 

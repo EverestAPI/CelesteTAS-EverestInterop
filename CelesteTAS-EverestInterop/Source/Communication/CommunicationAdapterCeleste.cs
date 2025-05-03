@@ -313,7 +313,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
             WriteRecordingFailed(RecordingFailedReason.TASRecorderNotInstalled);
             return;
         }
-        if (!TASRecorderInterop.FFmpegInstalled) {
+        if (!TASRecorderInterop.IsFFmpegInstalled) {
             WriteRecordingFailed(RecordingFailedReason.FFmpegNotInstalled);
             return;
         }

@@ -7,10 +7,8 @@ using System.Text;
 using Celeste.Mod;
 using StudioCommunication;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Web;
 using TAS.Communication;
-using TAS.Input;
 using TAS.Module;
 using TAS.SyncCheck;
 using TAS.Utils;
@@ -20,7 +18,7 @@ namespace TAS.EverestInterop;
 internal static class DebugRcPage {
     private static readonly RCEndPoint InfoEndPoint = new() {
         Path = "/tas/info",
-        Name = "CelesteTAS Info",
+        Name = "General Info (CelesteTAS)",
         InfoHTML = "List some TAS info.",
         Handle = c => {
             StringBuilder builder = new();
@@ -47,7 +45,7 @@ internal static class DebugRcPage {
         Path = "/tas/sendhotkey",
         PathHelp = "/tas/sendhotkey?id={HotkeyIds}&action={press(default)|release} (Example: ?id=Start&action=press)",
         PathExample = "/tas/sendhotkey?id=Start&action=press",
-        Name = "CelesteTAS Send Hotkey",
+        Name = "Send Hotkey (CelesteTAS)",
         InfoHTML = $"Press/Release the specified hotkey.<br />Except for hotkeys FastForward and SlowForward, other hotkeys are automatically released after being pressed.<br />Available id: {string.Join(", ", Enum.GetNames(typeof(HotkeyID)))}",
         Handle = c => {
             if (SyncChecker.Active) {
@@ -95,16 +93,16 @@ TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}
 
     private static readonly RCEndPoint CustomInfoPoint = new() {
         Path = "/tas/custominfo",
-        PathHelp = "/tas/custominfo?template={content} (Example: ?template=" + defaultCustomInfoTemplate,
+        PathHelp = "/tas/custominfo?template={content} | Example: ?template=" + defaultCustomInfoTemplate,
         PathExample = $"/tas/custominfo?template={defaultCustomInfoTemplate}",
-        Name = "CelesteTAS Custom Info Template",
+        Name = "Custom Info Template (CelesteTAS)",
         InfoHTML = "Get/Set custom info template. Please use \\n for linebreaks.",
         Handle = c => {
             StringBuilder builder = new();
             Everest.DebugRC.WriteHTMLStart(c, builder);
 
             NameValueCollection args = Everest.DebugRC.ParseQueryString(c.Request.RawUrl);
-            string template = args["template"];
+            string? template = args["template"];
             if (template != null) {
                 TasSettings.InfoCustomTemplate = WebUtility.UrlDecode(template).Replace("\\n", "\n");
             }
@@ -119,9 +117,9 @@ TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}
 
     private static readonly RCEndPoint PlayTasPoint = new() {
         Path = "/tas/playtas",
-        PathHelp = "/tas/playtas?filePath={filePath} (Example: ?file=C:\\Celeste.tas",
+        PathHelp = "/tas/playtas?filePath={filePath} | Example: ?file=C:\\Celeste.tas",
         PathExample = "/tas/playtas?filePath=C:\\Celeste.tas",
-        Name = "CelesteTAS Play TAS",
+        Name = "Play TAS (CelesteTAS)",
         InfoHTML = "Play the specified TAS file",
         Handle = c => {
             if (SyncChecker.Active) {
@@ -130,20 +128,22 @@ TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}
                 return;
             }
 
-            StringBuilder builder = new();
+            var builder = new StringBuilder();
             Everest.DebugRC.WriteHTMLStart(c, builder);
 
-            NameValueCollection args = Everest.DebugRC.ParseQueryString(c.Request.RawUrl);
-            string filePath = args["filePath"];
-            if (filePath.IsNullOrEmpty()) {
+            var args = Everest.DebugRC.ParseQueryString(c.Request.RawUrl);
+            string? filePath = args["filePath"];
+            if (string.IsNullOrEmpty(filePath)) {
                 WriteLine(builder, $"<h2>ERROR: Invalid file path: {filePath ?? "NULL"} </h2>");
             } else {
                 filePath = WebUtility.UrlDecode(filePath);
+
                 if (!File.Exists(filePath)) {
                     WriteLine(builder, $"<h2>ERROR: File does not exist: {filePath} </h2>");
                 } else {
                     WriteLine(builder, "OK");
                     Manager.AddMainThreadAction(() => {
+                        Manager.DisableRun();
                         Manager.Controller.FilePath = filePath;
                         Manager.EnableRun();
                     });
@@ -157,7 +157,7 @@ TheoCantGrab: {TheoCrystal.Hold.cannotHoldTimer.toFrame()}
 
     private static readonly RCEndPoint GameStatePoint = new() {
         Path = "/tas/game_state",
-        Name = "CelesteTAS Game State",
+        Name = "Game State (CelesteTAS)",
         InfoHTML = "Returns information about the current game state",
         Handle = c => Everest.DebugRC.Write(c, JsonSerializer.Serialize(GameData.GetGameState(), new JsonSerializerOptions {
             IncludeFields = true,

@@ -14,7 +14,7 @@ internal static class BetterInvincible {
 
     [Initialize]
     private static void Initialize() {
-        typeof(Player).GetMethod("orig_Die")!.IlHook(il => {
+        typeof(Player).GetMethodInfo("orig_Die")!.IlHook(il => {
             var cursor = new ILCursor(il);
             if (cursor.TryGotoNext(MoveType.After, ins => ins.MatchLdfld<Assists>(nameof(Assists.Invincible)))) {
                 cursor.EmitDelegate(ModifyInvincible);

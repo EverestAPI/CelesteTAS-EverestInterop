@@ -77,14 +77,14 @@ public static class UnloadedRoomHitbox {
         }
 
         foreach (LevelData levelData in levelDatasInCamera) {
-            if (!DecalActions.TryGetValue(levelData, out List<Action> decalActions)) {
+            if (!DecalActions.TryGetValue(levelData, out var decalActions)) {
                 DecalActions.Add(levelData, decalActions = new List<Action>());
                 DrawDecalHitbox(levelData, decalActions);
             }
 
             decalActions.ForEach(action => action());
 
-            if (!EntityActions.TryGetValue(levelData, out List<Action<Level>> entityActions)) {
+            if (!EntityActions.TryGetValue(levelData, out var entityActions)) {
                 EntityActions.Add(levelData, entityActions = new List<Action<Level>>());
                 DrawEntityHitbox(levelData, entityActions);
                 DrawTriggerHitbox(levelData, entityActions);

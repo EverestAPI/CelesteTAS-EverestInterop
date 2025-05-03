@@ -5,7 +5,7 @@ namespace StudioCommunication;
 [MemoryPackable]
 public partial struct CommandAutoCompleteEntry() {
     /// Entry name, displayed in the auto-complete menu
-    public string Name;
+    public required string Name;
     /// Previous parts of the same argument which is prepended to the name to get the full argument name
     public string Prefix = string.Empty;
     /// Additional text displayed for the entry

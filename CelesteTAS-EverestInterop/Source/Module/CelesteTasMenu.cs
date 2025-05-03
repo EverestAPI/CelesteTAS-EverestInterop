@@ -12,16 +12,18 @@ using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
 using TAS.Gameplay;
-using TAS.Input;
+using TAS.ModInterop;
 using TAS.Utils;
 
 namespace TAS.Module;
 
 internal static class CelesteTasMenu {
-    private static readonly MethodInfo CreateKeyboardConfigUi = typeof(EverestModule).GetMethodInfo("CreateKeyboardConfigUI");
-    private static readonly MethodInfo CreateButtonConfigUI = typeof(EverestModule).GetMethodInfo("CreateButtonConfigUI");
-    private static List<EaseInSubMenu> options;
-    private static TextMenu.Item hotkeysSubMenu;
+    private static readonly MethodInfo? CreateKeyboardConfigUi =
+        typeof(EverestModule).GetMethodInfo("CreateKeyboardConfigUI");
+
+    private static readonly MethodInfo? CreateButtonConfigUI = typeof(EverestModule).GetMethodInfo("CreateButtonConfigUI");
+    private static List<EaseInSubMenu>? options;
+    private static TextMenu.Item? hotkeysSubMenu;
 
     internal static string ToDialogText(this string input) => Dialog.Clean("TAS_" + input.Replace(" ", "_"));
 
@@ -43,6 +45,14 @@ internal static class CelesteTasMenu {
                 TasSettings.CenterCamera = value));
             subMenu.Add(new TextMenu.OnOff("Center Camera Horizontally Only".ToDialogText(), TasSettings.CenterCameraHorizontallyOnly).Change(value =>
                 TasSettings.CenterCameraHorizontallyOnly = value));
+            TextMenu.Item autoEnableExCameraDynamicsItem;
+            subMenu.Add(autoEnableExCameraDynamicsItem = new TextMenu.OnOff("Auto Enable ExCameraDynamics".ToDialogText(), TasSettings.EnableExCameraDynamicsForCenterCamera).Change(value =>
+                TasSettings.EnableExCameraDynamicsForCenterCamera = value));
+            if (ExCameraDynamicsInterop.Installed) {
+                subMenu.AddDescription(menu, autoEnableExCameraDynamicsItem, "ExCameraDynamics Description B".ToDialogText(), Color.Red);
+            } else {
+                subMenu.AddDescription(menu, autoEnableExCameraDynamicsItem, "ExCameraDynamics Description A".ToDialogText(), Color.Red);
+            }
             subMenu.Add(new TextMenu.OnOff("Restore Settings".ToDialogText(), TasSettings.RestoreSettings).Change(value =>
                 TasSettings.RestoreSettings = value));
             subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), TasSettings.LaunchStudioAtBoot).Change(value => {
@@ -68,21 +78,17 @@ internal static class CelesteTasMenu {
             TextMenu.Item hideFreezeFramesItem;
             subMenu.Add(hideFreezeFramesItem = new TextMenu.OnOff("Hide Freeze Frames".ToDialogText(), TasSettings.HideFreezeFrames).Change(value =>
                 TasSettings.HideFreezeFrames = value));
-            subMenu.AddDescription(menu, hideFreezeFramesItem, "Hide Freeze Frames Description 1".ToDialogText());
-            subMenu.AddDescription(menu, hideFreezeFramesItem, "Hide Freeze Frames Description 2".ToDialogText());
-            subMenu.Add(new TextMenu.OnOff("Mod 9D Lighting".ToDialogText(), TasSettings.Mod9DLighting).Change(value =>
-                TasSettings.Mod9DLighting = value));
+            subMenu.AddDescription(menu, hideFreezeFramesItem, "Hide Freeze Frames Description".ToDialogText());
             TextMenu.Item ignoreGcItem;
             subMenu.Add(ignoreGcItem = new TextMenu.OnOff("Ignore GC Collect".ToDialogText(), TasSettings.IgnoreGcCollect).Change(value =>
                 TasSettings.IgnoreGcCollect = value));
-            subMenu.AddDescription(menu, ignoreGcItem, "Ignore GC Collect Description 1".ToDialogText());
-            subMenu.AddDescription(menu, ignoreGcItem, "Ignore GC Collect Description 2".ToDialogText());
+            subMenu.AddDescription(menu, ignoreGcItem, "Ignore GC Collect Description".ToDialogText());
         });
     }
 
-    public static void AddDescription(this TextMenuExt.SubMenu subMenu, TextMenu containingMenu, TextMenu.Item subMenuItem, string description) {
+    public static void AddDescription(this TextMenuExt.SubMenu subMenu, TextMenu containingMenu, TextMenu.Item subMenuItem, string description, Color? color = null) {
         TextMenuExt.EaseInSubHeaderExt descriptionText = new(description, false, containingMenu) {
-            TextColor = Color.Gray,
+            TextColor = color ?? Color.Gray,
             HeightExtra = 0f
         };
 
@@ -109,7 +115,7 @@ internal static class CelesteTasMenu {
                 subMenu.Focused = false;
                 KeyboardConfigUI keyboardConfig;
                 if (CreateKeyboardConfigUi != null) {
-                    keyboardConfig = (KeyboardConfigUI) CreateKeyboardConfigUi.Invoke(everestModule, new object[] {menu});
+                    keyboardConfig = (KeyboardConfigUI)CreateKeyboardConfigUi.Invoke(everestModule, [menu])!;
                 } else {
                     keyboardConfig = new ModuleSettingsKeyboardConfigUI(everestModule);
                 }
@@ -122,9 +128,9 @@ internal static class CelesteTasMenu {
 
             subMenu.Add(new TextMenu.Button(Dialog.Clean("options_btnconfig")).Pressed(() => {
                 subMenu.Focused = false;
-                ButtonConfigUI buttonConfig;
+                ButtonConfigUI? buttonConfig;
                 if (CreateButtonConfigUI != null) {
-                    buttonConfig = (ButtonConfigUI) CreateButtonConfigUI.Invoke(everestModule, new object[] {menu});
+                    buttonConfig = (ButtonConfigUI)CreateButtonConfigUI.Invoke(everestModule, [menu])!;
                 } else {
                     buttonConfig = new ModuleSettingsButtonConfigUI(everestModule);
                 }
@@ -195,7 +201,7 @@ internal static class CelesteTasMenu {
 
         TextMenu.Item enabledItem = new TextMenu.OnOff("Enabled".ToDialogText(), TasSettings.Enabled).Change((value) => {
             TasSettings.Enabled = value;
-            foreach (EaseInSubMenu easeInSubMenu in options) {
+            foreach (EaseInSubMenu easeInSubMenu in options!) {
                 easeInSubMenu.FadeVisible = value;
             }
 
@@ -207,7 +213,7 @@ internal static class CelesteTasMenu {
         });
         menu.Add(enabledItem);
         CreateOptions(everestModule, menu, inGame);
-        foreach (EaseInSubMenu easeInSubMenu in options) {
+        foreach (EaseInSubMenu easeInSubMenu in options!) {
             menu.Add(easeInSubMenu);
         }
 
@@ -233,10 +239,8 @@ internal static class CelesteTasMenu {
         }
     }
 
-    public static IEnumerable<KeyValuePair<int?, string>> CreateSliderOptions(int start, int end, Func<int, string> formatter = null) {
-        if (formatter == null) {
-            formatter = i => i.ToString();
-        }
+    public static IEnumerable<KeyValuePair<int?, string>> CreateSliderOptions(int start, int end, Func<int, string>? formatter = null) {
+        formatter ??= i => i.ToString();
 
         List<KeyValuePair<int?, string>> result = new();
 
@@ -275,7 +279,7 @@ internal static class CelesteTasMenu {
 public class EaseInSubMenu : TextMenuExt.SubMenu {
     private readonly MTexture icon;
     private float alpha;
-    private float ease;
+    private new float ease;
     private float unEasedAlpha;
 
     public EaseInSubMenu(string label, bool enterOnSelect) : base(label, enterOnSelect) {

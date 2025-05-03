@@ -21,7 +21,7 @@ internal static class StudioUpdateBanner {
     [Load]
     private static void Load() {
         typeof(Engine)
-            .GetMethodInfo(nameof(Engine.Update))
+            .GetMethodInfo(nameof(Engine.Update))!
             .IlHook((cur, _) => {
                 if (cur.TryGotoNext(MoveType.After, ins => ins.MatchCallvirt<Commands>(nameof(Commands.UpdateClosed)))) {
                     cur.MoveAfterLabels();
@@ -29,7 +29,7 @@ internal static class StudioUpdateBanner {
                 }
             });
         typeof(Engine)
-            .GetMethodInfo(nameof(Engine.Draw))
+            .GetMethodInfo(nameof(Engine.Draw))!
             .IlHook((cur, _) => {
                 if (cur.TryGotoNext(MoveType.After, ins => ins.MatchCallvirt<Commands>(nameof(Commands.Render)))) {
                     cur.MoveAfterLabels();

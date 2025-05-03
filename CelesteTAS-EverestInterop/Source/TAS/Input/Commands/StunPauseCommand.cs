@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Celeste;
+using FMOD.Studio;
 using Monocle;
+using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using StudioCommunication;
+using System.Reflection;
 using TAS.Module;
 using TAS.Utils;
 
@@ -51,7 +54,8 @@ public static class StunPauseCommand {
     }
 
     private static Dictionary<string, AutoInputCommand.Arguments> AutoInputArgs => AutoInputCommand.AutoInputArgs;
-    private static readonly GetDelegate<Level, float> unpauseTimer = FastReflection.CreateGetDelegate<Level, float>("unpauseTimer");
+
+    private static readonly GetDelegate<Level, float>? unpauseTimer = FastReflection.CreateGetDelegate<Level, float>("unpauseTimer");
     private static readonly float unpauseTime = unpauseTimer != null ? 0.15f : 0f;
     public static bool SimulatePauses;
     public static bool PauseOnCurrentFrame;
@@ -75,7 +79,7 @@ public static class StunPauseCommand {
     [Initialize]
     private static void Initialize() {
         // Hook after CycleHitboxColor.Load, so that the grouping color does not change
-        using (new DetourConfigContext(new DetourConfig("CelesteTAS", before: ["*"])).Use()) {
+        using (new DetourConfigContext(new DetourConfig("CelesteTAS", priority: int.MaxValue)).Use()) {
             On.Monocle.Scene.BeforeUpdate += DoublePauses;
         }
     }
@@ -171,7 +175,7 @@ public static class StunPauseCommand {
     }
 
     public static void UpdatePauseInputs(AutoInputCommand.Arguments arguments) {
-        List<string> inputs = arguments.Inputs;
+        List<string> inputs = arguments.Inputs!;
         inputs.RemoveAt(inputs.Count - 1);
 
         if (Manager.Controller.Inputs.LastOrDefault() is { } input) {

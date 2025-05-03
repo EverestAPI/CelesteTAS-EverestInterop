@@ -14,7 +14,7 @@ using TAS.Utils;
 namespace TAS.EverestInterop.InfoHUD;
 
 public static class InfoHud {
-    private static EaseInSubMenu subMenuItem;
+    private static EaseInSubMenu? subMenuItem;
     public static Vector2 Size { get; private set; }
 
     [Load]
@@ -156,44 +156,47 @@ public static class InfoHud {
         return playerRect.Intersects(bgRect);
     }
 
-    // TODO add a setting 'InfoTasInputLines'
+    // TODO add a setting 'Info TasInputLines'
     private static void WriteTasInput(StringBuilder stringBuilder) {
-        InputController controller = Manager.Controller;
-        List<InputFrame> inputs = controller.Inputs;
-        if (Manager.Running && controller.CurrentFrameInTas >= 0 && controller.CurrentFrameInTas <= inputs.Count) {
-            InputFrame current = controller.Current;
-            if (controller.CurrentFrameInTas >= 1 && current != controller.Previous) {
-                current = controller.Previous;
-            }
+        var controller = Manager.Controller;
+        var inputs = controller.Inputs;
 
-            InputFrame previous = current.Previous;
-            InputFrame next = current.Next;
+        if (!Manager.Running || controller.CurrentFrameInTas < 0 || controller.CurrentFrameInTas >= inputs.Count) {
+            return;
+        }
 
-            int maxLine = Math.Max(current.StudioLine, Math.Max(previous?.StudioLine ?? 0, next?.StudioLine ?? 0)) + 1;
-            int linePadLeft = maxLine.ToString().Length;
+        var current = controller.Current;
+        if (controller.CurrentFrameInTas >= 1 && current != controller.Previous) {
+            current = controller.Previous!;
+        }
 
-            int maxFrames = Math.Max(current.Frames, Math.Max(previous?.Frames ?? 0, next?.Frames ?? 0));
-            int framesPadLeft = maxFrames.ToString().Length;
+        var previous = current.Previous;
+        var next = current.Next;
 
-            string FormatInputFrame(InputFrame inputFrame) {
-                return
-                    $"{(inputFrame.StudioLine + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - inputFrame.Frames.ToString().Length)}{inputFrame}";
-            }
+        int maxLine = Math.Max(current.StudioLine, Math.Max(previous?.StudioLine ?? 0, next?.StudioLine ?? 0)) + 1;
+        int linePadLeft = maxLine.ToString().Length;
 
-            if (previous != null) {
-                stringBuilder.AppendLine(FormatInputFrame(previous));
-            }
+        int maxFrames = Math.Max(current.Frames, Math.Max(previous?.Frames ?? 0, next?.Frames ?? 0));
+        int framesPadLeft = maxFrames.ToString().Length;
 
-            string currentStr = FormatInputFrame(current);
-            int currentFrameLength = controller.CurrentFrameInInput.ToString().Length;
-            int inputWidth = currentStr.Length + currentFrameLength + 2;
-            inputWidth = Math.Max(inputWidth, 20);
-            stringBuilder.AppendLine(
-                $"{currentStr.PadRight(inputWidth - currentFrameLength)}{controller.CurrentFrameInInput}{current.RepeatString}");
+        string FormatInputFrame(InputFrame inputFrame) {
+            return
+                $"{(inputFrame.StudioLine + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - inputFrame.Frames.ToString().Length)}{inputFrame}";
+        }
 
-            if (next != null) {
-                stringBuilder.AppendLine(FormatInputFrame(next));
-            }
+        if (previous != null) {
+            stringBuilder.AppendLine(FormatInputFrame(previous));
+        }
+
+        string currentStr = FormatInputFrame(current);
+        int currentFrameLength = controller.CurrentFrameInInput.ToString().Length;
+        int inputWidth = currentStr.Length + currentFrameLength + 2;
+        inputWidth = Math.Max(inputWidth, 20);
+        stringBuilder.AppendLine(
+            $"{currentStr.PadRight(inputWidth - currentFrameLength)}{controller.CurrentFrameInInput}{current.RepeatString}");
+
+        if (next != null) {
+            stringBuilder.AppendLine(FormatInputFrame(next));
         }
     }
 
@@ -242,18 +245,16 @@ public static class InfoHud {
     }
 
     private static KeyValuePair<HudOptions, string>[] CreateHudOptions() {
-        return new[] {
+        return [
             new KeyValuePair<HudOptions, string>(HudOptions.Off, "Info HUD Options Off".ToDialogText()),
             new KeyValuePair<HudOptions, string>(HudOptions.HudOnly, "Info HUD Options Hud Only".ToDialogText()),
             new KeyValuePair<HudOptions, string>(HudOptions.StudioOnly, "Info HUD Options Studio Only".ToDialogText()),
             new KeyValuePair<HudOptions, string>(HudOptions.Both, "Info HUD Options Both".ToDialogText()),
-        };
+        ];
     }
 
     public static void AddSubMenuDescription(TextMenu menu) {
-        subMenuItem.AddDescription(menu, "Info HUD Description 3".ToDialogText());
-        subMenuItem.AddDescription(menu, "Info HUD Description 2".ToDialogText());
-        subMenuItem.AddDescription(menu, "Info HUD Description 1".ToDialogText());
+        subMenuItem.AddDescription(menu, "Info HUD Description".ToDialogText());
         subMenuItem = null;
     }
 }

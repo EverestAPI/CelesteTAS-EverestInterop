@@ -31,44 +31,44 @@ public static class EntityDataHelper {
         On.Celeste.Level.End += LevelOnEnd;
         On.Monocle.Entity.Removed += EntityOnRemoved;
         On.Celeste.FlyFeather.ctor_Vector2_bool_bool += FlyFeatherOnCtor_Vector2_bool_bool;
-        typeof(Level).GetMethod("orig_LoadLevel").IlHook(ModOrigLoadLevel);
+        typeof(Level).GetMethodInfo("orig_LoadLevel")!.IlHook(ModOrigLoadLevel);
     }
 
     [Initialize]
     private static void Initialize() {
         Dictionary<Type, string[]> typeMethodNames = new() {
-            {typeof(SeekerStatue).GetNestedType("<>c__DisplayClass3_0", BindingFlags.NonPublic), new[] {"<.ctor>b__0"}},
-            {typeof(FireBall), new[] {"Added"}},
-            {typeof(WindAttackTrigger), new[] {"OnEnter"}},
-            {typeof(OshiroTrigger), new[] {"OnEnter"}},
-            {typeof(NPC03_Oshiro_Rooftop), new[] {"Added"}},
-            {typeof(CS03_OshiroRooftop), new[] {"OnEnd"}},
-            {typeof(NPC10_Gravestone), new[] {"Added", "Interact"}},
-            {typeof(CS10_Gravestone), new[] {"OnEnd"}},
+            {typeof(SeekerStatue).GetNestedType("<>c__DisplayClass3_0", BindingFlags.NonPublic)!, ["<.ctor>b__0"] },
+            {typeof(FireBall), ["Added"] },
+            {typeof(WindAttackTrigger), ["OnEnter"] },
+            {typeof(OshiroTrigger), ["OnEnter"] },
+            {typeof(NPC03_Oshiro_Rooftop), ["Added"] },
+            {typeof(CS03_OshiroRooftop), ["OnEnd"] },
+            {typeof(NPC10_Gravestone), ["Added", "Interact"] },
+            {typeof(CS10_Gravestone), ["OnEnd"] },
         };
 
         if (ModUtils.GetType("DJMapHelper", "Celeste.Mod.DJMapHelper.Triggers.OshiroRightTrigger") is { } oshiroRightTrigger) {
-            typeMethodNames.Add(oshiroRightTrigger, new[] {"OnEnter"});
+            typeMethodNames.Add(oshiroRightTrigger, ["OnEnter"]);
         }
 
         if (ModUtils.GetType("DJMapHelper", "Celeste.Mod.DJMapHelper.Triggers.WindAttackLeftTrigger") is { } windAttackLeftTrigger) {
-            typeMethodNames.Add(windAttackLeftTrigger, new[] {"OnEnter"});
+            typeMethodNames.Add(windAttackLeftTrigger, ["OnEnter"]);
         }
 
         if (ModUtils.GetType("Monika's D-Sides", "Celeste.Mod.RubysEntities.FastOshiroTrigger") is { } fastOshiroTrigger) {
-            typeMethodNames.Add(fastOshiroTrigger, new[] {"OnEnter"});
+            typeMethodNames.Add(fastOshiroTrigger, ["OnEnter"]);
         }
 
         if (ModUtils.GetType("FrostHelper", "FrostHelper.SnowballTrigger") is { } snowballTrigger) {
-            typeMethodNames.Add(snowballTrigger, new[] {"OnEnter"});
+            typeMethodNames.Add(snowballTrigger, ["OnEnter"]);
         }
 
         if (ModUtils.GetType("FemtoHelper", "OshiroCaller") is { } oshiroCaller) {
-            typeMethodNames.Add(oshiroCaller, new[] {"OnHoldable", "OnPlayer"});
+            typeMethodNames.Add(oshiroCaller, ["OnHoldable", "OnPlayer"]);
         }
 
         if (ModUtils.GetType("PandorasBox", "Celeste.Mod.PandorasBox.CloneSpawner") is { } cloneSpawner) {
-            typeMethodNames.Add(cloneSpawner, new[] {"handleClone"});
+            typeMethodNames.Add(cloneSpawner, ["handleClone"]);
         }
 
         foreach (Type type in typeMethodNames.Keys) {
@@ -95,7 +95,7 @@ public static class EntityDataHelper {
         On.Celeste.FlyFeather.ctor_Vector2_bool_bool -= FlyFeatherOnCtor_Vector2_bool_bool;
     }
 
-    private static void SetEntityData(this Entity entity, EntityData data) {
+    private static void SetEntityData(this Entity? entity, EntityData data) {
         if (entity != null) {
             CachedEntityData[entity] = data;
         }
@@ -141,7 +141,7 @@ public static class EntityDataHelper {
                 ins => ins.OpCode == OpCodes.Stloc_S
             )) {
             cursor.Index++;
-            object entityDataOperand = cursor.Next.Operand;
+            object entityDataOperand = cursor.Next!.Operand;
             while (cursor.TryGotoNext(MoveType.Before,
                        i => i.OpCode == OpCodes.Newobj && i.Operand is MethodReference {HasParameters: true} m && m.Parameters.Count == 1 &&
                             m.Parameters[0].ParameterType.Name == "Vector2",
@@ -160,9 +160,9 @@ public static class EntityDataHelper {
                 ins => ins.OpCode == OpCodes.Stloc_S
             )) {
             cursor.Index++;
-            object entityDataOperand = cursor.Next.Operand;
+            object entityDataOperand = cursor.Next!.Operand;
             while (cursor.TryGotoNext(MoveType.Before,
-                       i => i.OpCode == OpCodes.Call && i.Operand.ToString().Contains("::Create"),
+                       i => i.OpCode == OpCodes.Call && i.Operand.ToString()!.Contains("::Create"),
                        i => i.OpCode == OpCodes.Call && i.Operand.ToString() == "System.Void Monocle.Scene::Add(Monocle.Entity)")) {
                 cursor.Index++;
                 cursor.Emit(OpCodes.Dup).Emit(OpCodes.Ldloc_S, entityDataOperand);
@@ -177,7 +177,7 @@ public static class EntityDataHelper {
                         m.Parameters.Any(parameter => parameter.ParameterType.Name == "EntityData"))) {
             if (cursor.TryFindPrev(out ILCursor[] results,
                     i => i.OpCode == OpCodes.Ldloc_S && i.Operand is VariableDefinition v && v.VariableType.Name == "EntityData")) {
-                cursor.Emit(OpCodes.Dup).Emit(OpCodes.Ldloc_S, results[0].Next.Operand);
+                cursor.Emit(OpCodes.Dup).Emit(OpCodes.Ldloc_S, results[0].Next!.Operand);
                 cursor.EmitDelegate<Action<Entity, EntityData>>(CacheEntityData);
             }
         }
@@ -193,7 +193,7 @@ public static class EntityDataHelper {
 
         cursor.Goto(0);
         while (cursor.TryGotoNext(MoveType.After,
-                   i => i.OpCode == OpCodes.Newobj && i.Operand.ToString().Contains("::.ctor(Celeste.EntityData"))) {
+                   i => i.OpCode == OpCodes.Newobj && i.Operand.ToString()!.Contains("::.ctor(Celeste.EntityData"))) {
             cursor.Emit(OpCodes.Dup).Emit(OpCodes.Ldarg_0);
             cursor.EmitDelegate<Action<Entity, EntityData>>(CacheEntityData);
         }

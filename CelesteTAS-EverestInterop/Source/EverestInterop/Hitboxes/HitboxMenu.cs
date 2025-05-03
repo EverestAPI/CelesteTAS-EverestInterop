@@ -8,7 +8,7 @@ using TAS.Utils;
 namespace TAS.EverestInterop.Hitboxes;
 
 public static class HitboxMenu {
-    private static EaseInSubMenu subMenuItem;
+    private static EaseInSubMenu? subMenuItem;
 
     public static EaseInSubMenu CreateSubMenu(TextMenu menu, bool inGame) {
         subMenuItem = new EaseInSubMenu("Show Hitboxes".ToDialogText(), false).Apply(subMenu => {
@@ -47,8 +47,7 @@ public static class HitboxMenu {
 
     public static void AddSubMenuDescription(TextMenu menu, bool inGame) {
         if (inGame) {
-            subMenuItem.AddDescription(menu, "Hitbox Color Description 2".ToDialogText());
-            subMenuItem.AddDescription(menu, "Hitbox Color Description 1".ToDialogText());
+            subMenuItem.AddDescription(menu, "Hitbox Color Description".ToDialogText());
         }
 
         subMenuItem = null;

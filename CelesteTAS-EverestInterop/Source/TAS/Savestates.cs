@@ -18,10 +18,10 @@ namespace TAS;
 public static class Savestates {
     // These fields can't just be pulled from the current frame and therefore need to be saved too
     private static readonly Dictionary<FieldInfo, object?> SavedGameInfo = new() {
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPos)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastDiff)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerPos)), null},
-        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerDiff)), null},
+        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPos))!, null},
+        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastDiff))!, null},
+        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerPos))!, null},
+        {typeof(GameInfo).GetFieldInfo(nameof(GameInfo.LastPlayerSeekerDiff))!, null},
     };
 
     private static bool savedByBreakpoint;
@@ -48,21 +48,10 @@ public static class Savestates {
                                    savedController != null &&
                                    savedController.FilePath == Manager.Controller.FilePath;
 
-    [Load]
-    private static void Load() {
-        if (SpeedrunToolInterop.Installed) {
-            SpeedrunToolInterop.AddSaveLoadAction();
-        }
-    }
-
     [Unload]
     private static void Unload() {
         if (IsSaved_Safe) {
             ClearState();
-        }
-
-        if (SpeedrunToolInterop.Installed) {
-            SpeedrunToolInterop.ClearSaveLoadAction();
         }
     }
 
@@ -140,7 +129,7 @@ public static class Savestates {
 
     public static void LoadState() {
         // Don't load save-states while recording
-        if (TASRecorderInterop.Recording) {
+        if (TASRecorderInterop.IsRecording) {
             return;
         }
 

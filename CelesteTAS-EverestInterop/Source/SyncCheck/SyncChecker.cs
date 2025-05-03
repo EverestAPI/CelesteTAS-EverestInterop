@@ -6,6 +6,7 @@ using Monocle;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.ExceptionServices;
 using TAS.Input;
 using TAS.Module;
 using TAS.Utils;
@@ -138,6 +139,13 @@ internal static class SyncChecker {
     [Initialize]
     private static void Initialize() {
         On.Celeste.Celeste.OnSceneTransition += On_Celeste_OnSceneTransition;
+
+        var handleCriticalError = typeof(CriticalErrorHandler)
+            .GetMethodInfo(nameof(CriticalErrorHandler.HandleCriticalError))!;
+
+        // Prevent critical error handler from interrupting TASes while sync checking
+        handleCriticalError.OverrideReturn(_ => Active, (ExceptionDispatchInfo error) => error);
+        handleCriticalError.HookBefore(Manager.DisableRun);
 
         // Apply certain patches already done in headless mode, which are required to properly perform a sync check
         if (!Active || Everest.Flags.IsHeadless) {

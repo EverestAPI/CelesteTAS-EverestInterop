@@ -55,7 +55,7 @@ public abstract class CommunicationAdapterBase : IDisposable {
     private readonly List<(MessageID, Action<BinaryWriter>)> queuedWrites = [];
 
     /// Indicates ABI compatibility between two adapters
-    protected const ushort ProtocolVersion = 3;
+    protected const ushort ProtocolVersion = 4;
     private const int PingMessageSize = sizeof(ushort);
 
     private const int MessageCountOffset = 4;
@@ -67,6 +67,8 @@ public abstract class CommunicationAdapterBase : IDisposable {
     // Safety caps to avoid any crashes
     private const int MaxOffset = BufferCapacity - 4096;
     private const byte MaxMessageCount = 100;
+
+    private static bool IsWine() => Environment.GetEnvironmentVariable("WINEPREFIX") != null;
 
     private const string MutexName = "Global\\CelesteTAS_StudioCom";
 
@@ -92,15 +94,22 @@ public abstract class CommunicationAdapterBase : IDisposable {
             mutex = new Mutex(initiallyOwned: true, MutexName, out _);
         }
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+        bool isWine = IsWine();
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !isWine) {
             writeFile = MemoryMappedFile.CreateOrOpen(writeName, BufferCapacity);
             readFile = MemoryMappedFile.CreateOrOpen(readName, BufferCapacity);
         } else {
-            var writePath = Path.Combine(Path.GetTempPath(), $"{writeName}.share");
-            var readPath  = Path.Combine(Path.GetTempPath(), $"{readName}.share");
+            var tempPath = isWine ? "/tmp" : Path.GetTempPath();
+            var writePath = Path.Combine(tempPath, $"{writeName}.share");
+            var readPath = Path.Combine(tempPath, $"{readName}.share");
 
-            using var writeFs = File.Open(writePath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+            using var writeFs = File.Open(writePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
             using var readFs = File.Open(readPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+
+            writeFs.Seek(BufferCapacity - 1, SeekOrigin.Begin);
+            writeFs.WriteByte(0);
+            readFs.Seek(BufferCapacity - 1, SeekOrigin.Begin);
+            readFs.WriteByte(0);
 
             writeFile = MemoryMappedFile.CreateFromFile(writeFs, null, BufferCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: false);
             readFile = MemoryMappedFile.CreateFromFile(readFs, null, BufferCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: false);

@@ -182,15 +182,13 @@ public static class StudioHelper {
         // Migrate from Studio v2
         if (File.Exists(Path.Combine(Everest.PathGame, "Celeste Studio.exe")) &&
             // Check .toml to see if v2 was launched once
-            File.Exists(Path.Combine(Everest.PathGame, "Celeste Studio.toml")))
-        {
-            File.Delete(Path.Combine(Everest.PathGame, "Celeste Studio.exe"));
-            File.Delete(Path.Combine(Everest.PathGame, "Celeste Studio.pdb"));
+            File.Exists(Path.Combine(Everest.PathGame, "Celeste Studio.toml"))
+        ) {
             // Keep "Celeste Studio.toml" for the settings to be migrated by Studio v3
 
             // Display migration (Studio v3 was never launched since the v2 .exe still existed)
-            string path = Path.GetTempFileName();
-            string text =
+            string path = Path.Combine(StudioDirectory, "migration_notice.txt");
+            const string text =
                 """
                 === Celeste TAS Studio v3 - Migration notice ===
                  
@@ -207,8 +205,20 @@ public static class StudioHelper {
                     (Note Only major bugs will be fixed in that version! No features will be backported!)
                 """;
 
+            if (!Directory.Exists(StudioDirectory)) {
+                Directory.CreateDirectory(StudioDirectory);
+            }
+
             File.WriteAllText(path, text);
             ProcessHelper.OpenInDefaultApp(path);
+        }
+
+        // Delete executable, so that the notice only pops up once
+        if (File.Exists(Path.Combine(Everest.PathGame, "Celeste Studio.exe"))) {
+            File.Delete(Path.Combine(Everest.PathGame, "Celeste Studio.exe"));
+        }
+        if (File.Exists(Path.Combine(Everest.PathGame, "Celeste Studio.pdb"))) {
+            File.Delete(Path.Combine(Everest.PathGame, "Celeste Studio.pdb"));
         }
 #else
         installed = true;
@@ -301,9 +311,10 @@ public static class StudioHelper {
         }
 
         // Install to another directory and only delete the old install once it was successful
-        if (!Directory.Exists(TempStudioInstallDirectory)) {
-            Directory.CreateDirectory(TempStudioInstallDirectory);
+        if (Directory.Exists(TempStudioInstallDirectory)) {
+            Directory.Delete(TempStudioInstallDirectory, recursive: true);
         }
+        Directory.CreateDirectory(TempStudioInstallDirectory);
 
         // Extract
         $"Extracting {DownloadPath} into {TempStudioInstallDirectory}".Log();

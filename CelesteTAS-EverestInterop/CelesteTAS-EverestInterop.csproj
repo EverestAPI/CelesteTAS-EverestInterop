@@ -28,22 +28,23 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Reference Include="$(CelestePrefix)\Celeste.dll" Publicize="true" />
-        <Reference Include="$(CelestePrefix)\FNA.dll" Publicize="true" />
-        <Reference Include="$(CelestePrefix)\MMHOOK_Celeste.dll" />
+        <Reference Include="$(CelestePrefix)\Celeste.dll" Private="false" Publicize="true" />
+        <Reference Include="$(CelestePrefix)\FNA.dll" Private="false" Publicize="true" />
+        <Reference Include="$(CelestePrefix)\MMHOOK_Celeste.dll" Private="false" />
 
-        <Reference Include="lib-stripped\SpeedrunTool.dll" />
-        <Reference Include="lib-stripped\TASRecorder.dll" />
+        <Reference Include="lib-stripped\SpeedrunTool.dll" Private="false" />
+        <Reference Include="lib-stripped\TASRecorder.dll" Private="false" />
+        <Reference Include="lib-stripped\ExCameraDynamics.dll" Private="false" />
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="CelesteAnalyzer" Version="*" />
 
-        <PackageReference Include="MonoMod.RuntimeDetour" Version="25.0.2" />
-        <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1" PrivateAssets="all" />
+        <PackageReference Include="MonoMod.RuntimeDetour" Version="25.2.3" PrivateAssets="all" ExcludeAssets="runtime" />
+        <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1" PrivateAssets="all" ExcludeAssets="runtime" />
 
         <PackageReference Include="SharpZipLib" Version="1.4.2" IncludeAssets="all" />
-        <PackageReference Include="YamlDotNet" Version="13.1.1" />
+        <PackageReference Include="YamlDotNet" Version="16.1.3" PrivateAssets="all" ExcludeAssets="runtime" />
 
         <PackageReference Include="JetBrains.Annotations" Version="2024.2.0" />
         <PackageReference Include="JetBrains.Profiler.Api" Version="1.4.6" Condition="'$(Configuration)' == 'Debug'" />
@@ -53,15 +54,16 @@
     <Target Name="CopyAssemblies" AfterTargets="Build">
         <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)$(AssemblyName).pdb" DestinationFolder="..\bin" />
+
         <Copy SourceFiles="$(OutputPath)StudioCommunication.dll" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)StudioCommunication.pdb" DestinationFolder="..\bin" />
-
-        <Copy SourceFiles="$(OutputPath)ICSharpCode.SharpZipLib.dll" DestinationFolder="..\bin" />
         <Copy SourceFiles="$(OutputPath)MemoryPack.Core.dll" DestinationFolder="..\bin" />
 
-        <Copy SourceFiles="$(OutputPath)JetBrains.Profiler.Api.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
-        <Copy SourceFiles="$(OutputPath)JetBrains.HabitatDetector.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
-        <Copy SourceFiles="$(OutputPath)JetBrains.FormatRipper.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug'" />
+        <Copy SourceFiles="$(OutputPath)ICSharpCode.SharpZipLib.dll" DestinationFolder="..\bin" />
+
+        <Copy SourceFiles="$(OutputPath)JetBrains.Profiler.Api.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug' or '$(EnablePerformanceProfiling)' == 'true'" />
+        <Copy SourceFiles="$(OutputPath)JetBrains.HabitatDetector.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug' or '$(EnablePerformanceProfiling)' == 'true'" />
+        <Copy SourceFiles="$(OutputPath)JetBrains.FormatRipper.dll" DestinationFolder="..\bin" Condition="'$(Configuration)' == 'Debug' or '$(EnablePerformanceProfiling)' == 'true'" />
     </Target>
 
     <!-- Assets (use symlinks in debug builds - only on UNIX, since MSBuild is useless) -->

@@ -12,7 +12,7 @@ public struct ActionLine() {
 
     public Actions Actions;
 
-    private string frames;
+    private string frames = "";
     private int frameCount;
 
     public string Frames {
@@ -43,7 +43,11 @@ public struct ActionLine() {
         actionLine = default;
         actionLine.CustomBindings = new HashSet<char>();
 
+#if NET5_0_OR_GREATER
         string[] tokens = line.Trim().Split(Delimiter, StringSplitOptions.TrimEntries);
+#else
+        string[] tokens = line.Trim().Split(Delimiter).Select(token => token.Trim()).ToArray();
+#endif
         if (tokens.Length == 0) return false;
 
         if (string.IsNullOrWhiteSpace(tokens[0]) || int.TryParse(tokens[0], out _)) {
@@ -82,7 +86,7 @@ public struct ActionLine() {
 
             // Parse feather angle/magnitude
             bool validAngle = true;
-            if (action == Actions.Feather && i + 1 < tokens.Length && (validAngle = float.TryParse(tokens[i + 1], CultureInfo.InvariantCulture, out float angle))) {
+            if (action == Actions.Feather && i + 1 < tokens.Length && (validAngle = float.TryParse(tokens[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out float angle))) {
                 if (angle > 360.0f)
                     actionLine.FeatherAngle = "360";
                 else if (angle < 0.0f)
@@ -93,9 +97,9 @@ public struct ActionLine() {
 
                 // Allow empty magnitude, so the comma won't get removed
                 bool validMagnitude = true;
-                if (i + 1 < tokens.Length && (string.IsNullOrWhiteSpace(tokens[i + 1]) || (validMagnitude = float.TryParse(tokens[i + 1], CultureInfo.InvariantCulture, out float _)))) {
+                if (i + 1 < tokens.Length && (string.IsNullOrWhiteSpace(tokens[i + 1]) || (validMagnitude = float.TryParse(tokens[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out float _)))) {
                     // Parse again since it might be an empty string
-                    if (float.TryParse(tokens[i + 1], CultureInfo.InvariantCulture, out float magnitude)) {
+                    if (float.TryParse(tokens[i + 1], NumberStyles.Float, CultureInfo.InvariantCulture, out float magnitude)) {
                         if (magnitude > 1.0f)
                             actionLine.FeatherMagnitude = "1";
                         else if (magnitude < 0.0f)
@@ -110,7 +114,7 @@ public struct ActionLine() {
                 } else if (!validMagnitude && !ignoreInvalidFloats) {
                     return false;
                 }
-            } else if (!validAngle && i + 2 < tokens.Length && string.IsNullOrEmpty(tokens[i + 1]) && (validAngle = float.TryParse(tokens[i + 2], CultureInfo.InvariantCulture, out angle))) {
+            } else if (!validAngle && i + 2 < tokens.Length && string.IsNullOrEmpty(tokens[i + 1]) && (validAngle = float.TryParse(tokens[i + 2], NumberStyles.Float, CultureInfo.InvariantCulture, out angle))) {
                 // Empty angle, treat magnitude as angle
                 if (angle > 360.0f)
                     actionLine.FeatherAngle = "360";
@@ -277,14 +281,14 @@ public struct ActionLine() {
 
         // Clamp angle / magnitude
         if (actionLine.FeatherAngle is { } angleString) {
-            if (float.TryParse(angleString, CultureInfo.InvariantCulture, out float angle)) {
+            if (float.TryParse(angleString, NumberStyles.Float, CultureInfo.InvariantCulture, out float angle)) {
                 actionLine.FeatherAngle = Math.Clamp(angle, 0.0f, 360.0f).ToString(CultureInfo.InvariantCulture);
             } else if (!ignoreInvalidFloats) {
                 return false;
             }
         }
         if (actionLine.FeatherMagnitude is { } magnitudeString) {
-            if (float.TryParse(magnitudeString, CultureInfo.InvariantCulture, out float magnitude)) {
+            if (float.TryParse(magnitudeString, NumberStyles.Float, CultureInfo.InvariantCulture, out float magnitude)) {
                 actionLine.FeatherMagnitude = Math.Clamp(magnitude, 0.0f, 1.0f).ToString(CultureInfo.InvariantCulture);
             } else if (!ignoreInvalidFloats) {
                 return false;

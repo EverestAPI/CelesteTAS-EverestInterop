@@ -1,12 +1,9 @@
-using System;
-using System.Collections.Generic;
 using System.Reflection;
 using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.Core;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
-using MonoMod.Utils;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
@@ -67,7 +64,7 @@ public static class BindingHelper {
             SetBinding("Talk", DashAndTalkAndCancel, JournalAndTalk);
 
             SetBinding("Pause", Pause);
-            SetBinding("Confirm", new[] {Confirm2}, JumpAndConfirm);
+            SetBinding("Confirm", [Confirm2], JumpAndConfirm);
             SetBinding("Cancel", DashAndTalkAndCancel, Dash2AndCancel);
 
             SetBinding("Journal", JournalAndTalk);
@@ -80,10 +77,10 @@ public static class BindingHelper {
             SetBinding("UpDashOnly", UpDashOnly);
             SetBinding("DownDashOnly", DownDashOnly);
 
-            SetBinding("LeftMoveOnly", new[] {LeftMoveOnly});
-            SetBinding("RightMoveOnly", new[] {RightMoveOnly});
-            SetBinding("UpMoveOnly", new[] {UpMoveOnly});
-            SetBinding("DownMoveOnly", new[] {DownMoveOnly});
+            SetBinding("LeftMoveOnly", [LeftMoveOnly]);
+            SetBinding("RightMoveOnly", [RightMoveOnly]);
+            SetBinding("UpMoveOnly", [UpMoveOnly]);
+            SetBinding("DownMoveOnly", [DownMoveOnly]);
 
             GameInput.Initialize();
             ClearModsBindings();
@@ -116,7 +113,7 @@ public static class BindingHelper {
         if (origKbTextInput.HasValue) {
             GameInput.Initialize();
             CoreModule.Settings.UseKeyboardForTextInput = origKbTextInput.Value;
-            MInput.GamePads[GameInput.Gamepad].Attached = origAttached.Value;
+            MInput.GamePads[GameInput.Gamepad].Attached = origAttached!.Value;
             origKbTextInput = null;
             origAttached = null;
         }
@@ -135,7 +132,7 @@ public static class BindingHelper {
     private static void ClearModsBindings() {
         foreach (EverestModule module in Everest.Modules) {
             if (module.SettingsType is { } settingsType && module._Settings is { } settings and not CelesteTasSettings) {
-                foreach (PropertyInfo propertyInfo in settingsType.GetAllProperties()) {
+                foreach (PropertyInfo propertyInfo in settingsType.GetAllPropertyInfos()) {
                     if (propertyInfo.GetGetMethod(true) != null && propertyInfo.GetSetMethod(true) != null &&
                         propertyInfo.PropertyType == typeof(ButtonBinding) && propertyInfo.GetValue(settings) is ButtonBinding {Button: { } button}) {
                         button.Binding = new Binding();

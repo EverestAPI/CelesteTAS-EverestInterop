@@ -39,16 +39,28 @@ public class SkiaDrawableHandler : MacPanel<SkiaDrawableHandler.SkiaDrawableView
                 // Allocate a memory for the drawing process
                 nuint infoLength = (nuint)info.BytesSize;
                 if (surface == null || bitmapData?.Length != infoLength) {
-                    dataProvider?.Dispose();
-                    bitmapData?.Dispose();
+                    if ((int) bounds.Width == 0 || (int) bounds.Height == 0) {
+                        // A zero sized surface causes issues, so use a null 1x1
+                        // drawable.Draw() still needs to be called, so simply skipping render is not an option
+                        dataProvider?.Dispose();
+                        dataProvider = null;
+                        bitmapData?.Dispose();
+                        bitmapData = null;
 
-                    bitmapData = NSMutableData.FromLength(infoLength);
-                    dataProvider = new CGDataProvider(bitmapData.MutableBytes, info.BytesSize);
+                        surface?.Dispose();
+                        surface = SKSurface.CreateNull(1, 1);
+                    } else {
+                        dataProvider?.Dispose();
+                        bitmapData?.Dispose();
 
-                    surface?.Dispose();
-                    surface = SKSurface.Create(info, bitmapData.MutableBytes, info.RowBytes);
-                    surface.Canvas.Scale((float)scale);
-                    surface.Canvas.Save();
+                        bitmapData = NSMutableData.FromLength(infoLength);
+                        dataProvider = new CGDataProvider(bitmapData.MutableBytes, info.BytesSize);
+
+                        surface?.Dispose();
+                        surface = SKSurface.Create(info, bitmapData.MutableBytes, info.RowBytes);
+                        surface.Canvas.Scale((float)scale);
+                        surface.Canvas.Save();
+                    }
                 }
 
                 var canvas = surface.Canvas;

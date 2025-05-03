@@ -65,11 +65,11 @@ public static class InfoWatchEntity {
     }
 
     internal static void CheckMouseButtons() {
-        if (MouseButtons.Right.Pressed) {
+        if (MouseInput.Right.Pressed) {
             ClearWatchEntities();
         }
 
-        if (MouseButtons.Left.Pressed && !MouseOverHud() && FindClickedEntity() is { } entity) {
+        if (MouseInput.Left.Pressed && !MouseOverHud() && FindClickedEntity() is { } entity) {
             AddOrRemoveWatching(entity);
             PrintAllSimpleValues(entity);
         }
@@ -80,12 +80,12 @@ public static class InfoWatchEntity {
             (int) TasSettings.InfoPosition.X, (int) TasSettings.InfoPosition.Y,
             (int) InfoHud.Size.X,             (int) InfoHud.Size.Y);
 
-        return hudRect.Contains((int) MouseButtons.Position.X, (int) MouseButtons.Position.Y);
+        return hudRect.Contains((int) MouseInput.Position.X, (int) MouseInput.Position.Y);
     }
 
     /// Resolves the entity, which the mouse is currently over
     internal static Entity? FindClickedEntity() {
-        var clickedEntities = FindEntitiesAt(MouseButtons.Position)
+        var clickedEntities = FindEntitiesAt(MouseInput.Position)
             // Sort triggers after entities
             .Sort((a, b) => (a is Trigger ? 1 : -1) - (b is Trigger ? 1 : -1))
             .ToArray();
@@ -109,13 +109,16 @@ public static class InfoWatchEntity {
         }
 
         var worldPosition = level.MouseToWorld(screenPosition);
+        // Custom colliders are more likely to implement rectangles than points
+        var checkRect = new Rectangle((int) worldPosition.X, (int) worldPosition.Y, 1, 1);
+
         foreach (var entity in level.Entities.Where(e => !IgnoreEntity(e))) {
             if (entity.Collider == null) {
                 // Attempt to reconstruct collider from entity data
                 if (entity.GetEntityData() is { } data) {
                     entity.Collider = new Hitbox(data.Width, data.Height);
 
-                    if (entity.CollidePoint(worldPosition)) {
+                    if (entity.CollideRect(checkRect)) {
                         yield return entity;
                     }
 
@@ -125,7 +128,7 @@ public static class InfoWatchEntity {
                 continue;
             }
 
-            if (entity.CollidePoint(worldPosition)) {
+            if (entity.CollideRect(checkRect)) {
                 yield return entity;
             }
         }
@@ -363,7 +366,7 @@ public static class InfoWatchEntity {
             properties = type.GetProperties(bindingFlags);
         } else {
             fields = type.GetAllFieldInfos().ToArray();
-            properties = type.GetAllProperties().ToArray();
+            properties = type.GetAllPropertyInfos().ToArray();
         }
 
         List<MemberInfo> memberInfos = [];

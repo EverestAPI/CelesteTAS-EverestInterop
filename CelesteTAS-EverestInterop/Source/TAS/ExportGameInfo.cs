@@ -6,8 +6,6 @@ using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication;
-using TAS.EverestInterop;
-using TAS.EverestInterop.InfoHUD;
 using TAS.InfoHUD;
 using TAS.Input;
 using TAS.Module;
@@ -21,15 +19,15 @@ public static class ExportGameInfo {
         public bool HasArguments => true;
     }
 
-    private static StreamWriter streamWriter;
-    private static IDictionary<string, Func<List<Entity>>> trackedEntities;
+    private static StreamWriter? streamWriter;
+    private static IDictionary<string, Func<List<Entity>?>>? trackedEntities;
     private static bool exporting;
-    private static InputFrame exportingInput;
+    private static InputFrame? exportingInput;
 
     // "ExportGameInfo"
     // "ExportGameInfo Path"
     // "ExportGameInfo Path EntitiesToTrack"
-    [TasCommand("ExportGameInfo", Aliases = ["StartExportGameInfo"], CalcChecksum = false)]
+    [TasCommand("ExportGameInfo", Aliases = ["StartExportGameInfo"], CalcChecksum = false, MetaDataProvider = typeof(Meta))]
     private static void StartExportCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         string[] args = commandLine.Arguments;
         string path = "dump.txt";
@@ -92,16 +90,16 @@ public static class ExportGameInfo {
         }
 
         streamWriter.WriteLine(string.Join("\t", "Line", "Inputs", "Frames", "Time", "Position", "Speed", "State", "Statuses", "Room", "Entities"));
-        trackedEntities = new Dictionary<string, Func<List<Entity>>>();
+        trackedEntities = new Dictionary<string, Func<List<Entity>?>>();
         foreach (string typeName in tracked) {
-            var types = TargetQuery.ResolveBaseTypes(typeName.Split('.'), out _, out _, out _);
+            var types = TargetQuery.ResolveBaseTypes(typeName.Split('.'), out _);
             if (types.IsEmpty()) {
                 continue;
             }
 
             foreach (var type in types) {
                 if (type.IsSameOrSubclassOf(typeof(Entity)) && type.FullName != null) {
-                    trackedEntities[type.FullName] = () => TargetQuery.ResolveTypeInstances(type, [], EntityID.None).Cast<Entity>().ToList();
+                    trackedEntities[type.FullName] = () => TargetQuery.ResolveTypeInstances(type).Cast<Entity>().ToList();
                 }
             }
         }
@@ -142,8 +140,8 @@ public static class ExportGameInfo {
                 PlayerStates.GetCurrentStateName(player),
                 statuses);
 
-            foreach (string typeName in trackedEntities.Keys) {
-                List<Entity> entities = trackedEntities[typeName].Invoke();
+            foreach (string typeName in trackedEntities!.Keys) {
+                List<Entity>? entities = trackedEntities[typeName].Invoke();
                 if (entities == null) {
                     continue;
                 }

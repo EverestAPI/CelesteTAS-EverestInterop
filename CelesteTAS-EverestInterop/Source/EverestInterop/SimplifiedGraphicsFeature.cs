@@ -13,6 +13,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using MonoMod.Utils;
+using TAS.Gameplay;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
@@ -148,13 +149,13 @@ public static class SimplifiedGraphicsFeature {
         }
 
         if (ModUtils.GetType("PandorasBox", "Celeste.Mod.PandorasBox.TileGlitcher")?.GetMethodInfo("tileGlitcher") is { } tileGlitcher) {
-            tileGlitcher.GetStateMachineTarget().IlHook(ModTileGlitcher);
+            tileGlitcher.GetStateMachineTarget()!.IlHook(ModTileGlitcher);
         }
 
         On.Celeste.CrystalStaticSpinner.CreateSprites += CrystalStaticSpinner_CreateSprites;
         IL.Celeste.CrystalStaticSpinner.GetHue += CrystalStaticSpinnerOnGetHue;
 
-        typeof(MirrorSurfaces).GetMethodInfo(nameof(MirrorSurfaces.Render)).SkipMethod(IsSimplifiedGraphics);
+        typeof(MirrorSurfaces).GetMethodInfo(nameof(MirrorSurfaces.Render))!.SkipMethod(IsSimplifiedGraphics);
 
         IL.Celeste.LightingRenderer.Render += LightingRenderer_Render;
         On.Celeste.ColorGrade.Set_MTexture_MTexture_float += ColorGradeOnSet_MTexture_MTexture_float;
@@ -173,8 +174,8 @@ public static class SimplifiedGraphicsFeature {
             typeof(ParticleSystem).GetMethodInfo(nameof(ParticleSystem.Render), [typeof(float)])
         );
 
-        typeof(Glitch).GetMethodInfo(nameof(Glitch.Apply)).SkipMethod(IsSimplifiedDistort);
-        typeof(MiniTextbox).GetMethodInfo(nameof(MiniTextbox.Render)).SkipMethod(IsSimplifiedMiniTextbox);
+        typeof(Glitch).GetMethodInfo(nameof(Glitch.Apply))!.SkipMethod(IsSimplifiedDistort);
+        typeof(MiniTextbox).GetMethodInfo(nameof(MiniTextbox.Render))!.SkipMethod(IsSimplifiedMiniTextbox);
 
         IL.Celeste.Distort.Render += DistortOnRender;
         On.Celeste.SolidTiles.ctor += SolidTilesOnCtor;
@@ -192,7 +193,7 @@ public static class SimplifiedGraphicsFeature {
         HookHelper.OverrideReturns(SimplifiedWavedBlock, 0.0f,
             ModUtils.GetTypes()
                 .Where(type => type.FullName?.EndsWith("Renderer+Edge") == true)
-                .Select(type => type.GetMethodInfo("GetWaveAt"))
+                .Select(type => type.GetMethodInfo("GetWaveAt", logFailure: false))
                 .ToArray()
         );
 
@@ -217,7 +218,7 @@ public static class SimplifiedGraphicsFeature {
             ModUtils.GetType("BrokemiaHelper", "BrokemiaHelper.PixelRendered.PixelComponent")?.GetMethodInfo("Render")
         );
 
-        typeof(SinkingPlatform).GetMethodInfo(nameof(SinkingPlatform.Render)).IlHook((cursor, _) => {
+        typeof(SinkingPlatform).GetMethodInfo(nameof(SinkingPlatform.Render))!.IlHook((cursor, _) => {
             if (cursor.TryGotoNext(MoveType.After, ins => ins.MatchLdfld<Shaker>(nameof(Shaker.Value)))) {
                 cursor.EmitDelegate(IsSimplifiedClutteredEntity);
                 cursor.EmitDelegate(IgnoreShaker);
@@ -239,10 +240,17 @@ public static class SimplifiedGraphicsFeature {
         HookHelper.SkipMethods(IsSimplifiedHud,
             typeof(HeightDisplay).GetMethodInfo(nameof(HeightDisplay.Render)),
             typeof(CustomHeightDisplay).GetMethodInfo(nameof(CustomHeightDisplay.Render)),
-            ModUtils.GetType("Monika's D-Sides", "Celeste.Mod.RubysEntities.AltHeightDisplay")?.GetMethodInfo("Render"),
+            ModUtils.GetMethod("Monika's D-Sides", "Celeste.Mod.RubysEntities.AltHeightDisplay", "Render"),
+
             typeof(TalkComponent.TalkComponentUI).GetMethodInfo(nameof(TalkComponent.TalkComponentUI.Render)),
             typeof(BirdTutorialGui).GetMethodInfo(nameof(BirdTutorialGui.Render)),
+
             typeof(CoreMessage).GetMethodInfo(nameof(CoreMessage.Render)),
+            typeof(CustomCoreMessage).GetMethodInfo(nameof(CustomCoreMessage.Render)),
+            ModUtils.GetMethod("ArphimigonsToyBox", "Celeste.Mod.ArphimigonHelper.CustomCoreMessage", "Render"), // v1.4.0
+            ModUtils.GetMethod("ChroniaHelper", "ChroniaHelper.Entities.ColoredCustomCoreMessage", "Render"), // v1.28.15
+            ModUtils.GetMethod("VivHelper", "VivHelper.Entities.ColoredCustomCoreMessage", "Render"), // v1.14.10
+
             typeof(MemorialText).GetMethodInfo(nameof(MemorialText.Render))
         );
 
@@ -283,9 +291,9 @@ public static class SimplifiedGraphicsFeature {
     private static bool IsSimplifiedLightningStrike() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedLightningStrike;
     private static bool IsSimplifiedClutteredEntity() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedClutteredEntity;
     private static bool IsSimplifiedHud() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedHud ||
-                                             TasSettings.CenterCamera && Math.Abs(CenterCamera.LevelZoom - 1f) > 1e-3;
+                                             TasSettings.CenterCamera && Math.Abs(CenterCamera.ZoomLevel - 1f) > 1e-3;
 
-    private static ScreenWipe SimplifiedScreenWipe(ScreenWipe wipe) => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedScreenWipe ? null : wipe;
+    private static ScreenWipe? SimplifiedScreenWipe(ScreenWipe wipe) => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedScreenWipe ? null : wipe;
 
     private static void OnSimplifiedGraphicsChanged(bool simplifiedGraphics) {
         if (Engine.Scene is not Level level) {
@@ -420,7 +428,7 @@ public static class SimplifiedGraphicsFeature {
             cursor.EmitDelegate(SimplifyDistort);
         }
 
-        static Effect SimplifyDistort(Effect effect) {
+        static Effect? SimplifyDistort(Effect effect) {
             return TasSettings.SimplifiedGraphics && TasSettings.SimplifiedDistort ? null : effect;
         }
     }
@@ -465,13 +473,13 @@ public static class SimplifiedGraphicsFeature {
 
         // Repeat the instructions
         for (int i = 0; i < 6; i++) {
-            cursor.Emit(cursors[0].Next!.OpCode, cursors[0].Next.Operand);
+            cursor.Emit(cursors[0].Next!.OpCode, cursors[0].Next!.Operand);
             cursors[0].Index++;
         }
 
         cursor.EmitDelegate(IgnoreNewTileTexture);
 
-        static MTexture IgnoreNewTileTexture(MTexture newTexture, VirtualMap<MTexture> fgTexes, int x, int y) {
+        static MTexture? IgnoreNewTileTexture(MTexture? newTexture, VirtualMap<MTexture> fgTexes, int x, int y) {
             if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSolidTilesStyle != default) {
                 if (fgTexes[x, y] is { } texture && newTexture != null) {
                     return texture;
@@ -499,28 +507,8 @@ public static class SimplifiedGraphicsFeature {
         cursor.EmitBrtrue(start);
         cursor.EmitRet();
 
-        int backdropIdx = -1;
-        if (cursor.TryGotoNext(MoveType.After,
-                ins => ins.MatchLdloc(out backdropIdx),
-                ins => ins.MatchLdfld<Backdrop>(nameof(Backdrop.Visible))))
-        {
-            cursor.EmitLdloc(backdropIdx);
-            cursor.EmitDelegate(IsShow9DBlackBackdrop);
-        }
-
         static bool IsNotSimplifiedBackdrop() {
             return !TasSettings.SimplifiedGraphics || !TasSettings.SimplifiedBackdrop;
-        }
-        static bool IsShow9DBlackBackdrop(bool visible, Backdrop backdrop) {
-            if (TasSettings.Enabled && TasSettings.Mod9DLighting && backdrop.Visible && Engine.Scene is Level level) {
-                bool hideBackdrop =
-                    backdrop.Name?.StartsWith("bgs/nameguysdsides") == true &&
-                    (level.Session.Level.StartsWith("g") || level.Session.Level.StartsWith("h")) &&
-                    level.Session.Level != "hh-08";
-                return !hideBackdrop;
-            }
-
-            return visible;
         }
     }
 
@@ -640,8 +628,8 @@ public static class SimplifiedGraphicsFeature {
         }
     }
 
-    private static EventInstance AudioOnPlay_string(On.Celeste.Audio.orig_Play_string orig, string path) {
-        EventInstance result = orig(path);
+    private static EventInstance? AudioOnPlay_string(On.Celeste.Audio.orig_Play_string orig, string path) {
+        EventInstance? result = orig(path);
         if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedLightningStrike &&
             path == "event:/new_content/game/10_farewell/lightning_strike") {
             result?.setVolume(0);
@@ -679,7 +667,7 @@ public static class SimplifiedGraphicsFeature {
         cursor.EmitDelegate(IsSimplifiedSpinnerColorNotNull);
         cursor.EmitBrfalse(start);
 
-        Type type = ModUtils.GetType("VivHelper", "VivHelper.Entities.CustomSpinner");
+        Type type = ModUtils.GetType("VivHelper", "VivHelper.Entities.CustomSpinner")!;
         if (type.GetFieldInfo("color") is { } colorField) {
             cursor.EmitLdarg0();
             cursor.EmitDelegate(GetSimplifiedSpinnerColor);
@@ -706,10 +694,10 @@ public static class SimplifiedGraphicsFeature {
         ];
 
         public CrystalColor Name;
-        public string Value;
+        public string? Value;
         public Color Color;
 
-        private SpinnerColor(CrystalColor name, string value) {
+        private SpinnerColor(CrystalColor name, string? value) {
             Name = name;
             Value = value;
             Color = value == null ? default : Calc.HexToColor(value);

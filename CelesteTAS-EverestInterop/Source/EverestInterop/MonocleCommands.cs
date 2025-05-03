@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Celeste;
+using Microsoft.Xna.Framework.Input;
 using Monocle;
 using TAS.Input;
 using TAS.ModInterop;
@@ -26,7 +27,7 @@ public static class MonocleCommands {
 
     [Monocle.Command("hearts",
         "sets the amount of obtained hearts for the specified level set to a given number (default all hearts and current level set) (support mini heart door via CelesteTAS)")]
-    private static void CmdHearts(int amount = int.MaxValue, string levelSet = null) {
+    private static void CmdHearts(int amount = int.MaxValue, string? levelSet = null) {
         SaveData saveData = SaveData.Instance;
         if (saveData == null) {
             return;
@@ -38,11 +39,11 @@ public static class MonocleCommands {
             if (Engine.Scene.Entities.FirstOrDefault(e => e.GetType().FullName == miniHeartDoorFullName) is HeartGemDoor door) {
                 levelSet = door.GetFieldValue<string>("levelSet");
                 if (door.Scene is Level level && amount < door.Requires) {
-                    level.Session.SetFlag($"opened_mini_heart_door_{door.GetEntityData().ToEntityId()}", false);
+                    level.Session.SetFlag($"opened_mini_heart_door_{door.GetEntityData()!.ToEntityId()}", false);
                     ModUtils.GetModule("CollabUtils2")
                         ?.GetPropertyValue<object>("SaveData")
                         ?.GetPropertyValue<HashSet<string>>("OpenedMiniHeartDoors")
-                        ?.Remove(door.InvokeMethod<string>("GetDoorSaveDataID", level));
+                        ?.Remove(door.InvokeMethod<string>("GetDoorSaveDataID", level)!);
                 }
             } else {
                 levelSet = saveData.LevelSet;
@@ -80,6 +81,7 @@ public static class MonocleCommands {
             return;
         }
 
+        Manager.DisableRun();
         Manager.Controller.FilePath = filePath;
         Manager.EnableRun();
     }

@@ -1,17 +1,24 @@
 using System.Collections.Generic;
 using Celeste;
 using Celeste.Mod;
+using Celeste.Mod.SpeedrunTool.SaveLoad;
+using Monocle;
 using System;
+using System.Runtime.CompilerServices;
+using TAS.InfoHUD;
 using TAS.Input.Commands;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop;
 
-public static class RestoreSettings {
+/// Restores settings which were changed during
+internal static class RestoreSettings {
     private static Settings? origSettings;
     private static Assists? origAssists;
-    private static Dictionary<EverestModule, object>? origModSettings;
+    private static readonly Dictionary<EverestModule, object> origModSettings = new();
+    private static readonly Dictionary<object, object?> origExtendedVariants = new();
 
     internal static readonly HashSet<EverestModule> ignoredModules = new();
     internal static readonly Dictionary<EverestModule, (Func<object> Backup, Action<object> Restore)> customHandlers = new();
@@ -20,7 +27,6 @@ public static class RestoreSettings {
     private static void TryBackup() {
         origSettings = null;
         origAssists = null;
-        origModSettings = null;
 
         if (!TasSettings.RestoreSettings) {
             return;
@@ -29,7 +35,7 @@ public static class RestoreSettings {
         origSettings = Settings.Instance.ShallowClone();
         origAssists = SaveData.Instance?.Assists;
 
-        origModSettings = new Dictionary<EverestModule, object>();
+        origModSettings.Clear();
         foreach (var module in Everest.Modules) {
             if (module._Settings == null || module.SettingsType == null || module._Settings is CelesteTasSettings) {
                 continue;
@@ -43,7 +49,28 @@ public static class RestoreSettings {
                 continue;
             }
 
-            origModSettings.Add(module, module._Settings.ShallowClone());
+            // When using savestates, need to deep clone settings, to avoid issues with ButtonBindings breaking
+            if (SpeedrunToolInterop.Installed) {
+                origModSettings.Add(module, DeepClone(module._Settings));
+            } else {
+                origModSettings.Add(module, module._Settings.ShallowClone());
+            }
+            continue;
+
+            // Need separate method to avoid crash if SRT isn't installed
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static T DeepClone<T>(T obj) => obj.DeepCloneShared();
+        }
+
+        origExtendedVariants.Clear();
+        if (ExtendedVariantsInterop.GetVariantsEnum() is { } variantsEnum) {
+            foreach (object variant in Enum.GetValues(variantsEnum)) {
+                try {
+                    origExtendedVariants[variant] = ExtendedVariantsInterop.GetCurrentVariantValue(new Lazy<object?>(variant));;
+                } catch {
+                    // ignore
+                }
+            }
         }
     }
 
@@ -52,18 +79,17 @@ public static class RestoreSettings {
         if (origSettings != null) {
             Settings.Instance.CopyAllFields(origSettings);
             Settings.Instance.ApplyVolumes();
-            Settings.Instance.ApplyScreen();
             Settings.Instance.ApplyLanguage();
             origSettings = null;
         }
 
         if (origAssists != null) {
             SaveData.Instance.Assists = origAssists.Value;
-            SetCommand.ResetVariants(origAssists.Value);
+            AssistsQueryHandler.ApplyAssists(origAssists.Value);
             origAssists = null;
         }
 
-        if (origModSettings != null) {
+        if (origModSettings.IsNotEmpty()) {
             TasSettings.Enabled = true;
             TasSettings.RestoreSettings = true;
 
@@ -83,12 +109,35 @@ public static class RestoreSettings {
 
                     module._Settings.CopyAllProperties(modSettings, true);
                     module._Settings.CopyAllFields(modSettings, true);
-                } catch {
-                    // ignored
+                } catch (Exception ex) {
+                    $"Failed to restore settings for mod '{module.Metadata.Name}'".Log(LogLevel.Warn);
+                    ex.Log(LogLevel.Warn);
                 }
             }
 
-            origModSettings = null;
+            origModSettings.Clear();
+        }
+
+        if (origExtendedVariants.IsNotEmpty()) {
+            var variantsEnum = ExtendedVariantsInterop.GetVariantsEnum()!;
+            foreach (object variant in Enum.GetValues(variantsEnum)) {
+                try {
+                    // Calling player.ResetSprite during StIntroWakeUp causes the player to be stuck in the state
+                    string? name = variant.ToString();
+                    if (name is "MadelineBackpackMode" or "PlayAsBadeline" && Engine.Scene.GetPlayer() is { } player && player.StateMachine.State == Player.StIntroWakeUp) {
+                        continue;
+                    }
+
+                    if (origExtendedVariants.TryGetValue(variant, out var value)) {
+                        ExtendedVariantsInterop.SetVariantValue(new Lazy<object?>(variant), value);
+                    }
+                } catch (Exception ex) {
+                    $"Failed to restore value for Extended Variant '{variant}'".Log(LogLevel.Warn);
+                    ex.Log(LogLevel.Warn);
+                }
+            }
+
+            origExtendedVariants.Clear();
         }
     }
 

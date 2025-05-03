@@ -20,18 +20,18 @@ public static class MouseCommand {
     [Load]
     private static void Load() {
         // make Mouse.GetState() return fake data if tas is running
-        typeof(Mouse).GetMethod(nameof(Mouse.GetState)).IlHook((cursor, _) => {
-            Instruction start = cursor.Next;
+        typeof(Mouse).GetMethodInfo(nameof(Mouse.GetState))!.IlHook((cursor, _) => {
+            Instruction start = cursor.Next!;
             cursor.EmitDelegate(IsRunningTas);
             cursor.Emit(OpCodes.Brfalse, start)
-                .Emit(OpCodes.Call, typeof(MInput).GetMethod("get_Mouse"))
-                .Emit(OpCodes.Ldfld, typeof(MInput.MouseData).GetField(nameof(MInput.MouseData.CurrentState)))
+                .Emit(OpCodes.Call, typeof(MInput).GetMethodInfo("get_Mouse")!)
+                .Emit(OpCodes.Ldfld, typeof(MInput.MouseData).GetFieldInfo(nameof(MInput.MouseData.CurrentState))!)
                 .Emit(OpCodes.Ret);
         });
     }
 
     private static bool IsRunningTas() {
-        return Manager.Running && !MouseButtons.Updating;
+        return Manager.Running && !MouseInput.Updating;
     }
 
     // "Mouse, X, Y, [ScrollWheel]"

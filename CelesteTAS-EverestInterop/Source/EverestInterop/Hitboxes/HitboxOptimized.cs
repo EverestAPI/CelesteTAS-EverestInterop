@@ -27,30 +27,29 @@ public static class HitboxOptimized {
             { } methodInfo) {
             methodInfo.IlHook((cursor, context) => {
                 if (cursor.TryGotoNext(MoveType.After, ins => ins.OpCode == OpCodes.Callvirt)) {
-                    Instruction cursorNext = cursor.Next;
+                    Instruction cursorNext = cursor.Next!;
                     cursor.EmitDelegate<Func<bool>>(IsShowHitboxes);
                     cursor.Emit(OpCodes.Brfalse, cursorNext).Emit(OpCodes.Ret);
                 }
             });
         }
 
-        typeof(Puffer).GetMethodInfo("Explode").HookBefore<Puffer>(self => pufferPushRadius.Add(new Circle(40f, self.X, self.Y)));
-        typeof(Puffer).GetMethod("Render").IlHook((cursor, context) => {
+        typeof(Puffer).GetMethodInfo("Explode")!.HookBefore<Puffer>(self => pufferPushRadius.Add(new Circle(40f, self.X, self.Y)));
+        typeof(Puffer).GetMethodInfo("Render")!.IlHook((cursor, context) => {
             if (cursor.TryGotoNext(i => i.MatchLdloc(out _), i => i.MatchLdcI4(28))) {
                 cursor.Index++;
                 cursor.EmitDelegate(HidePufferWhiteLine);
             }
         });
 
-        if (ModUtils.GetType("CrystallineHelper", "vitmod.CustomPuffer") is { } customPufferType &&
-            customPufferType.CreateGetDelegate<Entity, Circle>("pushRadius") is { } getPushRadius) {
-            customPufferType.GetMethodInfo("Explode")
-                .HookBefore<Entity>(self => pufferPushRadius.Add(new Circle(getPushRadius.Invoke(self).Radius, self.X, self.Y)));
+        if (ModUtils.GetType("CrystallineHelper", "vitmod.CustomPuffer") is { } customPufferType) {
+            customPufferType.GetMethodInfo("Explode")?
+                .HookBefore<Entity>(self => pufferPushRadius.Add(new Circle(self.GetFieldValue<Circle>("pushRadius")!.Radius, self.X, self.Y)));
             // its debug render also needs optimize
             // but i have no good idea, so i put it aside
         }
 
-        using (new DetourConfigContext(new DetourConfig("CelesteTAS", before: ["*"])).Use()) {
+        using (new DetourConfigContext(new DetourConfig("CelesteTAS", priority: int.MaxValue)).Use()) {
             On.Monocle.Entity.DebugRender += ModDebugRender;
         }
     }
@@ -95,7 +94,8 @@ public static class HitboxOptimized {
             Rectangle bounds = new((int) camera.Left - width / 2, (int) camera.Top - height / 2, width * 2, height * 2);
             if (self.Right < bounds.Left || self.Left > bounds.Right || self.Top > bounds.Bottom ||
                 self.Bottom < bounds.Top) {
-                return;
+                // TODO: Temporarily disabled, until FrostHelper fixes arbitrary shape colliders on its end
+                // return;
             }
         }
 
@@ -210,7 +210,7 @@ public static class HitboxOptimized {
     }
 
     private static void EntityListOnDebugRender(On.Monocle.EntityList.orig_DebugRender orig, EntityList self, Camera camera) {
-        Level level = self.Scene as Level;
+        Level? level = self.Scene as Level;
         if (TasSettings.ShowHitboxes && level != null) {
             AddSpawnPointHitbox(level);
         }

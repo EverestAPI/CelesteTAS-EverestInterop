@@ -2,7 +2,6 @@ using System;
 using System.Text;
 using CelesteStudio.Communication;
 using CelesteStudio.Controls;
-using CelesteStudio.Data;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
@@ -50,10 +49,10 @@ public sealed class GameInfo : Panel {
 
             var remainder = CommunicationWrapper.PlayerPositionRemainder;
 
-            float subpixelLeft = (float)Math.Round(remainder.X + 0.5f, CommunicationWrapper.GameSettings.SubpixelIndicatorDecimals, MidpointRounding.AwayFromZero);
-            float subpixelTop = (float)Math.Round(remainder.Y + 0.5f, CommunicationWrapper.GameSettings.SubpixelIndicatorDecimals, MidpointRounding.AwayFromZero);
-            float subpixelRight = 1.0f - subpixelLeft;
-            float subpixelBottom = 1.0f - subpixelTop;
+            double subpixelLeft = Math.Round(remainder.X + 0.5, CommunicationWrapper.GameSettings.SubpixelIndicatorDecimals, MidpointRounding.AwayFromZero);
+            double subpixelTop = Math.Round(remainder.Y + 0.5, CommunicationWrapper.GameSettings.SubpixelIndicatorDecimals, MidpointRounding.AwayFromZero);
+            double subpixelRight = 1.0 - subpixelLeft;
+            double subpixelBottom = 1.0 - subpixelTop;
 
             var font = FontManager.SKStatusFont;
 
@@ -95,12 +94,32 @@ public sealed class GameInfo : Panel {
             boxPaint.StrokeWidth = boxThickness;
 
             canvas.DrawRect(x, y, rectSize, rectSize, boxPaint);
-            canvas.DrawRect(x + (rectSize - dotThickness) * subpixelLeft, y + (rectSize - dotThickness) * subpixelTop, dotThickness, dotThickness, Settings.Instance.Theme.SubpixelIndicatorDotPaint);
+            canvas.DrawRect((float)(x + (rectSize - dotThickness) * subpixelLeft), (float)(y + (rectSize - dotThickness) * subpixelTop), dotThickness, dotThickness, Settings.Instance.Theme.SubpixelIndicatorDotPaint);
 
             Width = (int)((textWidth + rectPadding + indicatorPadding) * 2.0f + rectSize);
             Height = (int)((textHeight + rectPadding + indicatorPadding) * 2.0f + rectSize);
         }
     }
+
+    private static readonly ActionBinding CopyGameInfoToClipboard = new("Status_CopyGameInfoToClipboard", "Copy Game Info to Clipboard", Binding.Category.Status, Hotkey.KeyCtrl(Keys.C | Keys.Shift), () => {
+        if (CommunicationWrapper.GetExactGameInfo() is var exactGameInfo && !string.IsNullOrWhiteSpace(exactGameInfo)) {
+            Clipboard.Instance.Clear();
+            Clipboard.Instance.Text = exactGameInfo;
+        }
+    });
+    private static readonly ActionBinding ReconnectStudioAndCeleste = new("Status_ReconnectStudioCeleste", "Force-reconnect Celeste and Studio", Binding.Category.Status, Hotkey.KeyCtrl(Keys.D | Keys.Shift), CommunicationWrapper.ForceReconnect);
+
+    private static readonly ActionBinding EditCustomInfoTemplate = new("Status_EditCustomInfoTemplate", "Edit Custom Info Template", Binding.Category.Status, Hotkey.None, () => Studio.Instance.GameInfo.OnEditCustomInfoTemplate());
+    private static readonly ActionBinding ClearWatchEntityInfo = new("Status_ClearWatchEntityInfo", "Clear Watch-Entity Info", Binding.Category.Status, Hotkey.None, CommunicationWrapper.ClearWatchEntityInfo);
+
+    private static readonly BoolBinding PopoutAlwaysOnTop = new("StatusPopout_AlwaysOnTop", "Always on Top", Binding.Category.StatusPopout, Hotkey.None,
+        () => Settings.Instance.GameInfoPopoutTopmost,
+        value => {
+            Settings.Instance.GameInfoPopoutTopmost = value;
+            Settings.Save();
+        });
+
+    public static readonly Binding[] AllBindings = [CopyGameInfoToClipboard, ReconnectStudioAndCeleste, EditCustomInfoTemplate, ClearWatchEntityInfo, PopoutAlwaysOnTop];
 
     private const string DisconnectedText = "Searching...";
 
@@ -238,40 +257,30 @@ public sealed class GameInfo : Panel {
         base.OnMouseDown(e);
     }
 
-    public void SetupContextMenu(GameInfoPopout? popout = null) {
-        var editCustomInfoItem = MenuEntry.Status_EditCustomInfoTemplate.ToAction(() => {
-            Content = editPanel;
-            OnSizeChanged(EventArgs.Empty);
-            infoTemplateArea.Text = CommunicationWrapper.GetCustomInfoTemplate();
-        });
+    public void OnEditCustomInfoTemplate() {
+        Content = editPanel;
+        OnSizeChanged(EventArgs.Empty);
+        infoTemplateArea.Text = CommunicationWrapper.GetCustomInfoTemplate();
+    }
+
+    public void SetupContextMenu(bool popout) {
+        var editCustomInfoItem = EditCustomInfoTemplate.CreateItem();
         editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
         CommunicationWrapper.ConnectionChanged += () => editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
 
         ContextMenu = new ContextMenu {
             Items  = {
-                MenuEntry.Status_CopyGameInfoToClipboard.ToAction(() => {
-                    if (CommunicationWrapper.GetExactGameInfo() is var exactGameInfo && !string.IsNullOrWhiteSpace(exactGameInfo)) {
-                        Clipboard.Instance.Clear();
-                        Clipboard.Instance.Text = exactGameInfo;
-                    }
-                }),
-                MenuEntry.Status_ReconnectStudioCeleste.ToAction(CommunicationWrapper.ForceReconnect),
+                CopyGameInfoToClipboard,
+                ReconnectStudioAndCeleste,
                 new SeparatorMenuItem(),
                 editCustomInfoItem,
-                MenuEntry.Status_ClearWatchEntityInfo.ToAction(CommunicationWrapper.ClearWatchEntityInfo),
+                ClearWatchEntityInfo,
             }
         };
 
-        if (popout != null) {
-            var alwaysOnTopCheckbox = MenuEntry.StatusPopout_AlwaysOnTop.ToCheckbox();
-            alwaysOnTopCheckbox.CheckedChanged += (_, _) => {
-                popout.Topmost = Settings.Instance.GameInfoPopoutTopmost = alwaysOnTopCheckbox.Checked;
-                Settings.Save();
-            };
-            popout.Topmost = alwaysOnTopCheckbox.Checked = Settings.Instance.GameInfoPopoutTopmost;
-
+        if (popout) {
             ContextMenu.Items.Add(new SeparatorMenuItem());
-            ContextMenu.Items.Add(alwaysOnTopCheckbox);
+            ContextMenu.Items.Add(PopoutAlwaysOnTop);
         }
     }
 
@@ -355,7 +364,7 @@ public sealed class GameInfoPanel : Panel {
 
     public GameInfoPanel() {
         var gameInfo = Studio.Instance.GameInfo;
-        gameInfo.SetupContextMenu();
+        gameInfo.SetupContextMenu(popout: false);
 
         var scrollable = new Scrollable {
             Padding = 0,
@@ -485,7 +494,12 @@ public sealed class GameInfoPanel : Panel {
 public sealed class GameInfoPopout : Form {
     public GameInfoPopout() {
         var gameInfo = Studio.Instance.GameInfo;
-        gameInfo.SetupContextMenu(this);
+        gameInfo.SetupContextMenu(popout: true);
+
+        Topmost = Settings.Instance.GameInfoPopoutTopmost;
+        Settings.Changed += () => {
+            Topmost = Settings.Instance.GameInfoPopoutTopmost;
+        };
 
         var scrollable = new Scrollable {
             Padding = 0,
