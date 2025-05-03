@@ -12,11 +12,30 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Tedd.RandomUtils;
-using InputPermutation = System.Collections.Generic.List<(int Frames, StudioCommunication.Actions Action)>;
+using InputPermutation = System.Collections.Generic.List<(int Frames, CelesteStudio.Tool.RadelineSimForm.InputAction Action)>;
 
 namespace CelesteStudio.Tool;
 
 public sealed class RadelineSimForm : Form {
+    [Flags]
+    public enum InputAction {
+        None = 1 << 0,
+        Left = 1 << 1,
+        Right = 1 << 2,
+        Down = 1 << 3,
+        Jump = 1 << 4,
+    }
+    private static char CharForAction(InputAction action) {
+        return action switch {
+            InputAction.None => ' ',
+            InputAction.Left => 'L',
+            InputAction.Right => 'R',
+            InputAction.Down => 'D',
+            InputAction.Jump => 'J',
+            _ => throw new ArgumentOutOfRangeException(nameof(action), action, null)
+        };
+    }
+
     private const string Version = "1.0.0";
 
     private readonly TextArea initialStateText;
@@ -43,7 +62,7 @@ public sealed class RadelineSimForm : Form {
     private readonly Config cfg;
     private InitialState initialState;
 
-    private Actions availableActions = Actions.None;
+    private InputAction availableActions = 0;
     private bool gotInitialState;
     private bool isRunning;
     private readonly List<Control> disabledControls;
@@ -541,12 +560,12 @@ public sealed class RadelineSimForm : Form {
             i++;
 
             InputPermutation permutationFormatted = [];
-            var currentInput = Actions.None;
+            var currentInput = InputAction.None;
             int inputLen = 0;
 
             // convert messy inputs to the compact format
             foreach (var key in permutation) {
-                if (currentInput == Actions.None) {
+                if (currentInput == InputAction.None) {
                     currentInput = key;
                 }
 
@@ -607,7 +626,7 @@ public sealed class RadelineSimForm : Form {
 
             var input = new InputPermutation();
             int frameCounter = 0;
-            var prevAction = Actions.None;
+            var prevAction = InputAction.None;
 
             while (frameCounter < cfg.Frames) {
                 int frames = random.Next(1, cfg.Frames - frameCounter + 1);
@@ -681,33 +700,33 @@ public sealed class RadelineSimForm : Form {
         }
     }
 
-    private Actions GenerateAvailableActions() {
-        var actions = Actions.None;
+    private InputAction GenerateAvailableActions() {
+        var actions = (InputAction) 0;
 
         if (cfg.Axis == Axis.X) {
-            actions |= Actions.Left;
-            actions |= Actions.Right;
+            actions |= InputAction.Left;
+            actions |= InputAction.Right;
 
             if (initialState.OnGround) {
-                actions |= Actions.Down;
+                actions |= InputAction.Down;
             }
         } else {
-            actions |= Actions.Jump;
-            actions |= Actions.Down;
+            actions |= InputAction.Jump;
+            actions |= InputAction.Down;
         }
 
         switch (cfg.DisabledKey) {
             case DisabledKey.L:
-                actions &= ~Actions.Left;
+                actions &= ~InputAction.Left;
                 break;
             case DisabledKey.R:
-                actions &= ~Actions.Right;
+                actions &= ~InputAction.Right;
                 break;
             case DisabledKey.J:
-                actions &= ~Actions.Jump;
+                actions &= ~InputAction.Jump;
                 break;
             case DisabledKey.D:
-                actions &= ~Actions.Down;
+                actions &= ~InputAction.Down;
                 break;
         }
 
@@ -729,10 +748,10 @@ public sealed class RadelineSimForm : Form {
 
         var builder = new StringBuilder($"({position}, {speed}) ");
         foreach (var input in inputPermutation.inputs) {
-            if (input.Action == Actions.None) {
+            if (input.Action == InputAction.None) {
                 builder.Append($"{input.Frames} ");
             } else {
-                builder.Append($"{input.Frames},{input.Action.CharForAction()} ");
+                builder.Append($"{input.Frames},{CharForAction(input.Action)} ");
             }
         }
         return builder.ToString();
@@ -741,10 +760,10 @@ public sealed class RadelineSimForm : Form {
     private static string FormatInputPermutationKey(InputPermutation inputs) {
         var builder = new StringBuilder();
         foreach (var input in inputs) {
-            if (input.Action == Actions.None) {
+            if (input.Action == InputAction.None) {
                 builder.Append($"{input.Frames}\n");
             } else {
-                builder.Append($"{input.Frames},{input.Action.CharForAction()}\n");
+                builder.Append($"{input.Frames},{CharForAction(input.Action)}\n");
             }
         }
         return builder.ToString();
@@ -772,13 +791,13 @@ public sealed class RadelineSimForm : Form {
             foreach (var inputAction in Enumerable.Repeat(inputLine.Action, inputLine.Frames)) {
                 // celeste code (from Player.NormalUpdate) somewhat loosely simplified
 
-                if (grounded && inputAction == Actions.Down) {
+                if (grounded && inputAction == InputAction.Down) {
                     speedX = Approach(speedX, 0.0f, DuckFriction * initialState.DeltaTime);
                 } else {
                     // get input first
                     int moveX = inputAction switch {
-                        Actions.Left => -1,
-                        Actions.Right => 1,
+                        InputAction.Left => -1,
+                        InputAction.Right => 1,
                         _ => 0,
                     };
 
@@ -814,14 +833,14 @@ public sealed class RadelineSimForm : Form {
                 // celeste code (from Player.NormalUpdate) somewhat loosely simplified
 
                 // calculate speed
-                if (inputAction == Actions.Down && speedY >= MaxFall) {
+                if (inputAction == InputAction.Down && speedY >= MaxFall) {
                     maxFall = Approach(maxFall, FastMaxFall, FastMaxAccel * initialState.DeltaTime);
                 } else {
                     maxFall = Approach(maxFall, MaxFall, FastMaxAccel * initialState.DeltaTime);
                 }
 
                 float mult;
-                if (Math.Abs(speedY) <= HalfGravThreshold && (inputAction == Actions.Jump || initialState.AutoJump)) {
+                if (Math.Abs(speedY) <= HalfGravThreshold && (inputAction == InputAction.Jump || initialState.AutoJump)) {
                     mult = Gravity * 0.5f * initialState.DeltaTime;
                 } else {
                     mult = Gravity * initialState.DeltaTime;
@@ -830,7 +849,7 @@ public sealed class RadelineSimForm : Form {
                 speedY = Approach(speedY, maxFall, mult);
 
                 if (jumpTimer > 0) {
-                    if (inputAction == Actions.Jump || initialState.AutoJump) {
+                    if (inputAction == InputAction.Jump || initialState.AutoJump) {
                         speedY = Math.Min(speedY, initialState.Speed);
                     } else {
                         jumpTimer = 0;
