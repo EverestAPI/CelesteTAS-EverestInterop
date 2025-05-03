@@ -6,7 +6,7 @@ using Monocle;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using TAS.Module;
-using TAS.SyncCheck;
+using TAS.Tools;
 using TAS.Utils;
 using GameInput = Celeste.Input;
 

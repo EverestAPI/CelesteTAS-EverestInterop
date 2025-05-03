@@ -7,7 +7,7 @@ using Monocle;
 using StudioCommunication;
 using TAS.Communication;
 using TAS.Module;
-using TAS.SyncCheck;
+using TAS.Tools;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;

@@ -9,7 +9,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using TAS.Communication;
 using TAS.Tools;
-using TAS.SyncCheck;
 using TAS.Utils;
 
 namespace TAS.Module;

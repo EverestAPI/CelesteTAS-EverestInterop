@@ -3,7 +3,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace TAS.SyncCheck;
+namespace TAS.Tools;
 
 /// Result data from a sync-check
 public struct SyncCheckResult() {

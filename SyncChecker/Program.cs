@@ -1,6 +1,4 @@
-﻿#define DEBUG_CELESTETAS
-
-using System.Reflection;
+﻿using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Mono.Cecil;
@@ -10,7 +8,7 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using TAS.SyncCheck;
+using TAS.Tools;
 
 namespace SyncChecker;
 

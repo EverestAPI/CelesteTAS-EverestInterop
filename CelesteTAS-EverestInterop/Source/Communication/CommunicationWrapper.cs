@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using TAS.EverestInterop;
 using TAS.Input;
 using TAS.Module;
-using TAS.SyncCheck;
+using TAS.Tools;
 using TAS.Utils;
 
 namespace TAS.Communication;

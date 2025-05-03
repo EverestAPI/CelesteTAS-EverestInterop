@@ -15,7 +15,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Compile Include="..\CelesteTAS-EverestInterop\Source\SyncCheck\SyncCheckResult.cs" />
+        <Compile Include="..\CelesteTAS-EverestInterop\Source\Tools\SyncCheckResult.cs" />
     </ItemGroup>
 
 </Project>

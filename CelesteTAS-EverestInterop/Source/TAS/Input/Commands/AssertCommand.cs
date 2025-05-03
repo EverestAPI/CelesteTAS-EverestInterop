@@ -3,7 +3,7 @@ using StudioCommunication;
 using System.Collections.Generic;
 using System.IO;
 using TAS.InfoHUD;
-using TAS.SyncCheck;
+using TAS.Tools;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;

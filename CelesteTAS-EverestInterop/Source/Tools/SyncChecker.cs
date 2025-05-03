@@ -11,7 +11,7 @@ using TAS.Input;
 using TAS.Module;
 using TAS.Utils;
 
-namespace TAS.SyncCheck;
+namespace TAS.Tools;
 
 /// Automatically runs the specified TAS files and reports if they were successful
 internal static class SyncChecker {
