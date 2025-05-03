@@ -53,7 +53,7 @@ public static class SaveAndQuitReenterCommand {
     [TasCommand("SaveAndQuitReenter", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
     private static void SaveAndQuitReenter(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         var controller = Manager.Controller;
-        var command = controller.Commands[controller.CurrentParsingFrame][^1];
+        var command = controller.Commands[Command.Parsing ? controller.CurrentParsingFrame : controller.CurrentFrameInTas][^1];
 
         if (ParsingCommand) {
             int slot = ActiveFileSlot;
