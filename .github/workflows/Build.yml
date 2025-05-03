@@ -36,7 +36,9 @@ jobs:
       id: vanilla
       build-cfg: Debug
       tas-repository: VampireFlower/CelesteTAS
-      tas-files: 0 - Any%.tas
+      tas-files: |
+        0 - Any%.tas
+        0 - 100%.tas
 
   build-studio:
     name: Build Celeste Studio
