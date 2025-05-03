@@ -93,16 +93,20 @@ public static class Program {
         },
     };
 
-    private static async Task LogInfo(string message) {
-        await Console.Error.WriteLineAsync($"\e[0m[Info]:  \e[97m{message}\e[0m");
+    private static void LogInfo(string message) {
+        foreach (var line in message.AsSpan().EnumerateLines()) {
+            Console.Error.WriteLine($"\e[0m[Info]:  \e[97m{line}\e[0m");
+        }
     }
-    private static async Task LogError(string message) {
-        await Console.Error.WriteLineAsync($"\e[31m[Error]: \e[91m{message}\e[0m");
+    private static void LogError(string message) {
+        foreach (var line in message.AsSpan().EnumerateLines()) {
+            Console.Error.WriteLine($"\e[31m[Error]: \e[91m{line}\e[0m");
+        }
     }
 
     public static async Task<int> Main(string[] args) {
         if (args.Length != 2) {
-            await LogError("Usage: SyncChecker <input-config> <output-result>");
+            LogError("Usage: SyncChecker <input-config> <output-result>");
             return 1;
         }
 
@@ -110,7 +114,7 @@ public static class Program {
         string resultPath = args[1];
 
         if (!File.Exists(configPath)) {
-            await LogError($"Config file not found: '{configPath}'");
+            LogError($"Config file not found: '{configPath}'");
             return 1;
         }
 
@@ -121,7 +125,7 @@ public static class Program {
         if (!File.Exists(Path.Combine(config.GameDirectory, "Celeste.dll")) &&
             !File.Exists(Path.Combine(config.GameDirectory, "Celeste.exe")))
         {
-            await LogError("Invalid game directory: Could not find Celeste.dll / Celeste.exe");
+            LogError("Invalid game directory: Could not find Celeste.dll / Celeste.exe");
             return 1;
         }
 
@@ -148,9 +152,9 @@ public static class Program {
             bool anyNotFound = false;
             foreach (string file in config.Files) {
                 if (File.Exists(file)) {
-                    await LogInfo($"Checking TAS file: '{file}'");
+                    LogInfo($"Checking TAS file: '{file}'");
                 } else {
-                    await LogError($"TAS file not found: '{file}'");
+                    LogError($"TAS file not found: '{file}'");
                     anyNotFound = true;
                 }
 
@@ -174,8 +178,8 @@ public static class Program {
                 Checksum = checksum,
             };
 
-            await LogInfo("Checksum matches last run. Skipping...");
-            await LogInfo($"Finished sync-check on {fullResult.EndTime}");
+            LogInfo("Checksum matches last run. Skipping...");
+            LogInfo($"Finished sync-check on {fullResult.EndTime}");
 
             await using var resultFile = File.Create(resultPath);
             await JsonSerializer.SerializeAsync(resultFile, fullResult, jsonOptions);
@@ -196,7 +200,7 @@ public static class Program {
 
         var availableEverestVersions = JsonSerializer.Deserialize<EverestVersion[]>(await hc.GetStreamAsync(EverestVersionsURL), jsonOptions);
         if (availableEverestVersions == null || availableEverestVersions.Length == 0) {
-            await LogError("Failed to install Everest: No available versions found");
+            LogError("Failed to install Everest: No available versions found");
             return 1;
         }
 
@@ -204,7 +208,7 @@ public static class Program {
         var targetVersion = new Version(1, targetEverestVersion.Version, 0);
 
         if (!targetEverestVersion.IsNative) {
-            await LogError($"Failed to install Everest: Legacy versions are not supported");
+            LogError($"Failed to install Everest: Legacy versions are not supported");
             return 1;
         }
 
@@ -213,22 +217,22 @@ public static class Program {
 
         if (everestVersion == null || everestVersion < targetVersion) {
             if (everestVersion == null) {
-                await LogInfo($"Everest is not installed. Installing Everest v{targetVersion}...");
+                LogInfo($"Everest is not installed. Installing Everest v{targetVersion}...");
             } else {
-                await LogInfo($"Everest v{everestVersion} is outdated. Installing Everest v{targetVersion}...");
+                LogInfo($"Everest v{everestVersion} is outdated. Installing Everest v{targetVersion}...");
             }
 
             string everestUpdateZip = Path.Combine(config.GameDirectory, "everest-update.zip");
 
             try {
-                await LogInfo($" - Downloading '{targetEverestVersion.MainDownload}'...");
+                LogInfo($" - Downloading '{targetEverestVersion.MainDownload}'...");
                 await using (var everestMainZip = File.Create(everestUpdateZip)) {
                     await using var contentStream = await hc.GetStreamAsync(targetEverestVersion.MainDownload);
                     await contentStream.CopyToAsync(everestMainZip);
                 }
 
                 const string prefix = "main/";
-                await LogInfo($" - Extracting '{everestUpdateZip}'...");
+                LogInfo($" - Extracting '{everestUpdateZip}'...");
                 using (var updateZip = ZipFile.OpenRead(everestUpdateZip)) {
                     foreach (var entry in updateZip.Entries) {
                         string name = entry.FullName;
@@ -249,7 +253,7 @@ public static class Program {
                     }
                 }
 
-                await LogInfo($" - Executing MiniInstaller...");
+                LogInfo($" - Executing MiniInstaller...");
 
                 string miniInstallerName;
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
@@ -258,7 +262,7 @@ public static class Program {
                     } else if (RuntimeInformation.OSArchitecture == Architecture.X86) {
                         miniInstallerName = "MiniInstaller-win.exe";
                     } else {
-                        await LogError($"Failed to install Everest: Unsupported Windows architecture '{RuntimeInformation.OSArchitecture}'");
+                        LogError($"Failed to install Everest: Unsupported Windows architecture '{RuntimeInformation.OSArchitecture}'");
                         return 1;
                     }
                 } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
@@ -266,7 +270,7 @@ public static class Program {
                 } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                     miniInstallerName = "MiniInstaller-osx";
                 } else {
-                    await LogError(
+                    LogError(
                         $"Failed to install Everest: Unsupported platform '{RuntimeInformation.OSDescription}' with architecture '{RuntimeInformation.OSArchitecture}'");
                     return 1;
                 }
@@ -276,7 +280,7 @@ public static class Program {
                     var chmodProc = Process.Start("chmod", ["+x", Path.Combine(config.GameDirectory, miniInstallerName)]);
                     await chmodProc.WaitForExitAsync();
                     if (chmodProc.ExitCode != 0) {
-                        await LogError("Failed to install Everest: Failed to set MiniInstaller executable flag");
+                        LogError("Failed to install Everest: Failed to set MiniInstaller executable flag");
                         return 1;
                     }
                 }
@@ -302,20 +306,20 @@ public static class Program {
                 await proc.WaitForExitAsync();
 
                 if (proc.ExitCode != 0) {
-                    await LogError($"Failed to install Everest: MiniInstaller process died: {proc.ExitCode}");
+                    LogError($"Failed to install Everest: MiniInstaller process died: {proc.ExitCode}");
                     return 1;
                 }
             } catch (Exception ex) {
-                await LogError($"Failed to install Everest: {ex}");
+                LogError($"Failed to install Everest: {ex}");
                 return 1;
             } finally {
                 // Cleanup
                 File.Delete(everestUpdateZip);
             }
 
-            await LogInfo($"Successfully installed Everest v{targetVersion}");
+            LogInfo($"Successfully installed Everest v{targetVersion}");
         } else {
-            await LogInfo($"Everest v{targetVersion} is up-to-date. Skipping update");
+            LogInfo($"Everest v{targetVersion} is up-to-date. Skipping update");
         }
 
         return 0;
@@ -328,12 +332,12 @@ public static class Program {
         using var hc = new CompressedHttpClient();
 
         // Get mod info
-        await LogInfo($"Fetching '{ModUpdateURL}'...");
+        LogInfo($"Fetching '{ModUpdateURL}'...");
         string modInfoData = await hc.GetStringAsync(ModUpdateURL);
         var modInfo = YamlHelper.Deserializer.Deserialize<Dictionary<string, ModUpdateInfo>>(modInfoData);
 
         // Get dependency graph
-        await LogInfo($"Fetching '{DependencyGraphURL}'...");
+        LogInfo($"Fetching '{DependencyGraphURL}'...");
         string dependencyGraphData = await hc.GetStringAsync(DependencyGraphURL);
         var dependencyGraph = YamlHelper.Deserializer.Deserialize<Dictionary<string, DependencyGraphEntry>>(dependencyGraphData);
 
@@ -352,12 +356,12 @@ public static class Program {
         HashSet<ModUpdateInfo> requiredMods = [];
         foreach (string mod in config.Mods.Concat(forceRequiredMods)) {
             if (!dependencyGraph.TryGetValue(mod, out var graph)) {
-                await LogError($"Failed to setup mods: Unknown mod '{mod}'");
+                LogError($"Failed to setup mods: Unknown mod '{mod}'");
                 return 1;
             }
 
             if (!modInfo.TryGetValue(mod, out var info)) {
-                await LogError($"Failed to setup mods: Unknown mod '{mod}'");
+                LogError($"Failed to setup mods: Unknown mod '{mod}'");
                 return 1;
             }
             requiredMods.Add(info with { Name = mod });
@@ -368,7 +372,7 @@ public static class Program {
                 }
 
                 if (!modInfo.TryGetValue(dep.Name, out var depInfo)) {
-                    await LogError($"Failed to setup mods: Unknown dependency '{dep.Name}'");
+                    LogError($"Failed to setup mods: Unknown dependency '{dep.Name}'");
                     return 1;
                 }
 
@@ -410,29 +414,29 @@ public static class Program {
                     blacklist.Add(Path.GetFileName(mod));
                 }
             } catch (Exception ex) {
-                await LogError($"Failed to analyze mod .zip '{mod}': {ex}");
+                LogError($"Failed to analyze mod .zip '{mod}': {ex}");
             }
         }
 
         // Install all required mods
-        await LogInfo($"Setting up {requiredMods.Count} mod(s)...");
+        LogInfo($"Setting up {requiredMods.Count} mod(s)...");
         foreach (var info in requiredMods) {
             if (modHashes.TryGetValue(info.Name, out var installed)) {
                 if (installed.Hash == info.xxHash[0]) {
-                    await LogInfo($" - {info.Name}: Up-to-date (v{info.Version})");
+                    LogInfo($" - {info.Name}: Up-to-date (v{info.Version})");
                     continue;
                 }
                 if (updateBlacklist.Contains(Path.GetFileName(installed.Path))) {
-                    await LogInfo($" - {info.Name}: Outdated but update blacklisted (v{installed.Version} vs. v{info.Version})");
+                    LogInfo($" - {info.Name}: Outdated but update blacklisted (v{installed.Version} vs. v{info.Version})");
                     continue;
                 }
 
-                await LogInfo($" - {info.Name}: Updating... (v{installed.Version} -> v{info.Version})");
+                LogInfo($" - {info.Name}: Updating... (v{installed.Version} -> v{info.Version})");
             } else if (config.BlacklistedMods.Contains(info.Name)) {
-                await LogInfo($" - {info.Name}: Blacklisted (v{info.Version})");
+                LogInfo($" - {info.Name}: Blacklisted (v{info.Version})");
                 continue; // Blacklisted
             } else {
-                await LogInfo($" - {info.Name}: Installing... (v{info.Version})");
+                LogInfo($" - {info.Name}: Installing... (v{info.Version})");
             }
 
             // Install latest version
@@ -471,7 +475,7 @@ public static class Program {
         }
 
         // Remove blacklisted mods from everest.yamls
-        await LogInfo($"Blacklisting {config.BlacklistedMods.Count} mod(s)...");
+        LogInfo($"Blacklisting {config.BlacklistedMods.Count} mod(s)...");
 
         string backupDir = Path.Combine(config.GameDirectory, "Mods", BlacklistBackupDirectory);
         if (Directory.Exists(backupDir)) {
@@ -510,7 +514,7 @@ public static class Program {
                 changed |= removed > 0;
 
                 if (removed > 0) {
-                    await LogInfo($" - {meta.Name}: Removed {removed} mod(s)");
+                    LogInfo($" - {meta.Name}: Removed {removed} mod(s)");
                 }
             }
 
@@ -581,10 +585,10 @@ public static class Program {
             StartTime = DateTime.UtcNow,
             Entries = [],
         };
-        await LogInfo($"Started sync-check on {fullResult.StartTime}");
+        LogInfo($"Started sync-check on {fullResult.StartTime}");
 
         while (filesRemaining.Count > 0) {
-            await LogInfo($"Running Celeste with {filesRemaining.Count} TAS(es) remaining...");
+            LogInfo($"Running Celeste with {filesRemaining.Count} TAS(es) remaining...");
 
             using var gameProc = new Process();
             gameProc.StartInfo = new ProcessStartInfo {
@@ -612,10 +616,10 @@ public static class Program {
 
             await gameProc.WaitForExitAsync();
 
-            await LogInfo($"Celeste exited with code {gameProc.ExitCode}");
+            LogInfo($"Celeste exited with code {gameProc.ExitCode}");
 
             if (!File.Exists(gameResultPath)) {
-                await LogError($"Sync-check failed: Game result file '{gameResultPath}' not found");
+                LogError($"Sync-check failed: Game result file '{gameResultPath}' not found");
 
                 // The game crashed while trying to run the latest file
                 string filePath = filesRemaining[0];
@@ -635,68 +639,68 @@ public static class Program {
                 filesRemaining.Remove(entry.File);
                 fullResult.Entries.Add(entry);
 
-                await LogInfo($" - '{entry.File}': {entry.Status}");
+                LogInfo($" - '{entry.File}': {entry.Status}");
                 if (entry.Status != SyncCheckResult.Status.Success) {
-                    await LogError("======= Game Info =======");
-                    await LogError(entry.GameInfo);
+                    LogError("======= Game Info =======");
+                    LogError(entry.GameInfo);
 
                     switch (entry.Status) {
                         case SyncCheckResult.Status.NotFinished:
                         case SyncCheckResult.Status.UnsafeAction:
-                            await LogError("====== Aborted TAS ======");
+                            LogError("====== Aborted TAS ======");
                             if (entry.AdditionalInfo.Abort.HasValue) {
                                 var abort = entry.AdditionalInfo.Abort.Value;
-                                await LogError($"File: '{abort.FilePath}' line {abort.FileLine}");
-                                await LogError($"Current Input: {abort.CurrentInput}");
+                                LogError($"File: '{abort.FilePath}' line {abort.FileLine}");
+                                LogError($"Current Input: {abort.CurrentInput}");
                             } else {
-                                await LogError("<not-available>");
+                                LogError("<not-available>");
                             }
                             break;
 
                         case SyncCheckResult.Status.Crash:
-                            await LogError("===== Game  Crashed =====");
+                            LogError("===== Game  Crashed =====");
                             if (entry.AdditionalInfo.Crash.HasValue) {
                                 var crash = entry.AdditionalInfo.Crash.Value;
-                                await LogError($"File: '{crash.FilePath}' line {crash.FileLine}");
-                                await LogError(crash.Error);
+                                LogError($"File: '{crash.FilePath}' line {crash.FileLine}");
+                                LogError(crash.Error);
                             } else {
-                                await LogError("<not-available>");
+                                LogError("<not-available>");
                             }
                             break;
 
                         case SyncCheckResult.Status.AssertFailed:
-                            await LogError("=== Assertion Failure ===");
+                            LogError("=== Assertion Failure ===");
                             if (entry.AdditionalInfo.AssertFailed.HasValue) {
                                 var assertFailed = entry.AdditionalInfo.AssertFailed.Value;
-                                await LogError($"File: '{assertFailed.FilePath}' line {assertFailed.FileLine}");
-                                await LogError($"Expected: {assertFailed.Expected}");
-                                await LogError($"Actual: {assertFailed.Actual}");
+                                LogError($"File: '{assertFailed.FilePath}' line {assertFailed.FileLine}");
+                                LogError($"Expected: {assertFailed.Expected}");
+                                LogError($"Actual: {assertFailed.Actual}");
                             } else {
-                                await LogError("<not-available>");
+                                LogError("<not-available>");
                             }
                             break;
 
                         case SyncCheckResult.Status.WrongTime:
-                            await LogError("====== Wrong Times ======");
+                            LogError("====== Wrong Times ======");
                             if (entry.AdditionalInfo.WrongTime != null) {
                                 for (int i = 0; i < entry.AdditionalInfo.WrongTime.Count; i++) {
                                     var wrongTime = entry.AdditionalInfo.WrongTime[i];
 
                                     if (i != 0) {
-                                        await LogError("");
+                                        LogError("");
                                     }
 
-                                    await LogError($"- File: '{wrongTime.FilePath}' line {wrongTime.FileLine}");
-                                    await LogError($"  Expected: {wrongTime.OldTime}");
-                                    await LogError($"  Actual: {wrongTime.NewTime}");
+                                    LogError($"- File: '{wrongTime.FilePath}' line {wrongTime.FileLine}");
+                                    LogError($"  Expected: {wrongTime.OldTime}");
+                                    LogError($"  Actual: {wrongTime.NewTime}");
                                 }
                             } else {
-                                await LogError("<not-available>");
+                                LogError("<not-available>");
                             }
                             break;
                     }
 
-                    await LogError("=========================");
+                    LogError("=========================");
                 }
             }
 
@@ -712,7 +716,7 @@ public static class Program {
         }
 
         fullResult.EndTime = DateTime.UtcNow;
-        await LogInfo($"Finished sync-check on {fullResult.EndTime}");
+        LogInfo($"Finished sync-check on {fullResult.EndTime}");
 
         bool success = fullResult.Entries.All(entry => entry.Status == SyncCheckResult.Status.Success);
         fullResult.Checksum = success ? checksum : string.Empty;

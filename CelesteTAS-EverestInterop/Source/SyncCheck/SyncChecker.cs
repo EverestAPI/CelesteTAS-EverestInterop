@@ -64,7 +64,13 @@ internal static class SyncChecker {
         Logger.Info("CelesteTAS/SyncCheck", $"Finished check for file: '{Manager.Controller.FilePath}'");
 
         // Check for desyncs
-        if (currentStatus == SyncCheckResult.Status.Success && Engine.Scene is not (Level { Completed: true } or LevelExit or AreaComplete or Overworld { Current: OuiJournal })) {
+        if (currentStatus == SyncCheckResult.Status.Success && Engine.Scene is not (
+                Level { Completed: true } or
+                Level { Session: { Area.SID: "Celeste/8-Epilogue", Level: "inside" } } or
+                LevelExit or
+                AreaComplete or
+                Overworld { Current: OuiJournal }
+        )) {
             // TAS did not finish
             currentStatus = SyncCheckResult.Status.NotFinished;
             currentAdditionalInformation.Clear();
@@ -72,7 +78,11 @@ internal static class SyncChecker {
         }
 
         GameInfo.Update(updateVel: false);
-        var entry = new SyncCheckResult.Entry(Manager.Controller.FilePath, currentStatus, GameInfo.ExactStatus, currentAdditionalInformation);
+
+        string infoWithSid = Engine.Scene?.GetSession() is { } session
+            ? $"{GameInfo.ExactStatus}\n\nSID: {session.Area} ({session.MapData.Filename})"
+            : GameInfo.ExactStatus;
+        var entry = new SyncCheckResult.Entry(Manager.Controller.FilePath, currentStatus, infoWithSid, currentAdditionalInformation);
 
         result.Entries.Add(entry);
         result.WriteToFile(resultFile);
