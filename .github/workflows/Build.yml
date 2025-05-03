@@ -27,6 +27,7 @@ jobs:
     uses: ./.github/workflows/Test.SyncCheck.yml
     needs: build-sync-checker
     with:
+      id: vanilla
       build-cfg: Debug
       tas-repository: VampireFlower/CelesteTAS
       tas-files: 0 - Any%.tas

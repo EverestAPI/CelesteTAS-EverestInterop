@@ -9,6 +9,7 @@ using MonoMod.Utils;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using TAS.SyncCheck;
 
 namespace SyncChecker;
@@ -23,13 +24,15 @@ public readonly record struct Config (
     EverestBranch EverestBranch,
     List<string> Mods,
     List<string> BlacklistedMods,
-    List<string> Files
+    List<string> Files,
+    string LastChecksum
 );
 /// Result after running a sync-check
 public record struct Result (
     DateTime StartTime,
     DateTime EndTime,
-    List<SyncCheckResult.Entry> Entries
+    List<SyncCheckResult.Entry> Entries,
+    string Checksum
 );
 
 // Format taken from https://maddie480.ovh/celeste/everest-versions
@@ -79,6 +82,7 @@ public static class Program {
     private const string ModUpdateURL = "https://maddie480.ovh/celeste/everest_update.yaml";
     private const string DependencyGraphURL = "https://maddie480.ovh/celeste/mod_dependency_graph.yaml";
     private const string ModDownloadURL = "https://maddie480.ovh/celeste/dl?mirror=1&id=";
+    private const string CelesteTasRepositoryName = "CelesteTAS-EverestInterop";
 
     private static readonly JsonSerializerOptions jsonOptions = new() {
         IncludeFields = true,
@@ -98,7 +102,7 @@ public static class Program {
 
     public static async Task<int> Main(string[] args) {
         if (args.Length != 2) {
-            await LogError($"Usage: SyncChecker <input-config> <output-result>");
+            await LogError("Usage: SyncChecker <input-config> <output-result>");
             return 1;
         }
 
@@ -126,18 +130,64 @@ public static class Program {
         // Ensure Everest is up-to-date
         if (config.EverestBranch != EverestBranch.Manual) {
             result = await UpdateEverest(config);
-            if (result != 0) return result;
+            if (result != 0) {
+                return result;
+            }
         }
 
-        result = await SetupMods(config);
-        if (result != 0) return result;
+        using var sha1 = SHA1.Create();
 
-        result = await RunSyncCheck(config, resultPath);
-        if (result != 0) return result;
+        result = await SetupMods(config, sha1);
+        if (result != 0) {
+            return result;
+        }
+
+        // Include Everest and TASes in hash
+        {
+            // Validate files
+            bool anyNotFound = false;
+            foreach (string file in config.Files) {
+                if (File.Exists(file)) {
+                    await LogInfo($"Checking TAS file: '{file}'");
+                } else {
+                    await LogError($"TAS file not found: '{file}'");
+                    anyNotFound = true;
+                }
+
+                byte[] bytes = await File.ReadAllBytesAsync(file);
+                sha1.TransformBlock(bytes, 0, bytes.Length, bytes, 0);
+            }
+            if (anyNotFound) {
+                return 1;
+            }
+
+            byte[] celesteBytes = await File.ReadAllBytesAsync(Path.Combine(config.GameDirectory, "Celeste.dll"));
+            sha1.TransformFinalBlock(celesteBytes, 0, celesteBytes.Length);
+        }
+
+        string checksum = Convert.ToHexString(sha1.Hash!).ToLower();
+        if (checksum == config.LastChecksum) {
+            var fullResult = new Result {
+                StartTime = DateTime.UtcNow,
+                EndTime = DateTime.UtcNow,
+                Entries = [],
+                Checksum = checksum,
+            };
+
+            await LogInfo("Checksum matches last run. Skipping...");
+            await LogInfo($"Finished sync-check on {fullResult.EndTime}");
+
+            await using var resultFile = File.Create(resultPath);
+            await JsonSerializer.SerializeAsync(resultFile, fullResult, jsonOptions);
+
+            result = 0;
+        } else {
+            result = await RunSyncCheck(config, resultPath, checksum);
+        }
 
         RestoreBlacklistedMods(config);
 
-        return 0;
+        return result;
     }
 
     /// Ensures the installed Everest version is up-to-date
@@ -274,7 +324,7 @@ public static class Program {
     private const string BlacklistBackupDirectory = "blacklist-backup";
 
     /// Sets up all required mods for the sync-check
-    private static async Task<int> SetupMods(Config config) {
+    private static async Task<int> SetupMods(Config config, SHA1 sha1) {
         using var hc = new CompressedHttpClient();
 
         // Get mod info
@@ -287,9 +337,10 @@ public static class Program {
         string dependencyGraphData = await hc.GetStringAsync(DependencyGraphURL);
         var dependencyGraph = YamlHelper.Deserializer.Deserialize<Dictionary<string, DependencyGraphEntry>>(dependencyGraphData);
 
+        bool installReleaseCelesteTas = !Directory.Exists(Path.Combine(config.GameDirectory, "Mods", CelesteTasRepositoryName));
+
         // Gather all required mods
-        // TODO: Remove "HelperTestMapHider" mod with a new SelectCampaign command
-        IEnumerable<string> forceRequiredMods = ["CelesteTAS", "HelperTestMapHider"]; // Mods which are enabled, no matter what
+        IEnumerable<string> forceRequiredMods = installReleaseCelesteTas ? ["CelesteTAS"] : []; // Mods which are enabled, no matter what
         HashSet<ModUpdateInfo> requiredMods = [];
         foreach (string mod in config.Mods.Concat(forceRequiredMods)) {
             if (!dependencyGraph.TryGetValue(mod, out var graph)) {
@@ -372,8 +423,9 @@ public static class Program {
 
             await LogInfo($" - {info.Name}: Installing... (v{info.Version})");
 
-            if (File.Exists(installed.Path))
+            if (File.Exists(installed.Path)) {
                 File.Delete(installed.Path);
+            }
 
             string modPath = Path.Combine(config.GameDirectory, "Mods", $"{info.Name}.zip");
 
@@ -382,12 +434,37 @@ public static class Program {
             await contentStream.CopyToAsync(modZip);
         }
 
+        // Calculate checksum
+        foreach (var info in requiredMods) {
+            if (config.BlacklistedMods.Contains(info.Name)) {
+                continue;
+            }
+
+            byte[] bytes = Convert.FromHexString(info.xxHash[0]);
+            sha1.TransformBlock(bytes, 0, bytes.Length, bytes, 0);
+        }
+        if (!installReleaseCelesteTas) {
+            string celesteTasPath = Path.Combine(config.GameDirectory, "Mods", CelesteTasRepositoryName);
+            var options = new EnumerationOptions { RecurseSubdirectories = true };
+            var allFiles = Directory.EnumerateFiles(Path.Combine(celesteTasPath, "CelesteTAS-EverestInterop"), "*.cs", options)
+                .Concat(Directory.EnumerateFiles(Path.Combine(celesteTasPath, "StudioCommunication"), "*.cs", options))
+                .Concat(Directory.EnumerateFiles(Path.Combine(celesteTasPath, "SyncChecker"), "*.cs", options));
+
+            using var sha256 = SHA1.Create();
+            foreach (string file in allFiles) {
+                byte[] bytes = await File.ReadAllBytesAsync(file);
+                sha1.TransformBlock(bytes, 0, bytes.Length, bytes, 0);
+            }
+        }
+
         // Remove blacklisted mods from everest.yamls
         await LogInfo($"Blacklisting {config.BlacklistedMods.Count} mod(s)...");
 
         string backupDir = Path.Combine(config.GameDirectory, "Mods", BlacklistBackupDirectory);
-        if (Directory.Exists(backupDir))
+        if (Directory.Exists(backupDir)) {
             Directory.Delete(backupDir, recursive: true);
+        }
+
         Directory.CreateDirectory(backupDir);
 
         foreach (string mod in Directory.EnumerateFiles(Path.Combine(config.GameDirectory, "Mods"))) {
@@ -471,32 +548,23 @@ public static class Program {
     }
 
     /// Performs the sync-check and collects the results
-    private static async Task<int> RunSyncCheck(Config config, string resultPath) {
-        // Validate files
-        bool anyNotFound = false;
-        foreach (string file in config.Files) {
-            if (!File.Exists(file)) {
-                await LogError($"TAS file not found: '{file}'");
-                anyNotFound = true;
-            }
-        }
-        if (anyNotFound) {
-            return 1;
-        }
-
+    private static async Task<int> RunSyncCheck(Config config, string resultPath, string checksum) {
         List<string> filesRemaining = [..config.Files.Distinct()];
 
         string gameName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Celeste.exe" : "Celeste";
         string gameResultPath = Path.Combine(config.GameDirectory, "sync-check-result.json");
         string gameSavePath = Path.Combine(config.GameDirectory, "sync-check-saves");
 
-        if (File.Exists(resultPath))
+        if (File.Exists(resultPath)) {
             File.Delete(resultPath);
-        if (File.Exists(gameResultPath))
+        }
+        if (File.Exists(gameResultPath)) {
             File.Delete(gameResultPath);
+        }
 
-        if (Directory.Exists(gameSavePath))
+        if (Directory.Exists(gameSavePath)) {
             Directory.Delete(gameSavePath, recursive: true);
+        }
         Directory.CreateDirectory(gameSavePath);
 
         var fullResult = new Result {
@@ -636,6 +704,9 @@ public static class Program {
         fullResult.EndTime = DateTime.UtcNow;
         await LogInfo($"Finished sync-check on {fullResult.EndTime}");
 
+        bool success = fullResult.Entries.All(entry => entry.Status == SyncCheckResult.Status.Success);
+        fullResult.Checksum = success ? checksum : string.Empty;
+
         await using var resultFile = File.Create(resultPath);
         await JsonSerializer.SerializeAsync(resultFile, fullResult, jsonOptions);
 
@@ -644,7 +715,7 @@ public static class Program {
             File.Delete(gameResultPath);
         }
 
-        return fullResult.Entries.Any(entry => entry.Status != SyncCheckResult.Status.Success) ? 1 : 0;
+        return success ? 0 : 1;
     }
 
     /// Retrieves the current version information of the installation

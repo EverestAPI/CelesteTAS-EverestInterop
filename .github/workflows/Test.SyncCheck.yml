@@ -1,6 +1,9 @@
 on:
   workflow_call:
     inputs:
+      id:
+        required: true
+        type: string
       build-cfg:
         required: true
         type: string
@@ -30,12 +33,33 @@ jobs:
       TASFILES_REPO_NAME: 'TAS-Files'
       SYNC_CONFIG_PATH: 'sync_config.json'
       SYNC_RESULT_PATH: 'sync_result.json'
+      CHECKSUM_PATH: 'last_run_checksum.txt'
 
     steps:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '9.0'
+    - name: Setup JQ
+      uses: dcarbone/install-jq-action@v3
+
+    - name: Restore mods cache
+      id: restore-cache
+      uses: actions/cache/restore@v4
+      with:
+        path: |
+          Mods/**
+          ${{ env.CHECKSUM_PATH }}
+        key: SyncCheck-${{ inputs.id }}
+    - name: Move cache
+      if: steps.restore-cache.outputs.cache-hit == 'true'
+      run: |
+        rm -rf ${{ env.CELESTE_INSTALL }}/Mods
+        mv Mods ${{ env.CELESTE_INSTALL }}/Mods
+        mv ${{ env.CHECKSUM_PATH }} ${{ env.CELESTE_INSTALL }}/${{ env.CHECKSUM_PATH }}
+    - name: Create blank checksum
+      if: steps.restore-cache.outputs.cache-hit != 'true'
+      run: touch ${{ env.CELESTE_INSTALL }}/${{ env.CHECKSUM_PATH }}
 
     - name: Checkout CelesteTAS
       uses: actions/checkout@v4
@@ -69,14 +93,43 @@ jobs:
     - name: Generate run configuration
       run: |
         echo '{' >> ${{ env.SYNC_CONFIG_PATH }}
-        echo '"gameDirectory": "${{ env.CELESTE_INSTALL }}",' >> ${{ env.SYNC_CONFIG_PATH }}
-        echo '"everestBranch": "manual",' >> ${{ env.SYNC_CONFIG_PATH }}
-        echo "\"mods\": [$(echo '${{ inputs.required-mods }}' | awk 'NF { print "\""$0"\""}' | paste -sd ",")]," >> ${{ env.SYNC_CONFIG_PATH }}
-        echo '"blacklistedMods": [],' >> ${{ env.SYNC_CONFIG_PATH }}
-        echo "\"files\": [$(echo '${{ inputs.tas-files }}' | awk 'NF { print "\"${{ env.CELESTE_INSTALL }}/${{ env.TASFILES_REPO_NAME }}/"$0"\""}' | paste -sd ",")]" >> ${{ env.SYNC_CONFIG_PATH }}
+        echo '    "gameDirectory": "${{ env.CELESTE_INSTALL }}",' >> ${{ env.SYNC_CONFIG_PATH }}
+        echo '    "everestBranch": "manual",' >> ${{ env.SYNC_CONFIG_PATH }}
+        echo "    \"mods\": [$(echo '${{ inputs.required-mods }}' | awk 'NF { print "\""$0"\""}' | paste -sd ",")]," >> ${{ env.SYNC_CONFIG_PATH }}
+        echo '    "blacklistedMods": [],' >> ${{ env.SYNC_CONFIG_PATH }}
+        echo "    \"files\": [$(echo '${{ inputs.tas-files }}' | awk 'NF { print "\"${{ env.CELESTE_INSTALL }}/${{ env.TASFILES_REPO_NAME }}/"$0"\""}' | paste -sd ",")]," >> ${{ env.SYNC_CONFIG_PATH }}
+        echo "    \"lastChecksum\": \"$(cat ${{ env.CELESTE_INSTALL }}/${{ env.CHECKSUM_PATH }})\"" >> ${{ env.SYNC_CONFIG_PATH }}
         echo '}' >> ${{ env.SYNC_CONFIG_PATH }}
 
         cat ${{ env.SYNC_CONFIG_PATH }}
 
     - name: Execute sync check
       run: dotnet SyncChecker/SyncChecker.dll ${{ env.SYNC_CONFIG_PATH }} ${{ env.SYNC_RESULT_PATH }}
+
+    - name: Prepare cache
+      run: |
+        rm -rf Mods
+        mkdir Mods
+        # Suppress error since there might be no .zip mods installed
+        cp ${{ env.CELESTE_INSTALL }}/Mods/*.zip Mods 2>/dev/null || :
+        
+        cat ${{ env.SYNC_RESULT_PATH }} | jq -r .checksum > ${{ env.CHECKSUM_PATH }}
+
+    - name: Delete previous mods cache
+      if: steps.restore-cache.outputs.cache-hit == 'true'
+      continue-on-error: true
+      run: |
+        curl -L \
+          -X DELETE \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ github.token }}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          "https://api.github.com/repos/${{ github.repository }}/actions/caches?key=SyncCheck-${{ inputs.id }}"
+
+    - name: Save mods cache
+      uses: actions/cache/save@v4
+      with:
+        path: |
+          Mods/**
+          ${{ env.CHECKSUM_PATH }}
+        key: SyncCheck-${{ inputs.id }}
