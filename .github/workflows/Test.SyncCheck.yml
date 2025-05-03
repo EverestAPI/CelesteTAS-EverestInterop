@@ -17,7 +17,7 @@ on:
 
 jobs:
   run-sync-check:
-    name: SyncCheck
+    name: Run Sync-Check
 
     runs-on: ubuntu-latest
 
