@@ -31,42 +31,68 @@ public static class TargetQuery {
         public virtual bool CanEnumerateMemberEntries(Type type, Variant variant) => false;
         public virtual bool CanEnumerateTypeEntries(Type type, Variant variant) => false;
 
+        /// Provide currently active instances for the specified type. <br/>
+        /// Only invoked if <see cref="CanResolveInstances"/> returned <c>true</c> for the type.
         public virtual object[] ResolveInstances(Type type) => [];
+
+        /// Resolve a list of base target-types for a query. <br/>
+        /// <c>null</c> should be returned when no base-types could be resolved.
         public virtual (List<Type> Types, string[] MemberArgs)? ResolveBaseTypes(string[] queryArgs) => null;
 
+        /// Attempts to resolve the next member value for all current objects in parallel. <br/>
+        /// <c>true</c> should be returned when the handler could resolve the next member, otherwise <c>false</c>.
         public virtual Result<bool, QueryError> ResolveMemberValues(ref object?[] values, ref int memberIdx, string[] memberArgs) {
             return Result<bool, QueryError>.Ok(false);
         }
+
+        /// Attempts to resolve the next member for a single value. <br/>
+        /// <c>true</c> should be returned when the handler could resolve the next member, otherwise <c>false</c>.
         public virtual Result<bool, MemberAccessError> ResolveMember(object? instance, out object? value, Type type, int memberIdx, string[] memberArgs) {
             value = null;
             return Result<bool, MemberAccessError>.Ok(false);
         }
+
+        /// Attempts to resolve the target types of the parameters for the next member. <br/>
+        /// <c>true</c> should be returned when the handler could resolve the target types, otherwise <c>false</c>.
         public virtual Result<bool, MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
             targetTypes = [];
             return Result<bool, MemberAccessError>.Ok(false);
         }
 
+        /// Attempts to set the value of the next member to the target value. <br/>
+        /// <c>true</c> should be returned when the handler could set the next member, otherwise <c>false</c>.
         public virtual Result<bool, MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
             return Result<bool, MemberAccessError>.Ok(false);
         }
 
+        /// Attempts to invoke the next member with the target parameter values. <br/>
+        /// <c>true</c> should be returned when the handler could invoke the next member, otherwise <c>false</c>.
         public virtual Result<bool, MemberAccessError> InvokeMember(object? instance, object?[] parameterValue, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
             return Result<bool, MemberAccessError>.Ok(false);
         }
 
+        /// Attempts to resolve a value from a string for the target type. <br/>
+        /// Only invoked if <see cref="CanResolveValue"/> returned <c>true</c> for the type. <br/>
+        /// <c>true</c> should be returned when the handler could a value, otherwise <c>false</c>.
         public virtual Result<bool, QueryError> ResolveValue(Type targetType, ref int argIdx, string[] valueArgs, out object? value) {
             value = null;
             return Result<bool, QueryError>.Ok(false);
         }
 
+        /// Provide a list of auto-complete entries which should be listed along base-types.
         [MustDisposeResource]
         public virtual IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, Variant variant, Type[]? targetTypeFilter) {
             yield break;
         }
+
+        /// Overwrite the list of auto-complete entries which are provided for the members of the type
+        /// Only invoked if <see cref="CanEnumerateMemberEntries"/> returned <c>true</c> for the type. <br/>
         [MustDisposeResource]
         public virtual IEnumerator<CommandAutoCompleteEntry> EnumerateMemberEntries(Type type, Variant variant) {
             yield break;
         }
+        /// Overwrite the list of auto-complete entries which are provided for the values of the type
+        /// Only invoked if <see cref="CanEnumerateTypeEntries"/> returned <c>true</c> for the type. <br/>
         [MustDisposeResource]
         public virtual IEnumerator<CommandAutoCompleteEntry> EnumerateTypeEntries(Type type, Variant variant) {
             yield break;
@@ -92,6 +118,7 @@ public static class TargetQuery {
         new EntityQueryHandler(),
         new ComponentQueryHandler(),
         new SpecialValueQueryHandler(),
+        new ModInteropQueryHandler(),
     ];
 
     [Initialize(ConsoleEnhancements.InitializePriority + 1)]

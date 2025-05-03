@@ -820,3 +820,20 @@ internal class SpecialValueQueryHandler : TargetQuery.Handler {
         }
     }
 }
+
+internal class ModInteropQueryHandler : TargetQuery.Handler {
+    private static readonly Lazy<Type?> AcidLightningType = new(() => ModUtils.GetType("Glyph", "Celeste.Mod.AcidHelper.Entities.AcidLightning"));
+
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveMember(object? instance, out object? value, Type type, int memberIdx, string[] memberArgs) {
+        if (instance != null && instance.GetType() == AcidLightningType.Value && memberArgs[memberIdx] == nameof(Lightning.toggleOffset)) {
+            // AcidLightning defines a new "toggleOffset" field, but doesn't use it
+            // However while resolving members it would be used instead of the one from the base class
+            var lightning = (Lightning) instance;
+            value = lightning.toggleOffset;
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+        }
+
+        value = null;
+        return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+    }
+}
