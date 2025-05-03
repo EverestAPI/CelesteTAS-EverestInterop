@@ -39,7 +39,7 @@ public sealed class RadelineSimForm : Form {
     private const string Version = "1.0.0";
 
     private readonly TextArea initialStateText;
-    private readonly TextArea appendKeysText;
+    private readonly TextBox additionalInputsText;
     private readonly DropDown outputSortingOption;
     private readonly DropDown axisOption;
     private readonly DropDown disabledKeyOption;
@@ -161,7 +161,7 @@ public sealed class RadelineSimForm : Form {
         goalSpeedStepper = new NumericStepper { DecimalPlaces = 2, Width = rowWidth };
         rngThresholdStepper = new NumericStepper { Value = 23, MinValue = 1, MaxValue = 200, Width = rowWidth };
         rngThresholdSlowStepper = new NumericStepper { Value = 15, MinValue = 1, MaxValue = 200, Width = rowWidth };
-        appendKeysText = new TextArea { Font = FontManager.EditorFont, Width = rowWidth, Height = 22};
+        additionalInputsText = new TextBox { Font = FontManager.EditorFont, Width = rowWidth };
         hideDuplicatesCheck = new CheckBox { Width = rowWidth, Checked = true };
         outputsList = new ListBox { Font = FontManager.StatusFont, Width = 600, Height = 500 };
         outputsList.SelectedIndexChanged += CopySelectedOutput;
@@ -202,8 +202,8 @@ public sealed class RadelineSimForm : Form {
         configLayout.AddCentered(new Label { Text = "Output Sorting Priority" });
         configLayout.Add(outputSortingOption);
         configLayout.EndBeginHorizontal();
-        configLayout.AddCentered(new Label { Text = "Appended Keys", ToolTip = "Keys added when copying, e.g. \"jg\" to hold jump and grab as well"});
-        configLayout.Add(appendKeysText);
+        configLayout.AddCentered(new Label { Text = "Additional Inputs", ToolTip = "Keys added when copying, e.g. \"jg\" to hold jump and grab as well"});
+        configLayout.Add(additionalInputsText);
         configLayout.EndBeginHorizontal();
         configLayout.AddCentered(new Label { Text = "Hide Duplicate Inputs", ToolTip = "Don't output multiple inputs with the same resulting position/speed (disable for performance)"});
         configLayout.Add(hideDuplicatesCheck);
@@ -241,7 +241,7 @@ public sealed class RadelineSimForm : Form {
         LoadConfig();
 
         disabledControls = [getInitialStateButton, framesStepper, axisOption, positionFilterMinStepper, positionFilterMaxStepper, goalSpeedStepper, disabledKeyOption,
-            outputSortingOption, rngThresholdStepper, rngThresholdSlowStepper, inputGenerationTimeStepper, appendKeysText, hideDuplicatesCheck];
+            outputSortingOption, rngThresholdStepper, rngThresholdSlowStepper, inputGenerationTimeStepper, additionalInputsText, hideDuplicatesCheck];
     }
 
     private void StoreConfig() {
@@ -263,7 +263,7 @@ public sealed class RadelineSimForm : Form {
         cfg.RNGThreshold = (int) rngThresholdStepper.Value;
         cfg.HideDuplicateInputs = hideDuplicatesCheck.Checked!.Value;
         cfg.InputGenerationTime = (int) inputGenerationTimeStepper.Value * 1000;
-        cfg.AppendKeys = appendKeysText.Text;
+        cfg.AdditionalInputs = additionalInputsText.Text;
         cfg.InitialState = initialState;
         cfg.InitialStateInfo = initialStateText.Text;
 
@@ -286,7 +286,7 @@ public sealed class RadelineSimForm : Form {
         rngThresholdStepper.Value = cfg.RNGThreshold;
         rngThresholdSlowStepper.Value = cfg.RNGThresholdSlow;
         inputGenerationTimeStepper.Value = cfg.InputGenerationTime / 1000;
-        appendKeysText.Text = cfg.AppendKeys;
+        additionalInputsText.Text = cfg.AdditionalInputs;
         hideDuplicatesCheck.Checked = cfg.HideDuplicateInputs;
         initialStateText.Text = cfg.InitialStateInfo;
 
@@ -309,11 +309,6 @@ public sealed class RadelineSimForm : Form {
                     (logControl = new TextArea { ReadOnly = true, Wrap = true, Font = FontManager.StatusFont, Width = 500, Height = 125 }),
                     (individualProgressBar = new ProgressBar { Width = 500 }),
                     doneCancelButton,
-                    //
-                    //
-                    // (progressLabel = new Label { Text = $"Formatting files {finishedTasks} / {totalTasks}..." }),
-                    // (progressBar = new ProgressBar { Width = 300 }),
-                    // (doneButton = new Button { Text = "Done", Enabled = false }),
                 },
             },
 
@@ -883,19 +878,19 @@ public sealed class RadelineSimForm : Form {
             return;
         }
 
-        char[] appendActions = appendKeysText.Text
-            .Select(char.ToUpper)
-            .Where(c => ActionsUtils.Chars.ContainsKey(c))
-            .ToArray();
-
         var builder = new StringBuilder();
 
+        bool anyInvalid = false;
         foreach (string inputLine in selectedItemKey.TrimEnd().Split('\n')) {
-            builder.Append(inputLine);
-            foreach (char appendKey in appendActions) {
-                builder.Append($",{appendKey}");
+            if (ActionLine.TryParse(inputLine + additionalInputsText.Text, out var actionLine)) {
+                builder.AppendLine(actionLine.ToString());
+            } else {
+                builder.AppendLine($"# Invalid input '{inputLine + additionalInputsText.Text}'");
+                anyInvalid = true;
             }
-            builder.Append('\n');
+        }
+        if (anyInvalid) {
+            builder.AppendLine($"# NOTE: Your additional inputs ('{additionalInputsText.Text}') are most likely not correctly formatted");
         }
 
         Clipboard.Instance.Clear();
@@ -981,7 +976,7 @@ public sealed class RadelineSimForm : Form {
         public int RNGThreshold;
         public bool HideDuplicateInputs;
         public int InputGenerationTime;  // in ms
-        public string AppendKeys = string.Empty;
+        public string AdditionalInputs = string.Empty;
         public InitialState InitialState;
         public string InitialStateInfo = string.Empty;
     }
