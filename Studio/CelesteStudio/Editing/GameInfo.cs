@@ -49,10 +49,10 @@ public sealed class GameInfo : Panel {
 
             var remainder = CommunicationWrapper.PlayerPositionRemainder;
 
-            float subpixelLeft = (float)Math.Round(remainder.X + 0.5f, CommunicationWrapper.GameSettings.SubpixelIndicatorDecimals, MidpointRounding.AwayFromZero);
-            float subpixelTop = (float)Math.Round(remainder.Y + 0.5f, CommunicationWrapper.GameSettings.SubpixelIndicatorDecimals, MidpointRounding.AwayFromZero);
-            float subpixelRight = 1.0f - subpixelLeft;
-            float subpixelBottom = 1.0f - subpixelTop;
+            double subpixelLeft = Math.Round(remainder.X + 0.5, CommunicationWrapper.GameSettings.SubpixelIndicatorDecimals, MidpointRounding.AwayFromZero);
+            double subpixelTop = Math.Round(remainder.Y + 0.5, CommunicationWrapper.GameSettings.SubpixelIndicatorDecimals, MidpointRounding.AwayFromZero);
+            double subpixelRight = 1.0 - subpixelLeft;
+            double subpixelBottom = 1.0 - subpixelTop;
 
             var font = FontManager.SKStatusFont;
 
@@ -94,7 +94,7 @@ public sealed class GameInfo : Panel {
             boxPaint.StrokeWidth = boxThickness;
 
             canvas.DrawRect(x, y, rectSize, rectSize, boxPaint);
-            canvas.DrawRect(x + (rectSize - dotThickness) * subpixelLeft, y + (rectSize - dotThickness) * subpixelTop, dotThickness, dotThickness, Settings.Instance.Theme.SubpixelIndicatorDotPaint);
+            canvas.DrawRect((float)(x + (rectSize - dotThickness) * subpixelLeft), (float)(y + (rectSize - dotThickness) * subpixelTop), dotThickness, dotThickness, Settings.Instance.Theme.SubpixelIndicatorDotPaint);
 
             Width = (int)((textWidth + rectPadding + indicatorPadding) * 2.0f + rectSize);
             Height = (int)((textHeight + rectPadding + indicatorPadding) * 2.0f + rectSize);

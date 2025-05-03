@@ -16,10 +16,10 @@ public static class InfoSubPixelIndicator {
             return;
         }
 
-        float subPixelLeft = 0.5f;
-        float subPixelRight = 0.5f;
-        float subPixelTop = 0.5f;
-        float subPixelBottom = 0.5f;
+        double subPixelLeft = 0.5;
+        double subPixelRight = 0.5;
+        double subPixelTop = 0.5;
+        double subPixelBottom = 0.5;
         int decimals = TasSettings.SubpixelIndicatorDecimals;
 
         Vector2 remainder = Engine.Scene.Tracker.GetEntity<Player>()?.movementCounter ?? Vector2.Zero;
@@ -29,10 +29,10 @@ public static class InfoSubPixelIndicator {
             remainder = classicPlayer.rem;
         }
 
-        subPixelLeft = (float) Math.Round(remainder.X + 0.5f, decimals, MidpointRounding.AwayFromZero);
-        subPixelTop = (float) Math.Round(remainder.Y + 0.5f, decimals, MidpointRounding.AwayFromZero);
-        subPixelRight = 1f - subPixelLeft;
-        subPixelBottom = 1f - subPixelTop;
+        subPixelLeft = Math.Round(remainder.X + 0.5, decimals, MidpointRounding.AwayFromZero);
+        subPixelTop = Math.Round(remainder.Y + 0.5, decimals, MidpointRounding.AwayFromZero);
+        subPixelRight = 1.0 - subPixelLeft;
+        subPixelBottom = 1.0 - subPixelTop;
 
         Vector2 textSize = GetSubPixelTextSize();
         float textWidth = textSize.X;
@@ -42,7 +42,7 @@ public static class InfoSubPixelIndicator {
         y = y - rectSide - padding * 1.5f - textHeight;
         int thickness = Math.Max(1, (int) Math.Round(PixelScale * TasSettings.InfoSubpixelIndicatorSize / 20f));
         DrawHollowRect(x, y, rectSide, rectSide, Color.Green * alpha, thickness);
-        Draw.Rect(x + (rectSide - thickness) * subPixelLeft, y + (rectSide - thickness) * subPixelTop, thickness, thickness,
+        Draw.Rect((float)(x + (rectSide - thickness) * subPixelLeft), (float)(y + (rectSide - thickness) * subPixelTop), thickness, thickness,
             Color.Red * alpha);
 
         int hDecimals = Math.Abs(remainder.X) switch {
