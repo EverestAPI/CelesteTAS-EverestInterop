@@ -85,6 +85,8 @@ public static class TargetQuery {
         new AssistsQueryHandler(),
         new ExtendedVariantsQueryHandler(),
         new EverestModuleSettingsQueryHandler(),
+        new SceneQueryHandler(),
+        new SessionQueryHandler(),
         new EntityQueryHandler(),
         new ComponentQueryHandler(),
         new SpecialValueQueryHandler(),

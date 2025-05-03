@@ -287,6 +287,33 @@ internal class EverestModuleSettingsQueryHandler : TargetQuery.Handler {
     }
 }
 
+internal class SceneQueryHandler : TargetQuery.Handler {
+    public override bool CanResolveInstances(Type type) => type.IsSameOrSubclassOf(typeof(Scene));
+
+    public override object[] ResolveInstances(Type type) {
+        if (Engine.Scene?.GetType().IsSameOrSubclassOf(type) ?? false) {
+            return [Engine.Scene];
+        }
+        if (type.IsSameOrSubclassOf(typeof(Level)) && Engine.Scene?.GetLevel() is { } level) {
+            return [level];
+        }
+
+        return [];
+    }
+}
+
+internal class SessionQueryHandler : TargetQuery.Handler {
+    public override bool CanResolveInstances(Type type) => type == typeof(Session);
+
+    public override object[] ResolveInstances(Type type) {
+        if (Engine.Scene?.GetSession() is { } session) {
+            return [session];
+        }
+
+        return [];
+    }
+}
+
 internal class EntityQueryHandler : TargetQuery.Handler {
     internal record Data(List<Type> ComponentTypes, EntityID? EntityID);
 
