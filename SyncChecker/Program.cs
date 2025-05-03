@@ -9,7 +9,6 @@ using MonoMod.Utils;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
 using TAS.SyncCheck;
 
 namespace SyncChecker;
@@ -18,9 +17,7 @@ public enum EverestBranch {
     Stable, Beta, Dev, Manual
 }
 
-/// <summary>
 /// Configuration for defining a sync check
-/// </summary>
 public readonly record struct Config (
     string GameDirectory,
     EverestBranch EverestBranch,
@@ -28,9 +25,7 @@ public readonly record struct Config (
     List<string> BlacklistedMods,
     List<string> Files
 );
-/// <summary>
 /// Result after running a sync-check
-/// </summary>
 public record struct Result (
     DateTime StartTime,
     DateTime EndTime,
@@ -138,9 +133,7 @@ public static class Program {
         return 0;
     }
 
-    /// <summary>
     /// Ensures the installed Everest version is up-to-date
-    /// </summary>
     private static async Task<int> UpdateEverest(Config config) {
         using var hc = new CompressedHttpClient();
 
@@ -273,9 +266,7 @@ public static class Program {
 
     private const string BlacklistBackupDirectory = "blacklist-backup";
 
-    /// <summary>
     /// Sets up all required mods for the sync-check
-    /// </summary>
     private static async Task<int> SetupMods(Config config) {
         using var hc = new CompressedHttpClient();
 
@@ -459,9 +450,7 @@ public static class Program {
         return 0;
     }
 
-    /// <summary>
     /// Restores the backups of mods which depend on blacklisted mods to prevent invalidating the hash
-    /// </summary>
     private static void RestoreBlacklistedMods(Config config) {
         string backupDir = Path.Combine(config.GameDirectory, "Mods", BlacklistBackupDirectory);
         if (!Directory.Exists(backupDir))
@@ -474,10 +463,20 @@ public static class Program {
         Directory.Delete(backupDir, recursive: true);
     }
 
-    /// <summary>
     /// Performs the sync-check and collects the results
-    /// </summary>
     private static async Task<int> RunSyncCheck(Config config, string resultPath) {
+        // Validate files
+        bool anyNotFound = false;
+        foreach (string file in config.Files) {
+            if (!File.Exists(file)) {
+                await Console.Error.WriteLineAsync($"TAS file not found: '{file}'");
+                anyNotFound = true;
+            }
+        }
+        if (anyNotFound) {
+            return 1;
+        }
+
         List<string> filesRemaining = [..config.Files.Distinct()];
 
         string gameName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Celeste.exe" : "Celeste";
@@ -489,9 +488,9 @@ public static class Program {
         if (File.Exists(gameResultPath))
             File.Delete(gameResultPath);
 
-        // if (Directory.Exists(gameSavePath))
-        //     Directory.Delete(gameSavePath, recursive: true);
-        // Directory.CreateDirectory(gameSavePath);
+        if (Directory.Exists(gameSavePath))
+            Directory.Delete(gameSavePath, recursive: true);
+        Directory.CreateDirectory(gameSavePath);
 
         var fullResult = new Result {
             StartTime = DateTime.UtcNow,
@@ -634,16 +633,15 @@ public static class Program {
         await JsonSerializer.SerializeAsync(resultFile, fullResult, jsonOptions);
 
         // Cleanup
-        // if (File.Exists(gameResultPath))
-        //     File.Delete(gameResultPath);
+        if (File.Exists(gameResultPath)) {
+            File.Delete(gameResultPath);
+        }
 
-        return 0;
+        return fullResult.Entries.Any(entry => entry.Status != SyncCheckResult.Status.Success) ? 1 : 0;
     }
 
-    /// <summary>
     /// Retrieves the current version information of the installation
     /// Taken from https://github.com/EverestAPI/Olympus/blob/main/sharp/CmdGetVersionString.cs
-    /// </summary>
     private static (string Status, Version? CelesteVersion, Version? EverestVersion) GetCurrentVersion(string gameDirectory) {
         try {
             string gamePath = Path.Combine(gameDirectory, "Celeste.exe");

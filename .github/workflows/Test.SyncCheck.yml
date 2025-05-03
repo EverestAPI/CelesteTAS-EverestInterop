@@ -1,0 +1,82 @@
+on:
+  workflow_call:
+    inputs:
+      build-cfg:
+        required: true
+        type: string
+      tas-repository:
+        required: true
+        type: string
+      tas-files:
+        required: true
+        type: string
+      required-mods:
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  run-sync-check:
+    name: SyncCheck
+
+    runs-on: ubuntu-latest
+
+    container:
+      image: max480/everest:dev
+
+    env:
+      CELESTE_INSTALL: '/home/ubuntu/celeste'
+      CELESTETAS_REPO_NAME: 'CelesteTAS-EverestInterop'
+      TASFILES_REPO_NAME: 'TAS-Files'
+      SYNC_CONFIG_PATH: 'sync_config.json'
+      SYNC_RESULT_PATH: 'sync_result.json'
+
+    steps:
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0'
+
+    - name: Checkout CelesteTAS
+      uses: actions/checkout@v4
+      with:
+        path: ${{ env.CELESTETAS_REPO_NAME }}
+    - name: Move CelesteTAS directory
+      run: |
+        mkdir -p ${{ env.CELESTE_INSTALL }}/Mods
+        mv ${{ env.CELESTETAS_REPO_NAME }} ${{ env.CELESTE_INSTALL }}/Mods/${{ env.CELESTETAS_REPO_NAME }}
+    - name: Build CelesteTAS
+      working-directory: ${{ env.CELESTE_INSTALL }}/Mods/${{ env.CELESTETAS_REPO_NAME }}
+      run: |
+        # The dev branch is on .NET 8, but we can't update to it in the repo until it has reached stable
+        sed -i 's/net7.0/net8.0/' CelesteTAS-EverestInterop/CelesteTAS-EverestInterop.csproj
+        dotnet build CelesteTAS-EverestInterop -c ${{ inputs.build-cfg }} -p:UseSymlinks=false
+
+    - name: Checkout TAS files
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.tas-repository }}
+        path: ${{ env.TASFILES_REPO_NAME }}
+    - name: Move TAS files directory
+      run: |
+        mv ${{ env.TASFILES_REPO_NAME }} ${{ env.CELESTE_INSTALL }}/${{ env.TASFILES_REPO_NAME }}
+
+    - name: Download SyncChecker builds
+      uses: actions/download-artifact@v4
+      with:
+        pattern: SyncChecker
+
+    - name: Generate run configuration
+      run: |
+        echo '{' >> ${{ env.SYNC_CONFIG_PATH }}
+        echo '"gameDirectory": "${{ env.CELESTE_INSTALL }}",' >> ${{ env.SYNC_CONFIG_PATH }}
+        echo '"everestBranch": "manual",' >> ${{ env.SYNC_CONFIG_PATH }}
+        echo "\"mods\": [$(echo '${{ inputs.required-mods }}' | awk 'NF { print "\""$0"\""}' | paste -sd ",")]," >> ${{ env.SYNC_CONFIG_PATH }}
+        echo '"blacklistedMods": [],' >> ${{ env.SYNC_CONFIG_PATH }}
+        echo "\"files\": [$(echo '${{ inputs.tas-files }}' | awk 'NF { print "\"${{ env.CELESTE_INSTALL }}/${{ env.TASFILES_REPO_NAME }}/"$0"\""}' | paste -sd ",")]" >> ${{ env.SYNC_CONFIG_PATH }}
+        echo '}' >> ${{ env.SYNC_CONFIG_PATH }}
+
+        cat ${{ env.SYNC_CONFIG_PATH }}
+
+    - name: Execute sync check
+      run: dotnet SyncChecker/SyncChecker.dll ${{ env.SYNC_CONFIG_PATH }} ${{ env.SYNC_RESULT_PATH }}

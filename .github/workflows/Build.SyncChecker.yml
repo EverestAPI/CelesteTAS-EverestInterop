@@ -1,4 +1,4 @@
-name: Build Sync Checker
+name: Build SyncChecker
 
 on:
   workflow_call:
@@ -10,6 +10,7 @@ on:
 
 jobs:
   build-sync-checker:
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
@@ -20,7 +21,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0'
+          dotnet-version: '9.0'
 
       - name: Publish
         run: dotnet publish SyncChecker -c ${{ inputs.build-cfg }} -p:UseAppHost=false --output build-sync-checker

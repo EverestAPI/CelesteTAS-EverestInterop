@@ -3,6 +3,7 @@ using Celeste.Mod;
 using Celeste.Mod.Core;
 using Celeste.Mod.UI;
 using Monocle;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.ExceptionServices;
@@ -31,6 +32,8 @@ internal static class SyncChecker {
     private static int? CurrentFileLine => Manager.Controller.Current?.FileLine;
 
     public static void AddFile(string file) {
+        Active = true;
+
         if (!File.Exists(file)) {
             Logger.Error("CelesteTAS/SyncCheck", $"TAS file to sync check was not found: '{file}'");
             return;
@@ -38,10 +41,11 @@ internal static class SyncChecker {
 
         Logger.Info("CelesteTAS/SyncCheck", $"Registered file for sync checking: '{file}'");
 
-        Active = true;
         fileQueue.Enqueue(file);
     }
     public static void SetResultFile(string file) {
+        Active = true;
+
         if (!string.IsNullOrEmpty(resultFile)) {
             Logger.Warn("CelesteTAS/SyncCheck", $"Overwriting previously defined result file '{resultFile}' with '{file}");
         } else {
@@ -74,13 +78,14 @@ internal static class SyncChecker {
         result.WriteToFile(resultFile);
 
         if (fileQueue.TryDequeue(out string? file)) {
-            CheckFile(file);
+            // Add to action queue, since we're still in DisableRun and can't start the next one immediately
+            Manager.AddMainThreadAction(() => CheckFile(file));
         } else {
             // Done with all checks
             result.Finished = true;
             result.WriteToFile(resultFile);
 
-            Engine.Instance.Exit();
+            Environment.Exit(0);
         }
     }
 
@@ -209,6 +214,12 @@ internal static class SyncChecker {
             next.OnEndOfFrame += () => {
                 if (fileQueue.TryDequeue(out string? file)) {
                     CheckFile(file);
+                } else {
+                    // No files provided
+                    result.Finished = true;
+                    result.WriteToFile(resultFile);
+
+                    Environment.Exit(0);
                 }
             };
         }

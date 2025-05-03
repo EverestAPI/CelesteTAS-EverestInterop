@@ -22,6 +22,15 @@ on:
       - .github/workflows/Build.CelesteStudio.yml
 
 jobs:
+  sync-check-vanilla:
+    name: Vanilla
+    uses: ./.github/workflows/Test.SyncCheck.yml
+    needs: build-sync-checker
+    with:
+      build-cfg: Debug
+      tas-repository: VampireFlower/CelesteTAS
+      tas-files: 0 - Any%.tas
+
   build-studio:
     name: Build Celeste Studio
     uses: ./.github/workflows/Build.CelesteStudio.yml
@@ -29,6 +38,7 @@ jobs:
       build-cfg: Debug
 
   build-sync-checker:
+    name: Build SyncChecker
     uses: ./.github/workflows/Build.SyncChecker.yml
     with:
       build-cfg: Debug
