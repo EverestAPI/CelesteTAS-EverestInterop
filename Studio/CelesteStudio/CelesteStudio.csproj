@@ -28,6 +28,7 @@
         <PackageReference Include="SkiaSharp" Version="2.88.8" />
         <PackageReference Include="Samboy063.Tomlet" Version="5.3.1"/>
         <PackageReference Include="Markdig" Version="0.37.0"/>
+        <PackageReference Include="Tedd.RandomUtils" Version="1.0.6" />
 
         <ProjectReference Include="..\..\StudioCommunication\StudioCommunication.csproj"/>
         <ProjectReference Include="..\..\external\Featherline\Featherline.csproj"/>

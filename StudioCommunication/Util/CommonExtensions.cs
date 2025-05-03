@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace StudioCommunication.Util;
 
@@ -218,4 +219,30 @@ public static class TypeExtensions {
             : 0;
         return type.FullName[namespaceLen..];
     }
+}
+
+public static class EnumExtensions {
+#if NET7_0_OR_GREATER
+    /// Split a flags enum into the individual flags
+    public static unsafe IEnumerable<T> ToValues<T>(this T flags) where T : unmanaged, Enum {
+        return sizeof(T) switch {
+            1 => ToValuesInternal<T, byte>(flags),
+            2 => ToValuesInternal<T, ushort>(flags),
+            4 => ToValuesInternal<T, uint>(flags),
+            8 => ToValuesInternal<T, ulong>(flags),
+            _ => throw new Exception("Size does not match a known Enum backing type."),
+        };
+    }
+
+    private static IEnumerable<TEnum> ToValuesInternal<TEnum, TBacking>(this TEnum flags) where TEnum : unmanaged, Enum where TBacking : unmanaged, INumber<TBacking>, IBitwiseOperators<TBacking, TBacking, TBacking>, IEqualityOperators<TBacking, TBacking, bool> {
+        var flagsInt = Unsafe.As<TEnum, TBacking>(ref flags);
+        foreach (object? valueObject in Enum.GetValues(typeof(TEnum))) {
+            var value = (TEnum) valueObject;
+            var valueInt = Unsafe.As<TEnum, TBacking>(ref value);
+            if ((valueInt & flagsInt) != TBacking.CreateChecked(0)) {
+                yield return value;
+            }
+        }
+    }
+#endif
 }
