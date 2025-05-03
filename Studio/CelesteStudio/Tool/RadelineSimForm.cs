@@ -697,7 +697,7 @@ public sealed class RadelineSimForm : Form {
     }
 
     private InputAction GenerateAvailableActions() {
-        var actions = (InputAction) 0;
+        var actions = InputAction.Neutral;
 
         if (cfg.Axis == Axis.X) {
             actions |= InputAction.Left;
