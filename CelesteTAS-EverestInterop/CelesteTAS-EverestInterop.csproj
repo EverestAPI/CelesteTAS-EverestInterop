@@ -41,6 +41,7 @@
         <PackageReference Include="CelesteAnalyzer" Version="*" />
 
         <PackageReference Include="MonoMod.RuntimeDetour" Version="25.2.3" PrivateAssets="all" ExcludeAssets="runtime" />
+        <PackageReference Include="MonoMod.Patcher" Version="25.0.0-prerelease.2" />
         <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1" PrivateAssets="all" ExcludeAssets="runtime" />
 
         <PackageReference Include="SharpZipLib" Version="1.4.2" IncludeAssets="all" />

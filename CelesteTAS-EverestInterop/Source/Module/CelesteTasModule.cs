@@ -19,6 +19,7 @@ public class CelesteTasModule : EverestModule {
         Instance = this;
 
         AttributeUtils.CollectOwnMethods<LoadAttribute>();
+        AttributeUtils.CollectOwnMethods<LoadContentAttribute>();
         AttributeUtils.CollectOwnMethods<UnloadAttribute>();
         AttributeUtils.CollectOwnMethods<InitializeAttribute>();
     }
@@ -42,6 +43,15 @@ public class CelesteTasModule : EverestModule {
 
     public override void Load() {
         AttributeUtils.Invoke<LoadAttribute>();
+
+        // Enable verbose logging in debug builds
+#if DEBUG
+        Logger.SetLogLevel(LogUtil.Tag, LogLevel.Verbose);
+#else
+        if (!string.IsNullOrEmpty(Metadata.PathDirectory)) {
+            Logger.SetLogLevel(LogUtil.Tag, LogLevel.Verbose);
+        }
+#endif
 
 #if DEBUG
         // Since assets are copied / sym-linked, changes aren't detected by Everest when they're changed
@@ -92,6 +102,10 @@ public class CelesteTasModule : EverestModule {
 #endif
     }
 
+    public override void LoadContent(bool firstLoad) {
+        AttributeUtils.Invoke<LoadContentAttribute>();
+    }
+
     public override bool ParseArg(string arg, Queue<string> args) {
         switch (arg) {
             case "--tas": {
@@ -121,6 +135,10 @@ public class CelesteTasModule : EverestModule {
 /// Invokes the target method when the module is loaded
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
 internal class LoadAttribute(int priority = 0) : EventAttribute(priority);
+
+/// Invokes the target method when the module's content is loaded
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+internal class LoadContentAttribute : Attribute;
 
 /// Invokes the target method when the module is unloaded
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
