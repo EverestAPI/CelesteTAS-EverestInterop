@@ -51,10 +51,14 @@ public class ChangelogDialog : Eto.Forms.Dialog {
     // Honestly.. idk why those scalars are like that.. they kinda just work..
     private int ContentWidth => Eto.Platform.Instance.IsGtk
         ? Math.Max(0, Width - PaddingSize * 3)
-        : Math.Max(0, Width - PaddingSize * 4);
+        : Eto.Platform.Instance.IsMac
+            ? Math.Max(0, Width - PaddingSize * 2)
+            : Math.Max(0, Width - PaddingSize * 4);
     private int ContentHeight => Eto.Platform.Instance.IsGtk
         ? Math.Max(0, Height - PagerHeight * 2 - PaddingSize * 5)
-        : Math.Max(0, Height - PagerHeight * 2 - PaddingSize * 4);
+        : Eto.Platform.Instance.IsMac
+            ? Math.Max(0, Height - PagerHeight * 2 - PaddingSize * 3)
+            : Math.Max(0, Height - PagerHeight * 2 - PaddingSize * 4);
 
     private ChangelogDialog(VersionHistory versionHistory, List<Page> pages, Dictionary<string, List<string>> changes, Version oldVersion, Version newVersion) {
         string title = $"# CelesteTAS v{newVersion.ToString(3)}";
@@ -263,7 +267,6 @@ public class ChangelogDialog : Eto.Forms.Dialog {
 
         newVersion ??= versionHistory.Versions[0].CelesteTasVersion;
         oldVersion ??= versionHistory.Versions.Count >= 2 ? versionHistory.Versions[1].CelesteTasVersion : new Version(0, 0, 0);
-        Console.WriteLine($"From {newVersion} to {oldVersion}");
 
         // Collect pages and changes
         List<Page> pages = [];

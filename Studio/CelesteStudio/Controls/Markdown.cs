@@ -41,7 +41,7 @@ public class Markdown : SkiaDrawable {
         Renderer = new SkiaRenderer();
         Scrollable = scrollable;
 
-        if (Eto.Platform.Instance.IsWpf) {
+        if (Scrollable != null && !Eto.Platform.Instance.IsGtk) {
             Scrollable.Scroll += (_, _) => Invalidate();
         }
     }
@@ -536,9 +536,12 @@ public class Markdown : SkiaDrawable {
             const float vPadding = 2.5f;
             const float cornerRadius = 7.5f;
 
+            // macOS requires double DPI division?
+            float scale = Eto.Platform.Instance.IsMac ? 1.0f / (FontManager.DPI * FontManager.DPI) : 1.0f / FontManager.DPI;
+
             var style = renderer.CurrentStyle;
             renderer.PushStyle(style
-                .WithFont(FontManager.CreateSKFont(Settings.Instance.FontFamily, style.Font.Size / FontManager.DPI, style.FontStyle))
+                .WithFont(FontManager.CreateSKFont(Settings.Instance.FontFamily, style.Font.Size * scale, style.FontStyle))
                 .WithCallback(ModifyDraw, ModifyMeasure));
             renderer.WriteText(code.Content);
             renderer.PopStyle();
@@ -546,6 +549,10 @@ public class Markdown : SkiaDrawable {
             return;
 
             void ModifyDraw(ReadOnlySpan<char> text, ref float x, ref float y) {
+                if (text.Length == 0) {
+                    return;
+                }
+
                 var currStyle = renderer.CurrentStyle;
                 var backgroundPaint = new SKPaint {
                     Color = currStyle.Paint.Color.WithAlpha(byte.MaxValue / 8),
