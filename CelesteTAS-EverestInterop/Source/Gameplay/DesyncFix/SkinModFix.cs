@@ -18,6 +18,8 @@ internal static class SkinModFix {
     private static bool Enabled => Manager.Running;
     private static SpriteBank vanillaSpriteBank = null!;
 
+    /// The `object` must be a boxed PlayerSpriteMode
+    private static readonly ConditionalWeakTable<PlayerSprite, object> actualSpriteMode = new();
     private static readonly ConditionalWeakTable<PlayerSprite, PlayerSprite> gameplayToVisualSprites = new();
     private static readonly Dictionary<string, PlayerAnimMetadata> vanillaFrameMetadata = new();
 
@@ -126,48 +128,54 @@ internal static class SkinModFix {
     private static void On_PlayerSprite_ctor(On.Celeste.PlayerSprite.orig_ctor orig, PlayerSprite self, PlayerSpriteMode mode) {
         // Separate gameplay and visual sprite
         if (Enabled && !skipPlayerSpriteHook) {
-            // The currently created sprite needs to be the gameplay sprite, since that can be directly accessed
-            self.Mode = mode;
-            self.spriteName = mode switch {
-                PlayerSpriteMode.Madeline => "player",
-                PlayerSpriteMode.MadelineNoBackpack => "player_no_backpack",
-                PlayerSpriteMode.Badeline => "badeline",
-                PlayerSpriteMode.MadelineAsBadeline => "player_badeline",
-                PlayerSpriteMode.Playback => "player_playback",
-                _ => ""
-            };
-
-            // Since we don't call orig, we have to copy _all_ constructors in the chain
-            // PlayerSprite
-            self.HairCount = 4;
-
-            // Sprite
-            self.atlas = null;
-            self.Path = null;
-            self.animations = new Dictionary<string, Sprite.Animation>(StringComparer.OrdinalIgnoreCase);
-            self.CurrentAnimationID = "";
-
-            // Image
-            self.Texture = null;
-
-            // GraphicsComponent
-            self.Scale = Vector2.One;
-            self.Color = Color.White;
-
-            // Component
-            self.Active = true;
-            self.Visible = true;
-
-            vanillaSpriteBank.CreateOn(self, self.spriteName);
-
-            skipPlayerSpriteHook = true;
-            var visualSprite = new PlayerSprite(mode);
-            skipPlayerSpriteHook = false;
-
-            gameplayToVisualSprites.Add(self, visualSprite);
+            SplitSprite(self, mode);
         } else {
+            // Since SkinModHelper+ messes up the PlayerSpriteMode, we have to store it
+            actualSpriteMode.Add(self, mode);
+
             orig(self, mode);
         }
+    }
+    private static void SplitSprite(PlayerSprite sprite, PlayerSpriteMode mode) {
+        // The currently created sprite needs to be the gameplay sprite, since that can be directly accessed
+        sprite.Mode = mode;
+        sprite.spriteName = sprite.Mode switch {
+            PlayerSpriteMode.Madeline => "player",
+            PlayerSpriteMode.MadelineNoBackpack => "player_no_backpack",
+            PlayerSpriteMode.Badeline => "badeline",
+            PlayerSpriteMode.MadelineAsBadeline => "player_badeline",
+            PlayerSpriteMode.Playback => "player_playback",
+            _ => "",
+        };
+
+        // Since we don't call orig, we have to copy _all_ constructors in the chain
+        // PlayerSprite
+        sprite.HairCount = 4;
+
+        // Sprite
+        sprite.atlas = null;
+        sprite.Path = null;
+        sprite.animations = new Dictionary<string, Sprite.Animation>(StringComparer.OrdinalIgnoreCase);
+        sprite.CurrentAnimationID = "";
+
+        // Image
+        sprite.Texture = null;
+
+        // GraphicsComponent
+        sprite.Scale = Vector2.One;
+        sprite.Color = Color.White;
+
+        // Component
+        sprite.Active = true;
+        sprite.Visible = true;
+
+        vanillaSpriteBank.CreateOn(sprite, sprite.spriteName);
+
+        skipPlayerSpriteHook = true;
+        var visualSprite = new PlayerSprite(sprite.Mode);
+        skipPlayerSpriteHook = false;
+
+        gameplayToVisualSprites.Add(sprite, visualSprite);
     }
 
     private static void On_Sprite_Update(On.Monocle.Sprite.orig_Update orig, Sprite self) {
@@ -253,5 +261,23 @@ internal static class SkinModFix {
         }
 
         return orig(self);
+    }
+
+    [EnableRun]
+    private static void Apply() {
+        if (!Enabled || Engine.Scene.GetPlayer() is not { } player) {
+            return;
+        }
+
+        SplitSprite(player.Sprite, actualSpriteMode.TryGetValue(player.Sprite, out object? boxedMode) ? (PlayerSpriteMode) boxedMode : player.Sprite.Mode);
+    }
+    [DisableRun]
+    private static void Restore() {
+        if (!Enabled || Engine.Scene.GetPlayer() is not { } player || !gameplayToVisualSprites.TryGetValue(player.Sprite, out var visual)) {
+            return;
+        }
+
+        gameplayToVisualSprites.Remove(player.Sprite);
+        visual.CloneInto(player.Sprite);
     }
 }
