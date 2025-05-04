@@ -49,8 +49,12 @@ public class ChangelogDialog : Eto.Forms.Dialog {
     private readonly Scrollable scrollable;
 
     // Honestly.. idk why those scalars are like that.. they kinda just work..
-    private int ContentWidth => Math.Max(1, Width - PaddingSize * 3);
-    private int ContentHeight => Math.Max(1, Height - PagerHeight * 2 - PaddingSize * 5);
+    private int ContentWidth => Eto.Platform.Instance.IsGtk
+        ? Math.Max(0, Width - PaddingSize * 3)
+        : Math.Max(0, Width - PaddingSize * 4);
+    private int ContentHeight => Eto.Platform.Instance.IsGtk
+        ? Math.Max(0, Height - PagerHeight * 2 - PaddingSize * 5)
+        : Math.Max(0, Height - PagerHeight * 2 - PaddingSize * 4);
 
     private ChangelogDialog(VersionHistory versionHistory, List<Page> pages, Dictionary<string, List<string>> changes, Version oldVersion, Version newVersion) {
         string title = $"# CelesteTAS v{newVersion.ToString(3)}";
@@ -78,13 +82,15 @@ public class ChangelogDialog : Eto.Forms.Dialog {
 
                 var markdown = new Markdown($"{title}\n{pages[currIdx].Text}", scrollable);
 
-                int prevHeight = -1;
-                markdown.PostDraw += () => {
-                    if (prevHeight != markdown.RequiredHeight) {
-                        prevHeight = markdown.RequiredHeight;
-                        ApplySize(null, EventArgs.Empty);
-                    }
-                };
+                if (Eto.Platform.Instance.IsGtk) {
+                    int prevHeight = -1;
+                    markdown.PostDraw += () => {
+                        if (prevHeight != markdown.RequiredHeight) {
+                            prevHeight = markdown.RequiredHeight;
+                            ApplySize(null, EventArgs.Empty);
+                        }
+                    };
+                }
 
                 if (page.Image is not { } image) {
                     return (markdown, markdown, null);
@@ -122,19 +128,22 @@ public class ChangelogDialog : Eto.Forms.Dialog {
 
             var markdown = new Markdown(builder.ToString(), scrollable);
 
-            int prevHeight = -1;
-            markdown.PostDraw += () => {
-                if (prevHeight != markdown.RequiredHeight) {
-                    prevHeight = markdown.RequiredHeight;
-                    ApplySize(null, EventArgs.Empty);
-                }
-            };
+            if (Eto.Platform.Instance.IsGtk) {
+                int prevHeight = -1;
+                markdown.PostDraw += () => {
+                    if (prevHeight != markdown.RequiredHeight) {
+                        prevHeight = markdown.RequiredHeight;
+                        ApplySize(null, EventArgs.Empty);
+                    }
+                };
+            }
             return (markdown, markdown, null);
         });
 
         Resizable = true;
         MinimumSize = new Size(400, 300);
         Size = new Size(800, 600);
+        Title = "What's new?";
 
         nextButton = new Button { Text = "Next" };
         nextButton.Click += (_, _) => SwitchToPage(currentPage + 1);
@@ -160,15 +169,12 @@ public class ChangelogDialog : Eto.Forms.Dialog {
                 new StackLayoutItem {
                     Control = (scrollable = new Scrollable {
                         Border = BorderType.None
-                        // Content = contentPages[page].Value.Control
                     }),
                     HorizontalAlignment = HorizontalAlignment.Center
                 },
                 buttonsLayout,
             }
         };
-        // Content.SizeChanged += (_,_) => Console.WriteLine($"hallo: {ContentWidth}");
-        // Content.SizeChanged += ApplySize;
 
         SwitchToPage(0);
 
@@ -203,9 +209,6 @@ public class ChangelogDialog : Eto.Forms.Dialog {
         scrollable.Content = null;
         scrollable.Content = contentPages[page].Value.Control;
 
-        // var prevStack = (StackLayout?) Content;
-        // prevStack?.Items.Clear();
-
         // Applying the proper size for the first page is already handle in the constructor
         if (!firstLoad) {
             UpdateLayout();
@@ -218,10 +221,17 @@ public class ChangelogDialog : Eto.Forms.Dialog {
         var (_, content, image) = contentPages[currentPage].Value;
 
         // Gotta love the scrollable experience
-        content.UpdateLayout();
-        content.Width = width - (image?.Width ?? 0) - 20;
-        if (content.RequiredHeight != 0) {
-            content.Height = Math.Max(height, content.RequiredHeight);
+        if (Eto.Platform.Instance.IsWpf) {
+            scrollable.ScrollSize = new Size(
+                Math.Max(0, width - (image?.Width ?? 0) - 20),
+                Math.Max(height, content.RequiredHeight)
+            );
+        } else {
+            content.UpdateLayout();
+            content.Width = Math.Max(0, width - (image?.Width ?? 0) - 20);
+            if (content.RequiredHeight != 0) {
+                content.Height = Math.Max(height, content.RequiredHeight);
+            }
         }
 
         scrollable.Height = height;

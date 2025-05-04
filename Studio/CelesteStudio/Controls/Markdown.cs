@@ -40,6 +40,10 @@ public class Markdown : SkiaDrawable {
         Document = Markdig.Markdown.Parse(content, pipeline);
         Renderer = new SkiaRenderer();
         Scrollable = scrollable;
+
+        if (Eto.Platform.Instance.IsWpf) {
+            Scrollable.Scroll += (_, _) => Invalidate();
+        }
     }
 
     public override void Draw(SKSurface surface) {
