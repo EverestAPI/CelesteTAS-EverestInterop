@@ -1,10 +1,12 @@
 using Celeste;
+using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.RuntimeDetour;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Xml;
 using TAS.Module;
@@ -15,16 +17,19 @@ namespace TAS.Gameplay.DesyncFix;
 /// Fixes desyncs caused by SkinMods changing animation lengths / carry offsets,
 /// by splitting the PlayerSprite into a visual and gameplay component
 internal static class SkinModFix {
-    private static bool Enabled => Manager.Running;
     private static SpriteBank vanillaSpriteBank = null!;
+    private static XmlDocument vanillaSpriteBankXml = null!;
 
     /// The `object` must be a boxed PlayerSpriteMode
     private static readonly ConditionalWeakTable<PlayerSprite, object> actualSpriteMode = new();
     private static readonly ConditionalWeakTable<PlayerSprite, PlayerSprite> gameplayToVisualSprites = new();
     private static readonly Dictionary<string, PlayerAnimMetadata> vanillaFrameMetadata = new();
+    private static readonly Dictionary<string, bool> mapSkinModDependency = new();
 
     [Load]
     private static void Load() {
+        On.Celeste.Player.Update += On_Player_Update;
+
         using (new DetourConfigContext(new DetourConfig("CelesteTAS", priority: int.MaxValue)).Use()) {
             On.Celeste.PlayerSprite.ctor += On_PlayerSprite_ctor;
         }
@@ -52,6 +57,8 @@ internal static class SkinModFix {
 
     [Unload]
     private static void Unload() {
+        On.Celeste.Player.Update -= On_Player_Update;
+
         On.Celeste.PlayerSprite.ctor -= On_PlayerSprite_ctor;
 
         On.Monocle.Sprite.Update -= On_Sprite_Update;
@@ -65,7 +72,8 @@ internal static class SkinModFix {
     [LoadContent]
     private static void LoadContent() {
         string spritesPath = Path.Combine("Graphics", "Sprites.xml");
-        vanillaSpriteBank = new SpriteBank(GFX.Game, Calc.orig_LoadContentXML(spritesPath)) {
+        vanillaSpriteBankXml = Calc.orig_LoadContentXML(spritesPath);
+        vanillaSpriteBank = new SpriteBank(GFX.Game, vanillaSpriteBankXml) {
             XMLPath = spritesPath
         };
 
@@ -75,6 +83,74 @@ internal static class SkinModFix {
         CreateVanillaFramesMetadata("badeline");
         CreateVanillaFramesMetadata("player_badeline");
         CreateVanillaFramesMetadata("player_playback");
+    }
+
+    private static bool CheckMapRequiresSkin() {
+        // Check if map set SMH+ skin
+        if (Engine.Scene is Level && Everest.Modules.FirstOrDefault(module => module.Metadata.Name == "SkinModHelperPlus") is { } smhpModule) {
+            // Reference: https://github.com/AAA1459/SkinModHelper/blob/8dcf2ab52b3850bbf0872b51a477c932f61be67a/Code/SkinModHelperUI.cs#L70
+            var smhSession = smhpModule._Session;
+            bool mapSetSkin = smhSession?.GetPropertyValue<string?>("SelectedPlayerSkin") != null ||
+                              smhSession?.GetPropertyValue<string?>("SelectedOtherSelfSkin") != null ||
+                              smhSession?.GetPropertyValue<string?>("SelectedSilhouetteSkin") != null;
+
+            if (mapSetSkin) {
+                return true;
+            }
+        }
+
+        // Check dependencies of current map
+        if (Engine.Scene.GetSession() is not { } session) {
+            return false;
+        }
+        if (mapSkinModDependency.TryGetValue(session.Area.SID, out bool hasSkinModDependency)) {
+            return hasSkinModDependency;
+        }
+
+        var area = session.MapData.Area;
+        if (!Everest.Content.TryGet($"Maps/{AreaData.Get(area).Mode[(int)area.Mode].Path}", out var mapAsset)) {
+            return mapSkinModDependency[session.Area.SID] = false;
+        }
+
+        foreach (var dep in mapAsset.Source.Mod.Dependencies) {
+            if (dep.Name == "MaxHelpingHand") {
+                // Maddie's Helping Hand adds missing animations to player_playback
+                // However it doesn't alter gameplay and shouldn't be considered a SkinMod
+                continue;
+            }
+            if (Everest.Content.Mods.FirstOrDefault(mod => mod.Mod?.Name == dep.Name) is not { } depContent) {
+                continue;
+            }
+
+            // Reference: SpriteBank.LoadSpriteBank (Everest)
+            const string spritesXmlPath = "Graphics/Sprites";
+            var modAssets = depContent.List
+                .Where(asset => asset.Type == typeof(AssetTypeSpriteBank) && asset.PathVirtual.Equals(spritesXmlPath));
+
+            foreach (var modAsset in modAssets) {
+                string modPath = modAsset.Source.Mod.PathDirectory;
+                if (string.IsNullOrEmpty(modPath)) {
+                    modPath = modAsset.Source.Mod.PathArchive;
+                }
+
+                using var stream = modAsset.Stream;
+                var modXml = new XmlDocument();
+                modXml.Load(stream);
+                modXml = SpriteBank.GetSpriteBankExcludingVanillaCopyPastes(vanillaSpriteBankXml, modXml, modPath);
+
+                foreach (XmlNode node in modXml["Sprites"]!.ChildNodes) {
+                    if (node is not XmlElement) {
+                        continue;
+                    }
+
+                    if (node.Name is "player" or "player_no_backpack" or "badeline" or "player_badeline" or "player_playback") {
+                        return mapSkinModDependency[session.Area.SID] = true;
+                    }
+                }
+            }
+        }
+
+        return mapSkinModDependency[session.Area.SID] = false;
     }
 
     /// Adjusted from PlayerSprite.CreateFramesMetadata
@@ -124,10 +200,30 @@ internal static class SkinModFix {
 
     }
 
+    private static void On_Player_Update(On.Celeste.Player.orig_Update orig, Player self) {
+        if (Manager.Running) {
+            bool shouldBeActive = !CheckMapRequiresSkin();
+            bool isActive = gameplayToVisualSprites.TryGetValue(self.Sprite, out var visual);
+
+            if (shouldBeActive && !isActive) {
+                // Apply
+                SplitSprite(self.Sprite, actualSpriteMode.TryGetValue(self.Sprite, out object? boxedMode) ? (PlayerSpriteMode) boxedMode : self.Sprite.Mode);
+            } else if (!shouldBeActive && isActive) {
+                // Restore
+                gameplayToVisualSprites.Remove(self.Sprite);
+                visual!.CloneInto(self.Sprite);
+            }
+        }
+
+        orig(self);
+    }
+
     private static bool skipPlayerSpriteHook = false;
     private static void On_PlayerSprite_ctor(On.Celeste.PlayerSprite.orig_ctor orig, PlayerSprite self, PlayerSpriteMode mode) {
+        CheckMapRequiresSkin();
+
         // Separate gameplay and visual sprite
-        if (Enabled && !skipPlayerSpriteHook) {
+        if (Manager.Running && !CheckMapRequiresSkin() && !skipPlayerSpriteHook) {
             SplitSprite(self, mode);
         } else {
             // Since SkinModHelper+ messes up the PlayerSpriteMode, we have to store it
@@ -179,7 +275,7 @@ internal static class SkinModFix {
     }
 
     private static void On_Sprite_Update(On.Monocle.Sprite.orig_Update orig, Sprite self) {
-        if (Enabled && self is PlayerSprite playerSprite && gameplayToVisualSprites.TryGetValue(playerSprite, out var visual)) {
+        if (self is PlayerSprite playerSprite && gameplayToVisualSprites.TryGetValue(playerSprite, out var visual)) {
             // Forward parameters
             visual.Rate = self.Rate;
 
@@ -189,7 +285,7 @@ internal static class SkinModFix {
         orig(self);
     }
     private static void On_PlayerSprite_Render(On.Celeste.PlayerSprite.orig_Render orig, PlayerSprite self) {
-        if (Enabled && gameplayToVisualSprites.TryGetValue(self, out var visual)) {
+        if (gameplayToVisualSprites.TryGetValue(self, out var visual)) {
             // Forward parameters
             visual.Entity = self.Entity;
             visual.Position = self.Position;
@@ -208,21 +304,21 @@ internal static class SkinModFix {
 
     // Forward calls to visual sprite
     private static void On_Sprite_Play(On.Monocle.Sprite.orig_Play orig, Sprite self, string id, bool restart, bool randomizeFrame) {
-        if (Enabled && self is PlayerSprite playerSprite && gameplayToVisualSprites.TryGetValue(playerSprite, out var visual)) {
+        if (self is PlayerSprite playerSprite && gameplayToVisualSprites.TryGetValue(playerSprite, out var visual)) {
             orig(visual, id, restart, randomizeFrame);
         }
 
         orig(self, id, restart, randomizeFrame);
     }
     private static void On_Sprite_PlayOffset(On.Monocle.Sprite.orig_PlayOffset orig, Sprite self, string id, float offset, bool randomizeFrame) {
-        if (Enabled && self is PlayerSprite playerSprite && gameplayToVisualSprites.TryGetValue(playerSprite, out var visual)) {
+        if (self is PlayerSprite playerSprite && gameplayToVisualSprites.TryGetValue(playerSprite, out var visual)) {
             orig(visual, id, offset, randomizeFrame);
         }
 
         orig(self, id, offset, randomizeFrame);
     }
     private static void On_Sprite_Reverse(On.Monocle.Sprite.orig_Reverse orig, Sprite self, string id, bool restart) {
-        if (Enabled && self is PlayerSprite playerSprite && gameplayToVisualSprites.TryGetValue(playerSprite, out var visual)) {
+        if (self is PlayerSprite playerSprite && gameplayToVisualSprites.TryGetValue(playerSprite, out var visual)) {
             orig(visual, id, restart);
         }
 
@@ -231,28 +327,28 @@ internal static class SkinModFix {
 
     // Fetch values from visual sprite
     private static bool On_PlayerSprite_getHasHair(Func<PlayerSprite, bool> orig, PlayerSprite self) {
-        if (Enabled && gameplayToVisualSprites.TryGetValue(self, out var visual)) {
+        if (gameplayToVisualSprites.TryGetValue(self, out var visual)) {
             return orig(visual);
         }
 
         return orig(self);
     }
     private static Vector2 On_PlayerSprite_getHairOffset(Func<PlayerSprite, Vector2> orig, PlayerSprite self) {
-        if (Enabled && gameplayToVisualSprites.TryGetValue(self, out var visual)) {
+        if (gameplayToVisualSprites.TryGetValue(self, out var visual)) {
             return orig(visual);
         }
 
         return orig(self);
     }
     private static int On_PlayerSprite_getHairFrame(Func<PlayerSprite, int> orig, PlayerSprite self) {
-        if (Enabled && gameplayToVisualSprites.TryGetValue(self, out var visual)) {
+        if (gameplayToVisualSprites.TryGetValue(self, out var visual)) {
             return orig(visual);
         }
 
         return orig(self);
     }
     private static float On_PlayerSprite_getCarryYOffset(Func<PlayerSprite, float> orig, PlayerSprite self) {
-        if (Enabled && gameplayToVisualSprites.TryGetValue(self, out _)) {
+        if (gameplayToVisualSprites.TryGetValue(self, out _)) {
             if (self.Texture != null && vanillaFrameMetadata.TryGetValue(self.Texture.AtlasPath, out var metadata)) {
                 return metadata.CarryYOffset * self.Scale.Y;
             }
@@ -265,7 +361,7 @@ internal static class SkinModFix {
 
     [EnableRun]
     private static void Apply() {
-        if (!Enabled || Engine.Scene.GetPlayer() is not { } player) {
+        if (Engine.Scene.GetPlayer() is not { } player) {
             return;
         }
 
@@ -273,7 +369,7 @@ internal static class SkinModFix {
     }
     [DisableRun]
     private static void Restore() {
-        if (!Enabled || Engine.Scene.GetPlayer() is not { } player || !gameplayToVisualSprites.TryGetValue(player.Sprite, out var visual)) {
+        if (Engine.Scene.GetPlayer() is not { } player || !gameplayToVisualSprites.TryGetValue(player.Sprite, out var visual)) {
             return;
         }
 
