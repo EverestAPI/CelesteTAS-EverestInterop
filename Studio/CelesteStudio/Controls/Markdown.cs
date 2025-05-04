@@ -532,8 +532,9 @@ public class Markdown : SkiaDrawable {
             const float vPadding = 2.5f;
             const float cornerRadius = 7.5f;
 
-            renderer.PushStyle(renderer.CurrentStyle
-                .WithFont(FontManager.SKEditorFontRegular)
+            var style = renderer.CurrentStyle;
+            renderer.PushStyle(style
+                .WithFont(FontManager.CreateSKFont(Settings.Instance.FontFamily, style.Font.Size / FontManager.DPI, style.FontStyle))
                 .WithCallback(ModifyDraw, ModifyMeasure));
             renderer.WriteText(code.Content);
             renderer.PopStyle();
@@ -541,14 +542,14 @@ public class Markdown : SkiaDrawable {
             return;
 
             void ModifyDraw(ReadOnlySpan<char> text, ref float x, ref float y) {
-                var style = renderer.CurrentStyle;
+                var currStyle = renderer.CurrentStyle;
                 var backgroundPaint = new SKPaint {
-                    Color = style.Paint.Color.WithAlpha(byte.MaxValue / 8),
+                    Color = currStyle.Paint.Color.WithAlpha(byte.MaxValue / 8),
                     IsAntialias = true,
                 };
 
-                float width = style.Paint.MeasureText(text);
-                renderer.Canvas.DrawRoundRect(x, y + style.Font.Metrics.Descent / 4.0f - vPadding, width + hPadding * 2.0f, style.Font.LineHeight() + vPadding * 2.0f, cornerRadius, cornerRadius, backgroundPaint);
+                float width = currStyle.Paint.MeasureText(text);
+                renderer.Canvas.DrawRoundRect(x, y + currStyle.Font.Metrics.Descent / 4.0f - vPadding, width + hPadding * 2.0f, currStyle.Font.LineHeight() + vPadding * 2.0f, cornerRadius, cornerRadius, backgroundPaint);
                 x += hPadding;
             }
             void ModifyMeasure(ReadOnlySpan<char> text, ref float width) {
