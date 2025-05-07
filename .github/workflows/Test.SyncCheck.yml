@@ -10,6 +10,9 @@ on:
       tas-repository:
         required: true
         type: string
+      tas-revision:
+        required: true
+        type: string
       tas-files:
         required: true
         type: string
@@ -80,6 +83,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         repository: ${{ inputs.tas-repository }}
+        ref: ${{ inputs.tas-revision }}
         path: ${{ env.TASFILES_REPO_NAME }}
     - name: Move TAS files directory
       run: |
