@@ -116,6 +116,7 @@ jobs:
         mkdir Mods
         # Suppress error since there might be no .zip mods installed
         cp ${{ env.CELESTE_INSTALL }}/Mods/*.zip Mods 2>/dev/null || :
+        cp ${{ env.CELESTE_INSTALL }}/Mods/Cache Mods 2>/dev/null || :
         
         cat ${{ env.SYNC_RESULT_PATH }} | jq -r .checksum > ${{ env.CHECKSUM_PATH }}
 
