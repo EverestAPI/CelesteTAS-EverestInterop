@@ -255,7 +255,7 @@ public static class TargetQuery {
                 }
 
                 foreach (object? target in memberResult.Value.Where(value => value != null && value != InvalidValue && value is not QueryError)) {
-                    var targetTypeResult = ResolveMemberTargetTypes(target!, memberArgs.Length - 1, memberArgs, Variant.Set);
+                    var targetTypeResult = ResolveMemberTargetTypes(target!, memberArgs.Length - 1, memberArgs, Variant.Set, arguments.Length);
                     if (targetTypeResult.Failure) {
                         error = MemberAccessError.Aggregate(error, targetTypeResult.Error);
                         continue;
@@ -319,7 +319,7 @@ public static class TargetQuery {
                 }
 
                 foreach (object? target in memberResult.Value.Where(value => value != null && value != InvalidValue && value is not QueryError)) {
-                    var targetTypeResult = ResolveMemberTargetTypes(target!, memberArgs.Length - 1, memberArgs, Variant.Invoke);
+                    var targetTypeResult = ResolveMemberTargetTypes(target!, memberArgs.Length - 1, memberArgs, Variant.Invoke, arguments.Length);
                     if (targetTypeResult.Failure) {
                         error = MemberAccessError.Aggregate(error, targetTypeResult.Error);
                         continue;
@@ -992,7 +992,7 @@ public static class TargetQuery {
         => ResolveMemberValue(instance, memberArgs, forceAllowCodeExecution, needsFlush: false);
 
     /// Evaluates the member arguments on the base-instances and prepares the specified value(s)
-    /// The values can then be modifed with SetMemberValue
+    /// The values can then be modified with SetMemberValue
     internal static Result<object?[], QueryError> PrepareMemberValue(object instance, string[] memberArgs, bool forceAllowCodeExecution = false)
         => ResolveMemberValue(instance, memberArgs, forceAllowCodeExecution, needsFlush: true);
 
@@ -1445,12 +1445,13 @@ public static class TargetQuery {
                 del?.DynamicInvoke(parameterValues);
 
                 goto PropagateValueTypeStack;
-            } else if (targetType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property && property.PropertyType.IsSameOrSubclassOf(typeof(Delegate))) {
-                var del = (Delegate?) (property.IsStatic() ? property.GetValue(null) : property.GetValue(target));
+            } else if (targetType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property &&
+                       property.PropertyType.IsSameOrSubclassOf(typeof(Delegate))) {
+                var del = (Delegate?)(property.IsStatic() ? property.GetValue(null) : property.GetValue(target));
                 del?.DynamicInvoke(parameterValues);
 
                 goto PropagateValueTypeStack;
-            } else if (targetType.GetMethodInfo(member, parameterTypes: null, bindingFlags, logFailure: false) is { } method) {
+            } else if (ResolveMethod(targetType, member, bindingFlags, parameterValues.Length) is { Success: true, Value: {} method }) {
                 if (method.IsStatic) {
                     method.Invoke(null, parameterValues);
                 } else {
@@ -1566,7 +1567,38 @@ public static class TargetQuery {
         return VoidResult<MemberAccessError>.Ok;
     }
 
-    internal static Result<Type[], MemberAccessError> ResolveMemberTargetTypes(object instanceObject, int memberIdx, string[] memberArgs, Variant variant, bool forceAllowCodeExecution = false) {
+    private static Result<MethodInfo?, string> ResolveMethod(Type type, string member, BindingFlags bindingFlags, int argumentCount) {
+        try {
+            if (type.GetMethodInfo(member, parameterTypes: null, bindingFlags, logFailure: false) is { } method) {
+                return Result<MethodInfo?, string>.Ok(method);
+            }
+            return Result<MethodInfo?, string>.Ok(null);
+        } catch (AmbiguousMatchException) {
+            var methods = type.GetMethods()
+                .Where(method => method.Name == member && method.GetParameters().Length == argumentCount)
+                .ToArray();
+            if (methods.Length == 0) {
+                var msg = $"No overload of {member} has {argumentCount} arguments. Found\n";
+                foreach (var candidate in type.GetMethods().Where(method => method.Name == member)) {
+                    msg += $"- {candidate}\n";
+                }
+
+                return Result<MethodInfo?, string>.Fail(msg);
+            } else if (methods.Length > 1) {
+                var msg = $"Ambiguous overload: {member} has {methods.Length} overloads with {argumentCount} arguments";
+                foreach (var candidate in type.GetMethods().Where(method => method.Name == member)) {
+                    msg += $"- {candidate}\n";
+                }
+
+                return Result<MethodInfo?, string>.Fail(msg);
+            }
+
+            var method = methods[0];
+            return Result<MethodInfo?, string>.Ok(method);
+        }
+    }
+
+    internal static Result<Type[], MemberAccessError> ResolveMemberTargetTypes(object instanceObject, int memberIdx, string[] memberArgs, Variant variant, int argumentCount, bool forceAllowCodeExecution = false) {
         object instance = (instanceObject as BoxedValueHolder)?.ValueStack.Peek() ?? instanceObject;
         var type = instance as Type ?? instance.GetType();
 
@@ -1616,11 +1648,18 @@ public static class TargetQuery {
                     return Result<Type[], MemberAccessError>.Ok([property.PropertyType]);
                 }
             }
-            if (type.GetMethodInfo(member, parameterTypes: null, bindingFlags, logFailure: false) is { } method && IsMethodUsable(method, variant, isFinal)) {
-                return Result<Type[], MemberAccessError>.Ok(method.GetParameters().Select(p => p.ParameterType).ToArray());
+
+
+            var methodResult = ResolveMethod(type, member, bindingFlags, argumentCount);
+            if (!methodResult.Success) {
+                return Result<Type[], MemberAccessError>.Fail( new MemberAccessError.Custom(type, memberIdx, methodResult.Error));
             }
 
-            return Result<Type[], MemberAccessError>.Fail(new MemberAccessError.MemberNotFound(type, memberIdx, memberArgs, bindingFlags));
+            if (methodResult.Value is { } method && IsMethodUsable(method, variant, isFinal)) {
+                return Result<Type[], MemberAccessError>.Ok(method.GetParameters().Select(p => p.ParameterType) .ToArray());
+            }
+
+            return Result<Type[], MemberAccessError>.Fail( new MemberAccessError.MemberNotFound(type, memberIdx, memberArgs, bindingFlags));
         } catch (Exception ex) {
             return Result<Type[], MemberAccessError>.Fail(new MemberAccessError.UnknownException(type, memberIdx, memberArgs, ex));
         }
