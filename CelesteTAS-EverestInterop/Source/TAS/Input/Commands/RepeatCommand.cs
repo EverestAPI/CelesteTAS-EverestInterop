@@ -1,8 +1,8 @@
 ﻿using StudioCommunication;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using TAS.Entities;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -53,8 +53,11 @@ internal static class RepeatCommand {
             return;
         }
         if (count < 1) {
-            AbortTas($"{errorText}Repeat command's count must be greater than 0");
+            AbortTas($"{errorText}Repeat command's count must be greater than 1");
             return;
+        }
+        if (count == 1) {
+            Toast.ShowAndLog($"{errorText}Repeat with count 1 is useless");
         }
 
         repeatStack.Push(new Arguments(Manager.Controller.CurrentParsingFrame, count, filePath, fileLine));
@@ -75,13 +78,15 @@ internal static class RepeatCommand {
         int count = arguments.Count;
         int startFrame = arguments.StartFrame;
 
-        // Should be impossible, but just to be sure
+        if (endLine < startLine) {
+            Toast.ShowAndLog($"{errorText}Ending line is less than starting line");
+        }
+        if (!File.Exists(filePath)) {
+            Toast.ShowAndLog($"{errorText}Target file '{filePath}' does not exist");
+        }
+
         if (count <= 1 || endLine < startLine || !File.Exists(filePath)) {
-#if DEBUG
-            throw new UnreachableException();
-#else
             return;
-#endif
         }
 
         var inputController = Manager.Controller;
