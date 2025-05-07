@@ -64,12 +64,13 @@ internal static class SyncChecker {
         Logger.Info("CelesteTAS/SyncCheck", $"Finished check for file: '{Manager.Controller.FilePath}'");
 
         // Check for desyncs
-        if (currentStatus == SyncCheckResult.Status.Success && Engine.Scene is not (
+        if (currentStatus == SyncCheckResult.Status.Success && (Engine.Scene is not (
                 Level { Completed: true } or
                 Level { Session: { Area.SID: "Celeste/8-Epilogue", Level: "inside" } } or
                 LevelExit or
                 AreaComplete or
                 Overworld { Current: OuiJournal }
+            ) || Manager.Controller.CanPlayback
         )) {
             // TAS did not finish
             currentStatus = SyncCheckResult.Status.NotFinished;
