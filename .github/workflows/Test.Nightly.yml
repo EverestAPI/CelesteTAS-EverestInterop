@@ -1,0 +1,47 @@
+name: Nightly Sync-Check
+
+on:
+  schedule:
+    - cron:  '0 0 * * *' # Every midnight
+  push:
+    branches:
+      - '*'
+    paths:
+      - '.github/workflows/**'
+
+jobs:
+  build-sync-checker:
+    name: Build SyncChecker
+    uses: ./.github/workflows/Build.SyncChecker.yml
+    with:
+      build-cfg: Debug
+
+  sync-check-vanilla:
+    name: Vanilla
+    uses: ./.github/workflows/Test.SyncCheck.yml
+    needs: build-sync-checker
+    with:
+      id: vanilla_full
+      build-cfg: Debug
+      tas-repository: VampireFlower/CelesteTAS
+      tas-revision: eb4550a253be97fd4942a5e609fe2a60e980f7ca
+      tas-files: |
+        0 - Any%.tas
+        0 - All A Sides.tas
+        0 - All B Sides.tas
+        0 - All C Sides.tas
+        0 - 100%.tas
+        0 - 202 Berries.tas
+
+  sync-check-strawberryjam:
+    name: Strawberry Jam
+    uses: ./.github/workflows/Test.SyncCheck.yml
+    needs: build-sync-checker
+    with:
+      id: strawberryjam_full
+      build-cfg: Debug
+      tas-repository: VampireFlower/StrawberryJamTAS
+      tas-revision: df83fdee5f70bbebd8bd2a04a4e9608522486e20
+      tas-files: |
+        0-SJ All Levels.tas
+      required-mods: StrawberryJam2021
