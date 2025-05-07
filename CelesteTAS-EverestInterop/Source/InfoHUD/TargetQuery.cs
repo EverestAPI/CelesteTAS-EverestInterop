@@ -134,19 +134,20 @@ public static class TargetQuery {
                 // Use '.' instead of '+' for nested types
                 fullName = fullName.Replace('+', '.');
 
-                // Strip namespace
-                int namespaceLen = type.Namespace != null
-                    ? type.Namespace.Length + 1
-                    : 0;
-                string shortName = fullName[namespaceLen..];
-
                 AllTypes.AddToKey(fullName, type);
                 AllTypes.AddToKey($"{fullName}@{assemblyName}", type);
                 AllTypes.AddToKey($"{fullName}@{modName}", type);
 
-                AllTypes.AddToKey(shortName, type);
-                AllTypes.AddToKey($"{shortName}@{assemblyName}", type);
-                AllTypes.AddToKey($"{shortName}@{modName}", type);
+                // Strip namespace
+                if (type.Namespace != null) {
+                    int namespaceLen = type.Namespace != null
+                        ? type.Namespace.Length + 1
+                        : 0;
+                    string shortName = fullName[namespaceLen..];
+                    AllTypes.AddToKey(shortName, type);
+                    AllTypes.AddToKey($"{shortName}@{assemblyName}", type);
+                    AllTypes.AddToKey($"{shortName}@{modName}", type);
+                }
             }
         }
     }
