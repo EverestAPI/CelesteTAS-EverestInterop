@@ -287,6 +287,49 @@ internal class EverestModuleSettingsQueryHandler : TargetQuery.Handler {
     }
 }
 
+internal class EverestModuleSessionQueryHandler : TargetQuery.Handler {
+    public override bool CanResolveInstances(Type type) => type.IsSameOrSubclassOf(typeof(EverestModuleSession));
+
+    public override object[] ResolveInstances(Type type) {
+        return Everest.Modules.FirstOrDefault(mod => mod.SessionType == type) is { } module ? [module._Session] : [];
+    }
+}
+
+internal class EverestModuleSaveDataQueryHandler : TargetQuery.Handler {
+    public override bool CanResolveInstances(Type type) => type.IsSameOrSubclassOf(typeof(EverestModuleSaveData));
+
+    public override object[] ResolveInstances(Type type) {
+        return Everest.Modules.FirstOrDefault(mod => mod.SaveDataType == type) is { } module ? [module._SaveData] : [];
+    }
+}
+
+internal class SceneQueryHandler : TargetQuery.Handler {
+    public override bool CanResolveInstances(Type type) => type.IsSameOrSubclassOf(typeof(Scene));
+
+    public override object[] ResolveInstances(Type type) {
+        if (Engine.Scene?.GetType().IsSameOrSubclassOf(type) ?? false) {
+            return [Engine.Scene];
+        }
+        if (type.IsSameOrSubclassOf(typeof(Level)) && Engine.Scene?.GetLevel() is { } level) {
+            return [level];
+        }
+
+        return [];
+    }
+}
+
+internal class SessionQueryHandler : TargetQuery.Handler {
+    public override bool CanResolveInstances(Type type) => type == typeof(Session);
+
+    public override object[] ResolveInstances(Type type) {
+        if (Engine.Scene?.GetSession() is { } session) {
+            return [session];
+        }
+
+        return [];
+    }
+}
+
 internal class EntityQueryHandler : TargetQuery.Handler {
     internal record Data(List<Type> ComponentTypes, EntityID? EntityID);
 
@@ -775,5 +818,22 @@ internal class SpecialValueQueryHandler : TargetQuery.Handler {
                 yield return new CommandAutoCompleteEntry { Name = key.ToString(), Extra = "Key", IsDone = true };
             }
         }
+    }
+}
+
+internal class ModInteropQueryHandler : TargetQuery.Handler {
+    private static readonly Lazy<Type?> AcidLightningType = new(() => ModUtils.GetType("Glyph", "Celeste.Mod.AcidHelper.Entities.AcidLightning"));
+
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveMember(object? instance, out object? value, Type type, int memberIdx, string[] memberArgs) {
+        if (instance != null && instance.GetType() == AcidLightningType.Value && memberArgs[memberIdx] == nameof(Lightning.toggleOffset)) {
+            // AcidLightning defines a new "toggleOffset" field, but doesn't use it
+            // However while resolving members it would be used instead of the one from the base class
+            var lightning = (Lightning) instance;
+            value = lightning.toggleOffset;
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+        }
+
+        value = null;
+        return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
     }
 }
