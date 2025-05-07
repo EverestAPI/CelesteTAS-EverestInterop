@@ -72,7 +72,16 @@ public static class Manager {
         // Stop TAS to avoid blocking reload
         typeof(AssetReloadHelper)
             .GetMethodInfo(nameof(AssetReloadHelper.Do), [typeof(string), typeof(Func<bool, Task>), typeof(bool), typeof(bool)])!
-            .HookBefore(DisableRun);
+            .IlHook((cursor, _) => {
+                var start = cursor.MarkLabel();
+                cursor.MoveBeforeLabels();
+
+                cursor.EmitLdarg2(); // bool silent
+
+                // Only disable TAS for non-silent reload actions
+                cursor.EmitBrtrue(start);
+                cursor.EmitDelegate(DisableRun);
+            });
     }
 
     [Unload]
