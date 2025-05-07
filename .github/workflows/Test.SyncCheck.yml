@@ -111,6 +111,7 @@ jobs:
       run: dotnet SyncChecker/SyncChecker.dll ${{ env.SYNC_CONFIG_PATH }} ${{ env.SYNC_RESULT_PATH }}
 
     - name: Prepare cache
+      if: always()
       run: |
         rm -rf Mods
         mkdir Mods
@@ -121,7 +122,7 @@ jobs:
         cat ${{ env.SYNC_RESULT_PATH }} | jq -r .checksum > ${{ env.CHECKSUM_PATH }}
 
     - name: Delete previous mods cache
-      if: steps.restore-cache.outputs.cache-hit == 'true'
+      if: ${{ always() && steps.restore-cache.outputs.cache-hit == 'true' }}
       continue-on-error: true
       run: |
         curl -L \
@@ -132,6 +133,7 @@ jobs:
           "https://api.github.com/repos/${{ github.repository }}/actions/caches?key=SyncCheck-${{ inputs.id }}"
 
     - name: Save mods cache
+      if: always()
       uses: actions/cache/save@v4
       with:
         path: |
