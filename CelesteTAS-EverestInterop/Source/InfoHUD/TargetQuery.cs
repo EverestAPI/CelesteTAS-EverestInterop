@@ -356,8 +356,15 @@ public static class TargetQuery {
 
     /// Sorts types by namespace into Celeste -> Monocle -> other (alphabetically)
     /// Inside the namespace it's sorted alphabetically
-    internal class NamespaceComparer : IComparer<(string Name, Type Type)> {
+    private class NamespaceComparer : IComparer<(string Name, Type Type)> {
         public int Compare((string Name, Type Type) x, (string Name, Type Type) y) {
+            if (x.Type.Namespace == null && y.Type.Namespace != null) {
+                return -1;
+            }
+            if (x.Type.Namespace != null && y.Type.Namespace == null) {
+                return 1;
+            }
+
             if (x.Type.Namespace == null || y.Type.Namespace == null) {
                 return StringComparer.Ordinal.Compare(x.Name, y.Name);
             }
@@ -395,7 +402,7 @@ public static class TargetQuery {
 
     internal static bool IsTypeViable(Type type, Variant variant, bool isRoot, Type[]? targetTypeFilter, int maxDepth) {
         // Filter-out types which probably aren't useful / possible
-        if (!(type.IsClass || type.IsStructType()) || type.IsGenericType || type.FullName == null || type.Namespace == null || ignoredNamespaces.Any(ns => type.Namespace!.StartsWith(ns))) {
+        if (!(type.IsClass || type.IsStructType()) || type.IsGenericType || type.FullName == null || (type.Namespace != null && ignoredNamespaces.Any(ns => type.Namespace.StartsWith(ns)))) {
             return false;
         }
         // Filter-out compiler generated types
@@ -599,7 +606,8 @@ public static class TargetQuery {
             .ToArray();
 
         string[][] namespaces = types
-            .Select(type => type.Namespace!)
+            .Select<Type, string?>(type => type.Namespace)
+            .OfType<string>()
             .Distinct()
             .Select(ns => ns.Split('.'))
             .Where(ns => ns.Length > queryArgs.Length)
