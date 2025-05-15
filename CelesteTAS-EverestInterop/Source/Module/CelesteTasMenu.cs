@@ -75,6 +75,15 @@ internal static class CelesteTasMenu {
             }));
             subMenu.AddDescription(menu, betterInvincible, "Better Invincible Description".ToDialogText());
 
+            TextMenu.Item forceAllowAccessibilityTools;
+            subMenu.Add(forceAllowAccessibilityTools = new TextMenuExt.EnumerableSlider<EnableCondition>("FORCE_ALLOW_ACCESS_TOOLS".ToDialogText(), new[] {
+                    new KeyValuePair<EnableCondition, string>(EnableCondition.Never, "EnableCondition_Never".ToDialogText()),
+                    new KeyValuePair<EnableCondition, string>(EnableCondition.Always, "EnableCondition_Always".ToDialogText()),
+                    new KeyValuePair<EnableCondition, string>(EnableCondition.WhileStudioConnected, "EnableCondition_WhileStudioConnected".ToDialogText())
+                }, TasSettings.ForceAllowAccessibilityTools)
+                .Change(value => TasSettings.ForceAllowAccessibilityTools = value));
+            subMenu.AddDescription(menu, forceAllowAccessibilityTools, "FORCE_ALLOW_ACCESS_TOOLS_DESC".ToDialogText());
+
             TextMenu.Item hideFreezeFramesItem;
             subMenu.Add(hideFreezeFramesItem = new TextMenu.OnOff("Hide Freeze Frames".ToDialogText(), TasSettings.HideFreezeFrames).Change(value =>
                 TasSettings.HideFreezeFrames = value));
