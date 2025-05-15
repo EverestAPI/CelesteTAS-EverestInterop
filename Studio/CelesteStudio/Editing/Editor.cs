@@ -3181,12 +3181,12 @@ public sealed class Editor : SkiaDrawable {
     private void MoveCaret(CaretMovementType direction, bool updateSelection) {
         if (!Document.Selection.Empty && !updateSelection) {
             Document.Caret = direction switch {
-                CaretMovementType.CharRight or CaretMovementType.LineDown => Document.Selection.Max,
-                CaretMovementType.CharLeft or CaretMovementType.LineUp => Document.Selection.Min,
+                CaretMovementType.CharLeft  or CaretMovementType.WordLeft  or CaretMovementType.LineUp   or CaretMovementType.PageUp   or CaretMovementType.LabelUp   or CaretMovementType.LineStart => Document.Selection.Min,
+                CaretMovementType.CharRight or CaretMovementType.WordRight or CaretMovementType.LineDown or CaretMovementType.PageDown or CaretMovementType.LabelDown or CaretMovementType.LineEnd   => Document.Selection.Max,
                 _ => Document.Caret,
             };
         }
-        
+
         string line = Document.Lines[Document.Caret.Row];
         var oldCaret = Document.Caret;
 
