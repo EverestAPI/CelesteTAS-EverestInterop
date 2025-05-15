@@ -572,7 +572,7 @@ public sealed class Studio : Form {
             return;
         }
 
-        if (Settings.Instance.RecentFiles.Count >= 2) {
+        if (Settings.Instance.RecentFiles.Count > 1) {
             OpenFileInEditor(Settings.Instance.RecentFiles[1]);
         }
     }
