@@ -1631,24 +1631,6 @@ public static class TargetQuery {
             targetType = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
             try {
-                // Attempt to evaluate as a target-query
-                var queryResult = GetMemberValues(arg);
-                if (queryResult.Success) {
-                    if (queryResult.Value.Count == 0 || queryResult.Value.Count > values.Length - valueIdx) {
-                        return Result<object?[], QueryError>.Fail(new QueryError.InstanceCountMismatch(arg, values.Length - valueIdx, queryResult.Value.Count));
-                    }
-
-                    foreach ((object? _, object? value) in queryResult.Value) {
-                        var coerceResult = value.CoerceTo(targetTypes[valueIdx]);
-                        if (coerceResult.Failure) {
-                            return Result<object?[], QueryError>.Fail(new QueryError.Custom(coerceResult.Error));
-                        }
-
-                        values[valueIdx++] = coerceResult.Value;
-                    }
-                    continue;
-                }
-
                 foreach (var handler in Handlers.Where(handler => handler.CanResolveValue(targetType))) {
                     var result = handler.ResolveValue(targetType, ref argIdx, valueArgs, out object? value);
                     if (result.Success && result.Value) {
@@ -1679,6 +1661,24 @@ public static class TargetQuery {
 
                 if (string.IsNullOrWhiteSpace(arg) || arg == "null") {
                     values[valueIdx++] = targetType.IsValueType ? Activator.CreateInstance(targetType) : null;
+                    continue;
+                }
+
+                // Attempt to evaluate as a target-query
+                var queryResult = GetMemberValues(arg);
+                if (queryResult.Success) {
+                    if (queryResult.Value.Count == 0 || queryResult.Value.Count > values.Length - valueIdx) {
+                        return Result<object?[], QueryError>.Fail(new QueryError.InstanceCountMismatch(arg, values.Length - valueIdx, queryResult.Value.Count));
+                    }
+
+                    foreach ((object? _, object? value) in queryResult.Value) {
+                        var coerceResult = value.CoerceTo(targetTypes[valueIdx]);
+                        if (coerceResult.Failure) {
+                            return Result<object?[], QueryError>.Fail(new QueryError.Custom(coerceResult.Error));
+                        }
+
+                        values[valueIdx++] = coerceResult.Value;
+                    }
                     continue;
                 }
 
