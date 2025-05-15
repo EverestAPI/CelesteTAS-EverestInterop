@@ -14,6 +14,7 @@ using StudioCommunication;
 using StudioCommunication.Util;
 using System.Collections;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace TAS.InfoHUD;
 
@@ -1572,29 +1573,35 @@ public static class TargetQuery {
             if (type.GetMethodInfo(member, parameterTypes: null, bindingFlags, logFailure: false) is { } method) {
                 return Result<MethodInfo?, string>.Ok(method);
             }
+
             return Result<MethodInfo?, string>.Ok(null);
         } catch (AmbiguousMatchException) {
-            var methods = type.GetMethods()
+            var methods = type.GetAllMethodInfos()
                 .Where(method => method.Name == member && method.GetParameters().Length == argumentCount)
                 .ToArray();
-            if (methods.Length == 0) {
-                var msg = $"No overload of {member} has {argumentCount} arguments. Found\n";
-                foreach (var candidate in type.GetMethods().Where(method => method.Name == member)) {
-                    msg += $"- {candidate}\n";
+
+            switch (methods.Length) {
+                case 1: {
+                    return Result<MethodInfo?, string>.Ok(methods[0]);
                 }
 
-                return Result<MethodInfo?, string>.Fail(msg);
-            } else if (methods.Length > 1) {
-                var msg = $"Ambiguous overload: {member} has {methods.Length} overloads with {argumentCount} arguments";
-                foreach (var candidate in type.GetMethods().Where(method => method.Name == member)) {
-                    msg += $"- {candidate}\n";
-                }
+                case 0: {
+                    var builder = new StringBuilder($"No overload of method '{member}' on type '{type}' has {argumentCount} argument(s). Found");
+                    foreach (var candidate in type.GetMethods().Where(method => method.Name == member)) {
+                        builder.AppendLine($"- {candidate}");
+                    }
 
-                return Result<MethodInfo?, string>.Fail(msg);
+                    return Result<MethodInfo?, string>.Fail(builder.ToString());
+                }
+                default: {
+                    var builder = new StringBuilder($"Ambiguous overload of method '{member}' on type '{type}' with {argumentCount} argument(s). Found");
+                    foreach (var candidate in type.GetMethods().Where(method => method.Name == member)) {
+                        builder.AppendLine($"- {candidate}");
+                    }
+
+                    return Result<MethodInfo?, string>.Fail(builder.ToString());
+                }
             }
-
-            var method = methods[0];
-            return Result<MethodInfo?, string>.Ok(method);
         }
     }
 
@@ -1652,14 +1659,14 @@ public static class TargetQuery {
 
             var methodResult = ResolveMethod(type, member, bindingFlags, argumentCount);
             if (!methodResult.Success) {
-                return Result<Type[], MemberAccessError>.Fail( new MemberAccessError.Custom(type, memberIdx, methodResult.Error));
+                return Result<Type[], MemberAccessError>.Fail(new MemberAccessError.Custom(type, memberIdx, methodResult.Error));
             }
 
             if (methodResult.Value is { } method && IsMethodUsable(method, variant, isFinal)) {
                 return Result<Type[], MemberAccessError>.Ok(method.GetParameters().Select(p => p.ParameterType) .ToArray());
             }
 
-            return Result<Type[], MemberAccessError>.Fail( new MemberAccessError.MemberNotFound(type, memberIdx, memberArgs, bindingFlags));
+            return Result<Type[], MemberAccessError>.Fail(new MemberAccessError.MemberNotFound(type, memberIdx, memberArgs, bindingFlags));
         } catch (Exception ex) {
             return Result<Type[], MemberAccessError>.Fail(new MemberAccessError.UnknownException(type, memberIdx, memberArgs, ex));
         }
