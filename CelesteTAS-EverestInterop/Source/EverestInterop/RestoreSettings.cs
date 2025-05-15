@@ -37,7 +37,7 @@ internal static class RestoreSettings {
 
         origModSettings.Clear();
         foreach (var module in Everest.Modules) {
-            if (module._Settings == null || module.SettingsType == null || module._Settings is CelesteTasSettings) {
+            if (module._Settings == null || module.SettingsType == null || module._Settings is CelesteTasSettings || module.Metadata.Name == "ExtendedVariantMode") {
                 continue;
             }
 
