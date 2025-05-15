@@ -52,7 +52,10 @@ public sealed class Studio : Form {
 
     private JadderlineForm? jadderlineForm;
     private FeatherlineForm? featherlineForm;
+    private RadelineSimForm? radelineSimForm;
     private ThemeEditor? themeEditorForm;
+
+    private RadelineSimForm.Config radelineFormPersistence = new();
 
     private string TitleBarText => Editor.Document.FilePath == Document.ScratchFile
         ? $"Studio {Version} - <Scratch>"
@@ -283,12 +286,19 @@ public sealed class Studio : Form {
         if (Instance.featherlineForm != null) {
             Instance.featherlineForm.GotFocus += Refocus;
         }
+        if (Instance.radelineSimForm != null) {
+            Instance.radelineSimForm.GotFocus += Refocus;
+        }
 
         bool wasTopmost = Instance.Topmost;
 
         // Studio can't be also top-most while a dialog is open, since it would be above the dialog
         Instance.Topmost = false;
-        Instance.Focus();
+        if (wasTopmost) {
+            // Loosely emulate being topmost
+            Instance.Focus();
+            dialog.Focus();
+        }
 
         dialog.Closed += (_, _) => Instance.Topmost = wasTopmost;
 
@@ -806,6 +816,11 @@ public sealed class Studio : Form {
                     featherlineForm ??= new();
                     featherlineForm.Show();
                     featherlineForm.Closed += (_, _) => featherlineForm = null;
+                }),
+                MenuUtils.CreateAction("&Radeline Simulator", Keys.None, () => {
+                    radelineSimForm ??= new(radelineFormPersistence);
+                    radelineSimForm.Show();
+                    radelineSimForm.Closed += (_, _) => radelineSimForm = null;
                 }),
             }},
         ];
