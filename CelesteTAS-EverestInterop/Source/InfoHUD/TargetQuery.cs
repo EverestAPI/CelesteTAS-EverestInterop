@@ -14,6 +14,7 @@ using StudioCommunication;
 using StudioCommunication.Util;
 using System.Collections;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace TAS.InfoHUD;
 
@@ -134,19 +135,20 @@ public static class TargetQuery {
                 // Use '.' instead of '+' for nested types
                 fullName = fullName.Replace('+', '.');
 
-                // Strip namespace
-                int namespaceLen = type.Namespace != null
-                    ? type.Namespace.Length + 1
-                    : 0;
-                string shortName = fullName[namespaceLen..];
-
                 AllTypes.AddToKey(fullName, type);
                 AllTypes.AddToKey($"{fullName}@{assemblyName}", type);
                 AllTypes.AddToKey($"{fullName}@{modName}", type);
 
-                AllTypes.AddToKey(shortName, type);
-                AllTypes.AddToKey($"{shortName}@{assemblyName}", type);
-                AllTypes.AddToKey($"{shortName}@{modName}", type);
+                // Strip namespace
+                if (type.Namespace != null) {
+                    int namespaceLen = type.Namespace != null
+                        ? type.Namespace.Length + 1
+                        : 0;
+                    string shortName = fullName[namespaceLen..];
+                    AllTypes.AddToKey(shortName, type);
+                    AllTypes.AddToKey($"{shortName}@{assemblyName}", type);
+                    AllTypes.AddToKey($"{shortName}@{modName}", type);
+                }
             }
         }
     }
@@ -254,7 +256,7 @@ public static class TargetQuery {
                 }
 
                 foreach (object? target in memberResult.Value.Where(value => value != null && value != InvalidValue && value is not QueryError)) {
-                    var targetTypeResult = ResolveMemberTargetTypes(target!, memberArgs.Length - 1, memberArgs, Variant.Set);
+                    var targetTypeResult = ResolveMemberTargetTypes(target!, memberArgs.Length - 1, memberArgs, Variant.Set, arguments.Length);
                     if (targetTypeResult.Failure) {
                         error = MemberAccessError.Aggregate(error, targetTypeResult.Error);
                         continue;
@@ -318,7 +320,7 @@ public static class TargetQuery {
                 }
 
                 foreach (object? target in memberResult.Value.Where(value => value != null && value != InvalidValue && value is not QueryError)) {
-                    var targetTypeResult = ResolveMemberTargetTypes(target!, memberArgs.Length - 1, memberArgs, Variant.Invoke);
+                    var targetTypeResult = ResolveMemberTargetTypes(target!, memberArgs.Length - 1, memberArgs, Variant.Invoke, arguments.Length);
                     if (targetTypeResult.Failure) {
                         error = MemberAccessError.Aggregate(error, targetTypeResult.Error);
                         continue;
@@ -355,8 +357,15 @@ public static class TargetQuery {
 
     /// Sorts types by namespace into Celeste -> Monocle -> other (alphabetically)
     /// Inside the namespace it's sorted alphabetically
-    internal class NamespaceComparer : IComparer<(string Name, Type Type)> {
+    private class NamespaceComparer : IComparer<(string Name, Type Type)> {
         public int Compare((string Name, Type Type) x, (string Name, Type Type) y) {
+            if (x.Type.Namespace == null && y.Type.Namespace != null) {
+                return -1;
+            }
+            if (x.Type.Namespace != null && y.Type.Namespace == null) {
+                return 1;
+            }
+
             if (x.Type.Namespace == null || y.Type.Namespace == null) {
                 return StringComparer.Ordinal.Compare(x.Name, y.Name);
             }
@@ -394,7 +403,7 @@ public static class TargetQuery {
 
     internal static bool IsTypeViable(Type type, Variant variant, bool isRoot, Type[]? targetTypeFilter, int maxDepth) {
         // Filter-out types which probably aren't useful / possible
-        if (!(type.IsClass || type.IsStructType()) || type.IsGenericType || type.FullName == null || type.Namespace == null || ignoredNamespaces.Any(ns => type.Namespace!.StartsWith(ns))) {
+        if (!(type.IsClass || type.IsStructType()) || type.IsGenericType || type.FullName == null || (type.Namespace != null && ignoredNamespaces.Any(ns => type.Namespace.StartsWith(ns)))) {
             return false;
         }
         // Filter-out compiler generated types
@@ -598,7 +607,8 @@ public static class TargetQuery {
             .ToArray();
 
         string[][] namespaces = types
-            .Select(type => type.Namespace!)
+            .Select<Type, string?>(type => type.Namespace)
+            .OfType<string>()
             .Distinct()
             .Select(ns => ns.Split('.'))
             .Where(ns => ns.Length > queryArgs.Length)
@@ -983,7 +993,7 @@ public static class TargetQuery {
         => ResolveMemberValue(instance, memberArgs, forceAllowCodeExecution, needsFlush: false);
 
     /// Evaluates the member arguments on the base-instances and prepares the specified value(s)
-    /// The values can then be modifed with SetMemberValue
+    /// The values can then be modified with SetMemberValue
     internal static Result<object?[], QueryError> PrepareMemberValue(object instance, string[] memberArgs, bool forceAllowCodeExecution = false)
         => ResolveMemberValue(instance, memberArgs, forceAllowCodeExecution, needsFlush: true);
 
@@ -1436,12 +1446,13 @@ public static class TargetQuery {
                 del?.DynamicInvoke(parameterValues);
 
                 goto PropagateValueTypeStack;
-            } else if (targetType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property && property.PropertyType.IsSameOrSubclassOf(typeof(Delegate))) {
-                var del = (Delegate?) (property.IsStatic() ? property.GetValue(null) : property.GetValue(target));
+            } else if (targetType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property &&
+                       property.PropertyType.IsSameOrSubclassOf(typeof(Delegate))) {
+                var del = (Delegate?)(property.IsStatic() ? property.GetValue(null) : property.GetValue(target));
                 del?.DynamicInvoke(parameterValues);
 
                 goto PropagateValueTypeStack;
-            } else if (targetType.GetMethodInfo(member, parameterTypes: null, bindingFlags, logFailure: false) is { } method) {
+            } else if (ResolveMethod(targetType, member, bindingFlags, parameterValues.Length) is { Success: true, Value: {} method }) {
                 if (method.IsStatic) {
                     method.Invoke(null, parameterValues);
                 } else {
@@ -1557,7 +1568,44 @@ public static class TargetQuery {
         return VoidResult<MemberAccessError>.Ok;
     }
 
-    internal static Result<Type[], MemberAccessError> ResolveMemberTargetTypes(object instanceObject, int memberIdx, string[] memberArgs, Variant variant, bool forceAllowCodeExecution = false) {
+    private static Result<MethodInfo?, string> ResolveMethod(Type type, string member, BindingFlags bindingFlags, int argumentCount) {
+        try {
+            if (type.GetMethodInfo(member, parameterTypes: null, bindingFlags, logFailure: false) is { } method) {
+                return Result<MethodInfo?, string>.Ok(method);
+            }
+
+            return Result<MethodInfo?, string>.Ok(null);
+        } catch (AmbiguousMatchException) {
+            var methods = type.GetAllMethodInfos()
+                .Where(method => method.Name == member && method.GetParameters().Length == argumentCount)
+                .ToArray();
+
+            switch (methods.Length) {
+                case 1: {
+                    return Result<MethodInfo?, string>.Ok(methods[0]);
+                }
+
+                case 0: {
+                    var builder = new StringBuilder($"No overload of method '{member}' on type '{type}' has {argumentCount} argument(s). Found");
+                    foreach (var candidate in type.GetMethods().Where(method => method.Name == member)) {
+                        builder.AppendLine($"- {candidate}");
+                    }
+
+                    return Result<MethodInfo?, string>.Fail(builder.ToString());
+                }
+                default: {
+                    var builder = new StringBuilder($"Ambiguous overload of method '{member}' on type '{type}' with {argumentCount} argument(s). Found");
+                    foreach (var candidate in type.GetMethods().Where(method => method.Name == member)) {
+                        builder.AppendLine($"- {candidate}");
+                    }
+
+                    return Result<MethodInfo?, string>.Fail(builder.ToString());
+                }
+            }
+        }
+    }
+
+    internal static Result<Type[], MemberAccessError> ResolveMemberTargetTypes(object instanceObject, int memberIdx, string[] memberArgs, Variant variant, int argumentCount, bool forceAllowCodeExecution = false) {
         object instance = (instanceObject as BoxedValueHolder)?.ValueStack.Peek() ?? instanceObject;
         var type = instance as Type ?? instance.GetType();
 
@@ -1607,8 +1655,15 @@ public static class TargetQuery {
                     return Result<Type[], MemberAccessError>.Ok([property.PropertyType]);
                 }
             }
-            if (type.GetMethodInfo(member, parameterTypes: null, bindingFlags, logFailure: false) is { } method && IsMethodUsable(method, variant, isFinal)) {
-                return Result<Type[], MemberAccessError>.Ok(method.GetParameters().Select(p => p.ParameterType).ToArray());
+
+
+            var methodResult = ResolveMethod(type, member, bindingFlags, argumentCount);
+            if (!methodResult.Success) {
+                return Result<Type[], MemberAccessError>.Fail(new MemberAccessError.Custom(type, memberIdx, methodResult.Error));
+            }
+
+            if (methodResult.Value is { } method && IsMethodUsable(method, variant, isFinal)) {
+                return Result<Type[], MemberAccessError>.Ok(method.GetParameters().Select(p => p.ParameterType) .ToArray());
             }
 
             return Result<Type[], MemberAccessError>.Fail(new MemberAccessError.MemberNotFound(type, memberIdx, memberArgs, bindingFlags));
