@@ -572,7 +572,9 @@ public sealed class Studio : Form {
             return;
         }
 
-        OpenFileInEditor(Settings.Instance.RecentFiles[1]);
+        if (Settings.Instance.RecentFiles.Count > 1) {
+            OpenFileInEditor(Settings.Instance.RecentFiles[1]);
+        }
     }
 
     private void OnSaveFile() {
