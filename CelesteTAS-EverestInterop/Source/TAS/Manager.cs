@@ -105,8 +105,9 @@ public static class Manager {
         Controller.RefreshInputs();
 
         if (Controller.Inputs.Count == 0) {
-            // Empty file
+            // Empty / Invalid file
             CurrState = NextState = State.Disabled;
+            SyncChecker.ReportRunFinished();
             return;
         }
 
