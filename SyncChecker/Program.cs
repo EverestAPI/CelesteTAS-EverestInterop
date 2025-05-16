@@ -351,9 +351,8 @@ public static class Program {
             : [];
 
         // Gather all required mods
-        IEnumerable<string> forceRequiredMods = installReleaseCelesteTas ? ["CelesteTAS"] : []; // Mods which are enabled, no matter what
         HashSet<ModUpdateInfo> requiredMods = [];
-        foreach (string mod in config.Mods.Concat(forceRequiredMods)) {
+        foreach (string mod in config.Mods.Concat(["CelesteTAS"])) {
             if (!dependencyGraph.TryGetValue(mod, out var graph)) {
                 LogError($"Failed to setup mods: Unknown mod '{mod}'");
                 return 1;
@@ -405,7 +404,7 @@ public static class Program {
                     modHashes[meta.Name] = (mod, hash, meta.Version);
                 }
 
-                if (metas.Any(meta => requiredMods.Any(info => info.Name == meta.Name))) {
+                if (metas.Any(meta => (installReleaseCelesteTas || meta.Name != "CelesteTAS") && requiredMods.Any(info => info.Name == meta.Name))) {
                     // Required
                     blacklist.Add("# " + Path.GetFileName(mod));
                 } else {
@@ -420,6 +419,11 @@ public static class Program {
         // Install all required mods
         LogInfo($"Setting up {requiredMods.Count} mod(s)...");
         foreach (var info in requiredMods) {
+            if (!installReleaseCelesteTas && info.Name == "CelesteTAS") {
+                LogInfo($" - {info.Name}: In-Development (v{info.Version})");
+                continue;
+            }
+
             if (modHashes.TryGetValue(info.Name, out var installed)) {
                 if (installed.Hash == info.xxHash[0]) {
                     LogInfo($" - {info.Name}: Up-to-date (v{info.Version})");
