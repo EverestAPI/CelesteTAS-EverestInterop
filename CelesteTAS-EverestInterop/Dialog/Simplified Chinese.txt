@@ -87,8 +87,8 @@ TAS_CUSTOM_INFO_DECIMALS=               自定义数据小数位数
 TAS_SUBPIXEL_INDICATOR_DECIMALS=        亚像素指示器小数位数
 TAS_SPEED_UNIT=                         速度单位
 TAS_VELOCITY_UNIT=                      位移速度单位
-TAS_PIXELS_PER_SECOND=                  像素/秒
-TAS_PIXELS_PER_FRAME=                   像素/帧
+TAS_PIXEL_PER_SECOND=                   像素/秒
+TAS_PIXEL_PER_FRAME=                    像素/帧
 
 # ========================================== Fast Forward Submenu ==========================================
 TAS_FAST_FORWARD_SPEED=                 快进速度
