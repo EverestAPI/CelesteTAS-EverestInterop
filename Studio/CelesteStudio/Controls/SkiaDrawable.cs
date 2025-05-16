@@ -21,8 +21,8 @@ public class SkiaDrawable : Panel {
     // Limits the bounds of the drawn region, for optimization
     public virtual int DrawX => 0;
     public virtual int DrawY => 0;
-    public virtual int DrawWidth => Width;
-    public virtual int DrawHeight => Height;
+    public virtual int DrawWidth => Width - Padding.Horizontal;
+    public virtual int DrawHeight => Height - Padding.Vertical;
 
     /// Whether the control can currently be drawn
     public virtual bool CanDraw => true;

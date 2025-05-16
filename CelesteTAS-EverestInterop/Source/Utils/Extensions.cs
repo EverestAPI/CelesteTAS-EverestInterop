@@ -13,6 +13,7 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Utils;
 using StudioCommunication;
+using StudioCommunication.Util;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using TAS.ModInterop;
@@ -712,6 +713,7 @@ internal static class ListExtensions {
 }
 
 internal static class DictionaryExtensions {
+    /// Returns the value of the key from the dictionary. Falls back to the default value if it doesn't exist
     public static TValue GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key, TValue defaultValue) {
         return dict.TryGetValue(key, out var value) ? value : defaultValue;
     }
@@ -722,14 +724,6 @@ internal static class DictionaryExtensions {
 
     public static TValue? LastValueOrDefault<TKey, TValue>(this SortedDictionary<TKey, TValue> dict) where TKey : notnull {
         return dict.Count > 0 ? dict.Last().Value : default;
-    }
-
-    public static void AddToKey<TKey, TValue>(this IDictionary<TKey, List<TValue>> dict, TKey key, TValue value) {
-        if (dict.TryGetValue(key, out var list)) {
-            list.Add(value);
-            return;
-        }
-        dict[key] = [value];
     }
 }
 
@@ -776,24 +770,6 @@ internal static class Vector2DoubleExtension {
 }
 
 internal static class NumberExtensions {
-    private static readonly string format = "0.".PadRight(339, '#');
-
-    public static string ToFormattedString(this float value, int decimals) {
-        if (decimals == 0) {
-            return value.ToString(format);
-        } else {
-            return ((double) value).ToFormattedString(decimals);
-        }
-    }
-
-    public static string ToFormattedString(this double value, int decimals) {
-        if (decimals == 0) {
-            return value.ToString(format);
-        } else {
-            return value.ToString($"F{decimals}");
-        }
-    }
-
     public static long SecondsToTicks(this float seconds) {
         // .NET Framework rounded TimeSpan.FromSeconds to the nearest millisecond.
         // See: https://github.com/EverestAPI/Everest/blob/dev/NETCoreifier/Patches/TimeSpan.cs

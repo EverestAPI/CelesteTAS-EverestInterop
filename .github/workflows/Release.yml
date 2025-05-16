@@ -24,10 +24,10 @@ jobs:
           source .venv/bin/activate
           pip install requests
 
-      - name: Generate release-changelog
+      - name: Generate changelog
         run: |
           source .venv/bin/activate
-          python Scripts/generate_release.py "$(git log -1 --pretty=%B)" version_info.txt gamebanana_changelog.json github_changelog.md studio_changelog.md
+          python Scripts/generate_changelog.py "$(git log -1 --pretty=%B)" CHANGELOG.md version_info.txt gamebanana_changelog.json github_changelog.md studio_changelog.json
         env:
           GITHUB_REPO: ${{ github.repository }}
           GITHUB_TOKEN: ${{ github.token }}
@@ -51,15 +51,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: changelog-studio
-          path: studio_changelog.md
-
+          path: studio_changelog.json
 
   build-studio:
     name: Release Celeste Studio
     uses: ./.github/workflows/Build.CelesteStudio.yml
     with:
       build-cfg: Release
-    needs: generate-changelog
 
   release:
     name: Release CelesteTAS
@@ -117,6 +115,15 @@ jobs:
             CelesteStudio-macos-arm64.zip
           key: ${{ needs.build-studio.outputs.macos_cache_key }}
 
+      - name: Download changelogs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: changelog-*#
+      - name: Copy Studio changelog into correct location
+        run: |
+          cp changelog-studio/studio_changelog.json Assets/version_history.json
+          cp changelog-version/version_info.txt Assets/current_version.txt
+
       - name: Fill-in download info
         run: |
           sed -i "s\\false; //DOUBLE_ZIP_ARCHIVE\\false;\\" CelesteTAS-EverestInterop/Source/EverestInterop/StudioHelper.cs
@@ -139,11 +146,6 @@ jobs:
         run: |
           dotnet build CelesteTAS-EverestInterop -c Release -p:DefineConstants=INSTALL_STUDIO -p:UseSymlinks=false
 
-      - name: Download changelogs
-        uses: actions/download-artifact@v4
-        with:
-          pattern: changelog-*
-
       - name: Setup Python environment
         run: |
           python -m venv .venv
@@ -153,12 +155,12 @@ jobs:
       - name: Prepare releases
         run: |
           # Version GameBanana .zip without v prefix
-          RELEASE_FILE="CelesteTAS_$(head -n 1 changelog-version/version_info.txt | cut -c 2-).zip"
+          RELEASE_FILE="CelesteTAS_$(sed -n "1p" changelog-version/version_info.txt).zip"
           cp CelesteTAS.zip $RELEASE_FILE
           echo "RELEASE_FILE=$RELEASE_FILE" >> $GITHUB_ENV
 
           # Setup GitHub release title
-          RELEASE_TITLE="$(sed -n "1p" changelog-version/version_info.txt) (Studio $(sed -n "2p" changelog-version/version_info.txt))"
+          RELEASE_TITLE="v$(sed -n "1p" changelog-version/version_info.txt) (Studio v$(sed -n "2p" changelog-version/version_info.txt))"
           echo "RELEASE_TITLE=$RELEASE_TITLE" >> $GITHUB_ENV  
 
       - name: Upload GameBanana release

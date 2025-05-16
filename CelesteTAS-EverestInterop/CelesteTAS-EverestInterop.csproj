@@ -95,6 +95,7 @@
     <Target Name="PackageMod" AfterTargets="Build" DependsOnTargets="CopyAssemblies;CopyAssets" Condition="'$(Configuration)' == 'Release'">
         <ItemGroup>
             <FilesToPackage Include="..\everest.yaml;..\bin\**\*.*;..\Dialog\**\*.*;..\Graphics\**\*.*" />
+            <FilesToPackage Include="..\LICENSE;..\CHANGELOG.md;..\Assets\**\*.*" />
         </ItemGroup>
         <PackageMod Files="@(FilesToPackage)" OutputPath="..\CelesteTAS.zip" />
     </Target>

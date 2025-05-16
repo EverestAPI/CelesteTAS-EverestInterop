@@ -11,6 +11,7 @@ using Monocle;
 using MonoMod.Cil;
 using MonoMod.Utils;
 using StudioCommunication;
+using StudioCommunication.Util;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;

@@ -1,158 +1,290 @@
 using CelesteStudio.Controls;
-using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
-using SkiaSharp;
-using StudioCommunication.Util;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using StudioCommunication.Util;
 using System.Text;
+using ContentPage = (Eto.Forms.Control Control, CelesteStudio.Controls.Markdown Content, Eto.Forms.ImageView? Image);
 
 namespace CelesteStudio.Dialog;
 
+/// Displays changes made inside the specified version range
 public class ChangelogDialog : Eto.Forms.Dialog {
+    private readonly record struct VersionHistory(
+        Dictionary<string, string> CategoryNames,
+        List<VersionEntry> Versions
+    );
+    private readonly record struct VersionEntry(
+        Version CelesteTasVersion,
+        Version StudioVersion,
+        List<Page> Pages,
+        Dictionary<string, List<string>> Changes
+    );
+    private readonly record struct Page(
+        string Text,
+        Image? Image
+    );
+    private enum Alignment { Left, Right }
+    private readonly record struct Image(
+        string Source,
+        Alignment Align,
+        int Width,
+        int Height
+    );
 
-    private class ContentDrawable(string title, Dictionary<string, List<string>> categories) : SkiaDrawable {
-        private static SKColorF TextColor => Eto.Platform.Instance.IsWpf && Settings.Instance.Theme.DarkMode
-            ? new SKColorF(1.0f - SystemColors.ControlText.R, 1.0f - SystemColors.ControlText.G, 1.0f - SystemColors.ControlText.B)
-            : SystemColors.ControlText.ToSkia();
+    private const int PaddingSize = 10;
+    private const int PagerHeight = 32;
 
-        public override void Draw(SKSurface surface) {
-            var canvas = surface.Canvas;
+    private int currentPage = 0;
+    private readonly LazyValue<ContentPage>[] contentPages;
 
-            var textColor = TextColor;
+    private readonly Button nextButton;
+    private readonly Button prevButton;
+    private readonly Label pageLabel;
+    private readonly DynamicLayout buttonsLayout;
+    private readonly Scrollable scrollable;
 
-            using var titleFont = new SKFont(SKFontManager.Default.MatchTypeface(SKTypeface.Default, SKFontStyle.Bold), 28.0f);
-            using var titlePaint = new SKPaint(titleFont);
-            titlePaint.ColorF = textColor;
-            titlePaint.IsAntialias = true;
-            titlePaint.TextAlign = SKTextAlign.Center;
-            titlePaint.SubpixelText = true;
+    // Honestly.. idk why those scalars are like that.. they kinda just work..
+    private int ContentWidth => Eto.Platform.Instance.IsGtk
+        ? Math.Max(0, Width - PaddingSize * 3)
+        : Eto.Platform.Instance.IsMac
+            ? Math.Max(0, Width - PaddingSize * 2)
+            : Math.Max(0, Width - PaddingSize * 4);
+    private int ContentHeight => Eto.Platform.Instance.IsGtk
+        ? Math.Max(0, Height - PagerHeight * 2 - PaddingSize * 5)
+        : Eto.Platform.Instance.IsMac
+            ? Math.Max(0, Height - PagerHeight * 2 - PaddingSize * 3)
+            : Math.Max(0, Height - PagerHeight * 2 - PaddingSize * 4);
 
-            using var headingFont = new SKFont(SKTypeface.Default, 24.0f);
-            using var headingPaint = new SKPaint(headingFont);
-            headingPaint.ColorF = textColor;
-            headingPaint.IsAntialias = true;
-            headingPaint.SubpixelText = true;
-
-            using var entryFont = new SKFont(SKTypeface.Default, 13.0f);
-            using var entryPaint = new SKPaint(entryFont);
-            entryPaint.ColorF = textColor;
-            entryPaint.IsAntialias = true;
-            entryPaint.SubpixelText = true;
-
-            float yOffset = 0.0f;
-            // Title
-            foreach (string line in WrapLines(title, Width, titlePaint)) {
-                canvas.DrawText(line, Width / 2.0f, yOffset + titleFont.Offset(), titlePaint);
-                yOffset += titleFont.LineHeight();
+    private ChangelogDialog(VersionHistory versionHistory, List<Page> pages, Dictionary<string, List<string>> changes, Version oldVersion, Version newVersion) {
+        string title = $"# CelesteTAS v{newVersion.ToString(3)}";
+        Version? oldStudioVersion = null;
+        foreach (var version in versionHistory.Versions) {
+            if (version.CelesteTasVersion == oldVersion) {
+                oldStudioVersion = version.StudioVersion;
             }
-            yOffset += titleFont.LineHeight() * 0.25f;
-            canvas.DrawLine(0.0f, yOffset, Width, yOffset, titlePaint);
-            yOffset += titleFont.LineHeight() * 0.5f;
 
-            foreach ((string categoryName, var entries) in categories) {
-                // Heading
-                foreach (string line in WrapLines(categoryName, Width, headingPaint)) {
-                    canvas.DrawText(line, 0.0f, yOffset + headingFont.Offset(), headingPaint);
-                    yOffset += headingFont.LineHeight();
+            if (version.CelesteTasVersion == newVersion) {
+                if (oldStudioVersion != version.StudioVersion) {
+                    // Append Studio to title
+                    title += $" / Studio v{version.StudioVersion.ToString(3)}";
                 }
-                yOffset += headingFont.LineHeight() * 0.5f;
 
-                // Entries
-                foreach (string entry in entries) {
-                    canvas.DrawCircle(10.0f, yOffset + entryFont.LineHeight() / 2.0f, 2.5f, entryPaint);
+                break;
+            }
+        }
 
-                    foreach (string line in WrapLines(entry, Width, entryPaint)) {
-                        canvas.DrawText(line, 20.0f, yOffset + entryFont.Offset(), entryPaint);
-                        yOffset += entryFont.LineHeight();
+        contentPages = new LazyValue<ContentPage>[pages.Count + 1];
+        for (int i = 0; i < pages.Count; i++) {
+            int currIdx = i;
+            contentPages[i] = new LazyValue<ContentPage>(() => {
+                var page = pages[currIdx];
+
+                var markdown = new Markdown($"{title}\n{pages[currIdx].Text}", scrollable);
+
+                if (Eto.Platform.Instance.IsGtk) {
+                    int prevHeight = -1;
+                    markdown.PostDraw += () => {
+                        if (prevHeight != markdown.RequiredHeight) {
+                            prevHeight = markdown.RequiredHeight;
+                            ApplySize(null, EventArgs.Empty);
+                        }
+                    };
+                }
+
+                if (page.Image is not { } image) {
+                    return (markdown, markdown, null);
+                }
+
+                string srcPath = Path.Combine(Studio.InstallDirectory, image.Source);
+                if (!File.Exists(srcPath)) {
+                    return (markdown, markdown, null);
+                }
+
+                using var fs = File.OpenRead(srcPath);
+                var view = new ImageView { Image = new Bitmap(fs), Width = image.Width, Height = image.Height };
+
+                return (pages[currIdx].Image!.Value.Align switch {
+                    Alignment.Left => new StackLayout { Orientation = Orientation.Horizontal, VerticalContentAlignment = VerticalAlignment.Center, Spacing = PaddingSize, Items = { view, markdown } },
+                    Alignment.Right => new StackLayout { Orientation = Orientation.Horizontal, VerticalContentAlignment = VerticalAlignment.Center, Spacing = PaddingSize, Items = { markdown, view } },
+                    _ => throw new ArgumentOutOfRangeException()
+                }, markdown, view);
+            });
+        }
+        contentPages[^1] = new LazyValue<ContentPage>(() => {
+            var builder = new StringBuilder();
+
+            builder.AppendLine(title);
+            foreach ((string category, string name) in versionHistory.CategoryNames) {
+                if (!changes.TryGetValue(category, out var categoryChanges) || categoryChanges.Count == 0) {
+                    continue;
+                }
+
+                builder.AppendLine($"## {name}");
+                foreach (string change in categoryChanges) {
+                    builder.AppendLine($"- {change}");
+                }
+            }
+
+            var markdown = new Markdown(builder.ToString(), scrollable);
+
+            if (Eto.Platform.Instance.IsGtk) {
+                int prevHeight = -1;
+                markdown.PostDraw += () => {
+                    if (prevHeight != markdown.RequiredHeight) {
+                        prevHeight = markdown.RequiredHeight;
+                        ApplySize(null, EventArgs.Empty);
                     }
-                }
-
-                yOffset += headingFont.LineHeight() * 0.5f;
+                };
             }
-
-            Height = (int)yOffset;
-        }
-
-        // Doesn't use SKPaint.BreakText(), since that doesn't respect word boundaries
-        private IEnumerable<string> WrapLines(string longLine, float maxWidth, SKPaint textPaint) {
-            float lineLength = 0.0f;
-            var line = new StringBuilder();
-
-            foreach (string word in longLine.Split(' ')) {
-                string wordWithSpace = word + " ";
-                float wordWithSpaceLength = textPaint.MeasureText(wordWithSpace);
-
-                if (lineLength + wordWithSpaceLength > maxWidth) {
-                    yield return line.ToString();
-                    line.Clear();
-                    line.Append(wordWithSpace);
-                    lineLength = wordWithSpaceLength;
-                } else {
-                    line.Append(wordWithSpace);
-                    lineLength += wordWithSpaceLength;
-                }
-            }
-
-            if (line.Length != 0) {
-                yield return line.ToString();
-            }
-        }
-    }
-
-    private ChangelogDialog(string title, IEnumerable<string> changelogLines) {
-        // Parse changelog information, generated by Scripts/generate_release.py
-        const string categoryPrefix = "## ";
-        const string entryPrefix = "- ";
-
-        Dictionary<string, List<string>> categories = [];
-        List<string> currentEntries = [];
-
-        foreach (string line in changelogLines) {
-            if (line.StartsWith(categoryPrefix)) {
-                categories[line[categoryPrefix.Length..].Trim()] = currentEntries = [];
-            } else if (line.StartsWith(entryPrefix)) {
-                currentEntries.Add(line[entryPrefix.Length..].Trim());
-            }
-        }
-
-        Title = $"What's new in {title}?";
-        Content = new Scrollable {
-            Content = new ContentDrawable(title, categories),
-            Padding = new Padding(20, 10),
-            Border = BorderType.None,
-        };
-        Padding = 0;
-        MinimumSize = new Size(400, 300);
-        Size = new Size(800, 600);
+            return (markdown, markdown, null);
+        });
 
         Resizable = true;
+        MinimumSize = new Size(400, 300);
+        Size = new Size(800, 600);
+        Title = "What's new?";
+
+        nextButton = new Button { Text = "Next" };
+        nextButton.Click += (_, _) => SwitchToPage(currentPage + 1);
+
+        prevButton = new Button { Text = "Previous" };
+        prevButton.Click += (_, _) => SwitchToPage(currentPage - 1);
+
+        buttonsLayout = new DynamicLayout() { Height = PagerHeight };
+        buttonsLayout.BeginHorizontal();
+        buttonsLayout.Add(prevButton);
+        buttonsLayout.AddSpace();
+        buttonsLayout.AddCentered(pageLabel = new Label());
+        buttonsLayout.AddSpace();
+        buttonsLayout.Add(nextButton);
+
+        SizeChanged += ApplySize;
+        Shown += ApplySize;
+
+        Content = new StackLayout {
+            Padding = PaddingSize,
+            Spacing = PaddingSize,
+            Items = {
+                new StackLayoutItem {
+                    Control = (scrollable = new Scrollable {
+                        Border = BorderType.None
+                    }),
+                    HorizontalAlignment = HorizontalAlignment.Center
+                },
+                buttonsLayout,
+            }
+        };
+
+        SwitchToPage(0);
 
         Studio.RegisterDialog(this);
     }
 
-    public static void Show() {
-        var asm = Assembly.GetExecutingAssembly();
-        using var versionInfoData = asm.GetManifestResourceStream("VersionInfo.txt");
-        using var changelogData = asm.GetManifestResourceStream("Changelog.md");
-        if (versionInfoData == null || changelogData == null) {
+    private void SwitchToPage(int page) {
+        if (page < 0) {
+            return;
+        }
+        if (page >= contentPages.Length) {
+            Close();
             return;
         }
 
-        using var versionInfoReader = new StreamReader(versionInfoData);
-        using var changelogReader = new StreamReader(changelogData);
+        currentPage = page;
+        if (contentPages.Length > 1) {
+            prevButton.Enabled = page > 0;
+            pageLabel.Text = $"Page {page + 1} / {contentPages.Length}";
+        } else {
+            prevButton.Visible = false;
+            pageLabel.Visible = false;
+        }
 
-        string[] versions = versionInfoReader.ReadToEnd().SplitLines().ToArray();
-        string[] changelogLines = changelogReader.ReadToEnd().SplitLines().ToArray();
-        string title = $"CelesteTAS {versions[0]} / Studio {versions[1]}";
+        if (page < contentPages.Length - 1) {
+            nextButton.Text = "Next";
+        } else {
+            nextButton.Text = "Close";
+        }
 
-        if (changelogLines.Length == 0) {
+        bool firstLoad = scrollable.Content == null;
+        scrollable.Content = null;
+        scrollable.Content = contentPages[page].Value.Control;
+
+        // Applying the proper size for the first page is already handle in the constructor
+        if (!firstLoad) {
+            UpdateLayout();
+            ApplySize(null, EventArgs.Empty);
+        }
+    }
+    void ApplySize(object? _1, EventArgs _2) {
+        int width = ContentWidth, height = ContentHeight;
+
+        var (_, content, image) = contentPages[currentPage].Value;
+
+        // Gotta love the scrollable experience
+        if (Eto.Platform.Instance.IsWpf) {
+            scrollable.ScrollSize = new Size(
+                Math.Max(0, width - (image?.Width ?? 0) - 20),
+                Math.Max(height, content.RequiredHeight)
+            );
+        } else {
+            content.UpdateLayout();
+            content.Width = Math.Max(0, width - (image?.Width ?? 0) - 20);
+            if (content.RequiredHeight != 0) {
+                content.Height = Math.Max(height, content.RequiredHeight);
+            }
+        }
+
+        scrollable.Height = height;
+        buttonsLayout.Width = width;
+    }
+
+    private class VersionConverter : JsonConverter<Version> {
+        public override Version? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
+            return Version.TryParse(reader.GetString(), out var version) ? version : null;
+        }
+        public override void Write(Utf8JsonWriter writer, Version value, JsonSerializerOptions options) {
+            writer.WriteStringValue(value.ToString(3));
+        }
+    }
+
+    public static void Show(FileStream versionHistoryFile, Version? oldVersion, Version? newVersion) {
+        var versionHistory = JsonSerializer.Deserialize<VersionHistory>(versionHistoryFile, new JsonSerializerOptions {
+            IncludeFields = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            Converters = {
+                new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false),
+                new VersionConverter(),
+            },
+        });
+
+        if (versionHistory.Versions.Count == 0) {
             return;
         }
 
-        new ChangelogDialog(title, changelogLines).ShowModal();
+        newVersion ??= versionHistory.Versions[0].CelesteTasVersion;
+        oldVersion ??= versionHistory.Versions.Count >= 2 ? versionHistory.Versions[1].CelesteTasVersion : new Version(0, 0, 0);
+
+        // Collect pages and changes
+        List<Page> pages = [];
+        Dictionary<string, List<string>> changes = [];
+
+        foreach (var version in versionHistory.Versions) {
+            // Either limit to range or just current version
+            if (version.CelesteTasVersion <= oldVersion || version.CelesteTasVersion > newVersion) {
+                continue;
+            }
+
+            pages.AddRange(version.Pages);
+
+            foreach (string category in version.Changes.Keys) {
+                changes.AddRangeToKey(category, version.Changes[category]);
+            }
+        }
+
+        new ChangelogDialog(versionHistory, pages, changes, oldVersion, newVersion).ShowModal();
     }
 }
