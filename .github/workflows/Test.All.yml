@@ -29,7 +29,7 @@ jobs:
       name: Strawberry Jam
       build-cfg: Debug
       tas-repository: VampireFlower/StrawberryJamTAS
-      tas-revision: df83fdee5f70bbebd8bd2a04a4e9608522486e20
+      tas-revision: e8b85971c75127ec3e6dda4277c87735c1586ac8
       tas-files: |
         0-SJ All Levels.tas
       required-mods: StrawberryJam2021
