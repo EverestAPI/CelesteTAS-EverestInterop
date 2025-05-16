@@ -265,3 +265,35 @@ public static class DictionaryExtensions {
         dict[key] = [..values];
     }
 }
+
+public static class StackExtensions {
+    /// Pushes a range of elements onto the queue, in order
+    public static void PushRange<T>(this Stack<T> stack, IEnumerable<T> items) {
+        switch (items) {
+            case IList<T> list: {
+#if NET7_0_OR_GREATER
+                stack.EnsureCapacity(stack.Count + list.Count);
+#endif
+                for (int i = 0; i < list.Count; i++) {
+                    stack.Push(list[i]);
+                }
+                break;
+            }
+            case ICollection<T> collection: {
+#if NET7_0_OR_GREATER
+                stack.EnsureCapacity(stack.Count + collection.Count);
+#endif
+                foreach (var item in collection) {
+                    stack.Push(item);
+                }
+                break;
+            }
+            default: {
+                foreach (var item in items) {
+                    stack.Push(item);
+                }
+                break;
+            }
+        }
+    }
+}

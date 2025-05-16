@@ -3,6 +3,7 @@ using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.RuntimeDetour;
+using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,7 +25,9 @@ internal static class SkinModFix {
     private static readonly ConditionalWeakTable<PlayerSprite, object> actualSpriteMode = new();
     private static readonly ConditionalWeakTable<PlayerSprite, PlayerSprite> gameplayToVisualSprites = new();
     private static readonly Dictionary<string, PlayerAnimMetadata> vanillaFrameMetadata = new();
-    private static readonly Dictionary<string, bool> mapSkinModDependency = new();
+
+    private static readonly Dictionary<string, EverestModuleMetadata> moddedMaps = new();
+    private static readonly Dictionary<EverestModuleMetadata, SpriteBank> moddedSpriteBanks = new();
 
     [Load]
     private static void Load() {
@@ -99,58 +102,73 @@ internal static class SkinModFix {
             }
         }
 
-        // Check dependencies of current map
-        if (Engine.Scene.GetSession() is not { } session) {
-            return false;
-        }
-        if (mapSkinModDependency.TryGetValue(session.Area.SID, out bool hasSkinModDependency)) {
-            return hasSkinModDependency;
+        return false;
+    }
+
+    /// Adjusted from SpriteBank.LoadSpriteBank (Everest)
+    private static SpriteBank CreateSpriteBankForMod(EverestModuleMetadata metadata) {
+        // Collect all direct / transitive dependencies
+        var allDependencies = new HashSet<EverestModuleMetadata>(capacity: 1 + metadata.Dependencies.Count);
+
+        var queue = new Stack<EverestModuleMetadata>(capacity: 1 + metadata.Dependencies.Count);
+        queue.Push(metadata);
+        while (queue.TryPop(out var curr)) {
+            queue.PushRange(curr.Dependencies);
+            allDependencies.Add(curr);
         }
 
-        var area = session.MapData.Area;
-        if (!Everest.Content.TryGet($"Maps/{AreaData.Get(area).Mode[(int)area.Mode].Path}", out var mapAsset)) {
-            return mapSkinModDependency[session.Area.SID] = false;
+        const string spritesXmlFilePath = "Graphics/Sprites.xml";
+        const string spritesXmlAssetPath = "Graphics/Sprites";
+
+        var spriteBankXml = Calc.orig_LoadContentXML(spritesXmlFilePath);
+        var originalSpriteBankXml = Calc.orig_LoadContentXML(spritesXmlFilePath);
+
+        var sprites = spriteBankXml["Sprites"]!;
+
+        // Find all mod files that match this one, EXCEPT for the "shadow structure" asset - the unique "Graphics/Sprites" asset.
+        ModAsset[] modAssets;
+        lock (Everest.Content.Map) {
+            modAssets = Everest.Content.Map
+                .Where(entry => entry.Value.Type == typeof(AssetTypeSpriteBank) &&
+                              entry.Value.PathVirtual.Equals(spritesXmlAssetPath) &&
+                              !entry.Value.PathVirtual.Equals(entry.Key)) // Filter out the unique asset
+                .Select(kvp => kvp.Value)
+                .ToArray();
         }
 
-        foreach (var dep in mapAsset.Source.Mod.Dependencies) {
-            if (dep.Name == "MaxHelpingHand") {
-                // Maddie's Helping Hand adds missing animations to player_playback
-                // However it doesn't alter gameplay and shouldn't be considered a SkinMod
-                continue;
+        foreach (var modAsset in modAssets) {
+            bool isDependency = allDependencies.Contains(modAsset.Source.Mod);
+
+            string modPath = modAsset.Source.Mod.PathDirectory;
+            if (string.IsNullOrEmpty(modPath)) {
+                modPath = modAsset.Source.Mod.PathArchive;
             }
-            if (Everest.Content.Mods.FirstOrDefault(mod => mod.Mod?.Name == dep.Name) is not { } depContent) {
-                continue;
-            }
 
-            // Reference: SpriteBank.LoadSpriteBank (Everest)
-            const string spritesXmlPath = "Graphics/Sprites";
-            var modAssets = depContent.List
-                .Where(asset => asset.Type == typeof(AssetTypeSpriteBank) && asset.PathVirtual.Equals(spritesXmlPath));
+            using var stream = modAsset.Stream;
+            var modXml = new XmlDocument();
+            modXml.Load(stream);
+            modXml = SpriteBank.GetSpriteBankExcludingVanillaCopyPastes(originalSpriteBankXml, modXml, modPath);
 
-            foreach (var modAsset in modAssets) {
-                string modPath = modAsset.Source.Mod.PathDirectory;
-                if (string.IsNullOrEmpty(modPath)) {
-                    modPath = modAsset.Source.Mod.PathArchive;
+            foreach (XmlNode node in modXml["Sprites"]!.ChildNodes) {
+                if (node is not XmlElement) {
+                    continue;
                 }
 
-                using var stream = modAsset.Stream;
-                var modXml = new XmlDocument();
-                modXml.Load(stream);
-                modXml = SpriteBank.GetSpriteBankExcludingVanillaCopyPastes(vanillaSpriteBankXml, modXml, modPath);
+                var importedNode = spriteBankXml.ImportNode(node, true);
+                var existingNode = sprites.SelectSingleNode(node.Name);
 
-                foreach (XmlNode node in modXml["Sprites"]!.ChildNodes) {
-                    if (node is not XmlElement) {
-                        continue;
+                if (existingNode != null) {
+                    if (!isDependency) {
+                        continue; // Non-dependencies are not allowed to overwrite sprites
                     }
-
-                    if (node.Name is "player" or "player_no_backpack" or "badeline" or "player_badeline" or "player_playback") {
-                        return mapSkinModDependency[session.Area.SID] = true;
-                    }
+                    sprites.ReplaceChild(importedNode, existingNode);
+                } else {
+                    sprites.AppendChild(importedNode);
                 }
             }
         }
 
-        return mapSkinModDependency[session.Area.SID] = false;
+        return new SpriteBank(GFX.Game, spriteBankXml) { XMLPath = spritesXmlFilePath };
     }
 
     /// Adjusted from PlayerSprite.CreateFramesMetadata
@@ -207,7 +225,8 @@ internal static class SkinModFix {
 
             if (shouldBeActive && !isActive) {
                 // Apply
-                SplitSprite(self.Sprite, actualSpriteMode.TryGetValue(self.Sprite, out object? boxedMode) ? (PlayerSpriteMode) boxedMode : self.Sprite.Mode);
+                var newSprite = new PlayerSprite(actualSpriteMode.TryGetValue(self.Sprite, out object? boxedMode) ? (PlayerSpriteMode) boxedMode : self.Sprite.Mode);
+                newSprite.CloneInto(self.Sprite);
             } else if (!shouldBeActive && isActive) {
                 // Restore
                 gameplayToVisualSprites.Remove(self.Sprite);
@@ -220,58 +239,65 @@ internal static class SkinModFix {
 
     private static bool skipPlayerSpriteHook = false;
     private static void On_PlayerSprite_ctor(On.Celeste.PlayerSprite.orig_ctor orig, PlayerSprite self, PlayerSpriteMode mode) {
-        CheckMapRequiresSkin();
-
         // Separate gameplay and visual sprite
         if (Manager.Running && !CheckMapRequiresSkin() && !skipPlayerSpriteHook) {
-            SplitSprite(self, mode);
+            if (Engine.Scene.GetSession() is not { } session) {
+                orig(self, mode);
+                return;
+            }
+
+            // SID -> Mod
+            if (!moddedMaps.TryGetValue(session.Area.SID, out var mod)) {
+                var area = session.MapData.Area;
+                var mapAsset = Everest.Content.Get($"Maps/{AreaData.Get(area).Mode[(int)area.Mode].Path}");
+                moddedMaps[session.Area.SID] = mod = mapAsset.Source.Mod;
+            }
+            // Mod -> SpriteBank
+            if (!moddedSpriteBanks.TryGetValue(mod, out var spriteBank)) {
+                moddedSpriteBanks[mod] = spriteBank = CreateSpriteBankForMod(mod);
+            }
+
+            var origSpriteBank = GFX.SpriteBank;
+            GFX.SpriteBank = spriteBank;
+            orig(self, mode);
+
+            // Force-overwrite vanilla sprites
+            switch (mode) {
+                case PlayerSpriteMode.Madeline:
+                    self.spriteName = "player";
+                    spriteBank.CreateOn(self, self.spriteName);
+                    break;
+                case PlayerSpriteMode.MadelineNoBackpack:
+                    self.spriteName = "player_no_backpack";
+                    spriteBank.CreateOn(self, self.spriteName);
+                    break;
+                case PlayerSpriteMode.Badeline:
+                    self.spriteName = "badeline";
+                    spriteBank.CreateOn(self, self.spriteName);
+                    break;
+                case PlayerSpriteMode.MadelineAsBadeline:
+                    self.spriteName = "player_badeline";
+                    spriteBank.CreateOn(self, self.spriteName);
+                    break;
+                case PlayerSpriteMode.Playback:
+                    self.spriteName = "player_playback";
+                    spriteBank.CreateOn(self, self.spriteName);
+                    break;
+            }
+
+            GFX.SpriteBank = origSpriteBank;
+
+            skipPlayerSpriteHook = true;
+            var visualSprite = new PlayerSprite(mode);
+            skipPlayerSpriteHook = false;
+
+            gameplayToVisualSprites.Add(self, visualSprite);
         } else {
             // Since SkinModHelper+ messes up the PlayerSpriteMode, we have to store it
             actualSpriteMode.Add(self, mode);
 
             orig(self, mode);
         }
-    }
-    private static void SplitSprite(PlayerSprite sprite, PlayerSpriteMode mode) {
-        // The currently created sprite needs to be the gameplay sprite, since that can be directly accessed
-        sprite.Mode = mode;
-        sprite.spriteName = sprite.Mode switch {
-            PlayerSpriteMode.Madeline => "player",
-            PlayerSpriteMode.MadelineNoBackpack => "player_no_backpack",
-            PlayerSpriteMode.Badeline => "badeline",
-            PlayerSpriteMode.MadelineAsBadeline => "player_badeline",
-            PlayerSpriteMode.Playback => "player_playback",
-            _ => "",
-        };
-
-        // Since we don't call orig, we have to copy _all_ constructors in the chain
-        // PlayerSprite
-        sprite.HairCount = 4;
-
-        // Sprite
-        sprite.atlas = null;
-        sprite.Path = null;
-        sprite.animations = new Dictionary<string, Sprite.Animation>(StringComparer.OrdinalIgnoreCase);
-        sprite.CurrentAnimationID = "";
-
-        // Image
-        sprite.Texture = null;
-
-        // GraphicsComponent
-        sprite.Scale = Vector2.One;
-        sprite.Color = Color.White;
-
-        // Component
-        sprite.Active = true;
-        sprite.Visible = true;
-
-        vanillaSpriteBank.CreateOn(sprite, sprite.spriteName);
-
-        skipPlayerSpriteHook = true;
-        var visualSprite = new PlayerSprite(sprite.Mode);
-        skipPlayerSpriteHook = false;
-
-        gameplayToVisualSprites.Add(sprite, visualSprite);
     }
 
     private static void On_Sprite_Update(On.Monocle.Sprite.orig_Update orig, Sprite self) {
@@ -365,7 +391,9 @@ internal static class SkinModFix {
             return;
         }
 
-        SplitSprite(player.Sprite, actualSpriteMode.TryGetValue(player.Sprite, out object? boxedMode) ? (PlayerSpriteMode) boxedMode : player.Sprite.Mode);
+        // Create new PlayerSprite (which triggers the above hook) and copy it over
+        var newSprite = new PlayerSprite(actualSpriteMode.TryGetValue(player.Sprite, out object? boxedMode) ? (PlayerSpriteMode) boxedMode : player.Sprite.Mode);
+        newSprite.CloneInto(player.Sprite);
     }
     [DisableRun]
     private static void Restore() {
