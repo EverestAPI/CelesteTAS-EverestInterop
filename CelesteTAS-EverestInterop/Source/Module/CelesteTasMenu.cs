@@ -55,6 +55,10 @@ internal static class CelesteTasMenu {
             }
             subMenu.Add(new TextMenu.OnOff("Restore Settings".ToDialogText(), TasSettings.RestoreSettings).Change(value =>
                 TasSettings.RestoreSettings = value));
+            TextMenu.Item autoPauseDraftItem;
+            subMenu.Add(autoPauseDraftItem = new TextMenu.OnOff("AUTO_PAUSE_DRAFT".ToDialogText(), TasSettings.AutoPauseDraft).Change(value =>
+                TasSettings.AutoPauseDraft = value));
+            subMenu.AddDescription(menu, autoPauseDraftItem, "AUTO_PAUSE_DRAFT_DESC".ToDialogText());
             subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), TasSettings.LaunchStudioAtBoot).Change(value => {
                 TasSettings.LaunchStudioAtBoot = value;
                 if (value) {

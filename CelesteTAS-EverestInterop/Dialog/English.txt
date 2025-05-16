@@ -105,6 +105,10 @@ TAS_AUTO_ENABLE_EXCAMERADYNAMICS=           Enable Extended Camera Dynamics for 
 TAS_EXCAMERADYNAMICS_DESCRIPTION_A=         The mod 'Extended Camera Dynamics' is required for this feature
 TAS_EXCAMERADYNAMICS_DESCRIPTION_B=         You'll have to restart the level after disabling this for zoomed-out hitboxes to work.
 TAS_RESTORE_SETTINGS=                       Restore All Settings after TAS Stops
+TAS_AUTO_PAUSE_DRAFT=                       Auto-Pause Draft on End
+TAS_AUTO_PAUSE_DRAFT_DESC=                  Automatically pauses drafts when they reach the end of a file.
+                                            A file is considered a draft if it has any timing command (see Wiki for all).
+                                            This option should only be disabled if the goal of a TAS isn't time based.
 TAS_LAUNCH_STUDIO_AT_BOOT=                  Launch Studio at Boot
 TAS_ATTEMPT_TO_CONNECT_TO_STUDIO=           Attempt To Connect To Studio
 TAS_SHOW_STUDIO_UPDATE_BANNER=              Show Studio Update Banner

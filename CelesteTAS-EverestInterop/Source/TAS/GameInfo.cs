@@ -20,6 +20,7 @@ using TAS.Input.Commands;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
+using EnumExtensions = TAS.Utils.EnumExtensions;
 
 namespace TAS;
 
