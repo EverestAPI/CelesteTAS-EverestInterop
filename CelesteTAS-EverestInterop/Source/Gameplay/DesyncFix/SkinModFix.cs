@@ -1,5 +1,6 @@
 using Celeste;
 using Celeste.Mod;
+using Celeste.Mod.Core;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.RuntimeDetour;
@@ -137,7 +138,8 @@ internal static class SkinModFix {
         }
 
         foreach (var modAsset in modAssets) {
-            bool isDependency = allDependencies.Contains(modAsset.Source.Mod);
+            // If metadata is null, this is a vanilla map
+            bool isDependency = metadata != null && allDependencies.Contains(modAsset.Source.Mod);
 
             string modPath = modAsset.Source.Mod.PathDirectory;
             if (string.IsNullOrEmpty(modPath)) {
@@ -215,7 +217,6 @@ internal static class SkinModFix {
                 }
             }
         }
-
     }
 
     private static void On_Player_Update(On.Celeste.Player.orig_Update orig, Player self) {
@@ -249,8 +250,12 @@ internal static class SkinModFix {
             // SID -> Mod
             if (!moddedMaps.TryGetValue(session.Area.SID, out var mod)) {
                 var area = session.MapData.Area;
-                var mapAsset = Everest.Content.Get($"Maps/{AreaData.Get(area).Mode[(int)area.Mode].Path}");
-                moddedMaps[session.Area.SID] = mod = mapAsset.Source.Mod;
+                if (Everest.Content.TryGet($"Maps/{AreaData.Get(area).Mode[(int)area.Mode].Path}", out var mapAsset)) {
+                    moddedMaps[session.Area.SID] = mod = mapAsset.Source.Mod;
+                } else {
+                    // Use Everest's module to represent vanilla, since null isn't allowed as a key
+                    moddedMaps[session.Area.SID] = mod = CoreModule.Instance.Metadata;
+                }
             }
             // Mod -> SpriteBank
             if (!moddedSpriteBanks.TryGetValue(mod, out var spriteBank)) {
