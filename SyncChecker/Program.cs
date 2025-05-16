@@ -714,7 +714,7 @@ public static class Program {
         }
 
         fullResult.EndTime = DateTime.UtcNow;
-        LogInfo($"Finished sync-check on {fullResult.EndTime}");
+        LogInfo($"Finished sync-check on {fullResult.EndTime} (took {fullResult.StartTime - fullResult.EndTime})");
 
         bool success = fullResult.Entries.All(entry => entry.Status == SyncCheckResult.Status.Success);
         fullResult.Checksum = success ? checksum : string.Empty;
