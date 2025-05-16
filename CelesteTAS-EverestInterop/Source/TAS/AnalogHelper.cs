@@ -34,7 +34,7 @@ public static class AnalogHelper {
     private const short Lowerbound = 7849;
 
     private static readonly Regex Fractional = new(@"\d+\.(\d*)", RegexOptions.Compiled);
-    private static AnalogMode analogMode = AnalogMode.Ignore;
+    internal static AnalogMode AnalogMode = AnalogMode.Ignore;
 
     public static (Vector2, Vector2Short) ComputeAngleVector(float angle, float magnitude) {
         float precision;
@@ -68,7 +68,7 @@ public static class AnalogHelper {
             360.0f => 1.0f,
             _ => (float) Math.Cos(angle / 180.0 * Math.PI)
         };
-        if (analogMode != AnalogMode.Precise) {
+        if (AnalogMode != AnalogMode.Precise) {
             x *= magnitude;
             y *= magnitude;
         }
@@ -100,7 +100,7 @@ public static class AnalogHelper {
         Debug.Assert(x >= y);
 
         short shortX, shortY;
-        switch (analogMode) {
+        switch (AnalogMode) {
             case AnalogMode.Ignore:
             case AnalogMode.Circle:
                 shortX = RoundToValidShort(x);
@@ -126,7 +126,7 @@ public static class AnalogHelper {
                 throw new UnreachableException();
         }
 
-        if (analogMode == AnalogMode.Ignore) {
+        if (AnalogMode == AnalogMode.Ignore) {
             return (new Vector2(x, y), new Vector2Short(shortX, shortY));
         }
 
@@ -203,12 +203,12 @@ public static class AnalogHelper {
         if (args.IsEmpty() || !Enum.TryParse(args[0], true, out AnalogMode mode)) {
             AbortTas($"AnalogMode command failed at line {fileLine}\nMode must be Ignore, Circle, Square or Precise");
         } else {
-            analogMode = mode;
+            AnalogMode = mode;
         }
     }
 
     [ClearInputs]
     private static void Reset() {
-        analogMode = AnalogMode.Ignore;
+        AnalogMode = AnalogMode.Ignore;
     }
 }
