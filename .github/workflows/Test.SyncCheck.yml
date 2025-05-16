@@ -103,7 +103,6 @@ jobs:
         echo '    "gameDirectory": "${{ env.CELESTE_INSTALL }}",' >> ${{ env.SYNC_CONFIG_PATH }}
         echo '    "everestBranch": "manual",' >> ${{ env.SYNC_CONFIG_PATH }}
         echo "    \"mods\": [$(echo '${{ inputs.required-mods }}' | awk 'NF { print "\""$0"\""}' | paste -sd ",")]," >> ${{ env.SYNC_CONFIG_PATH }}
-        echo '    "blacklistedMods": [],' >> ${{ env.SYNC_CONFIG_PATH }}
         echo "    \"files\": [$(echo '${{ inputs.tas-files }}' | awk 'NF { print "\"${{ env.CELESTE_INSTALL }}/${{ env.TASFILES_REPO_NAME }}/"$0"\""}' | paste -sd ",")]," >> ${{ env.SYNC_CONFIG_PATH }}
         echo "    \"lastChecksum\": \"$(cat ${{ env.CELESTE_INSTALL }}/${{ env.CHECKSUM_PATH }})\"" >> ${{ env.SYNC_CONFIG_PATH }}
         echo '}' >> ${{ env.SYNC_CONFIG_PATH }}

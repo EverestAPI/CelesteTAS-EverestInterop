@@ -21,7 +21,6 @@ public readonly record struct Config (
     string GameDirectory,
     EverestBranch EverestBranch,
     List<string> Mods,
-    List<string> BlacklistedMods,
     List<string> Files,
     string LastChecksum
 );
@@ -182,14 +181,10 @@ public static class Program {
             await using var resultFile = File.Create(resultPath);
             await JsonSerializer.SerializeAsync(resultFile, fullResult, jsonOptions);
 
-            result = 0;
+            return 0;
         } else {
-            result = await RunSyncCheck(config, resultPath, checksum);
+            return await RunSyncCheck(config, resultPath, checksum);
         }
-
-        RestoreBlacklistedMods(config);
-
-        return result;
     }
 
     /// Ensures the installed Everest version is up-to-date
@@ -323,8 +318,6 @@ public static class Program {
         return 0;
     }
 
-    private const string BlacklistBackupDirectory = "blacklist-backup";
-
     /// Sets up all required mods for the sync-check
     private static async Task<int> SetupMods(Config config, SHA1 sha1) {
         using var hc = new CompressedHttpClient();
@@ -435,9 +428,6 @@ public static class Program {
                 }
 
                 LogInfo($" - {info.Name}: Updating... (v{installed.Version} -> v{info.Version})");
-            } else if (config.BlacklistedMods.Contains(info.Name)) {
-                LogInfo($" - {info.Name}: Blacklisted (v{info.Version})");
-                continue; // Blacklisted
             } else {
                 LogInfo($" - {info.Name}: Installing... (v{info.Version})");
             }
@@ -456,10 +446,6 @@ public static class Program {
 
         // Calculate checksum
         foreach (var info in requiredMods) {
-            if (config.BlacklistedMods.Contains(info.Name)) {
-                continue;
-            }
-
             byte[] bytes = Convert.FromHexString(info.xxHash[0]);
             sha1.TransformBlock(bytes, 0, bytes.Length, bytes, 0);
         }
@@ -476,91 +462,19 @@ public static class Program {
             }
         }
 
-        // Remove blacklisted mods from everest.yamls
-        LogInfo($"Blacklisting {config.BlacklistedMods.Count} mod(s)...");
-
-        string backupDir = Path.Combine(config.GameDirectory, "Mods", BlacklistBackupDirectory);
-        if (Directory.Exists(backupDir)) {
-            Directory.Delete(backupDir, recursive: true);
-        }
-
-        Directory.CreateDirectory(backupDir);
-
-        foreach (string mod in Directory.EnumerateFiles(Path.Combine(config.GameDirectory, "Mods"))) {
-            if (Path.GetExtension(mod) != ".zip") {
-                continue;
-            }
-
-            EverestModuleMetadata[] metas;
-            using (var zipFile = ZipFile.OpenRead(mod)) {
-                var yamlEntry = zipFile.GetEntry("everest.yaml") ?? zipFile.GetEntry("everest.yml")!;
-                await using var yamlStream = yamlEntry.Open();
-                using var yamlReader = new StreamReader(yamlStream);
-
-                metas = YamlHelper.Deserializer.Deserialize<EverestModuleMetadata[]>(yamlReader);
-            }
-
-            bool changed = false;
-            foreach (var meta in metas) {
-                if (config.BlacklistedMods.Contains(meta.Name)) {
-                    blacklist.Add(Path.GetFileName(mod));
-                    changed = false;
-                    break; // Blacklisted
-                }
-
-                if (requiredMods.All(info => info.Name != meta.Name)) {
-                    continue; // Mod is unused
-                }
-
-                int removed = meta.Dependencies.RemoveAll(dep => config.BlacklistedMods.Contains(dep.Name));
-                changed |= removed > 0;
-
-                if (removed > 0) {
-                    LogInfo($" - {meta.Name}: Removed {removed} mod(s)");
-                }
-            }
-
-            if (!changed) {
-                continue;
-            }
-
-            // Backup original (to prevent re-download next sync-check) and rewrite everest.yaml
-            File.Copy(mod, Path.Combine(backupDir, Path.GetFileName(mod)));
-
-            using (var zipFile = ZipFile.Open(mod, ZipArchiveMode.Update)) {
-                var yamlEntry = zipFile.GetEntry("everest.yaml") ?? zipFile.GetEntry("everest.yml")!;
-                yamlEntry.Delete();
-                yamlEntry = zipFile.CreateEntry("everest.yaml");
-
-                await using var yamlStream = yamlEntry.Open();
-                await using var yamlWriter = new StreamWriter(yamlStream);
-
-                YamlHelper.Serializer.Serialize(yamlWriter, metas);
-            }
-        }
-
         // Generate blacklist.txt
-        blacklist.AddRange(Directory.EnumerateDirectories(Path.Combine(config.GameDirectory, "Mods")).Select(Path.GetFileName)!);
+        blacklist.AddRange(
+            Directory.EnumerateDirectories(Path.Combine(config.GameDirectory, "Mods"))
+                .Select(Path.GetFileName)
+                .Where(name => name != null && (installReleaseCelesteTas || name != CelesteTasRepositoryName))!
+        );
         if (!installReleaseCelesteTas) {
-            blacklist.Remove("CelesteTAS-EverestInterop");
+            blacklist.Add($"# {CelesteTasRepositoryName}");
         }
 
         await File.WriteAllLinesAsync(Path.Combine(config.GameDirectory, "Mods", "blacklist.txt"), blacklist);
 
         return 0;
-    }
-
-    /// Restores the backups of mods which depend on blacklisted mods to prevent invalidating the hash
-    private static void RestoreBlacklistedMods(Config config) {
-        string backupDir = Path.Combine(config.GameDirectory, "Mods", BlacklistBackupDirectory);
-        if (!Directory.Exists(backupDir))
-            return;
-
-        foreach (string mod in Directory.EnumerateFiles(backupDir)) {
-            File.Move(mod, Path.Combine(config.GameDirectory, "Mods", Path.GetFileName(mod)), overwrite: true);
-        }
-
-        Directory.Delete(backupDir, recursive: true);
     }
 
     /// Performs the sync-check and collects the results
