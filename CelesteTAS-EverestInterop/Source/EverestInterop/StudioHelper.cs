@@ -15,6 +15,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using TAS.Module;
+using TAS.Tools;
 using TAS.Utils;
 
 namespace TAS.EverestInterop;
@@ -108,6 +109,10 @@ public static class StudioHelper {
 
     [Load]
     private static void Load() {
+        if (Everest.Flags.IsHeadless || SyncChecker.Active) {
+            return;
+        }
+
         // INSTALL_STUDIO is only set during builds from Build.yml/Release.yml, since otherwise the URLs / checksums are invalid
 #if INSTALL_STUDIO
         // Check if Studio is already up-to-date
@@ -446,6 +451,10 @@ public static class StudioHelper {
     }
 
     internal static void LaunchStudio() => Task.Run(async () => {
+        if (Everest.Flags.IsHeadless || SyncChecker.Active) {
+            return;
+        }
+
         "Launching Studio...".Log();
         try {
             // Wait until the installation is verified
