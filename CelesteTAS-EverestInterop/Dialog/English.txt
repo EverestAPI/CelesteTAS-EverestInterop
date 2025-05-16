@@ -2,12 +2,12 @@
 TAS_ENABLED=                                Enabled
 TAS_ENABLED_DESCRIPTION=                    Working TAS File Path:
 TAS_SHOW_HITBOXES=                          Hitboxes
-TAS_HITBOX_COLOR_DESCRIPTION=               Hitbox color can only be edited in the menu of the title screen{n}
+TAS_HITBOX_COLOR_DESCRIPTION=               Hitbox color can only be edited in the menu of the title screen
                                             Or use the entity/trigger/platform_hitbox_color command in the console
 TAS_SIMPLIFIED_GRAPHICS=                    Simplified Graphics
 TAS_INFO_HUD=                               Info HUD
-TAS_INFO_HUD_DESCRIPTION=                   Double press the Info HUD hotkey to toggle the HUD{n}
-                                            Hold down the Info HUD hotkey and left-click to drag the HUD around{n}
+TAS_INFO_HUD_DESCRIPTION=                   Double press the Info HUD hotkey to toggle the HUD
+                                            Hold down the Info HUD hotkey and left-click to drag the HUD around
                                             Hold down the Info HUD hotkey and left-click to watch an entity
 TAS_ROUND_VALUES=                           Round Values
 TAS_FORWARD_SPEED=                          Forward Speed
@@ -107,23 +107,23 @@ TAS_EXCAMERADYNAMICS_DESCRIPTION_B=         You'll have to restart the level aft
 TAS_RESTORE_SETTINGS=                       Restore All Settings after TAS Stops
 TAS_AUTO_PAUSE_DRAFT=                       Auto-Pause Draft on End
 TAS_AUTO_PAUSE_DRAFT_DESC=                  Automatically pauses drafts when they reach the end of a file.
-                                            A file is considered a draft if it has any timing command (see Wiki for all).
+                                            A file is considered a draft if it hasn't any timing command (see Wiki for all commands).
                                             This option should only be disabled if the goal of a TAS isn't time based.
 TAS_LAUNCH_STUDIO_AT_BOOT=                  Launch Studio at Boot
 TAS_ATTEMPT_TO_CONNECT_TO_STUDIO=           Attempt To Connect To Studio
 TAS_SHOW_STUDIO_UPDATE_BANNER=              Show Studio Update Banner
 TAS_OPEN_CONSOLE_IN_TAS=                    Allow Opening Console in TAS
 TAS_BETTER_INVINCIBILITY=                   Better Invincibility
-TAS_BETTER_INVINCIBLE_DESCRIPTION=          Running "Set Invincible true" will still prevent dying, but avoids gameplay changes like bouncing of the death plane,{n}
+TAS_BETTER_INVINCIBLE_DESCRIPTION=          Running "Set Invincible true" will still prevent dying, but avoids gameplay changes like bouncing of the death plane,
                                             to avoid accidentally desyncing the TAS. Applies only while a TAS is active.
 TAS_FORCE_ALLOW_ACCESS_TOOLS=               Force Allow Accessibility Tools
-TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC=          Forcefully re-enabled accessibility tools which were intentionally disabled.
+TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC=          Forcefully re-enabled accessibility tools (such as the Debug Map) which were intentionally disabled.
                                             This goes against the intended experience of a casual playthrough and you could ruin your own experience.
 TAS_HIDE_FREEZE_FRAMES=                     Hide Freeze Frames during TAS
-TAS_HIDE_FREEZE_FRAMES_DESCRIPTION=         When a freeze-frame is encountered, skip it without rendering{n}
+TAS_HIDE_FREEZE_FRAMES_DESCRIPTION=         When a freeze-frame is encountered, skip it without rendering
                                             Applies only while a TAS is active.
 TAS_IGNORE_GC_COLLECT=                      Ignore GC Collect during Fast Forward
-TAS_IGNORE_GC_COLLECT_DESCRIPTION=          Speeds up fast forwarding of long TASes{n}
+TAS_IGNORE_GC_COLLECT_DESCRIPTION=          Speeds up fast forwarding of long TASes
                                             but will increase memory usage
 
 # ============================================== Hotkey Config ==============================================
