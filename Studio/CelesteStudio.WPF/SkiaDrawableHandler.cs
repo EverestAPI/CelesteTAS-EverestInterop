@@ -61,7 +61,7 @@ public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, Eto.Forms.Cont
 
                 if (bitmap != null) {
                     bitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
-                    drawingContext.DrawImage(bitmap, new Rect(drawable.DrawX, drawable.DrawY, width / dpiX, height / dpiY));
+                    drawingContext.DrawImage(bitmap, new Rect(drawable.DrawX + drawable.Padding.Left, drawable.DrawY + drawable.Padding.Top, width / dpiX, height / dpiY));
                     bitmap.Unlock();
                 }
             } else {

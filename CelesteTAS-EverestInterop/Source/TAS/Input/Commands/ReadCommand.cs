@@ -167,11 +167,16 @@ public static class ReadCommand {
             return;
         }
 
+        // Restore settings changed by read file after we continue with the current one
+        var origAnalogMode = AnalogHelper.AnalogMode;
+
         readCommandStack.Add(readCommandDetail);
         Manager.Controller.ReadFile(path, startLine, endLine, studioLine);
         if (readCommandStack.Count > 0) {
             readCommandStack.RemoveAt(readCommandStack.Count - 1);
         }
+
+        Manager.Controller.ReadLine($"AnalogMode,{origAnalogMode}", filePath, fileLine, studioLine);
     }
 
     private static string? FindTargetFile(string commandName, string fileDirectory, string filePath, out string errorMessage) {

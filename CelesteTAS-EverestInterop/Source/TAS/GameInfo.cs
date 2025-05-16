@@ -11,6 +11,7 @@ using Monocle;
 using MonoMod.Cil;
 using MonoMod.Utils;
 using StudioCommunication;
+using StudioCommunication.Util;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.InfoHUD;
@@ -19,6 +20,7 @@ using TAS.Input.Commands;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
+using EnumExtensions = TAS.Utils.EnumExtensions;
 
 namespace TAS;
 
@@ -542,7 +544,7 @@ public static class GameInfo {
         return (int) Math.Ceiling(seconds / Engine.RawDeltaTime / Engine.TimeRateB);
     }
 
-    private static int ToFloorFrames(this float seconds) {
+    public static int ToFloorFrames(this float seconds) {
         return (int) Math.Floor(seconds / Engine.RawDeltaTime / Engine.TimeRateB);
     }
 

@@ -176,7 +176,7 @@ public static class Manager {
         }
 
         // Auto-pause at end of drafts
-        if (!Controller.CanPlayback && IsDraft()) {
+        if (!Controller.CanPlayback && TasSettings.AutoPauseDraft && IsDraft()) {
             NextState = State.Paused;
         }
         // Pause the TAS if breakpoint is hit

@@ -4,6 +4,7 @@ using Celeste;
 using Celeste.Pico8;
 using Microsoft.Xna.Framework;
 using Monocle;
+using StudioCommunication.Util;
 using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD;

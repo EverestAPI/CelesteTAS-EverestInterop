@@ -55,6 +55,10 @@ internal static class CelesteTasMenu {
             }
             subMenu.Add(new TextMenu.OnOff("Restore Settings".ToDialogText(), TasSettings.RestoreSettings).Change(value =>
                 TasSettings.RestoreSettings = value));
+            TextMenu.Item autoPauseDraftItem;
+            subMenu.Add(autoPauseDraftItem = new TextMenu.OnOff("AUTO_PAUSE_DRAFT".ToDialogText(), TasSettings.AutoPauseDraft).Change(value =>
+                TasSettings.AutoPauseDraft = value));
+            subMenu.AddDescription(menu, autoPauseDraftItem, "AUTO_PAUSE_DRAFT_DESC".ToDialogText());
             subMenu.Add(new TextMenu.OnOff("Launch Studio At Boot".ToDialogText(), TasSettings.LaunchStudioAtBoot).Change(value => {
                 TasSettings.LaunchStudioAtBoot = value;
                 if (value) {
@@ -74,6 +78,15 @@ internal static class CelesteTasMenu {
                 BetterInvincible.Invincible = false; // in case that value doesn't get reset for some unknown reason... yeah i have such bug report
             }));
             subMenu.AddDescription(menu, betterInvincible, "Better Invincible Description".ToDialogText());
+
+            TextMenu.Item forceAllowAccessibilityTools;
+            subMenu.Add(forceAllowAccessibilityTools = new TextMenuExt.EnumerableSlider<EnableCondition>("FORCE_ALLOW_ACCESS_TOOLS".ToDialogText(), new[] {
+                    new KeyValuePair<EnableCondition, string>(EnableCondition.Never, "EnableCondition_Never".ToDialogText()),
+                    new KeyValuePair<EnableCondition, string>(EnableCondition.Always, "EnableCondition_Always".ToDialogText()),
+                    new KeyValuePair<EnableCondition, string>(EnableCondition.WhileStudioConnected, "EnableCondition_WhileStudioConnected".ToDialogText())
+                }, TasSettings.ForceAllowAccessibilityTools)
+                .Change(value => TasSettings.ForceAllowAccessibilityTools = value));
+            subMenu.AddDescription(menu, forceAllowAccessibilityTools, "FORCE_ALLOW_ACCESS_TOOLS_DESC".ToDialogText());
 
             TextMenu.Item hideFreezeFramesItem;
             subMenu.Add(hideFreezeFramesItem = new TextMenu.OnOff("Hide Freeze Frames".ToDialogText(), TasSettings.HideFreezeFrames).Change(value =>

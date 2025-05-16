@@ -70,3 +70,10 @@ public enum SpeedUnit {
     PixelPerSecond,
     PixelPerFrame
 }
+
+/// Condition for when to enable certain features
+public enum EnableCondition {
+    Never,
+    Always,
+    WhileStudioConnected,
+}

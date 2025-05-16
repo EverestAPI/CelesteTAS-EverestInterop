@@ -454,6 +454,7 @@ public class CelesteTasSettings : EverestModuleSettings {
     }
 
     public bool RestoreSettings { get; set; } = true;
+    public bool AutoPauseDraft { get; set; } = true;
     public bool LaunchStudioAtBoot { get; set; } = false;
     public bool ShowStudioUpdateBanner { get; set; } = true;
 
@@ -473,6 +474,8 @@ public class CelesteTasSettings : EverestModuleSettings {
         get => Enabled && _BetterInvincible;
         set => _BetterInvincible = value;
     }
+
+    public EnableCondition ForceAllowAccessibilityTools = EnableCondition.WhileStudioConnected;
 
     public bool HideFreezeFrames { get; set; } = false;
     public bool IgnoreGcCollect { get; set; } = true;
