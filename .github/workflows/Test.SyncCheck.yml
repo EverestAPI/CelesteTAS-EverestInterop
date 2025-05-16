@@ -4,6 +4,9 @@ on:
       id:
         required: true
         type: string
+      name:
+        required: true
+        type: string
       build-cfg:
         required: true
         type: string
@@ -23,7 +26,7 @@ on:
 
 jobs:
   run-sync-check:
-    name: Run Sync-Check
+    name: ${{ inputs.name }}
 
     runs-on: ubuntu-latest
 
