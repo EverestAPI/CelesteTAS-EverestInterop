@@ -29,6 +29,13 @@ public class CelesteTasModule : EverestModule {
     public override Type SettingsType => typeof(CelesteTasSettings);
 
     public override void Initialize() {
+        // CelesteTAS v3.44.0 caused an ABI breakage, which is fixed in TAS Helper v2.1.10
+        if (Everest.Modules.FirstOrDefault(module => module.Metadata.Name == "TASHelper") is { } tasHelperModule) {
+            if (tasHelperModule.Metadata.Version < new Version(2, 1, 10)) {
+                throw new Exception($"TAS Helper v{tasHelperModule.Metadata.Version.ToString(3)} is OUTDATED! Install v2.1.10 or later through Olympus or manually!");
+            }
+        }
+
         AttributeUtils.Invoke<InitializeAttribute>();
 
         // required to be run after TasCommandAttribute.CollectMethods()
