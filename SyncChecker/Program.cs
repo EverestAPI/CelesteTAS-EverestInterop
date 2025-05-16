@@ -339,7 +339,8 @@ public static class Program {
         string dependencyGraphData = await hc.GetStringAsync(DependencyGraphURL);
         var dependencyGraph = YamlHelper.Deserializer.Deserialize<Dictionary<string, DependencyGraphEntry>>(dependencyGraphData);
 
-        bool installReleaseCelesteTas = !Directory.Exists(Path.Combine(config.GameDirectory, "Mods", CelesteTasRepositoryName));
+        string celesteTasPath = Path.Combine(config.GameDirectory, "Mods", CelesteTasRepositoryName);
+        bool installReleaseCelesteTas = !File.Exists(celesteTasPath) && !Directory.Exists(celesteTasPath);
 
         // Parse update blacklist
         string updaterBlacklistPath = Path.Combine(config.GameDirectory, "Mods", "updaterblacklist.txt");
@@ -459,7 +460,6 @@ public static class Program {
             sha1.TransformBlock(bytes, 0, bytes.Length, bytes, 0);
         }
         if (!installReleaseCelesteTas) {
-            string celesteTasPath = Path.Combine(config.GameDirectory, "Mods", CelesteTasRepositoryName);
             var options = new EnumerationOptions { RecurseSubdirectories = true };
             var allFiles = Directory.EnumerateFiles(Path.Combine(celesteTasPath, "CelesteTAS-EverestInterop"), "*.cs", options)
                 .Concat(Directory.EnumerateFiles(Path.Combine(celesteTasPath, "StudioCommunication"), "*.cs", options))
