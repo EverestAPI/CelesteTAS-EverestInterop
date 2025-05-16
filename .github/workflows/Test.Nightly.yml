@@ -7,7 +7,7 @@ on:
     branches:
       - '*'
     paths:
-      - '.github/workflows/**'
+      - '.github/workflows/Test.**'
   workflow_dispatch:
 
 jobs:

@@ -34,6 +34,7 @@ jobs:
     needs: build-sync-checker
     with:
       id: vanilla
+      name: Vanilla
       build-cfg: Debug
       tas-repository: VampireFlower/CelesteTAS
       tas-revision: eb4550a253be97fd4942a5e609fe2a60e980f7ca
