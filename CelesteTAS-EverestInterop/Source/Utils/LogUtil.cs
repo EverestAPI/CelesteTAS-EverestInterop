@@ -6,7 +6,7 @@ using Monocle;
 namespace TAS.Utils;
 
 internal static class LogUtil {
-    private const string Tag = "CelesteTAS";
+    public const string Tag = "CelesteTAS";
 
 #if DEBUG
     public static void DebugLog(this object text, LogLevel logLevel = LogLevel.Debug) => text.DebugLog(true, logLevel);
