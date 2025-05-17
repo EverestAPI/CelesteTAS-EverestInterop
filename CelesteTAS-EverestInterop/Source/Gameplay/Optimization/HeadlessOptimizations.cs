@@ -1,6 +1,7 @@
 using Celeste;
 using Celeste.Mod;
 using Monocle;
+using System.Collections.Generic;
 using TAS.Module;
 using TAS.Tools;
 using TAS.Utils;
@@ -12,6 +13,7 @@ namespace TAS.Gameplay.Optimization;
 internal static class HeadlessOptimizations {
 
     private static Autotiler.Generated stubbedTilemap = default;
+    private static List<Backdrop> stubbedBackdrops = [];
 
     [LoadContent]
     private static void LoadContent() {
@@ -29,6 +31,14 @@ internal static class HeadlessOptimizations {
             .GetMethodInfo(nameof(Autotiler.Generate))!
             .IlHook((cursor, _) => {
                 cursor.EmitLdsfld(typeof(HeadlessOptimizations).GetFieldInfo(nameof(stubbedTilemap))!);
+                cursor.EmitRet();
+            });
+
+        // Prevent backdrops from loading
+        typeof(MapData)
+            .GetMethodInfo(nameof(MapData.CreateBackdrops))!
+            .IlHook((cursor, _) => {
+                cursor.EmitLdsfld(typeof(HeadlessOptimizations).GetFieldInfo(nameof(stubbedBackdrops))!);
                 cursor.EmitRet();
             });
     }
