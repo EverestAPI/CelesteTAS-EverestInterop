@@ -182,6 +182,10 @@ public class ChangelogDialog : Eto.Forms.Dialog {
 
         SwitchToPage(0);
 
+        Load += (_, _) => {
+            // Need to make sure, the theme is applied
+            Settings.OnThemeChanged();
+        };
         Studio.RegisterDialog(this);
     }
 
