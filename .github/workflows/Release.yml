@@ -142,7 +142,7 @@ jobs:
       - name: Download changelogs
         uses: actions/download-artifact@v4
         with:
-          pattern: changelog-*#
+          pattern: changelog-*
       - name: Copy Studio changelog into correct location
         run: |
           cp changelog-studio/studio_changelog.json Assets/version_history.json

@@ -1,3 +1,96 @@
+# CelesteTAS v3.44.0, Studio v3.9.0
+
+## Radeline Simulator
+
+The Radeline Simulator is a tool created by Kataiser, which allows for brute-forcing inputs to get the player into a specific subpixel position.  
+With it now being integrated into Studio, it can easily access the game's data and provide fast results.
+
+It can be found under `Tools -> Radeline Simulator`.
+
+---
+
+## Better Accessibility Tools
+
+Some maps choose to prevent user from using certain accessibility tools (like the Debug Map), to avoid the users from accidentally ruining their experience while playing the map.  
+However these accessibility tools are often useful when playing the map not as a casual playthrough, such as routing a TAS/Speedrun.
+
+By default, these features will now be forcefully re-enabled while Studio is connected to the game, to give users the option back.  
+It can also be always enabled or disabled.
+
+This also includes annoying events, like crashing / restarting the game.
+
+---
+
+## Improved SkinMod Support
+
+SkinMods are known to sometimes change the length of certain animations to better fit the artists intention.  
+However these changes can cause desyncs and confusion, because the TAS expects a different length than it actually is.
+
+Now, it will apply vanilla animation lengths and metadata, while maintaining the SkinMod's visual style as best as it can.  
+If a map requires a SkinMod, this fix will not be applied.
+
+Please report any cases of this feature not working as intended.
+
+---
+
+## `RealTime` Timing Command
+
+With the rise in interest for some to time TASes using real-time, this commands now provides an easy way to do that.  
+It'll count everything from the point 'Begin' is pressed, only excluded real loading times.
+
+It will be filled in, when the TAS ends, just like the `FileTime` command works currently.
+
+When a `RealTime` command is detected in the file, an additional 'Real Timer' will appear in the Info HUD to display the current real time.
+
+---
+
+## Reworked Target-Query System
+
+Target-Queries are the system used by `Set`/`Invoke`-Commands and Custom Info.  
+They already supported limiting to specific Entity IDs with `Query[Room:ID]` and querying components with `Query:ComponentType`, 
+however these only worked on the base type.  
+Now they can be specified anywhere, even on members.
+
+Additionally, lists can now be accessed in "parallel", meaning you could now do the following for example:  
+`Set, Player:Leader.Followers.Entity.Golden, True` to set all carried berries by the player to be golden berries.
+
+You can now also get auto-complete for parameter values of commands, for example:  
+`Set, Player.StateMachine.State, Player.StNormal`
+
+---
+
+## Breakpoint Editing
+
+Similar to the editing experience with regular inputs, breakpoints are now treated the same way.  
+It is now impossible to have an invalid breakpoint in a TAS file; it either needs to be valid or not there.
+
+This might break a bit of muscle memory at first, but it should be quick to get used to.  
+Additionally, these changes sound more drastic than they actually are.
+
+---
+
+- Feature: Add Radeline Simulate to Studio
+- Feature: Add `(Midway)RealTime` timing command
+- Feature: Prevent desyncs caused by SkinMods
+- Feature: Support accessing modded sessions and savedata with target-queries
+- Feature: Add auto-complete support to command parameters
+- Feature: Restrict breakpoint editing in Studio
+- Feature: Add option to disable auto-pausing when TAS ends and is considered a draft
+- Feature: Add `get(query)`/`set(query, value)`/`invoke(query, parameters)` Lua commands to perform the same as the commands do
+- Feature: Force-allow accessibility tools while Studio is connected
+- Feature: Provide sync-checking system for automated testing of TAS files
+- Refactor: Changelog system to allow for Markdown
+- Refactor: Target-query system to be game-independent
+- Fix: Inaccurate hitboxes for Badeline laser
+- Fix: Inaccurate hitboxes for FrostHelper Arbitrary-Shape colliders
+- Fix: Inaccurate hitboxes for CrystallineHelper Force Fields
+- Fix: `ExportGameInfo`/`ExportRoomInfo` commands not supporting auto-complete
+- Fix: Timestamps being uncommented with Ctrl+K
+- Fix: Some visual Extended Variants not being account for in Simplified Graphics
+- Fix: Modded bindings being unusable after stopping TAS from breakpoint
+- Fix: Floating-point inaccuracies with subpixel indicator
+- Tweak: Improve dialog when discarding changes in Studio
+
 # CelesteTAS v3.43.8, Studio v3.8.4
 
 - Fix: CRLF line endings being inserted when auto-completing some commands
