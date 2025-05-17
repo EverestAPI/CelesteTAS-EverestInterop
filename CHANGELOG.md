@@ -1,3 +1,7 @@
+# CelesteTAS v3.44.1, Studio v3.9.1
+
+- Fix: Crash on first start-up on Windows
+
 # CelesteTAS v3.44.0, Studio v3.9.0
 
 ## Radeline Simulator
