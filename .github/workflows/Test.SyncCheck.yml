@@ -121,10 +121,13 @@ jobs:
         cp ${{ env.CELESTE_INSTALL }}/Mods/*.zip Mods 2>/dev/null || :
         cp ${{ env.CELESTE_INSTALL }}/Mods/Cache Mods 2>/dev/null || :
         
+        echo "OLD_CHECKSUM=$(cat ${{ env.CELESTE_INSTALL }}/${{ env.CHECKSUM_PATH }})" >> $GITHUB_ENV
+        echo "NEW_CHECKSUM=$(cat ${{ env.SYNC_RESULT_PATH }} | jq -r .checksum)" >> $GITHUB_ENV
+        
         cat ${{ env.SYNC_RESULT_PATH }} | jq -r .checksum > ${{ env.CHECKSUM_PATH }}
 
     - name: Delete previous mods cache
-      if: ${{ always() && steps.restore-cache.outputs.cache-hit == 'true' }}
+      if: ${{ always() && steps.restore-cache.outputs.cache-hit == 'true' && env.OLD_CHECKSUM != env.NEW_CHECKSUM }}
       continue-on-error: true
       run: |
         curl -L \
@@ -135,7 +138,7 @@ jobs:
           "https://api.github.com/repos/${{ github.repository }}/actions/caches?key=SyncCheck-${{ inputs.id }}"
 
     - name: Save mods cache
-      if: always()
+      if: ${{ always() && env.OLD_CHECKSUM != env.NEW_CHECKSUM }}
       uses: actions/cache/save@v4
       with:
         path: |
