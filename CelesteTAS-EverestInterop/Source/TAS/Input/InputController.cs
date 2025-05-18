@@ -4,9 +4,12 @@ using System.IO;
 using System.Linq;
 using Celeste.Mod;
 using JetBrains.Annotations;
+using Monocle;
 using StudioCommunication;
+using TAS.Entities;
 using TAS.Input.Commands;
 using TAS.Module;
+using TAS.Tools;
 using TAS.Utils;
 
 namespace TAS.Input;
@@ -166,6 +169,34 @@ public class InputController {
                     .FirstOrDefault(cmd => cmd.FileLine == command.FileLine && cmd.FilePath == command.FilePath);
 
                 CurrentFrameInTas = newCommand.Frame;
+            }
+        }
+        foreach (var comment in CurrentComments) {
+            // Validate room labels
+            if (CommentLine.RoomLabelRegex.Match($"#{comment.Text}") is { Success: true } match) {
+                if (Engine.Scene.GetSession() is { } session) {
+                    if (match.Groups[1].ValueSpan.SequenceEqual(session.Level)) {
+                        continue;
+                    }
+
+                    Toast.ShowAndLog($"""
+                                      {comment.FilePath} line {comment.FileLine}:
+                                      Room label 'lvl_{match.Groups[1].ValueSpan}' does not match actual name 'lvl_{session.Level}'
+                                      """);
+
+                    if (SyncChecker.Active) {
+                        Manager.DisableRunLater();
+                    }
+                } else {
+                    Toast.ShowAndLog($"""
+                                      {comment.FilePath} line {comment.FileLine}:
+                                      Found room label '#{comment.Text}' outside of level
+                                      """);
+
+                    if (SyncChecker.Active) {
+                        Manager.DisableRunLater();
+                    }
+                }
             }
         }
 
