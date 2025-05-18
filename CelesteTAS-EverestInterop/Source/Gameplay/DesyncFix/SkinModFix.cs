@@ -174,13 +174,9 @@ internal static class SkinModFix {
             bool isActive = gameplayToVisualSprites.TryGetValue(self.Sprite, out var visual);
 
             if (shouldBeActive && !isActive) {
-                // Apply
-                var newSprite = new PlayerSprite(actualSpriteMode.TryGetValue(self.Sprite, out object? boxedMode) ? (PlayerSpriteMode) boxedMode : self.Sprite.Mode);
-                newSprite.CloneInto(self.Sprite);
+                ApplyPlayer(self);
             } else if (!shouldBeActive && isActive) {
-                // Restore
-                gameplayToVisualSprites.Remove(self.Sprite);
-                visual!.CloneInto(self.Sprite);
+                RestorePlayer(self);
             }
         }
 
@@ -358,17 +354,35 @@ internal static class SkinModFix {
 
     [EnableRun]
     private static void Apply() {
-        if (Engine.Scene.GetPlayer() is not { } player) {
-            return;
+        if (Engine.Scene.GetPlayer() is { } player) {
+            ApplyPlayer(player);
         }
-
-        // Create new PlayerSprite (which triggers the above hook) and copy it over
-        var newSprite = new PlayerSprite(actualSpriteMode.TryGetValue(player.Sprite, out object? boxedMode) ? (PlayerSpriteMode) boxedMode : player.Sprite.Mode);
-        newSprite.CloneInto(player.Sprite);
     }
     [DisableRun]
     private static void Restore() {
-        if (Engine.Scene.GetPlayer() is not { } player || !gameplayToVisualSprites.TryGetValue(player.Sprite, out var visual)) {
+        if (Engine.Scene.GetPlayer() is { } player) {
+            RestorePlayer(player);
+        }
+    }
+
+    private static void ApplyPlayer(Player player) {
+        var newSprite = new PlayerSprite(actualSpriteMode.TryGetValue(player.Sprite, out object? boxedMode) ? (PlayerSpriteMode) boxedMode : player.Sprite.Mode);
+        newSprite.CurrentAnimationID = player.Sprite.CurrentAnimationID;
+        newSprite.CurrentAnimationFrame = player.Sprite.CurrentAnimationFrame;
+        newSprite.currentAnimation = newSprite.Animations.TryGetValue(newSprite.CurrentAnimationID, out var anim) ? anim : player.Sprite.currentAnimation;
+        newSprite.animationTimer = player.Sprite.animationTimer;
+
+        if (gameplayToVisualSprites.TryGetValue(newSprite, out var visualSprite)) {
+            gameplayToVisualSprites.Remove(newSprite);
+            gameplayToVisualSprites.Add(player.Sprite, visualSprite);
+
+            player.Sprite.CloneInto(visualSprite);
+        }
+
+        newSprite.CloneInto(player.Sprite);
+    }
+    private static void RestorePlayer(Player player) {
+        if (!gameplayToVisualSprites.TryGetValue(player.Sprite, out var visual)) {
             return;
         }
 
