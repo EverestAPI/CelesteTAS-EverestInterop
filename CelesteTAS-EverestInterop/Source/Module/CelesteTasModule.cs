@@ -49,8 +49,6 @@ public class CelesteTasModule : EverestModule {
 #endif
 
     public override void Load() {
-        AttributeUtils.Invoke<LoadAttribute>();
-
         // Enable verbose logging in debug builds
 #if DEBUG
         Logger.SetLogLevel(LogUtil.Tag, LogLevel.Verbose);
@@ -59,6 +57,8 @@ public class CelesteTasModule : EverestModule {
             Logger.SetLogLevel(LogUtil.Tag, LogLevel.Verbose);
         }
 #endif
+
+        AttributeUtils.Invoke<LoadAttribute>();
 
 #if DEBUG
         // Since assets are copied / sym-linked, changes aren't detected by Everest when they're changed
