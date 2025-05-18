@@ -186,19 +186,11 @@ public class InputController {
                                       {comment.FilePath} line {comment.FileLine}:
                                       Room label 'lvl_{match.Groups[1].ValueSpan}' does not match actual name 'lvl_{session.Level}'
                                       """);
-
-                    if (SyncChecker.Active) {
-                        Manager.DisableRunLater();
-                    }
                 } else {
                     Toast.ShowAndLog($"""
                                       {comment.FilePath} line {comment.FileLine}:
                                       Found room label '#{comment.Text}' outside of level
                                       """);
-
-                    if (SyncChecker.Active) {
-                        Manager.DisableRunLater();
-                    }
                 }
             }
         }
