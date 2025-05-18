@@ -173,7 +173,7 @@ public static class ReadCommand {
         var controller = Manager.Controller;
 
         // When reading a '#Start' label, assert that the correct level as actually loaded (relevant for fullgame runs)
-        if (args[1] == "Start") {
+        if (args.Length > 1 && args[1] == "Start") {
             foreach (string line in lines) {
                 if (CommandLine.TryParse(line, out var consoleCommandLine) &&
                     consoleCommandLine.IsCommand("console") &&
