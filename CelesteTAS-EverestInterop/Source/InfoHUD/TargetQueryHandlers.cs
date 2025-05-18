@@ -102,7 +102,7 @@ internal class SaveDataQueryHandler : TargetQuery.Handler {
                 saveData.VariantMode = (bool) value!;
                 saveData.AssistMode = false;
                 if (!saveData.VariantMode) {
-                    AssistsQueryHandler.ApplyAssists(Assists.Default);
+                    AssistsQueryHandler.ApplyAssists(null, Assists.Default);
                 }
                 break;
 
@@ -110,7 +110,7 @@ internal class SaveDataQueryHandler : TargetQuery.Handler {
                 saveData.AssistMode = (bool) value!;
                 saveData.VariantMode = false;
                 if (!saveData.AssistMode) {
-                    AssistsQueryHandler.ApplyAssists(Assists.Default);
+                    AssistsQueryHandler.ApplyAssists(null, Assists.Default);
                 }
                 break;
         }
@@ -152,8 +152,9 @@ internal class AssistsQueryHandler : TargetQuery.Handler {
     public override Result<bool, TargetQuery.MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
         switch (instance) {
             case SaveData saveData when memberArgs[memberIdx] == nameof(SaveData.Assists):
+                var oldAssists = saveData.Assists;
                 saveData.Assists = (Assists) value!;
-                ApplyAssists(saveData.Assists);
+                ApplyAssists(oldAssists, saveData.Assists);
                 return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
 
             case Assists when memberArgs[memberIdx] == nameof(Assists.Invincible) && Manager.Running && TasSettings.BetterInvincible:
@@ -178,26 +179,34 @@ internal class AssistsQueryHandler : TargetQuery.Handler {
         }
     }
 
-    public static void ApplyAssists(Assists assists) {
-        Engine.TimeRateB = assists.GameSpeed / 10.0f;
-        Celeste.Input.Feather.InvertedX = Celeste.Input.Aim.InvertedX = Celeste.Input.MoveX.Inverted = assists.MirrorMode;
+    public static void ApplyAssists(Assists? oldAssists, Assists newAssists) {
+        if (oldAssists?.MirrorMode != newAssists.MirrorMode) {
+            Engine.TimeRateB = newAssists.GameSpeed / 10.0f;
+        }
+        if (oldAssists?.MirrorMode != newAssists.MirrorMode) {
+            Celeste.Input.Feather.InvertedX = Celeste.Input.Aim.InvertedX = Celeste.Input.MoveX.Inverted = newAssists.MirrorMode;
+        }
 
         if (Engine.Scene.GetPlayer() is { } player) {
-            var mode = assists.PlayAsBadeline
-                ? PlayerSpriteMode.MadelineAsBadeline
-                : player.DefaultSpriteMode;
+            if (oldAssists?.PlayAsBadeline != newAssists.PlayAsBadeline) {
+                var mode = newAssists.PlayAsBadeline
+                    ? PlayerSpriteMode.MadelineAsBadeline
+                    : player.DefaultSpriteMode;
 
-            // player.Sprite is captured in IntroWakeUpCoroutine(),
-            // so resetting the sprite would cause the player to be stuck in StIntroWakeUp
-            if (player.StateMachine.State != Player.StIntroWakeUp) {
-                if (player.Active) {
-                    player.ResetSpriteNextFrame(mode);
-                } else {
-                    player.ResetSprite(mode);
+                // player.Sprite is captured in IntroWakeUpCoroutine(),
+                // so resetting the sprite would cause the player to be stuck in StIntroWakeUp
+                if (player.StateMachine.State != Player.StIntroWakeUp) {
+                    if (player.Active) {
+                        player.ResetSpriteNextFrame(mode);
+                    } else {
+                        player.ResetSprite(mode);
+                    }
                 }
             }
 
-            player.Dashes = Math.Min(player.Dashes, player.MaxDashes);
+            if (oldAssists?.DashMode != newAssists.DashMode) {
+                player.Dashes = Math.Min(player.Dashes, player.MaxDashes);
+            }
         }
     }
 }
