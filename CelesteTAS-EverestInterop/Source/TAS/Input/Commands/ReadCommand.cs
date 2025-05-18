@@ -286,8 +286,8 @@ public static class ReadCommand {
         }
 
         var labelRegex = new Regex(@$"^#\s*{Regex.Escape(labelOrLineNumber)}$");
-        for (lineNumber = 0; lineNumber < lines.Length; lineNumber++) {
-            if (labelRegex.IsMatch(lines[lineNumber].AsSpan().Trim())) {
+        for (lineNumber = 1; lineNumber <= lines.Length; lineNumber++) {
+            if (labelRegex.IsMatch(lines[lineNumber - 1].AsSpan().Trim())) {
                 return true;
             }
         }
