@@ -171,8 +171,11 @@ public class InputController {
                 CurrentFrameInTas = newCommand.Frame;
             }
         }
-        foreach (var comment in CurrentComments) {
-            // Validate room labels
+
+        // Validate that room labels are correct, to catch desyncs and ensure they're not accidentally messed up
+        // Check comments of previous frame, since during the first frame of a transition, the room name won't be updated yet
+        // However semantically, it is perfectly valid to do so, from a TAS perspective
+        foreach (var comment in Comments.GetValueOrDefault(CurrentFrameInTas - 1) ?? []) {
             if (CommentLine.RoomLabelRegex.Match($"#{comment.Text}") is { Success: true } match) {
                 if (Engine.Scene.GetSession() is { } session) {
                     if (match.Groups[1].ValueSpan.SequenceEqual(session.Level)) {
