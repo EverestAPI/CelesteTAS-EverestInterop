@@ -84,8 +84,9 @@ internal static class RestoreSettings {
         }
 
         if (origAssists != null) {
+            var oldAssists = SaveData.Instance.Assists;
             SaveData.Instance.Assists = origAssists.Value;
-            AssistsQueryHandler.ApplyAssists(origAssists.Value);
+            AssistsQueryHandler.ApplyAssists(oldAssists, SaveData.Instance.Assists);
             origAssists = null;
         }
 
@@ -128,8 +129,12 @@ internal static class RestoreSettings {
                         continue;
                     }
 
-                    if (origExtendedVariants.TryGetValue(variant, out var value)) {
-                        ExtendedVariantsInterop.SetVariantValue(new Lazy<object?>(variant), value);
+                    if (origExtendedVariants.TryGetValue(variant, out object? origValue)) {
+                        var lazyVariant = new Lazy<object?>(variant);
+                        object? currValue = ExtendedVariantsInterop.GetCurrentVariantValue(lazyVariant);
+                        if (currValue != origValue) {
+                            ExtendedVariantsInterop.SetVariantValue(lazyVariant, origValue);
+                        }
                     }
                 } catch (Exception ex) {
                     $"Failed to restore value for Extended Variant '{variant}'".Log(LogLevel.Warn);

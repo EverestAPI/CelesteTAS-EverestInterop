@@ -382,8 +382,8 @@ internal static class HookHelper {
             asmPath = asm.Location;
         }
 
-        var asmDef = AssemblyDefinition.ReadAssembly(asmPath, new ReaderParameters { ReadSymbols = false });
-        var typeDef = asmDef.MainModule.GetType(method.DeclaringType!.FullName, runtimeName: true).Resolve();
+        var asmDef = AssemblyDefinition.ReadAssembly(asmPath, new ReaderParameters { ReadSymbols = false })!;
+        var typeDef = asmDef.MainModule.GetType(method.DeclaringType!.FullName, runtimeName: true).Resolve()!;
         var methodDef = typeDef.Methods.Single(m => {
             if (method.Name != m.Name) {
                 return false;
@@ -398,13 +398,13 @@ internal static class HookHelper {
                 var runtimeParam = runtimeParams[i];
                 var asmParam = m.Parameters[i];
 
-                if (runtimeParam.ParameterType.FullName != asmParam.ParameterType.FullName) {
+                if (runtimeParam.ParameterType.ToString() != asmParam.ParameterType.FullName.Replace('<', '[').Replace('>', ']')) {
                     return false;
                 }
             }
 
             return true;
-        });
+        })!;
 
         return methodDef;
     }

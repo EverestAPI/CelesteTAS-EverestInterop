@@ -1,3 +1,4 @@
+using Celeste;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -143,17 +144,19 @@ public static class ReadCommand {
             return;
         }
 
+        string[] lines = File.ReadAllLines(path);
+
         // Find starting and ending lines
         int startLine = 0;
         int endLine = int.MaxValue;
         if (args.Length > 1) {
-            if (!TryGetLine(args[1], path, out startLine)) {
+            if (!TryGetLine(args[1], lines, out startLine)) {
                 AbortTas($"\"{commandName}\" failed\n{args[1]} is invalid", true);
                 return;
             }
 
             if (args.Length > 2) {
-                if (!TryGetLine(args[2], path, out endLine)) {
+                if (!TryGetLine(args[2], lines, out endLine)) {
                     AbortTas($"\"{commandName}\" failed\n{args[2]} is invalid", true);
                     return;
                 }
@@ -165,6 +168,22 @@ public static class ReadCommand {
             $"Multiple read commands lead to dead loops:\n{string.Join("\n", readCommandStack)}".Log(LogLevel.Warn);
             AbortTas("Multiple read commands lead to dead loops\nPlease check log.txt for more details");
             return;
+        }
+
+        var controller = Manager.Controller;
+
+        // When reading a '#Start' label, assert that the correct level as actually loaded (relevant for fullgame runs)
+        if (args.Length > 1 && args[1] == "Start") {
+            foreach (string line in lines) {
+                if (CommandLine.TryParse(line, out var consoleCommandLine) &&
+                    consoleCommandLine.IsCommand("console") &&
+                    consoleCommandLine.Arguments.Length >= 2 &&
+                    ConsoleCommand.LoadCommandRegex.Match(consoleCommandLine.Arguments[0]) is { Success: true } &&
+                    ConsoleCommand.TryGetAreaId(consoleCommandLine.Arguments[1], out int areaId)
+                ) {
+                    controller.ReadLine($"Assert,Equal,\"{AreaData.Areas[areaId].SID}\",{{Session.Area.SID}}", filePath, fileLine, studioLine);
+                }
+            }
         }
 
         // Restore settings changed by read file after we continue with the current one
@@ -261,22 +280,19 @@ public static class ReadCommand {
         return null;
     }
 
-    public static bool TryGetLine(string labelOrLineNumber, string path, out int lineNumber) {
-        if (!int.TryParse(labelOrLineNumber, out lineNumber)) {
-            int curLine = 0;
-            Regex labelRegex = new(@$"^\s*#\s*{Regex.Escape(labelOrLineNumber)}\s*$");
-            foreach (string readLine in File.ReadLines(path)) {
-                curLine++;
-                string line = readLine.Trim();
-                if (labelRegex.IsMatch(line)) {
-                    lineNumber = curLine;
-                    return true;
-                }
-            }
-
-            return false;
+    internal static bool TryGetLine(string labelOrLineNumber, string[] lines, out int lineNumber) {
+        if (int.TryParse(labelOrLineNumber, out lineNumber)) {
+            return true;
         }
 
-        return true;
+        var labelRegex = new Regex(@$"^#\s*{Regex.Escape(labelOrLineNumber)}$");
+        for (lineNumber = 1; lineNumber <= lines.Length; lineNumber++) {
+            if (labelRegex.IsMatch(lines[lineNumber - 1].AsSpan().Trim())) {
+                return true;
+            }
+        }
+
+        return false;
+
     }
 }

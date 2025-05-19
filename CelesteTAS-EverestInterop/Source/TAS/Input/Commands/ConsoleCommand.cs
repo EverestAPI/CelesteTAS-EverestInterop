@@ -369,7 +369,7 @@ public static class ConsoleCommand {
         }
     }
 
-    private static bool TryGetAreaId(string id, out int areaId) {
+    internal static bool TryGetAreaId(string id, out int areaId) {
         if (int.TryParse(id, out areaId)) {
             return areaId >= 0 && areaId < AreaData.Areas.Count;
         } else {

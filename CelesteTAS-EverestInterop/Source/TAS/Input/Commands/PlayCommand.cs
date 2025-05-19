@@ -40,7 +40,8 @@ public static class PlayCommand {
     [TasCommand("Play", ExecuteTiming = ExecuteTiming.Parse, MetaDataProvider = typeof(PlayMeta))]
     private static void Play(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         string[] args = commandLine.Arguments;
-        if (!ReadCommand.TryGetLine(args[0], Manager.Controller.FilePath, out int startLine)) {
+        string[] lines = File.ReadAllLines(Manager.Controller.FilePath);
+        if (!ReadCommand.TryGetLine(args[0], lines, out int startLine)) {
             AbortTas($"\"Play, {string.Join(", ", args)}\" failed\n{args[0]} is invalid", true);
             return;
         }

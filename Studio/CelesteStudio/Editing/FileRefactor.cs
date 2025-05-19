@@ -29,8 +29,6 @@ public static class FileRefactor {
 
     #region Style Fixing
 
-    private static readonly Regex RoomLabelRegex = new(@"^#lvl_([^\(\)]*)(?:\s\((\d+)\))?$", RegexOptions.Compiled);
-
     /// Applies correct room label indices to the file, according to the style-configuration
     public static void FixRoomLabelIndices(string filePath, StyleConfig config, int? caretRow = null) {
         FixRoomLabelIndices(filePath, config.RoomLabelIndexing ?? Settings.Instance.AutoIndexRoomLabels, Math.Max(config.RoomLabelStartingIndex ?? 0, 0), caretRow);
@@ -83,7 +81,7 @@ public static class FileRefactor {
         LockFile(filePath);
 
         foreach ((string line, int row, string path, _) in IterateLines(filePath, followReadCommands: roomIndexing == AutoRoomIndexing.IncludeReads)) {
-            if (RoomLabelRegex.Match(line) is not { Success: true } match) {
+            if (CommentLine.RoomLabelRegex.Match(line) is not { Success: true } match) {
                 continue;
             }
 

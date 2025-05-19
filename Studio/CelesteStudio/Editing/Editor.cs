@@ -512,7 +512,7 @@ public sealed class Editor : SkiaDrawable {
         MenuItem CreateCommandInsert(CommandInfo info) {
             var cmd = new Command { Shortcut = Keys.None };
             cmd.Executed += (_, _) => {
-                InsertQuickEdit(info.Insert);
+                InsertQuickEdit(info.Insert.Replace(CommandInfo.Separator, Settings.Instance.CommandSeparatorText));
                 Recalc();
                 ScrollCaretIntoView();
             };

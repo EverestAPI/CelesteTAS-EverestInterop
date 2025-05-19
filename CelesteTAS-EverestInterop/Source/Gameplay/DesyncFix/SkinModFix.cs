@@ -3,11 +3,11 @@ using Celeste.Mod;
 using Celeste.Mod.Core;
 using Microsoft.Xna.Framework;
 using Monocle;
+using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Xml;
@@ -19,16 +19,13 @@ namespace TAS.Gameplay.DesyncFix;
 /// Fixes desyncs caused by SkinMods changing animation lengths / carry offsets,
 /// by splitting the PlayerSprite into a visual and gameplay component
 internal static class SkinModFix {
-    private static SpriteBank vanillaSpriteBank = null!;
-    private static XmlDocument vanillaSpriteBankXml = null!;
-
     /// The `object` must be a boxed PlayerSpriteMode
     private static readonly ConditionalWeakTable<PlayerSprite, object> actualSpriteMode = new();
     private static readonly ConditionalWeakTable<PlayerSprite, PlayerSprite> gameplayToVisualSprites = new();
-    private static readonly Dictionary<string, PlayerAnimMetadata> vanillaFrameMetadata = new();
 
     private static readonly Dictionary<string, EverestModuleMetadata> moddedMaps = new();
     private static readonly Dictionary<EverestModuleMetadata, SpriteBank> moddedSpriteBanks = new();
+    private static readonly Dictionary<EverestModuleMetadata, Dictionary<string, PlayerAnimMetadata>> moddedFrameMetadata = new();
 
     [Load]
     private static void Load() {
@@ -40,6 +37,8 @@ internal static class SkinModFix {
 
         On.Monocle.Sprite.Update += On_Sprite_Update;
         On.Celeste.PlayerSprite.Render += On_PlayerSprite_Render;
+
+        IL.Celeste.PlayerSprite.CreateFramesMetadata += IL_PlayerSprite_CreateFramesMetadata;
 
         On.Monocle.Sprite.Play += On_Sprite_Play;
         On.Monocle.Sprite.PlayOffset += On_Sprite_PlayOffset;
@@ -58,7 +57,6 @@ internal static class SkinModFix {
             .GetGetMethod(nameof(PlayerSprite.CarryYOffset))!
             .OnHook(On_PlayerSprite_getCarryYOffset);
     }
-
     [Unload]
     private static void Unload() {
         On.Celeste.Player.Update -= On_Player_Update;
@@ -68,25 +66,11 @@ internal static class SkinModFix {
         On.Monocle.Sprite.Update -= On_Sprite_Update;
         On.Celeste.PlayerSprite.Render -= On_PlayerSprite_Render;
 
+        IL.Celeste.PlayerSprite.CreateFramesMetadata -= IL_PlayerSprite_CreateFramesMetadata;
+
         On.Monocle.Sprite.Play -= On_Sprite_Play;
         On.Monocle.Sprite.PlayOffset -= On_Sprite_PlayOffset;
         On.Monocle.Sprite.Reverse -= On_Sprite_Reverse;
-    }
-
-    [LoadContent]
-    private static void LoadContent() {
-        string spritesPath = Path.Combine("Graphics", "Sprites.xml");
-        vanillaSpriteBankXml = Calc.orig_LoadContentXML(spritesPath);
-        vanillaSpriteBank = new SpriteBank(GFX.Game, vanillaSpriteBankXml) {
-            XMLPath = spritesPath
-        };
-
-        vanillaFrameMetadata.Clear();
-        CreateVanillaFramesMetadata("player");
-        CreateVanillaFramesMetadata("player_no_backpack");
-        CreateVanillaFramesMetadata("badeline");
-        CreateVanillaFramesMetadata("player_badeline");
-        CreateVanillaFramesMetadata("player_playback");
     }
 
     private static bool CheckMapRequiresSkin() {
@@ -173,50 +157,15 @@ internal static class SkinModFix {
         return new SpriteBank(GFX.Game, spriteBankXml) { XMLPath = spritesXmlFilePath };
     }
 
-    /// Adjusted from PlayerSprite.CreateFramesMetadata
-    private static void CreateVanillaFramesMetadata(string sprite) {
-        foreach (var source in vanillaSpriteBank.SpriteData[sprite].Sources) {
-            var xml = source.XML["Metadata"];
-            if (xml == null) {
-                continue;
-            }
+    private static Dictionary<string, PlayerAnimMetadata>? targetFramesMetadata = null;
 
-            string path = source.Path;
-            if (!string.IsNullOrEmpty(source.OverridePath)) {
-                path = source.OverridePath;
-            }
+    /// Modify vanilla method to target our dictionary instead
+    /// The method cannot just be copy-pasted, since there are hooks on it, which need to be triggered
+    private static void IL_PlayerSprite_CreateFramesMetadata(ILContext il) {
+        var cursor = new ILCursor(il);
 
-            foreach (XmlElement e in xml.GetElementsByTagName("Frames")) {
-                string animation = path + e.Attr("path", "");
-                string[] hair = e.Attr("hair").Split('|');
-                string[] carry = e.Attr("carry", "").Split(',');
-
-                for (int i = 0; i < Math.Max(hair.Length, carry.Length); i++) {
-                    var metadata = new PlayerAnimMetadata();
-                    string key = animation + (i < 10 ? "0" : "") + i;
-                    if (i == 0 && !GFX.Game.Has(key)) {
-                        key = animation;
-                    }
-
-                    vanillaFrameMetadata[key] = metadata;
-                    if (i < hair.Length) {
-                        if (hair[i].Equals("x", StringComparison.OrdinalIgnoreCase) || hair[i].Length <= 0) {
-                            metadata.HasHair = false;
-                        } else {
-                            string[] parts = hair[i].Split(':');
-                            string[] sides = parts[0].Split(',');
-                            metadata.HasHair = true;
-                            metadata.HairOffset = new Vector2(Convert.ToInt32(sides[0]), Convert.ToInt32(sides[1]));
-                            metadata.Frame = parts.Length >= 2 ? Convert.ToInt32(parts[1]) : 0;
-                        }
-                    }
-                    if (i < carry.Length && carry[i].Length > 0)
-                    {
-                        metadata.CarryYOffset = int.Parse(carry[i]);
-                    }
-                }
-            }
-        }
+        cursor.GotoNext(MoveType.After, instr => instr.MatchLdsfld<PlayerSprite>(nameof(PlayerSprite.FrameMetadata)));
+        cursor.EmitStaticDelegate("AdjustTargetDictionary", Dictionary<string, PlayerAnimMetadata> (Dictionary<string, PlayerAnimMetadata> orig) => targetFramesMetadata ?? orig);
     }
 
     private static void On_Player_Update(On.Celeste.Player.orig_Update orig, Player self) {
@@ -225,45 +174,58 @@ internal static class SkinModFix {
             bool isActive = gameplayToVisualSprites.TryGetValue(self.Sprite, out var visual);
 
             if (shouldBeActive && !isActive) {
-                // Apply
-                var newSprite = new PlayerSprite(actualSpriteMode.TryGetValue(self.Sprite, out object? boxedMode) ? (PlayerSpriteMode) boxedMode : self.Sprite.Mode);
-                newSprite.CloneInto(self.Sprite);
+                ApplyPlayer(self);
             } else if (!shouldBeActive && isActive) {
-                // Restore
-                gameplayToVisualSprites.Remove(self.Sprite);
-                visual!.CloneInto(self.Sprite);
+                RestorePlayer(self);
             }
         }
 
         orig(self);
     }
 
+    private static EverestModuleMetadata GetActiveMod() {
+        // Use Everest's module to represent vanilla, since null isn't allowed as a key
+        var vanillaModule = CoreModule.Instance.Metadata;
+
+        if (Engine.Scene.GetSession() is not { } session) {
+            return vanillaModule;
+        }
+
+        // SID -> Mod
+        if (!moddedMaps.TryGetValue(session.Area.SID, out var mod)) {
+            var area = session.MapData.Area;
+            if (Everest.Content.TryGet($"Maps/{AreaData.Get(area).Mode[(int)area.Mode].Path}", out var mapAsset)) {
+                moddedMaps[session.Area.SID] = mod = mapAsset.Source.Mod;
+            } else {
+                moddedMaps[session.Area.SID] = mod = vanillaModule;
+            }
+        }
+
+        return mod;
+    }
+
     private static bool skipPlayerSpriteHook = false;
     private static void On_PlayerSprite_ctor(On.Celeste.PlayerSprite.orig_ctor orig, PlayerSprite self, PlayerSpriteMode mode) {
         // Separate gameplay and visual sprite
         if (Manager.Running && !CheckMapRequiresSkin() && !skipPlayerSpriteHook) {
-            if (Engine.Scene.GetSession() is not { } session) {
-                orig(self, mode);
-                return;
-            }
-
-            // SID -> Mod
-            if (!moddedMaps.TryGetValue(session.Area.SID, out var mod)) {
-                var area = session.MapData.Area;
-                if (Everest.Content.TryGet($"Maps/{AreaData.Get(area).Mode[(int)area.Mode].Path}", out var mapAsset)) {
-                    moddedMaps[session.Area.SID] = mod = mapAsset.Source.Mod;
-                } else {
-                    // Use Everest's module to represent vanilla, since null isn't allowed as a key
-                    moddedMaps[session.Area.SID] = mod = CoreModule.Instance.Metadata;
-                }
-            }
-            // Mod -> SpriteBank
+            var mod = GetActiveMod();
             if (!moddedSpriteBanks.TryGetValue(mod, out var spriteBank)) {
                 moddedSpriteBanks[mod] = spriteBank = CreateSpriteBankForMod(mod);
             }
 
             var origSpriteBank = GFX.SpriteBank;
             GFX.SpriteBank = spriteBank;
+
+            if (!moddedFrameMetadata.ContainsKey(mod)) {
+                moddedFrameMetadata[mod] = targetFramesMetadata = new Dictionary<string, PlayerAnimMetadata>();
+                PlayerSprite.CreateFramesMetadata("player");
+                PlayerSprite.CreateFramesMetadata("player_no_backpack");
+                PlayerSprite.CreateFramesMetadata("badeline");
+                PlayerSprite.CreateFramesMetadata("player_badeline");
+                PlayerSprite.CreateFramesMetadata("player_playback");
+                targetFramesMetadata = null;
+            }
+
             orig(self, mode);
 
             // Force-overwrite vanilla sprites
@@ -380,7 +342,7 @@ internal static class SkinModFix {
     }
     private static float On_PlayerSprite_getCarryYOffset(Func<PlayerSprite, float> orig, PlayerSprite self) {
         if (gameplayToVisualSprites.TryGetValue(self, out _)) {
-            if (self.Texture != null && vanillaFrameMetadata.TryGetValue(self.Texture.AtlasPath, out var metadata)) {
+            if (self.Texture != null && moddedFrameMetadata.TryGetValue(GetActiveMod(), out var frameMetadata) && frameMetadata.TryGetValue(self.Texture.AtlasPath, out var metadata)) {
                 return metadata.CarryYOffset * self.Scale.Y;
             }
 
@@ -392,17 +354,35 @@ internal static class SkinModFix {
 
     [EnableRun]
     private static void Apply() {
-        if (Engine.Scene.GetPlayer() is not { } player) {
-            return;
+        if (Engine.Scene.GetPlayer() is { } player) {
+            ApplyPlayer(player);
         }
-
-        // Create new PlayerSprite (which triggers the above hook) and copy it over
-        var newSprite = new PlayerSprite(actualSpriteMode.TryGetValue(player.Sprite, out object? boxedMode) ? (PlayerSpriteMode) boxedMode : player.Sprite.Mode);
-        newSprite.CloneInto(player.Sprite);
     }
     [DisableRun]
     private static void Restore() {
-        if (Engine.Scene.GetPlayer() is not { } player || !gameplayToVisualSprites.TryGetValue(player.Sprite, out var visual)) {
+        if (Engine.Scene.GetPlayer() is { } player) {
+            RestorePlayer(player);
+        }
+    }
+
+    private static void ApplyPlayer(Player player) {
+        var newSprite = new PlayerSprite(actualSpriteMode.TryGetValue(player.Sprite, out object? boxedMode) ? (PlayerSpriteMode) boxedMode : player.Sprite.Mode);
+        newSprite.CurrentAnimationID = player.Sprite.CurrentAnimationID;
+        newSprite.CurrentAnimationFrame = player.Sprite.CurrentAnimationFrame;
+        newSprite.currentAnimation = newSprite.Animations.TryGetValue(newSprite.CurrentAnimationID, out var anim) ? anim : player.Sprite.currentAnimation;
+        newSprite.animationTimer = player.Sprite.animationTimer;
+
+        if (gameplayToVisualSprites.TryGetValue(newSprite, out var visualSprite)) {
+            gameplayToVisualSprites.Remove(newSprite);
+            gameplayToVisualSprites.Add(player.Sprite, visualSprite);
+
+            player.Sprite.CloneInto(visualSprite);
+        }
+
+        newSprite.CloneInto(player.Sprite);
+    }
+    private static void RestorePlayer(Player player) {
+        if (!gameplayToVisualSprites.TryGetValue(player.Sprite, out var visual)) {
             return;
         }
 
