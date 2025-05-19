@@ -90,9 +90,6 @@ public static class BindingHelper {
         }
 
         CoreModule.Instance.OnInputDeregister();
-        if (SpeedrunToolInterop.Installed) {
-            SpeedrunToolInterop.InputDeregister();
-        }
 
         Settings.Instance.CopyAllFields(settingsBackup);
         MInput.Active = true;
