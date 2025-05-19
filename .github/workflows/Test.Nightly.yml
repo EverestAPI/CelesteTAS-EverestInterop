@@ -1,0 +1,23 @@
+name: Nightly Sync-Check
+
+on:
+  schedule:
+    - cron:  '0 0 * * *' # Every midnight
+  push:
+    branches:
+      - '*'
+    paths:
+      - '.github/workflows/Test.**'
+  workflow_dispatch:
+
+jobs:
+  build-sync-checker:
+    name: Build SyncChecker
+    uses: ./.github/workflows/Build.SyncChecker.yml
+    with:
+      build-cfg: Debug
+
+  run-sync-check:
+    name: Run Sync-Check
+    uses: ./.github/workflows/Test.All.yml
+    needs: build-sync-checker

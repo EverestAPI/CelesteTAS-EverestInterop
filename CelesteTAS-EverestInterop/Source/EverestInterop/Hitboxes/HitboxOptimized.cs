@@ -94,8 +94,7 @@ public static class HitboxOptimized {
             Rectangle bounds = new((int) camera.Left - width / 2, (int) camera.Top - height / 2, width * 2, height * 2);
             if (self.Right < bounds.Left || self.Left > bounds.Right || self.Top > bounds.Bottom ||
                 self.Bottom < bounds.Top) {
-                // TODO: Temporarily disabled, until FrostHelper fixes arbitrary shape colliders on its end
-                // return;
+                return;
             }
         }
 

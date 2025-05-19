@@ -1,4 +1,4 @@
-name: Build CelesteTAS + Studio
+name: Build
 
 on:
   workflow_call:
@@ -9,8 +9,11 @@ on:
       - 'CelesteTAS-EverestInterop/**'
       - 'Studio/**'
       - 'StudioCommunication/**'
+      - 'SyncChecker/**'
       - .github/workflows/Build.yml
       - .github/workflows/Build.CelesteStudio.yml
+      - .github/workflows/Build.SyncChecker.yml
+      - .github/workflows/Test.SyncCheck.yml
   pull_request:
     branches:
       - '*'
@@ -18,13 +21,36 @@ on:
       - 'CelesteTAS-EverestInterop/**'
       - 'Studio/**'
       - 'StudioCommunication/**'
+      - 'SyncChecker/**'
       - .github/workflows/Build.yml
       - .github/workflows/Build.CelesteStudio.yml
+      - .github/workflows/Build.SyncChecker.yml
+      - .github/workflows/Test.SyncCheck.yml
 
 jobs:
+  sync-check-vanilla:
+    name: Vanilla
+    uses: ./.github/workflows/Test.SyncCheck.yml
+    needs: build-sync-checker
+    with:
+      id: vanilla
+      name: Vanilla
+      build-cfg: Debug
+      tas-repository: VampireFlower/CelesteTAS
+      tas-revision: eb4550a253be97fd4942a5e609fe2a60e980f7ca
+      tas-files: |
+        0 - Any%.tas
+        0 - 100%.tas
+
   build-studio:
     name: Build Celeste Studio
     uses: ./.github/workflows/Build.CelesteStudio.yml
+    with:
+      build-cfg: Debug
+
+  build-sync-checker:
+    name: Build SyncChecker
+    uses: ./.github/workflows/Build.SyncChecker.yml
     with:
       build-cfg: Debug
 

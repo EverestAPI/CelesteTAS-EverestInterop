@@ -102,7 +102,7 @@ public static class ActualCollideHitbox {
             });
         }
         if (ModUtils.GetType("Glyph", "Celeste.Mod.AcidHelper.Entities.AcidLightning") is { } acidLightningType) {
-            // Subclass of Lightning, but has it's own "toggleOffset" and "disappearing"
+            // Subclass of Lightning, but has its own "disappearing" field
             var disappearingField = acidLightningType.GetFieldInfo("disappearing")!;
             CollidableHandlers.Add(acidLightningType, e => {
                 if (!e.Collidable) {

@@ -7,6 +7,7 @@ using Monocle;
 using StudioCommunication;
 using TAS.Communication;
 using TAS.Module;
+using TAS.Tools;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -170,6 +171,11 @@ internal static class MetadataCommands {
 
                 if (command.Args.Length > 0 && command.Args[0] == metadata) {
                     return false;
+                }
+
+                // Sync-check reporting
+                if (command.Is("FileTime") || command.Is("ChapterTime") || command.Is("MidwayFileTime") || command.Is("MidwayChapterTime")) {
+                    SyncChecker.ReportWrongTime(command.FilePath, command.FileLine, command.Args.Length > 0 ? command.Args[0] : string.Empty, metadata);
                 }
 
                 return true;

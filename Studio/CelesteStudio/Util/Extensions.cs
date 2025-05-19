@@ -70,9 +70,6 @@ public static class Extensions
         return -1;
     }
 
-    public static SKColorF ToSkia(this Color color) => new(color.R, color.G, color.B, color.A);
-    public static Color ToEto(this SKColorF color) => new(color.Red, color.Green, color.Blue, color.Alpha);
-
     private static readonly MethodInfo? m_FixScrollable = Assembly.GetEntryAssembly()?.GetType("CelesteStudio.WPF.Program")?.GetMethod("FixScrollable", BindingFlags.Public | BindingFlags.Static);
     public static Scrollable FixBorder(this Scrollable scrollable) {
         if (!Eto.Platform.Instance.IsWpf) {
@@ -83,5 +80,32 @@ public static class Extensions
         m_FixScrollable!.Invoke(null, [scrollable]);
         Settings.ThemeChanged += () => m_FixScrollable.Invoke(null, [scrollable]);
         return scrollable;
+    }
+}
+
+public static class SkiaSharpExtensions {
+    public static SKColorF ToSkia(this Color color) => new(color.R, color.G, color.B, color.A);
+    public static SKColor ToSkiaPacked(this Color color) => new((byte) (color.R * byte.MaxValue), (byte) (color.G * byte.MaxValue), (byte) (color.B * byte.MaxValue), (byte) (color.A * byte.MaxValue));
+    public static Color ToEto(this SKColorF color) => new(color.Red, color.Green, color.Blue, color.Alpha);
+
+    /// Overload to draw text from a ReadOnlySpan
+    public static unsafe void DrawText(this SKCanvas canvas, ReadOnlySpan<char> text, float x, float y, SKFont font, SKPaint paint) {
+        if (text.Length == 0) {
+            return;
+        }
+
+        fixed (char* pText = &text.GetPinnableReference()) {
+            // TODO: Avoid allocating a SKTextBlob object
+            using var blob = SKTextBlob.Create((IntPtr) pText, text.Length * sizeof(char), SKTextEncoding.Utf16, font); // C# strings are UTF16
+
+            if (blob != null) {
+                canvas.DrawText(blob, x, y, paint);
+            }
+        }
+    }
+
+    /// Create a new font with the font size changed
+    public static SKFont WithSize(this SKFont font, float size) {
+        return new SKFont(font.Typeface, size, font.ScaleX, font.SkewX);
     }
 }

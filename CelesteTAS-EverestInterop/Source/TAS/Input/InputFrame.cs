@@ -23,8 +23,11 @@ public record InputFrame {
     public readonly Vector2Short MoveOnlyStickPositionShort;
 
     // Metadata
+    public readonly string FilePath;
+    public readonly int FileLine;
+
     public int Frames;
-    public int Line;
+    public int StudioLine;
     public int FrameOffset;
 
     public int RepeatCount;
@@ -40,12 +43,15 @@ public record InputFrame {
     private readonly string actionLineString;
     private readonly int checksum;
 
-    private InputFrame(ActionLine actionLine, int studioLine, int repeatIndex, int repeatCount, int frameOffset, Command? parentCommand) {
+    private InputFrame(ActionLine actionLine, string filePath, int fileLine, int studioLine, int repeatIndex, int repeatCount, int frameOffset, Command? parentCommand) {
         Actions = actionLine.Actions;
         Frames = actionLine.FrameCount;
         PressedKeys = actionLine.CustomBindings.Select(c => (Keys)c).ToHashSet();
 
-        Line = studioLine;
+        FilePath = filePath;
+        FileLine = fileLine;
+
+        StudioLine = studioLine;
         FrameOffset = frameOffset;
 
         RepeatIndex = repeatIndex;
@@ -91,17 +97,18 @@ public record InputFrame {
         MoveOnlyStickPositionShort = new Vector2Short((short) (MoveOnlyStickPosition.X * 32767), (short) (MoveOnlyStickPosition.Y * 32767));
     }
 
-    public static bool TryParse(string line, int studioLine, InputFrame? prevInputFrame, [NotNullWhen(true)] out InputFrame? inputFrame, int repeatIndex = 0, int repeatCount = 0, int frameOffset = 0, Command? parentCommand = null) {
+    public static bool TryParse(string lineText, string filePath, int fileLine, int studioLine, InputFrame? prevInputFrame, [NotNullWhen(true)] out InputFrame? inputFrame, int repeatIndex = 0, int repeatCount = 0, int frameOffset = 0, Command? parentCommand = null) {
         inputFrame = null;
-        if (!ActionLine.TryParse(line, out var actionLine)) {
+        if (!ActionLine.TryParse(lineText, out var actionLine)) {
             return false;
         }
 
-        inputFrame = new InputFrame(actionLine, studioLine, repeatIndex, repeatCount, frameOffset, parentCommand);
+        inputFrame = new InputFrame(actionLine, filePath, fileLine, studioLine, repeatIndex, repeatCount, frameOffset, parentCommand);
 
         inputFrame.Previous = prevInputFrame;
-        if (prevInputFrame != null)
+        if (prevInputFrame != null) {
             prevInputFrame.Next = inputFrame;
+        }
 
         return true;
     }

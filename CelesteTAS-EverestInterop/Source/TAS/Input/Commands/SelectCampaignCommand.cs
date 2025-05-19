@@ -60,7 +60,7 @@ internal static class SelectCampaignCommand {
                 maxSaveFile += 2;
             }
 
-            return maxSaveFile;
+            return Math.Max(3, maxSaveFile);
         }
     }
 
@@ -140,53 +140,53 @@ internal static class SelectCampaignCommand {
         controller.ReadLine("Unsafe", filePath, fileLine, studioLine);
         controller.ReadLine("console titlescreen", filePath, fileLine, studioLine);
 
-        controller.AddFrames("2", studioLine);
+        controller.AddFrames("2", filePath, fileLine, studioLine);
         LibTasHelper.AddInputFrame("1,O");
         LibTasHelper.AddInputFrame("89");
-        controller.AddFrames("1,O", studioLine);
-        controller.AddFrames("94", studioLine);
-        controller.AddFrames("1,O", studioLine);
+        controller.AddFrames("1,O", filePath, fileLine, studioLine);
+        controller.AddFrames("94", filePath, fileLine, studioLine);
+        controller.AddFrames("1,O", filePath, fileLine, studioLine);
 
         int slot = EmptyFileSlot;
         if (slot == -1) {
-            controller.AddFrames("62", studioLine);
+            controller.AddFrames("62", filePath, fileLine, studioLine);
         } else {
-            controller.AddFrames("56", studioLine);
+            controller.AddFrames("56", filePath, fileLine, studioLine);
             for (int i = 0; i < slot; i++) {
-                controller.AddFrames(i % 2 == 0 ? "1,D" : "1,F,180", studioLine);
+                controller.AddFrames(i % 2 == 0 ? "1,D" : "1,F,180", filePath, fileLine, studioLine);
             }
-            controller.AddFrames("1,O", studioLine);
-            controller.AddFrames("15", studioLine);
+            controller.AddFrames("1,O", filePath, fileLine, studioLine);
+            controller.AddFrames("15", filePath, fileLine, studioLine);
         }
 
         // Runtime-assert for additional safety
         controller.ReadLine("Assert,Equal,True,[[local ui = scene.Current; return ui ~= nil and ui.SlotSelected and not ui.Slots[ui.SlotIndex].Exists and getValue(ui.Slots[ui.SlotIndex], \"buttonIndex\") == 0]]", filePath, fileLine, studioLine);
 
-        controller.AddFrames("1,D", studioLine);
-        InputName(controller, slot, saveFileName, studioLine);
+        controller.AddFrames("1,D", filePath, fileLine, studioLine);
+        InputName(controller, slot, saveFileName, filePath, fileLine, studioLine);
 
-        ChangeSelectedCampaign(controller, campaignName, studioLine);
+        ChangeSelectedCampaign(controller, campaignName, filePath, fileLine, studioLine);
 
         // Runtime-assert for even more additional safety
         controller.ReadLine("Assert,Equal,True,[[local ui = scene.Current; return ui ~= nil and ui.SlotSelected and not ui.Slots[ui.SlotIndex].Exists and getValue(ui.Slots[ui.SlotIndex], \"buttonIndex\") == 0]]", filePath, fileLine, studioLine);
     }
 
-    private static void InputName(InputController controller, int slot, string saveFileName, int studioLine) {
+    private static void InputName(InputController controller, int slot, string saveFileName, string filePath, int fileLine, int studioLine) {
         if (Settings.Instance.Language == "japanese") {
             AbortTas("Japanese language is currently not supported for inputting a file name");
             return;
         }
 
-        controller.AddFrames("1,O", studioLine);
+        controller.AddFrames("1,O", filePath, fileLine, studioLine);
 
         int maxSaveFile = MaxSaveFileSlots;
         for (int i = 0; i < maxSaveFile; i++) {
-            if (Math.Abs(slot - i) <= 2) {
+            if (Math.Abs(Math.Max(0, slot) - i) <= 2) {
                 // Each visible slots causes a delay of 3f
-                controller.AddFrames("3", studioLine);
+                controller.AddFrames("3", filePath, fileLine, studioLine);
             }
         }
-        controller.AddFrames("32", studioLine);
+        controller.AddFrames("32", filePath, fileLine, studioLine);
 
         // Prepare available letters
         string[] letters = Dialog.Clean("name_letters")
@@ -336,27 +336,27 @@ internal static class SelectCampaignCommand {
             // Write inputs
             foreach ((int moveX, int moveY) in path) {
                 if (moveX > 0) {
-                    controller.AddFrames(controller.Inputs.Count % 2 == 0 ? "1,R" : "1,F,90", studioLine);
+                    controller.AddFrames(controller.Inputs.Count % 2 == 0 ? "1,R" : "1,F,90", filePath, fileLine, studioLine);
                 } else if (moveX < 0) {
-                    controller.AddFrames(controller.Inputs.Count % 2 == 0 ? "1,L" : "1,F,270", studioLine);
+                    controller.AddFrames(controller.Inputs.Count % 2 == 0 ? "1,L" : "1,F,270", filePath, fileLine, studioLine);
                 }
 
                 if (moveY > 0) {
-                    controller.AddFrames(controller.Inputs.Count % 2 == 0 ? "1,D" : "1,F,180", studioLine);
+                    controller.AddFrames(controller.Inputs.Count % 2 == 0 ? "1,D" : "1,F,180", filePath, fileLine, studioLine);
                 } else if (moveY < 0) {
-                    controller.AddFrames(controller.Inputs.Count % 2 == 0 ? "1,U" : "1,F,0", studioLine);
+                    controller.AddFrames(controller.Inputs.Count % 2 == 0 ? "1,U" : "1,F,0", filePath, fileLine, studioLine);
                 }
             }
 
-            controller.AddFrames(controller.Inputs[^1].Actions.Has(Actions.Confirm) ? "1,J" : "1,O", studioLine);
+            controller.AddFrames(controller.Inputs[^1].Actions.Has(Actions.Confirm) ? "1,J" : "1,O", filePath, fileLine, studioLine);
         }
 
         // Pressing pause finishes editing
-        controller.AddFrames("1,S", studioLine);
-        controller.AddFrames("48", studioLine);
+        controller.AddFrames("1,S", filePath, fileLine, studioLine);
+        controller.AddFrames("48", filePath, fileLine, studioLine);
     }
 
-    private static void ChangeSelectedCampaign(InputController controller, string campaignName, int studioLine) {
+    private static void ChangeSelectedCampaign(InputController controller, string campaignName, string filePath, int fileLine, int studioLine) {
         string startingLevelSet = "Celeste";
         if (AreaData.Areas.Any(area => area.LevelSet == CoreModule.Settings.DefaultStartingLevelSet)) {
             startingLevelSet = CoreModule.Settings.DefaultStartingLevelSet;
@@ -407,33 +407,33 @@ internal static class SelectCampaignCommand {
 
         if (movesLeft == 0 && movesRight == 0) {
             // No need to change campaign. Return back to "Begin"
-            controller.AddFrames("1,U", studioLine);
+            controller.AddFrames("1,U", filePath, fileLine, studioLine);
             return;
         }
 
         // "Rename" is currently selected
-        controller.AddFrames("1,D", studioLine);
-        controller.AddFrames("1,F,180", studioLine);
+        controller.AddFrames("1,D", filePath, fileLine, studioLine);
+        controller.AddFrames("1,F,180", filePath, fileLine, studioLine);
         if (Settings.Instance.VariantsUnlocked) {
-            controller.AddFrames("1,D", studioLine);
+            controller.AddFrames("1,D", filePath, fileLine, studioLine);
         }
 
         if (movesRight <= movesLeft) {
             for (int i = 0; i < movesRight; i++) {
-                controller.AddFrames(i % 2 == 0 ? "1,R" : "1,F,90", studioLine);
+                controller.AddFrames(i % 2 == 0 ? "1,R" : "1,F,90", filePath, fileLine, studioLine);
             }
         } else {
             for (int i = 0; i < movesLeft; i++) {
-                controller.AddFrames(i % 2 == 0 ? "1,L" : "1,F,270", studioLine);
+                controller.AddFrames(i % 2 == 0 ? "1,L" : "1,F,270", filePath, fileLine, studioLine);
             }
         }
 
         // Return back to "Begin"
-        controller.AddFrames("1,U", studioLine);
-        controller.AddFrames("1,F,0", studioLine);
-        controller.AddFrames("1,U", studioLine);
+        controller.AddFrames("1,U", filePath, fileLine, studioLine);
+        controller.AddFrames("1,F,0", filePath, fileLine, studioLine);
+        controller.AddFrames("1,U", filePath, fileLine, studioLine);
         if (Settings.Instance.VariantsUnlocked) {
-            controller.AddFrames("1,F,0", studioLine);
+            controller.AddFrames("1,F,0", filePath, fileLine, studioLine);
         }
     }
 }

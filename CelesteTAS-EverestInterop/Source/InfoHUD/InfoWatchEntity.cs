@@ -7,6 +7,7 @@ using JetBrains.Annotations;
 using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication;
+using StudioCommunication.Util;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;

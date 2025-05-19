@@ -1,427 +1,602 @@
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
+using Markdig;
+using Markdig.Helpers;
+using Markdig.Renderers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using SkiaSharp;
 using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
+using System.Runtime.CompilerServices;
 
 namespace CelesteStudio.Controls;
 
-/// Displays basic markdown inside a dialog
-/// This markdown renderer supports the following elements:
-/// - Bold,
-/// - Italic,
-/// - Inline-Code
-/// - Headers 1-6,
-/// - Hyperlinks
-/// - Images
-/// - Page breaks
-public class Markdown : Drawable {
-    // TODO: Please refactor. Thanks :)
+/// Markdown renderer supporting regular text styling
+/// TODO: Natively support images, instead of requiring additional support
+/// TODO: Improve performance for longer documents
+public class Markdown : SkiaDrawable {
+    public event Action? PostDraw;
+    public int RequiredHeight { get; private set; }
 
-    private static Color TextColor => Eto.Platform.Instance.IsWpf && Settings.Instance.Theme.DarkMode
-        ? new Color(1.0f - SystemColors.ControlText.R, 1.0f - SystemColors.ControlText.G, 1.0f - SystemColors.ControlText.B)
-        : SystemColors.ControlText;
+    private readonly MarkdownDocument Document;
+    private readonly SkiaRenderer Renderer;
+    private readonly Scrollable? Scrollable;
 
-    /// Current state on how text should look / behave
-    private struct TextState {
-        public bool Bold, Italic;
-        public bool Code;
+    public override int DrawX => Scrollable?.ScrollPosition.X ?? 0;
+    public override int DrawY => Scrollable?.ScrollPosition.Y ?? 0;
+    public override int DrawWidth => (Scrollable?.Width ?? Width) - Padding.Horizontal;
+    public override int DrawHeight => (Scrollable?.Height ?? Height) - Padding.Vertical;
 
-        public string? Link;
-        public bool Image;
+    public Markdown(string content, Scrollable? scrollable) {
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseEmphasisExtras()
+            .UseAutoLinks()
+            .Build();
 
-        public (FontStyle, FontDecoration) Resolve() {
-            var fontStyle = FontStyle.None;
-            var fontDecoration = FontDecoration.None;
-            if (Bold) {
-                fontStyle |= FontStyle.Bold;
-            }
-            if (Italic) {
-                fontStyle |= FontStyle.Italic;
-            }
+        Document = Markdig.Markdown.Parse(content, pipeline);
+        Renderer = new SkiaRenderer();
+        Scrollable = scrollable;
 
-            return (fontStyle, fontDecoration);
-        }
-
-        public Font GetFont() {
-            var (fontStyle, fontDecoration) = Resolve();
-            var sysFont = SystemFonts.Default();
-
-            if (Code) {
-                var codeFont = FontManager.EditorFont;
-                return new Font(codeFont.Family, sysFont.Size, fontStyle, fontDecoration);
-            }
-
-            return new Font(sysFont.Family, sysFont.Size, fontStyle, fontDecoration);
-        }
-    }
-    /// Fully resolved part of the text
-    private readonly struct TextPart(string text, TextState state, PointF position) {
-        public readonly string Text = text;
-        public readonly TextState State = state;
-        public readonly PointF Position = position;
-
-        public void Deconstruct(out string text, out TextState state, out PointF position) {
-            text = Text;
-            state = State;
-            position = Position;
+        if (Scrollable != null && !Eto.Platform.Instance.IsGtk) {
+            Scrollable.Scroll += (_, _) => Invalidate();
         }
     }
 
-    /// Describes a combination of text of a certain kind, for example paragraphs, headings, etc.
-    private interface TextComponent {
-        public void Draw(Graphics graphics, Markdown markdown);
-        public void Flush(string text, TextState state, PointF position, bool newLine);
-        public SizeF Measure(string text, TextState state);
+    public override void Draw(SKSurface surface) {
+        Renderer.Reset(surface, Width - Padding.Horizontal);
+        Renderer.Render(Document);
+
+        RequiredHeight = (int) Renderer.Height;
+        MinimumSize = new Size(0, (int) Renderer.Height);
+        PostDraw?.Invoke();
     }
 
-    /// Handles headers of size 1-6
-    private class HeaderComponent(int level) : TextComponent {
-        private const float H1_Scale = 2.0f;
-        private const float H2_Scale = 1.5f;
-        private const float H3_Scale = 1.25f;
-        private const float H4_Scale = 1.0f;
-        private const float H5_Scale = 0.875f;
-        private const float H6_Scale = 0.75f;
+    protected override void OnMouseMove(MouseEventArgs e) {
+        foreach (var entry in Renderer.ActionBoxes) {
+            if (entry.Region.Contains(e.Location.X - Padding.Left, e.Location.Y - Padding.Top)) {
+                Cursor = Cursors.Pointer;
+                return;
+            }
+        }
 
-        private readonly float scale = Math.Clamp(level, 1, 6) switch {
-            1 => H1_Scale,
-            2 => H2_Scale,
-            3 => H3_Scale,
-            4 => H4_Scale,
-            5 => H5_Scale,
-            6 => H6_Scale,
-            _ => throw new ArgumentOutOfRangeException()
-        };
+        Cursor = null;
+    }
 
-        private readonly List<List<TextPart>> lines = [];
-        private float lineY;
+    protected override void OnMouseUp(MouseEventArgs e) {
+        foreach (var entry in Renderer.ActionBoxes) {
+            if (entry.Region.Contains(e.Location.X - Padding.Left, e.Location.Y - Padding.Top)) {
+                entry.OnClick();
+                return;
+            }
+        }
+    }
 
-        public void Draw(Graphics graphics, Markdown markdown) {
-            var baseFont = SystemFonts.Default();
+    private class SkiaRenderer : RendererBase {
+        public struct StyleConfig(SKFont font, SKColor color, SKTextAlign align, FontStyle fontStyle, FontDecoration fontDecoration) {
+            public readonly SKFont Font = font;
+            public readonly FontStyle FontStyle = fontStyle;
+            public FontDecoration FontDecoration = fontDecoration;
 
-            foreach (var line in lines) {
-                foreach ((string text, var style, var position) in line) {
-                    var (fontStyle, fontDecoration) = style.Resolve();
-                    var font = new Font(baseFont.Family, baseFont.Size * scale, fontStyle, fontDecoration);
+            public delegate void DrawTextDelegate(ReadOnlySpan<char> text, ref float x, ref float y);
+            public delegate void MeasureTextDelegate(ReadOnlySpan<char> text, ref float width);
+            public DrawTextDelegate? ModifyDrawText;
+            public MeasureTextDelegate? ModifyMeasureText;
 
-                    graphics.DrawText(font, TextColor, position, text);
+            public readonly SKPaint Paint = new(font) {
+                Color = color,
+                TextAlign = align,
+                IsAntialias = true,
+                SubpixelText = true,
+            };
+
+            public StyleConfig WithFont(SKFont font) {
+                return new StyleConfig(font, Paint.Color, Paint.TextAlign, FontStyle, FontDecoration);
+            }
+            public StyleConfig WithFontStyle(FontStyle fontStyle) {
+                return new StyleConfig(new SKFont(SKFontManager.Default.MatchTypeface(Font.Typeface, fontStyle switch {
+                    FontStyle.None => SKFontStyle.Normal,
+                    FontStyle.Bold => SKFontStyle.Bold,
+                    FontStyle.Italic => SKFontStyle.Italic,
+                    FontStyle.Bold | FontStyle.Italic => SKFontStyle.BoldItalic,
+                    _ => throw new ArgumentOutOfRangeException(nameof(fontStyle), fontStyle, null)
+                }), Font.Size, Font.ScaleX, Font.SkewX), Paint.Color, Paint.TextAlign, fontStyle, FontDecoration);
+            }
+            public StyleConfig WithFontDecoration(FontDecoration fontDecoration) {
+                return this with { FontDecoration = fontDecoration };
+            }
+
+            public StyleConfig Clone() {
+                return new StyleConfig(Font, Paint.Color, Paint.TextAlign, FontStyle, FontDecoration);
+            }
+            public StyleConfig WithColor(SKColor color) {
+                Paint.Color = color;
+                return this;
+            }
+            public StyleConfig WithAlign(SKTextAlign align) {
+                Paint.TextAlign = align;
+                return this;
+            }
+            public StyleConfig WithCallback(DrawTextDelegate? modifyDraw, MeasureTextDelegate? modifyMeasure) {
+                return this with { ModifyDrawText = ModifyDrawText + modifyDraw, ModifyMeasureText = ModifyMeasureText + modifyMeasure };
+            }
+        }
+
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Width { get; set; }
+        public float Height { get; set; }
+
+        public float MaxLineWidth { get; private set; }
+
+        public SKCanvas Canvas { get; private set; } = null!;
+
+        public readonly List<(SKRect Region, Action OnClick)> ActionBoxes = [];
+
+        private readonly Stack<StyleConfig> styleStack = new();
+        public StyleConfig CurrentStyle => styleStack.Peek();
+
+        public SkiaRenderer() {
+            // Block renderers
+            ObjectRenderers.Add(new ParagraphBlockRenderer());
+            ObjectRenderers.Add(new HeadingBlockRenderer());
+            ObjectRenderers.Add(new ListBlockRenderer());
+            ObjectRenderers.Add(new CodeBlockRenderer());
+
+            // Inline renderers
+            ObjectRenderers.Add(new LiteralInlineRenderer());
+            ObjectRenderers.Add(new LineBreakInlineRenderer());
+            ObjectRenderers.Add(new EmphasisInlineRenderer());
+            ObjectRenderers.Add(new CodeInlineRenderer());
+            ObjectRenderers.Add(new LinkInlineRenderer());
+        }
+
+        public void Reset(SKSurface surface, float maxWidth) {
+            X = 0.0f;
+            Y = 0.0f;
+            Width = 0.0f;
+            Height = 0.0f;
+            MaxLineWidth = maxWidth;
+
+            Canvas = surface.Canvas;
+
+            ActionBoxes.Clear();
+
+            var textColor = Eto.Platform.Instance.IsWpf && Settings.Instance.Theme.DarkMode
+                ? new Color(1.0f - SystemColors.ControlText.R, 1.0f - SystemColors.ControlText.G, 1.0f - SystemColors.ControlText.B)
+                : SystemColors.ControlText;
+
+            styleStack.Clear();
+            styleStack.Push(new StyleConfig(new SKFont(SKTypeface.Default, Settings.Instance.EditorFontSize * FontManager.DPI), textColor.ToSkiaPacked(), SKTextAlign.Left, FontStyle.None, FontDecoration.None));
+        }
+
+        public override object Render(MarkdownObject markdownObject) {
+            Write(markdownObject);
+            return null!;
+        }
+
+        /// Pushes a new style
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void PushStyle(StyleConfig config) => styleStack.Push(config);
+
+        /// Pops the current style
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void PopStyle() => styleStack.Pop();
+
+        /// Writes the text in the current style
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteText(StringSlice text) => WriteText(text.AsSpan());
+
+        /// Writes the text in the current style
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteText(ReadOnlySpan<char> text) {
+            var style = CurrentStyle;
+
+            float advance = MeasureTextWithStyle(text, style);
+            if (X + advance > MaxLineWidth) {
+                // Warp lines
+                var iterator = new WrapLineIterator(this, text, X, MaxLineWidth, style);
+
+                // First iteration shouldn't start at a new line
+                iterator.MoveNext();
+                float firstRenderX = style.Paint.TextAlign switch {
+                    SKTextAlign.Left => X,
+                    SKTextAlign.Right => X + MaxLineWidth - MeasureTextWithStyle(iterator.Current, style),
+                    SKTextAlign.Center => X + (MaxLineWidth - MeasureTextWithStyle(iterator.Current, style)) / 2.0f,
+                    _ => throw new ArgumentOutOfRangeException()
+                };
+                DrawTextWithStyle(iterator.Current, firstRenderX, Y, style);
+
+                // Iterate remaining lines
+                while (iterator.MoveNext()) {
+                    float wrapRenderX = style.Paint.TextAlign switch {
+                        SKTextAlign.Left => 0.0f,
+                        SKTextAlign.Right => MaxLineWidth - MeasureTextWithStyle(iterator.Current, style),
+                        SKTextAlign.Center => (MaxLineWidth - MeasureTextWithStyle(iterator.Current, style)) / 2.0f,
+                        _ => throw new ArgumentOutOfRangeException()
+                    };
+
+                    Y += GetLineSpacing(style);
+                    DrawTextWithStyle(iterator.Current, wrapRenderX, Y, style);
                 }
-            }
 
-            if (level is 1 or 2) {
-                using var pen = new Pen(TextColor with { A = 0.5f }, 1.0f);
-                graphics.DrawLine(pen, 0.0f, lineY, graphics.ClipBounds.Right - graphics.ClipBounds.Left, lineY);
-            }
-        }
-
-        public void Flush(string text, TextState state, PointF position, bool newLine) {
-            List<TextPart> line;
-            if (newLine || lines.Count == 0) {
-                line = [];
-                lines.Add(line);
+                X = MeasureTextWithStyle(iterator.Current, style);
+                Width = MaxLineWidth;
             } else {
-                line = lines.Last();
+                float renderX = style.Paint.TextAlign switch {
+                    SKTextAlign.Left => X,
+                    SKTextAlign.Right => X + MaxLineWidth - advance,
+                    SKTextAlign.Center => X + (MaxLineWidth - advance) / 2.0f,
+                    _ => throw new ArgumentOutOfRangeException()
+                };
+
+                DrawTextWithStyle(text, renderX, Y, style);
+
+                X += advance;
+                Width = Math.Max(Width, X);
             }
 
-            line.Add(new(text, state, position));
+            Height = Y + GetLineSpacing(style);
         }
+        private void DrawTextWithStyle(ReadOnlySpan<char> text, float x, float y, StyleConfig style) {
+            style.ModifyDrawText?.Invoke(text, ref x, ref y);
 
-        public void Finish(float pageWidth) {
-            if (level is not (1 or 2)) {
+            y += style.Font.Offset();
+            Canvas.DrawText(text, x, y, style.Font, style.Paint);
+
+            if (style.FontDecoration == FontDecoration.None) {
                 return;
             }
 
-            var baseFont = SystemFonts.Default();
-            lineY = 0.0f;
+            float oldStrokeWidth = style.Paint.StrokeWidth;
 
-            foreach (var line in lines) {
-                float width = 0.0f;
+            float width = style.Paint.MeasureText(text);
+            var metrics = style.Font.Metrics;
 
-                foreach ((string text, var state, var position) in line) {
-                    var (fontStyle, fontDecoration) = state.Resolve();
-                    var font = new Font(baseFont.Family, baseFont.Size * scale, fontStyle, fontDecoration);
-                    var textSize = font.MeasureString(text);
-
-                    width += textSize.Width;
-                    lineY = Math.Max(lineY, position.Y + textSize.Height);
-                }
-
-                // Center H1 headings
-                if (level == 1) {
-                    float xOffset = (pageWidth - width) / 2.0f;
-
-                    for (var i = 0; i < line.Count; i++) {
-                        var pos = line[i].Position;
-                        line[i] = new TextPart(
-                            line[i].Text,
-                            line[i].State,
-                            pos with { X = pos.X + xOffset });
-                    }
-                }
+            if (style.FontDecoration.HasFlag(FontDecoration.Strikethrough)) {
+                float lineY = y + (metrics.StrikeoutPosition ?? style.Font.LineHeight() / -4.0f);
+                style.Paint.StrokeWidth = metrics.StrikeoutThickness ?? 1.0f;
+                Canvas.DrawLine(x, lineY, x + width, lineY, style.Paint);
+            }
+            if (style.FontDecoration.HasFlag(FontDecoration.Underline)) {
+                float lineY = y + (metrics.UnderlinePosition ?? style.Font.LineHeight() / 10.0f);
+                style.Paint.StrokeWidth = metrics.UnderlineThickness ?? 1.0f;
+                Canvas.DrawLine(x, lineY, x + width, lineY, style.Paint);
             }
 
-            // Add a separator line for H1 and H2 headings
-            lineY += baseFont.LineHeight() / 2.0f;
+            style.Paint.StrokeWidth = oldStrokeWidth;
         }
 
-        public SizeF Measure(string text, TextState state) {
-            var baseFont = SystemFonts.Default();
-            var (fontStyle, fontDecoration) = state.Resolve();
-            var font = new Font(baseFont.Family, baseFont.Size * scale, fontStyle, fontDecoration);
+        /// Measures the text in the current style
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public float MeasureText(StringSlice text) => MeasureText(text.AsSpan());
 
-            var fontSize = font.MeasureString(text);
-            return new SizeF(fontSize.Width, fontSize.Height + baseFont.LineHeight());
+        /// Measures the text in the current style
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public float MeasureText(ReadOnlySpan<char> text) => MeasureTextWithStyle(text, CurrentStyle);
+
+        private float MeasureTextWithStyle(ReadOnlySpan<char> text, StyleConfig style) {
+            float width = style.Paint.MeasureText(text);
+            style.ModifyMeasureText?.Invoke(text, ref width);
+            return width;
         }
-    }
 
-    /// Handles regular paragraphs of text
-    private class ParagraphComponent : TextComponent {
-        private const float CodePaddingX = 3.0f;
-        private const float CodePaddingY = 1.5f;
+        /// Advances to the start of the next line
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void NextLine() {
+            X = 0.0f;
+            Y += GetLineSpacing(CurrentStyle);
+        }
 
-        public readonly List<(string Text, TextState State, PointF Position)> Parts = [];
+        /// Calculates the current effective line height
+        public float GetLineSpacing(StyleConfig style) => style.Font.LineHeight() * 1.25f;
 
-        public void Draw(Graphics graphics, Markdown markdown) {
-            foreach ((string text, var state, var position) in Parts) {
-                var font = state.GetFont();
+        /// Writes the inlines of a leaf inline.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteLeafInline(LeafBlock leafBlock) {
+            Inline? inline = leafBlock.Inline!;
+            while (inline != null) {
+                Write(inline);
+                inline = inline.NextSibling;
+            }
+        }
 
-                var textPos = position;
-                var size = graphics.MeasureString(font, text);
+        /// Wraps lines which are too long
+        private ref struct WrapLineIterator(SkiaRenderer renderer, ReadOnlySpan<char> text, float startOffset, float maxLineWidth, StyleConfig style) {
+            private ReadOnlySpan<char> text = text;
+            private int startIdx = 0;
+            private bool firstIteration = true;
 
-                if (state.Code) {
-                    // Without this offset it just kinda looks wrong?
-                    const float codeBgYOffset = 1.5f;
+            public ReadOnlySpan<char> Current { get; private set; } = ReadOnlySpan<char>.Empty;
+            // ReSharper disable once UnusedMember.Local
+            public WrapLineIterator GetEnumerator() => this;
 
-                    graphics.FillPath(Colors.Black with { A = 0.25f }, GraphicsPath.GetRoundRect(
-                        new RectangleF(position.X, position.Y - CodePaddingY + codeBgYOffset, size.Width + CodePaddingX * 2.0f, size.Height + CodePaddingY * 2.0f),
-                        5.0f));
-
-                    textPos.X += CodePaddingX;
+            public bool MoveNext() {
+                if (text.Length == 0) {
+                    Current = ReadOnlySpan<char>.Empty;
+                    return false;
                 }
 
-                if (state.Link != null) {
-                    if (state.Image) {
-                        graphics.DrawImage(Bitmap.FromResource(state.Link), textPos);
-                    } else {
-                        var mousePosition = markdown.PointFromScreen(Mouse.Position);
-                        bool hovered = mousePosition.X >= textPos.X && mousePosition.X <= textPos.X + size.Width &&
-                                       mousePosition.Y >= textPos.Y && mousePosition.Y <= textPos.Y + size.Height;
-                        if (hovered) {
-                            font = font.WithFontDecoration(FontDecoration.Underline);
-                            markdown.cursor = Cursors.Pointer;
+                float maxWidth = firstIteration
+                    ? maxLineWidth - startOffset
+                    : maxLineWidth;
+
+                int lastValidEnd = -1;
+                for (int i = startIdx; i <= text.Length; i++) {
+                    if (i != text.Length && !char.IsWhiteSpace(text[i])) {
+                        continue;
+                    }
+
+                    float width = renderer.MeasureTextWithStyle(text[startIdx..i], style);
+                    if (width <= maxWidth) {
+                        lastValidEnd = i;
+
+                        if (i != text.Length) {
+                            continue;
                         }
-
-                        graphics.DrawText(font, Color.FromRgb(0x4CACFC), textPos, text);
                     }
-                } else {
-                    graphics.DrawText(font, TextColor, textPos, text);
+
+                    if (firstIteration && lastValidEnd == -1) {
+                        // Doesn't fit on first line. Advance to second
+                        Current = ReadOnlySpan<char>.Empty;
+                        firstIteration = false;
+                        return true;
+                    }
+
+                    int end = lastValidEnd == -1
+                        ? i // Single word doesn't fit into line
+                        : lastValidEnd;
+
+                    Current = text[startIdx..end];
+                    startIdx = end + 1;
+                    firstIteration = false;
+                    return true;
                 }
+
+                return false;
             }
-        }
-
-        public void Flush(string text, TextState state, PointF position, bool newLine) {
-            Parts.Add((text, state, position));
-        }
-
-        public SizeF Measure(string text, TextState state) {
-            if (state.Link != null && state.Image) {
-                return Bitmap.FromResource(state.Link).Size;
-            }
-
-            var size = state.GetFont().MeasureString(text);
-
-            if (state.Code) {
-                return new(size.Width + CodePaddingX * 2.0f, size.Height);
-            }
-
-            return size;
         }
     }
 
-    private readonly List<TextComponent> components = [];
-    private Cursor? cursor;
+    #region Renderers
 
-    protected override void OnMouseMove(MouseEventArgs e) => Invalidate();
+    private abstract class SkiaObjectRenderer<TObject> : MarkdownObjectRenderer<SkiaRenderer, TObject> where TObject : MarkdownObject;
 
-    protected override void OnMouseUp(MouseEventArgs e) {
-        // This could be passed down to the components, but not worth for just links
-        foreach (var component in components) {
-            if (component is not ParagraphComponent paragraph) {
-                continue;
+    private const float BlockMarginBottom = 16.0f;
+    private const float HeadingMarginTop = 24.0f;
+
+    private class ParagraphBlockRenderer : SkiaObjectRenderer<ParagraphBlock> {
+        protected override void Write(SkiaRenderer renderer, ParagraphBlock obj) {
+            renderer.WriteLeafInline(obj);
+            renderer.NextLine();
+            renderer.Y += BlockMarginBottom;
+        }
+    }
+    private class HeadingBlockRenderer : SkiaObjectRenderer<HeadingBlock> {
+        protected override void Write(SkiaRenderer renderer, HeadingBlock obj) {
+            float scale = obj.Level switch {
+                1 => 2.0f,
+                2 => 1.5f,
+                3 => 1.25f,
+                4 => 1.0f,
+                5 => 0.875f,
+                6 => 0.85f,
+                _ => 1.0f,
+            };
+
+            var style = renderer.CurrentStyle;
+            renderer.PushStyle(style
+                .WithFont(new SKFont(SKFontManager.Default.MatchTypeface(style.Font.Typeface, style.FontStyle switch {
+                    FontStyle.None or FontStyle.Bold => SKFontStyle.Bold,
+                    FontStyle.Italic or FontStyle.Bold | FontStyle.Italic => SKFontStyle.BoldItalic,
+                    _ => throw new ArgumentOutOfRangeException(nameof(style.FontStyle), style.FontStyle, null)
+                }), style.Font.Size * scale))
+                .WithAlign(obj.Level == 1 ? SKTextAlign.Center : SKTextAlign.Left));
+
+            if (renderer.Height > 0.0f) {
+                renderer.Y = Math.Max(renderer.Y, renderer.Height + HeadingMarginTop);
+            }
+            renderer.WriteLeafInline(obj);
+            renderer.NextLine();
+            renderer.Y += BlockMarginBottom;
+
+            if (obj.Level is 1 or 2) {
+                renderer.Height += 0.3f * style.Font.Size;
+                float lineY = renderer.Height;
+
+                var linePaint = new SKPaint {
+                    Color = style.Paint.Color.WithAlpha((byte) (style.Paint.Color.Alpha / 4)),
+                    StrokeWidth = 1.5f,
+                };
+
+                renderer.Canvas.DrawLine(0.0f, lineY, renderer.MaxLineWidth, lineY, linePaint);
             }
 
-            foreach ((string? text, var state, var position) in paragraph.Parts)
-            {
-                if (state.Link == null) {
-                    continue;
+            renderer.PopStyle();
+        }
+    }
+    private class ListBlockRenderer : SkiaObjectRenderer<ListBlock> {
+        protected override void Write(SkiaRenderer renderer, ListBlock block) {
+            var style = renderer.CurrentStyle;
+
+            string? startIdxText = block.OrderedStart ?? block.DefaultOrderedStart;
+            if (string.IsNullOrEmpty(startIdxText) || !int.TryParse(startIdxText, out int startIdx)) {
+                startIdx = 1;
+            }
+
+            for (int idx = 0; idx < block.Count; idx++) {
+                if (block.IsOrdered) {
+                    renderer.X = 5.0f;
+                    renderer.WriteText($"{idx + startIdx}. ");
+                } else {
+                    renderer.Canvas.DrawCircle(10.0f, renderer.Y + style.Font.LineHeight() / 1.75f, 2.5f, style.Paint);
+                    renderer.X = 20.0f;
                 }
 
-                var font = state.GetFont();
-                var size = font.MeasureString(text);
+                renderer.Write(block[idx]);
+                renderer.Y = renderer.Height;
+            }
+            renderer.NextLine();
+        }
+    }
+    private class CodeBlockRenderer : SkiaObjectRenderer<CodeBlock> {
+        protected override void Write(SkiaRenderer renderer, CodeBlock code) {
+            const float hPadding = 5.0f;
+            const float vPadding = 2.5f;
+            const float vSpacing = 5.0f;
+            const float cornerRadius = 7.5f;
 
-                bool above = e.Location.X >= position.X && e.Location.X <= position.X + size.Width &&
-                               e.Location.Y >= position.Y && e.Location.Y <= position.Y + size.Height;
-                if (above) {
-                    ProcessHelper.OpenInDefaultApp(state.Link);
+            int actualLines = code.Lines.Lines
+                .Select(line => (int) Math.Ceiling(renderer.MeasureText(line.Slice) / (renderer.MaxLineWidth - hPadding * 2.0f)))
+                .Sum();
 
-                    e.Handled = true;
+            renderer.PushStyle(renderer.CurrentStyle
+                .WithFont(FontManager.SKEditorFontRegular)
+                .WithCallback(ModifyDraw, ModifyMeasure));
+
+            var style = renderer.CurrentStyle;
+            var backgroundPaint = new SKPaint {
+                Color = style.Paint.Color.WithAlpha(byte.MaxValue / 8),
+                IsAntialias = true,
+            };
+            renderer.Canvas.DrawRoundRect(renderer.X, renderer.Y + style.Font.Metrics.Descent / 4.0f + vSpacing, renderer.MaxLineWidth, actualLines * renderer.GetLineSpacing(style) + vPadding * 2.0f, cornerRadius, cornerRadius, backgroundPaint);
+
+            renderer.Y += vPadding + vSpacing;
+            foreach (StringLine line in code.Lines) {
+                renderer.WriteText(line.Slice);
+                renderer.NextLine();
+            }
+            renderer.Y += vPadding + vSpacing;
+            renderer.Height += vPadding + vSpacing;
+
+            renderer.PopStyle();
+
+            return;
+
+            static void ModifyDraw(ReadOnlySpan<char> text, ref float x, ref float y) {
+                x += hPadding;
+            }
+            static void ModifyMeasure(ReadOnlySpan<char> text, ref float width) {
+                width += hPadding * 2.0f;
+            }
+        }
+    }
+
+    private class LiteralInlineRenderer : SkiaObjectRenderer<LiteralInline> {
+        protected override void Write(SkiaRenderer renderer, LiteralInline literal) {
+            renderer.WriteText(literal.Content);
+        }
+    }
+    private class LineBreakInlineRenderer : SkiaObjectRenderer<LineBreakInline> {
+        protected override void Write(SkiaRenderer renderer, LineBreakInline lineBreak) {
+            if (lineBreak.IsHard) {
+                renderer.NextLine();
+            } else {
+                renderer.WriteText(" ");
+            }
+        }
+    }
+    private class EmphasisInlineRenderer : SkiaObjectRenderer<EmphasisInline> {
+        protected override void Write(SkiaRenderer renderer, EmphasisInline emphasis) {
+            var style = renderer.CurrentStyle;
+
+            var fontStyle = style.FontStyle;
+            var fontDecoration = style.FontDecoration;
+
+            switch (emphasis.DelimiterChar) {
+                case '*':
+                case '_':
+                    if (emphasis.DelimiterCount == 2) {
+                        fontStyle |= FontStyle.Bold;
+                    } else {
+                        fontStyle |= FontStyle.Italic;
+                    }
+                    break;
+                case '~':
+                    fontDecoration |= FontDecoration.Strikethrough;
+                    break;
+                case '+':
+                    fontDecoration |= FontDecoration.Underline;
+                    break;
+            }
+
+            renderer.PushStyle(style
+                .WithFontStyle(fontStyle)
+                .WithFontDecoration(fontDecoration));
+            renderer.WriteChildren(emphasis);
+            renderer.PopStyle();
+        }
+    }
+    private class CodeInlineRenderer : SkiaObjectRenderer<CodeInline> {
+        protected override void Write(SkiaRenderer renderer, CodeInline code) {
+            const float hPadding = 5.0f;
+            const float vPadding = 2.5f;
+            const float cornerRadius = 7.5f;
+
+            // macOS requires double DPI division?
+            float scale = Eto.Platform.Instance.IsMac ? 1.0f / (FontManager.DPI * FontManager.DPI) : 1.0f / FontManager.DPI;
+
+            var style = renderer.CurrentStyle;
+            renderer.PushStyle(style
+                .WithFont(FontManager.CreateSKFont(Settings.Instance.FontFamily, style.Font.Size * scale, style.FontStyle))
+                .WithCallback(ModifyDraw, ModifyMeasure));
+            renderer.WriteText(code.Content);
+            renderer.PopStyle();
+
+            return;
+
+            void ModifyDraw(ReadOnlySpan<char> text, ref float x, ref float y) {
+                if (text.Length == 0) {
                     return;
                 }
+
+                var currStyle = renderer.CurrentStyle;
+                var backgroundPaint = new SKPaint {
+                    Color = currStyle.Paint.Color.WithAlpha(byte.MaxValue / 8),
+                    IsAntialias = true,
+                };
+
+                float width = currStyle.Paint.MeasureText(text);
+                renderer.Canvas.DrawRoundRect(x, y + currStyle.Font.Metrics.Descent / 4.0f - vPadding, width + hPadding * 2.0f, currStyle.Font.LineHeight() + vPadding * 2.0f, cornerRadius, cornerRadius, backgroundPaint);
+                x += hPadding;
+            }
+            void ModifyMeasure(ReadOnlySpan<char> text, ref float width) {
+                width += hPadding * 2.0f;
+            }
+        }
+    }
+    private class LinkInlineRenderer : SkiaObjectRenderer<LinkInline> {
+        protected override void Write(SkiaRenderer renderer, LinkInline link) {
+            if (link.Url is not { } url || !Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)) {
+                // Invalid URL
+                renderer.WriteChildren(link);
+                return;
+            }
+
+            Action clickAction = () => ProcessHelper.OpenInDefaultApp(link.Url!);
+
+            var style = renderer.CurrentStyle;
+            renderer.PushStyle(style
+                .Clone()
+                .WithColor(new SKColor(0xFF3281EA))
+                .WithFontDecoration(style.FontDecoration | FontDecoration.Underline)
+                .WithCallback(ModifyDraw, null));
+            renderer.WriteChildren(link);
+            renderer.PopStyle();
+
+            return;
+
+            void ModifyDraw(ReadOnlySpan<char> text, ref float x, ref float y) {
+                var currStyle = renderer.CurrentStyle;
+                float width = currStyle.Paint.MeasureText(text);
+
+                renderer.ActionBoxes.Add((new SKRect(x, y, x + width, y + currStyle.Font.LineHeight()), clickAction));
             }
         }
     }
 
-    protected override void OnPaint(PaintEventArgs e) {
-        e.Graphics.AntiAlias = true;
-
-        cursor = null;
-        foreach (var component in components) {
-            component.Draw(e.Graphics, this);
-        }
-        Cursor = cursor;
-    }
-
-    private static readonly Regex MetaRegex = new(@"\$\$(\S+)\$\$", RegexOptions.Compiled);
-    public static List<(Markdown Page, List<string> Meta)> Parse(string markdownContent, Size pageSize) {
-        var markdown = Markdig.Markdown.Parse(markdownContent, trackTrivia: true);
-
-        const float lineSpacing = 1.2f;
-
-        var pages = new List<(Markdown Page, List<string> Meta)>();
-        var currentPage = new Markdown { Size = pageSize };
-        var currentMeta = new List<string>();
-        var currentPosition = new PointF(0.0f, 0.0f);
-
-        pages.Add((currentPage, currentMeta));
-
-        TextComponent? currentComponent;
-        var currentState = new TextState();
-        string currentLine = string.Empty;
-        float maxLineHeight = 0.0f;
-
-        foreach (var item in markdown.Descendants<Block>()) {
-            if (item is HeadingBlock heading) {
-                currentComponent = new HeaderComponent(heading.Level);
-                foreach (var inline in heading.Inline!) {
-                    currentState.Bold = true;
-                    ProcessInline(inline);
-                    currentState.Bold = false;
-                }
-                FlushLine(newLine: true);
-                ((HeaderComponent)currentComponent).Finish(pageSize.Width);
-                currentPage.components.Add(currentComponent);
-            } else if (item is ParagraphBlock paragraph) {
-                currentComponent = new ParagraphComponent();
-                foreach (var inline in paragraph.Inline!) {
-                    ProcessInline(inline);
-                }
-                FlushLine(newLine: true);
-                currentPage.components.Add(currentComponent);
-            } else if (item is ThematicBreakBlock) {
-                currentPage = new Markdown { Size = pageSize };
-                currentMeta = new List<string>();
-                currentPosition = new PointF(0.0f, 0.0f);
-
-                pages.Add((currentPage, currentMeta));
-            } else {
-                Console.WriteLine($"Unhandled item: {item} ({item.GetType()})");
-            }
-        }
-
-        return pages;
-
-        void ProcessInline(Inline inline) {
-            if (inline is LiteralInline literal) {
-                ProcessText(literal.ToString());
-            } else if (inline is EmphasisInline emphasis) {
-                foreach (var emphasisLiteral in emphasis) {
-                    if (emphasis.DelimiterCount == 2) {
-                        currentState.Bold = true;
-                        ProcessInline(emphasisLiteral);
-                        currentState.Bold = false;
-                    } else  if (emphasis.DelimiterCount == 1) {
-                        currentState.Italic = true;
-                        ProcessInline(emphasisLiteral);
-                        currentState.Italic = false;
-                    }
-                }
-            } else if (inline is CodeInline code) {
-                currentState.Code = true;
-                ProcessText(code.Content);
-                currentState.Code = false;
-            } else if (inline is LinkInline link) {
-                currentState.Link = link.Url;
-                currentState.Image = link.IsImage;
-                foreach (var linkLiteral in link) {
-                    ProcessInline(linkLiteral);
-                }
-                currentState.Link = null;
-                currentState.Image = false;
-            } else if (inline is LineBreakInline) {
-                FlushLine(newLine: true);
-            } else {
-                Console.WriteLine($"Unhandled inline: {inline} ({inline.GetType()})");
-            }
-        }
-        void ProcessText(string text) {
-            var matches = MetaRegex.Matches(text);
-            foreach (Match match in matches) {
-                currentMeta.Add(match.Groups[1].Value);
-            }
-            text = MetaRegex.Replace(text, string.Empty);
-
-            var splitPoints = text
-                .Select((c, i) => (c, i))
-                .Where(pair => char.IsWhiteSpace(pair.c))
-                .Select(pair => pair.i)
-                .Concat([text.Length]);
-
-            int start = 0;
-            int prevSplit = 0;
-            foreach (int split in splitPoints) {
-                Again:
-                var nextLine = currentLine + text[start..split];
-                float totalWidth = currentPosition.X + currentComponent.Measure(nextLine, currentState).Width;
-
-                // Split remaining words onto next line
-                if (totalWidth > pageSize.Width) {
-                    currentLine += text[start..prevSplit];
-                    start = prevSplit;
-                    FlushLine(newLine: true);
-
-                    goto Again;
-                }
-
-                prevSplit = split;
-            }
-
-            currentLine += text[start..];
-            FlushLine(newLine: false);
-        }
-        void FlushLine(bool newLine) {
-            var size = currentComponent.Measure(currentLine, currentState);
-            maxLineHeight = Math.Max(maxLineHeight, size.Height);
-
-            if (currentPosition.X <= 0.01f) {
-                currentLine = currentLine.TrimStart();
-            }
-
-            currentComponent.Flush(currentLine, currentState, currentPosition, newLine);
-            currentLine = string.Empty;
-
-            if (newLine) {
-                currentPosition.X = 0.0f;
-                currentPosition.Y += maxLineHeight * lineSpacing;
-                maxLineHeight = 0.0f;
-            } else {
-                currentPosition.X += size.Width;
-            }
-        }
-    }
+    #endregion
 }

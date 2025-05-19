@@ -23,6 +23,57 @@ public static class LuaHelpers {
     [UsedImplicitly]
     public static readonly object? NullValue = new ValueHolder<object?>(null);
 
+    /// Gets all members matching the specified target-query
+    [UsedImplicitly]
+    public static object? Get(string? query) {
+        if (query == null) {
+            "No target-query specified".ConsoleLog(LogLevel.Error);
+            return null;
+        }
+
+        var result = TargetQuery.GetMemberValues(query);
+        if (result.Failure) {
+            result.Error.ConsoleLog(LogLevel.Error);
+            return null;
+        }
+
+        return result.Value.Select(entry => entry.Value).ToArray();
+    }
+    /// Sets all members matching the specified target-query to the value
+    [UsedImplicitly]
+    public static void Set(string? query, params string[]? arguments) {
+        if (query == null) {
+            "No target-query specified".ConsoleLog(LogLevel.Error);
+            return;
+        }
+        if (arguments == null) {
+            "No arguments specified".ConsoleLog(LogLevel.Error);
+            return;
+        }
+
+        var result = TargetQuery.SetMemberValues(query, arguments);
+        if (result.Failure) {
+            result.Error.ConsoleLog(LogLevel.Error);
+        }
+    }
+    /// Invokes all members matching the specified target-query with the arguments
+    [UsedImplicitly]
+    public static void Invoke(string? query, params string[]? arguments) {
+        if (query == null) {
+            "No target-query specified".ConsoleLog(LogLevel.Error);
+            return;
+        }
+        if (arguments == null) {
+            "No value specified".ConsoleLog(LogLevel.Error);
+            return;
+        }
+
+        var result = TargetQuery.InvokeMemberMethods(query, arguments);
+        if (result.Failure) {
+            result.Error.ConsoleLog(LogLevel.Error);
+        }
+    }
+
     /// Resolves the first entity which matches the specified target-query, e.g. "Player" or "Celeste.Player"
     [UsedImplicitly]
     public static Entity? GetEntity(string targetQuery) {

@@ -14,6 +14,7 @@ using StudioCommunication;
 using StudioCommunication.Util;
 using System.Collections;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace TAS.InfoHUD;
 
@@ -31,42 +32,68 @@ public static class TargetQuery {
         public virtual bool CanEnumerateMemberEntries(Type type, Variant variant) => false;
         public virtual bool CanEnumerateTypeEntries(Type type, Variant variant) => false;
 
+        /// Provide currently active instances for the specified type. <br/>
+        /// Only invoked if <see cref="CanResolveInstances"/> returned <c>true</c> for the type.
         public virtual object[] ResolveInstances(Type type) => [];
+
+        /// Resolve a list of base target-types for a query. <br/>
+        /// <c>null</c> should be returned when no base-types could be resolved.
         public virtual (List<Type> Types, string[] MemberArgs)? ResolveBaseTypes(string[] queryArgs) => null;
 
+        /// Attempts to resolve the next member value for all current objects in parallel. <br/>
+        /// <c>true</c> should be returned when the handler could resolve the next member, otherwise <c>false</c>.
         public virtual Result<bool, QueryError> ResolveMemberValues(ref object?[] values, ref int memberIdx, string[] memberArgs) {
             return Result<bool, QueryError>.Ok(false);
         }
+
+        /// Attempts to resolve the next member for a single value. <br/>
+        /// <c>true</c> should be returned when the handler could resolve the next member, otherwise <c>false</c>.
         public virtual Result<bool, MemberAccessError> ResolveMember(object? instance, out object? value, Type type, int memberIdx, string[] memberArgs) {
             value = null;
             return Result<bool, MemberAccessError>.Ok(false);
         }
+
+        /// Attempts to resolve the target types of the parameters for the next member. <br/>
+        /// <c>true</c> should be returned when the handler could resolve the target types, otherwise <c>false</c>.
         public virtual Result<bool, MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
             targetTypes = [];
             return Result<bool, MemberAccessError>.Ok(false);
         }
 
+        /// Attempts to set the value of the next member to the target value. <br/>
+        /// <c>true</c> should be returned when the handler could set the next member, otherwise <c>false</c>.
         public virtual Result<bool, MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
             return Result<bool, MemberAccessError>.Ok(false);
         }
 
+        /// Attempts to invoke the next member with the target parameter values. <br/>
+        /// <c>true</c> should be returned when the handler could invoke the next member, otherwise <c>false</c>.
         public virtual Result<bool, MemberAccessError> InvokeMember(object? instance, object?[] parameterValue, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
             return Result<bool, MemberAccessError>.Ok(false);
         }
 
+        /// Attempts to resolve a value from a string for the target type. <br/>
+        /// Only invoked if <see cref="CanResolveValue"/> returned <c>true</c> for the type. <br/>
+        /// <c>true</c> should be returned when the handler could a value, otherwise <c>false</c>.
         public virtual Result<bool, QueryError> ResolveValue(Type targetType, ref int argIdx, string[] valueArgs, out object? value) {
             value = null;
             return Result<bool, QueryError>.Ok(false);
         }
 
+        /// Provide a list of auto-complete entries which should be listed along base-types.
         [MustDisposeResource]
         public virtual IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, Variant variant, Type[]? targetTypeFilter) {
             yield break;
         }
+
+        /// Overwrite the list of auto-complete entries which are provided for the members of the type
+        /// Only invoked if <see cref="CanEnumerateMemberEntries"/> returned <c>true</c> for the type. <br/>
         [MustDisposeResource]
         public virtual IEnumerator<CommandAutoCompleteEntry> EnumerateMemberEntries(Type type, Variant variant) {
             yield break;
         }
+        /// Overwrite the list of auto-complete entries which are provided for the values of the type
+        /// Only invoked if <see cref="CanEnumerateTypeEntries"/> returned <c>true</c> for the type. <br/>
         [MustDisposeResource]
         public virtual IEnumerator<CommandAutoCompleteEntry> EnumerateTypeEntries(Type type, Variant variant) {
             yield break;
@@ -85,9 +112,14 @@ public static class TargetQuery {
         new AssistsQueryHandler(),
         new ExtendedVariantsQueryHandler(),
         new EverestModuleSettingsQueryHandler(),
+        new EverestModuleSessionQueryHandler(),
+        new EverestModuleSaveDataQueryHandler(),
+        new SceneQueryHandler(),
+        new SessionQueryHandler(),
         new EntityQueryHandler(),
         new ComponentQueryHandler(),
         new SpecialValueQueryHandler(),
+        new ModInteropQueryHandler(),
     ];
 
     [Initialize(ConsoleEnhancements.InitializePriority + 1)]
@@ -103,19 +135,20 @@ public static class TargetQuery {
                 // Use '.' instead of '+' for nested types
                 fullName = fullName.Replace('+', '.');
 
-                // Strip namespace
-                int namespaceLen = type.Namespace != null
-                    ? type.Namespace.Length + 1
-                    : 0;
-                string shortName = fullName[namespaceLen..];
-
                 AllTypes.AddToKey(fullName, type);
                 AllTypes.AddToKey($"{fullName}@{assemblyName}", type);
                 AllTypes.AddToKey($"{fullName}@{modName}", type);
 
-                AllTypes.AddToKey(shortName, type);
-                AllTypes.AddToKey($"{shortName}@{assemblyName}", type);
-                AllTypes.AddToKey($"{shortName}@{modName}", type);
+                // Strip namespace
+                if (type.Namespace != null) {
+                    int namespaceLen = type.Namespace != null
+                        ? type.Namespace.Length + 1
+                        : 0;
+                    string shortName = fullName[namespaceLen..];
+                    AllTypes.AddToKey(shortName, type);
+                    AllTypes.AddToKey($"{shortName}@{assemblyName}", type);
+                    AllTypes.AddToKey($"{shortName}@{modName}", type);
+                }
             }
         }
     }
@@ -223,7 +256,7 @@ public static class TargetQuery {
                 }
 
                 foreach (object? target in memberResult.Value.Where(value => value != null && value != InvalidValue && value is not QueryError)) {
-                    var targetTypeResult = ResolveMemberTargetTypes(target!, memberArgs.Length - 1, memberArgs, Variant.Set);
+                    var targetTypeResult = ResolveMemberTargetTypes(target!, memberArgs.Length - 1, memberArgs, Variant.Set, arguments.Length);
                     if (targetTypeResult.Failure) {
                         error = MemberAccessError.Aggregate(error, targetTypeResult.Error);
                         continue;
@@ -287,7 +320,7 @@ public static class TargetQuery {
                 }
 
                 foreach (object? target in memberResult.Value.Where(value => value != null && value != InvalidValue && value is not QueryError)) {
-                    var targetTypeResult = ResolveMemberTargetTypes(target!, memberArgs.Length - 1, memberArgs, Variant.Invoke);
+                    var targetTypeResult = ResolveMemberTargetTypes(target!, memberArgs.Length - 1, memberArgs, Variant.Invoke, arguments.Length);
                     if (targetTypeResult.Failure) {
                         error = MemberAccessError.Aggregate(error, targetTypeResult.Error);
                         continue;
@@ -324,8 +357,15 @@ public static class TargetQuery {
 
     /// Sorts types by namespace into Celeste -> Monocle -> other (alphabetically)
     /// Inside the namespace it's sorted alphabetically
-    internal class NamespaceComparer : IComparer<(string Name, Type Type)> {
+    private class NamespaceComparer : IComparer<(string Name, Type Type)> {
         public int Compare((string Name, Type Type) x, (string Name, Type Type) y) {
+            if (x.Type.Namespace == null && y.Type.Namespace != null) {
+                return -1;
+            }
+            if (x.Type.Namespace != null && y.Type.Namespace == null) {
+                return 1;
+            }
+
             if (x.Type.Namespace == null || y.Type.Namespace == null) {
                 return StringComparer.Ordinal.Compare(x.Name, y.Name);
             }
@@ -363,7 +403,7 @@ public static class TargetQuery {
 
     internal static bool IsTypeViable(Type type, Variant variant, bool isRoot, Type[]? targetTypeFilter, int maxDepth) {
         // Filter-out types which probably aren't useful / possible
-        if (!(type.IsClass || type.IsStructType()) || type.IsGenericType || type.FullName == null || type.Namespace == null || ignoredNamespaces.Any(ns => type.Namespace!.StartsWith(ns))) {
+        if (!(type.IsClass || type.IsStructType()) || type.IsGenericType || type.FullName == null || (type.Namespace != null && ignoredNamespaces.Any(ns => type.Namespace.StartsWith(ns)))) {
             return false;
         }
         // Filter-out compiler generated types
@@ -567,7 +607,8 @@ public static class TargetQuery {
             .ToArray();
 
         string[][] namespaces = types
-            .Select(type => type.Namespace!)
+            .Select<Type, string?>(type => type.Namespace)
+            .OfType<string>()
             .Distinct()
             .Select(ns => ns.Split('.'))
             .Where(ns => ns.Length > queryArgs.Length)
@@ -952,7 +993,7 @@ public static class TargetQuery {
         => ResolveMemberValue(instance, memberArgs, forceAllowCodeExecution, needsFlush: false);
 
     /// Evaluates the member arguments on the base-instances and prepares the specified value(s)
-    /// The values can then be modifed with SetMemberValue
+    /// The values can then be modified with SetMemberValue
     internal static Result<object?[], QueryError> PrepareMemberValue(object instance, string[] memberArgs, bool forceAllowCodeExecution = false)
         => ResolveMemberValue(instance, memberArgs, forceAllowCodeExecution, needsFlush: true);
 
@@ -1405,12 +1446,13 @@ public static class TargetQuery {
                 del?.DynamicInvoke(parameterValues);
 
                 goto PropagateValueTypeStack;
-            } else if (targetType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property && property.PropertyType.IsSameOrSubclassOf(typeof(Delegate))) {
-                var del = (Delegate?) (property.IsStatic() ? property.GetValue(null) : property.GetValue(target));
+            } else if (targetType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property &&
+                       property.PropertyType.IsSameOrSubclassOf(typeof(Delegate))) {
+                var del = (Delegate?)(property.IsStatic() ? property.GetValue(null) : property.GetValue(target));
                 del?.DynamicInvoke(parameterValues);
 
                 goto PropagateValueTypeStack;
-            } else if (targetType.GetMethodInfo(member, parameterTypes: null, bindingFlags, logFailure: false) is { } method) {
+            } else if (ResolveMethod(targetType, member, bindingFlags, parameterValues.Length) is { Success: true, Value: {} method }) {
                 if (method.IsStatic) {
                     method.Invoke(null, parameterValues);
                 } else {
@@ -1526,7 +1568,44 @@ public static class TargetQuery {
         return VoidResult<MemberAccessError>.Ok;
     }
 
-    internal static Result<Type[], MemberAccessError> ResolveMemberTargetTypes(object instanceObject, int memberIdx, string[] memberArgs, Variant variant, bool forceAllowCodeExecution = false) {
+    private static Result<MethodInfo?, string> ResolveMethod(Type type, string member, BindingFlags bindingFlags, int argumentCount) {
+        try {
+            if (type.GetMethodInfo(member, parameterTypes: null, bindingFlags, logFailure: false) is { } method) {
+                return Result<MethodInfo?, string>.Ok(method);
+            }
+
+            return Result<MethodInfo?, string>.Ok(null);
+        } catch (AmbiguousMatchException) {
+            var methods = type.GetAllMethodInfos()
+                .Where(method => method.Name == member && method.GetParameters().Length == argumentCount)
+                .ToArray();
+
+            switch (methods.Length) {
+                case 1: {
+                    return Result<MethodInfo?, string>.Ok(methods[0]);
+                }
+
+                case 0: {
+                    var builder = new StringBuilder($"No overload of method '{member}' on type '{type}' has {argumentCount} argument(s). Found");
+                    foreach (var candidate in type.GetMethods().Where(method => method.Name == member)) {
+                        builder.AppendLine($"- {candidate}");
+                    }
+
+                    return Result<MethodInfo?, string>.Fail(builder.ToString());
+                }
+                default: {
+                    var builder = new StringBuilder($"Ambiguous overload of method '{member}' on type '{type}' with {argumentCount} argument(s). Found");
+                    foreach (var candidate in type.GetMethods().Where(method => method.Name == member)) {
+                        builder.AppendLine($"- {candidate}");
+                    }
+
+                    return Result<MethodInfo?, string>.Fail(builder.ToString());
+                }
+            }
+        }
+    }
+
+    internal static Result<Type[], MemberAccessError> ResolveMemberTargetTypes(object instanceObject, int memberIdx, string[] memberArgs, Variant variant, int argumentCount, bool forceAllowCodeExecution = false) {
         object instance = (instanceObject as BoxedValueHolder)?.ValueStack.Peek() ?? instanceObject;
         var type = instance as Type ?? instance.GetType();
 
@@ -1576,8 +1655,15 @@ public static class TargetQuery {
                     return Result<Type[], MemberAccessError>.Ok([property.PropertyType]);
                 }
             }
-            if (type.GetMethodInfo(member, parameterTypes: null, bindingFlags, logFailure: false) is { } method && IsMethodUsable(method, variant, isFinal)) {
-                return Result<Type[], MemberAccessError>.Ok(method.GetParameters().Select(p => p.ParameterType).ToArray());
+
+
+            var methodResult = ResolveMethod(type, member, bindingFlags, argumentCount);
+            if (!methodResult.Success) {
+                return Result<Type[], MemberAccessError>.Fail(new MemberAccessError.Custom(type, memberIdx, methodResult.Error));
+            }
+
+            if (methodResult.Value is { } method && IsMethodUsable(method, variant, isFinal)) {
+                return Result<Type[], MemberAccessError>.Ok(method.GetParameters().Select(p => p.ParameterType) .ToArray());
             }
 
             return Result<Type[], MemberAccessError>.Fail(new MemberAccessError.MemberNotFound(type, memberIdx, memberArgs, bindingFlags));
@@ -1600,24 +1686,6 @@ public static class TargetQuery {
             targetType = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
             try {
-                // Attempt to evaluate as a target-query
-                var queryResult = GetMemberValues(arg);
-                if (queryResult.Success) {
-                    if (queryResult.Value.Count == 0 || queryResult.Value.Count > values.Length - valueIdx) {
-                        return Result<object?[], QueryError>.Fail(new QueryError.InstanceCountMismatch(arg, values.Length - valueIdx, queryResult.Value.Count));
-                    }
-
-                    foreach ((object? _, object? value) in queryResult.Value) {
-                        var coerceResult = value.CoerceTo(targetTypes[valueIdx]);
-                        if (coerceResult.Failure) {
-                            return Result<object?[], QueryError>.Fail(new QueryError.Custom(coerceResult.Error));
-                        }
-
-                        values[valueIdx++] = coerceResult.Value;
-                    }
-                    continue;
-                }
-
                 foreach (var handler in Handlers.Where(handler => handler.CanResolveValue(targetType))) {
                     var result = handler.ResolveValue(targetType, ref argIdx, valueArgs, out object? value);
                     if (result.Success && result.Value) {
@@ -1648,6 +1716,24 @@ public static class TargetQuery {
 
                 if (string.IsNullOrWhiteSpace(arg) || arg == "null") {
                     values[valueIdx++] = targetType.IsValueType ? Activator.CreateInstance(targetType) : null;
+                    continue;
+                }
+
+                // Attempt to evaluate as a target-query
+                var queryResult = GetMemberValues(arg);
+                if (queryResult.Success) {
+                    if (queryResult.Value.Count == 0 || queryResult.Value.Count > values.Length - valueIdx) {
+                        return Result<object?[], QueryError>.Fail(new QueryError.InstanceCountMismatch(arg, values.Length - valueIdx, queryResult.Value.Count));
+                    }
+
+                    foreach ((object? _, object? value) in queryResult.Value) {
+                        var coerceResult = value.CoerceTo(targetTypes[valueIdx]);
+                        if (coerceResult.Failure) {
+                            return Result<object?[], QueryError>.Fail(new QueryError.Custom(coerceResult.Error));
+                        }
+
+                        values[valueIdx++] = coerceResult.Value;
+                    }
                     continue;
                 }
 

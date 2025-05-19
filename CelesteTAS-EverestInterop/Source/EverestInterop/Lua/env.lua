@@ -12,6 +12,21 @@ local function log(message, tag)
     Celeste.Mod.Logger.Log(Celeste.Mod.LogLevel.Info, tag or "CelesteTAS/Lua", tostring(message))
 end
 
+--- Gets all members matching the specified target-query
+local function get(query)
+    return LuaHelpers.Get(query)
+end
+
+--- Sets all members matching the specified target-query to the value
+local function set(query, arguments)
+    LuaHelpers.Set(query, arguments)
+end
+
+--- Invokes all members matching the specified target-query with the arguments
+local function invoke(query, arguments)
+    LuaHelpers.Set(query, arguments)
+end
+
 --- Resolves the first entity which matches the specified target-query
 --- Example: getEntity("Player"), getEntity("Celeste.Player"), getEntity("DustStaticSpinner[s1:12]")
 local function getEntity(entityTypeName)

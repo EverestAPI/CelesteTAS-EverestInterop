@@ -87,7 +87,6 @@ internal static class HookHelper {
                         handler.HandlerEnd = cursor.Prev;
                     }
                 }
-
                 cursor.Index++;
             }
         });

@@ -53,7 +53,7 @@ public static class SaveAndQuitReenterCommand {
     [TasCommand("SaveAndQuitReenter", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
     private static void SaveAndQuitReenter(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         var controller = Manager.Controller;
-        var command = controller.Commands[controller.CurrentParsingFrame][^1];
+        var command = controller.Commands[Command.Parsing ? controller.CurrentParsingFrame : controller.CurrentFrameInTas][^1];
 
         if (ParsingCommand) {
             int slot = ActiveFileSlot;
@@ -69,32 +69,32 @@ public static class SaveAndQuitReenterCommand {
             }
 
             LibTasHelper.AddInputFrame("58");
-            controller.AddFrames("31", studioLine, parentCommand: command);
-            controller.AddFrames("14", studioLine, parentCommand: command);
+            controller.AddFrames("31", filePath, fileLine, studioLine, parentCommand: command);
+            controller.AddFrames("14", filePath, fileLine, studioLine, parentCommand: command);
             if (slot == -1) {
                 // Load debug slot
-                controller.AddFrames("1,D", studioLine, parentCommand: command);
+                controller.AddFrames("1,D", filePath, fileLine, studioLine, parentCommand: command);
                 // The Randomizer adds a new menu entry between CLIMB and ~DEBUG~
                 if (ModUtils.IsInstalled("Randomizer")) {
-                    controller.AddFrames("1,F,180", studioLine, parentCommand: command);
-                    controller.AddFrames("1", studioLine, parentCommand: command);
+                    controller.AddFrames("1,F,180", filePath, fileLine, studioLine, parentCommand: command);
+                    controller.AddFrames("1", filePath, fileLine, studioLine, parentCommand: command);
                 }
-                controller.AddFrames("1,O", studioLine, parentCommand: command);
-                controller.AddFrames("33", studioLine, parentCommand: command);
+                controller.AddFrames("1,O", filePath, fileLine, studioLine, parentCommand: command);
+                controller.AddFrames("33", filePath, fileLine, studioLine, parentCommand: command);
             } else {
                 // Get to the save files screen
-                controller.AddFrames("1,O", studioLine, parentCommand: command);
-                controller.AddFrames("56", studioLine, parentCommand: command);
+                controller.AddFrames("1,O", filePath, fileLine, studioLine, parentCommand: command);
+                controller.AddFrames("56", filePath, fileLine, studioLine, parentCommand: command);
                 // Alternate 1,D and 1,F,180 to select the slot
                 for (int i = 0; i < slot; i++) {
-                    controller.AddFrames(i % 2 == 0 ? "1,D" : "1,F,180", studioLine, parentCommand: command);
+                    controller.AddFrames(i % 2 == 0 ? "1,D" : "1,F,180", filePath, fileLine, studioLine, parentCommand: command);
                 }
 
                 // Load the selected save file
-                controller.AddFrames("1,O", studioLine, parentCommand: command);
-                controller.AddFrames("14", studioLine, parentCommand: command);
-                controller.AddFrames("1,O", studioLine, parentCommand: command);
-                controller.AddFrames("1", studioLine, parentCommand: command);
+                controller.AddFrames("1,O", filePath, fileLine, studioLine, parentCommand: command);
+                controller.AddFrames("14", filePath, fileLine, studioLine, parentCommand: command);
+                controller.AddFrames("1,O", filePath, fileLine, studioLine, parentCommand: command);
+                controller.AddFrames("1", filePath, fileLine, studioLine, parentCommand: command);
                 LibTasHelper.AddInputFrame("32");
             }
 

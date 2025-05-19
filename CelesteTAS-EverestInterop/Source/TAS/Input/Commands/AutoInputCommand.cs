@@ -159,8 +159,8 @@ public static class AutoInputCommand {
         }
     }
 
-    public static bool TryInsert(string filePath, string lineText, int studioLine, int repeatIndex, int repeatCount) {
-        if (!InputFrame.TryParse(lineText, studioLine, null, out var inputFrame)) {
+    public static bool TryInsert(string filePath, int fileLine, string lineText, int studioLine, int repeatIndex, int repeatCount) {
+        if (!InputFrame.TryParse(lineText, filePath, fileLine, studioLine, null, out var inputFrame)) {
             return false;
         }
 
@@ -202,7 +202,7 @@ public static class AutoInputCommand {
             if (arguments.CycleOffset == 0 || i == inputFrame.Frames - 1) {
                 Manager.Controller.AddFrames(inputFrame with {
                     Frames = frames,
-                    Line = studioLine,
+                    StudioLine = studioLine,
                     RepeatCount = repeatCount,
                     RepeatIndex = repeatIndex,
                     FrameOffset = mainFile ? parsedFrames : 0,

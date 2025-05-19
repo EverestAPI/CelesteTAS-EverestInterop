@@ -3,6 +3,7 @@ using StudioCommunication;
 using System.Collections.Generic;
 using System.IO;
 using TAS.InfoHUD;
+using TAS.Tools;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -73,6 +74,7 @@ public static class AssertCommand {
                                             Expected equal: {expected}
                                             But was: {actual}
                                             """;
+                        SyncChecker.ReportAssertFailed(commandLine.OriginalText, filePath, fileLine, expected, actual);
                         AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
                     break;
@@ -83,6 +85,7 @@ public static class AssertCommand {
                                             Expected not equal: {expected}
                                             But was: {actual}
                                             """;
+                        SyncChecker.ReportAssertFailed(commandLine.OriginalText, filePath, fileLine, expected, actual);
                         AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
                     break;
@@ -93,6 +96,7 @@ public static class AssertCommand {
                                             Expected contain: {expected}
                                             But was: {actual}
                                             """;
+                        SyncChecker.ReportAssertFailed(commandLine.OriginalText, filePath, fileLine, expected, actual);
                         AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
                     break;
@@ -102,6 +106,7 @@ public static class AssertCommand {
                                             Expected not contain: {expected}
                                             But was: {actual}
                                             """;
+                        SyncChecker.ReportAssertFailed(commandLine.OriginalText, filePath, fileLine, expected, actual);
                         AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
                     break;
@@ -111,6 +116,7 @@ public static class AssertCommand {
                                             Expected starts with: {expected}
                                             But was: {actual}
                                             """;
+                        SyncChecker.ReportAssertFailed(commandLine.OriginalText, filePath, fileLine, expected, actual);
                         AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
                     break;
@@ -120,6 +126,7 @@ public static class AssertCommand {
                                             Expected not starts with: {expected}
                                             But was: {actual}
                                             """;
+                        SyncChecker.ReportAssertFailed(commandLine.OriginalText, filePath, fileLine, expected, actual);
                         AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
                     break;
@@ -129,6 +136,7 @@ public static class AssertCommand {
                                             Expected ends with: {expected}
                                             But was: {actual}
                                             """;
+                        SyncChecker.ReportAssertFailed(commandLine.OriginalText, filePath, fileLine, expected, actual);
                         AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
                     break;
@@ -138,6 +146,7 @@ public static class AssertCommand {
                                             Expected not ends with: {expected}
                                             But was: {actual}
                                             """;
+                        SyncChecker.ReportAssertFailed(commandLine.OriginalText, filePath, fileLine, expected, actual);
                         AbortTas($"{prefix}{failureMessage}", true, 4f);
                     }
                     break;

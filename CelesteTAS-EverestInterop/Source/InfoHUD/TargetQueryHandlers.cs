@@ -7,6 +7,7 @@ using StudioCommunication;
 using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
 using TAS.EverestInterop;
@@ -202,11 +203,22 @@ internal class AssistsQueryHandler : TargetQuery.Handler {
 }
 
 internal class ExtendedVariantsQueryHandler : TargetQuery.Handler {
+    private static bool IsExtVars(Type type, [NotNullWhen(true)] out EverestModule? module) {
+        if (!type.IsSameOrSubclassOf(typeof(EverestModuleSettings))) {
+            module = null;
+            return false;
+        }
+
+        module = Everest.Modules.FirstOrDefault(mod => mod.SettingsType == type);
+        return module is { Metadata.Name: "ExtendedVariantMode" };
+    }
+
+    public override bool CanEnumerateMemberEntries(Type type, TargetQuery.Variant variant) {
+        return variant is TargetQuery.Variant.Get or TargetQuery.Variant.Set && IsExtVars(type, out _);
+    }
+
     public override Result<bool, TargetQuery.MemberAccessError> ResolveMember(object? instance, out object? value, Type type, int memberIdx, string[] memberArgs) {
-        if (!type.IsSameOrSubclassOf(typeof(EverestModuleSettings)) ||
-            Everest.Modules.FirstOrDefault(mod => mod.SettingsType == type) is not { } module ||
-            module.Metadata.Name != "ExtendedVariantMode"
-        ) {
+        if (!IsExtVars(type, out var module)) {
             value = null;
             return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
         }
@@ -224,10 +236,7 @@ internal class ExtendedVariantsQueryHandler : TargetQuery.Handler {
     }
 
     public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
-        if (!type.IsSameOrSubclassOf(typeof(EverestModuleSettings)) ||
-            Everest.Modules.FirstOrDefault(mod => mod.SettingsType == type) is not { } module ||
-            module.Metadata.Name != "ExtendedVariantMode"
-        ) {
+        if (!IsExtVars(type, out var module)) {
             targetTypes = [];
             return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
         }
@@ -245,10 +254,7 @@ internal class ExtendedVariantsQueryHandler : TargetQuery.Handler {
     }
 
     public override Result<bool, TargetQuery.MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
-        if (!type.IsSameOrSubclassOf(typeof(EverestModuleSettings)) ||
-            Everest.Modules.FirstOrDefault(mod => mod.SettingsType == type) is not { } module ||
-            module.Metadata.Name != "ExtendedVariantMode"
-        ) {
+        if (!IsExtVars(type, out _)) {
             return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
         }
 
@@ -257,6 +263,25 @@ internal class ExtendedVariantsQueryHandler : TargetQuery.Handler {
 
         ExtendedVariantsInterop.SetVariantValue(variant, value);
         return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+    }
+
+    public override IEnumerator<CommandAutoCompleteEntry> EnumerateMemberEntries(Type type, TargetQuery.Variant variant) {
+        if (ExtendedVariantsInterop.GetVariantsEnum() is { } variantsEnum) {
+            foreach (object extendedVariant in Enum.GetValues(variantsEnum)) {
+                string typeName = string.Empty;
+
+                try {
+                    var variantType = ExtendedVariantsInterop.GetVariantType(new Lazy<object?>(extendedVariant));
+                    if (variantType != null) {
+                        typeName = variantType.CSharpName();
+                    }
+                } catch {
+                    // ignore
+                }
+
+                yield return new CommandAutoCompleteEntry { Name = extendedVariant.ToString()!, Extra = typeName, IsDone = true };
+            }
+        }
     }
 }
 
@@ -284,6 +309,49 @@ internal class EverestModuleSettingsQueryHandler : TargetQuery.Handler {
                 yield return new CommandAutoCompleteEntry { Name = $"{mod.Metadata.Name}.", Extra = "Mod Setting", IsDone = false };
             }
         }
+    }
+}
+
+internal class EverestModuleSessionQueryHandler : TargetQuery.Handler {
+    public override bool CanResolveInstances(Type type) => type.IsSameOrSubclassOf(typeof(EverestModuleSession));
+
+    public override object[] ResolveInstances(Type type) {
+        return Everest.Modules.FirstOrDefault(mod => mod.SessionType == type) is { } module ? [module._Session] : [];
+    }
+}
+
+internal class EverestModuleSaveDataQueryHandler : TargetQuery.Handler {
+    public override bool CanResolveInstances(Type type) => type.IsSameOrSubclassOf(typeof(EverestModuleSaveData));
+
+    public override object[] ResolveInstances(Type type) {
+        return Everest.Modules.FirstOrDefault(mod => mod.SaveDataType == type) is { } module ? [module._SaveData] : [];
+    }
+}
+
+internal class SceneQueryHandler : TargetQuery.Handler {
+    public override bool CanResolveInstances(Type type) => type.IsSameOrSubclassOf(typeof(Scene));
+
+    public override object[] ResolveInstances(Type type) {
+        if (Engine.Scene?.GetType().IsSameOrSubclassOf(type) ?? false) {
+            return [Engine.Scene];
+        }
+        if (type.IsSameOrSubclassOf(typeof(Level)) && Engine.Scene?.GetLevel() is { } level) {
+            return [level];
+        }
+
+        return [];
+    }
+}
+
+internal class SessionQueryHandler : TargetQuery.Handler {
+    public override bool CanResolveInstances(Type type) => type == typeof(Session);
+
+    public override object[] ResolveInstances(Type type) {
+        if (Engine.Scene?.GetSession() is { } session) {
+            return [session];
+        }
+
+        return [];
     }
 }
 
@@ -775,5 +843,22 @@ internal class SpecialValueQueryHandler : TargetQuery.Handler {
                 yield return new CommandAutoCompleteEntry { Name = key.ToString(), Extra = "Key", IsDone = true };
             }
         }
+    }
+}
+
+internal class ModInteropQueryHandler : TargetQuery.Handler {
+    private static readonly Lazy<Type?> AcidLightningType = new(() => ModUtils.GetType("Glyph", "Celeste.Mod.AcidHelper.Entities.AcidLightning"));
+
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveMember(object? instance, out object? value, Type type, int memberIdx, string[] memberArgs) {
+        if (instance != null && instance.GetType() == AcidLightningType.Value && memberArgs[memberIdx] == nameof(Lightning.toggleOffset)) {
+            // AcidLightning defines a new "toggleOffset" field, but doesn't use it
+            // However while resolving members it would be used instead of the one from the base class
+            var lightning = (Lightning) instance;
+            value = lightning.toggleOffset;
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+        }
+
+        value = null;
+        return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
     }
 }

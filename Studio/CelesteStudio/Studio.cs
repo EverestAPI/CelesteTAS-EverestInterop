@@ -17,6 +17,7 @@ using Eto.Forms.ThemedControls;
 using StudioCommunication;
 using StudioCommunication.Util;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace CelesteStudio;
 
@@ -38,6 +39,8 @@ public sealed class Studio : Form {
 
     /// Path to the Celeste install or null if it couldn't be found
     public static string? CelesteDirectory { get; private set; }
+    /// Path to the Studio install
+    public static string InstallDirectory { get; private set; }
 
     /// For some **UNHOLY** reasons, not calling Content.UpdateLayout() in RecalculateLayout() places during startup causes themeing to crash.
     /// _However_, while this hack is active, you can't resize the window, so this has to be disabled again as soon as possible...
@@ -52,7 +55,10 @@ public sealed class Studio : Form {
 
     private JadderlineForm? jadderlineForm;
     private FeatherlineForm? featherlineForm;
+    private RadelineSimForm? radelineSimForm;
     private ThemeEditor? themeEditorForm;
+
+    private RadelineSimForm.Config radelineFormPersistence = new();
 
     private string TitleBarText => Editor.Document.FilePath == Document.ScratchFile
         ? $"Studio {Version} - <Scratch>"
@@ -92,6 +98,14 @@ public sealed class Studio : Form {
             CelesteDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..");
         } else {
             Console.WriteLine("Couldn't find game directory");
+        }
+
+        // Find install directory
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+            InstallDirectory = AppDomain.CurrentDomain.BaseDirectory;
+        } else {
+            // Inside .app bundle
+            InstallDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..");
         }
 
         // Close other Studio instances to avoid conflicts
@@ -283,12 +297,19 @@ public sealed class Studio : Form {
         if (Instance.featherlineForm != null) {
             Instance.featherlineForm.GotFocus += Refocus;
         }
+        if (Instance.radelineSimForm != null) {
+            Instance.radelineSimForm.GotFocus += Refocus;
+        }
 
         bool wasTopmost = Instance.Topmost;
 
         // Studio can't be also top-most while a dialog is open, since it would be above the dialog
         Instance.Topmost = false;
-        Instance.Focus();
+        if (wasTopmost) {
+            // Loosely emulate being topmost
+            Instance.Focus();
+            dialog.Focus();
+        }
 
         dialog.Closed += (_, _) => Instance.Topmost = wasTopmost;
 
@@ -572,7 +593,9 @@ public sealed class Studio : Form {
             return;
         }
 
-        OpenFileInEditor(Settings.Instance.RecentFiles[1]);
+        if (Settings.Instance.RecentFiles.Count > 1) {
+            OpenFileInEditor(Settings.Instance.RecentFiles[1]);
+        }
     }
 
     private void OnSaveFile() {
@@ -805,14 +828,25 @@ public sealed class Studio : Form {
                     featherlineForm.Show();
                     featherlineForm.Closed += (_, _) => featherlineForm = null;
                 }),
+                MenuUtils.CreateAction("&Radeline Simulator", Keys.None, () => {
+                    radelineSimForm ??= new(radelineFormPersistence);
+                    radelineSimForm.Show();
+                    radelineSimForm.Closed += (_, _) => radelineSimForm = null;
+                }),
             }},
         ];
 
         var quitItem = Quit.CreateItem();
         var homeItem = MenuUtils.CreateAction("Open README...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop"));
         var wikiItem = MenuUtils.CreateAction("Open wiki...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki"));
-        var whatsNewItem = MenuUtils.CreateAction("What's new?", Keys.None, ChangelogDialog.Show);
-        whatsNewItem.Enabled = Assembly.GetExecutingAssembly().GetManifestResourceInfo("Changelog.md") != null;
+        var whatsNewItem = MenuUtils.CreateAction("What's new?", Keys.None, () => {
+            string versionHistoryPath = Path.Combine(InstallDirectory, "Assets", "version_history.json");
+            if (File.Exists(versionHistoryPath)) {
+                using var fs = File.OpenRead(versionHistoryPath);
+                ChangelogDialog.Show(fs, null, null);
+            }
+        });
+        whatsNewItem.Enabled = File.Exists(Path.Combine(InstallDirectory, "Assets", "version_history.json"));
         var aboutItem = MenuUtils.CreateAction("About...", Keys.None, () => {
             ShowAboutDialog(new AboutDialog {
                 ProgramName = "Celeste Studio",

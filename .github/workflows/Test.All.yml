@@ -1,0 +1,35 @@
+name: Sync-Check
+
+on:
+  workflow_call:
+
+jobs:
+  vanilla:
+    name: Vanilla
+    uses: ./.github/workflows/Test.SyncCheck.yml
+    with:
+      id: vanilla_full
+      name: Vanilla
+      build-cfg: Debug
+      tas-repository: VampireFlower/CelesteTAS
+      tas-revision: eb4550a253be97fd4942a5e609fe2a60e980f7ca
+      tas-files: |
+        0 - Any%.tas
+        0 - All A Sides.tas
+        0 - All B Sides.tas
+        0 - All C Sides.tas
+        0 - 100%.tas
+        0 - 202 Berries.tas
+
+  strawberryjam:
+    name: Strawberry Jam
+    uses: ./.github/workflows/Test.SyncCheck.yml
+    with:
+      id: strawberryjam_full
+      name: Strawberry Jam
+      build-cfg: Debug
+      tas-repository: VampireFlower/StrawberryJamTAS
+      tas-revision: e8b85971c75127ec3e6dda4277c87735c1586ac8
+      tas-files: |
+        0-SJ All Levels.tas
+      required-mods: StrawberryJam2021

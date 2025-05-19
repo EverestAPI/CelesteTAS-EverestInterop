@@ -38,7 +38,7 @@ public class InputController {
     public readonly SortedDictionary<int, FastForward> FastForwardLabels = new();
 
     public InputFrame? Previous => Inputs!.GetValueOrDefault(CurrentFrameInTas - 1);
-    public InputFrame Current => Inputs!.GetValueOrDefault(CurrentFrameInTas)!;
+    public InputFrame? Current => Inputs!.GetValueOrDefault(CurrentFrameInTas);
     public InputFrame? Next => Inputs!.GetValueOrDefault(CurrentFrameInTas + 1);
 
     public int CurrentFrameInTas { get; set; } = 0;
@@ -178,7 +178,7 @@ public class InputController {
         InputHelper.FeedInputs(Current);
 
         // Increment if it's still the same input
-        if (CurrentFrameInInput == 0 || Current.Line == Previous!.Line && Current.RepeatIndex == Previous.RepeatIndex && Current.FrameOffset == Previous.FrameOffset) {
+        if (CurrentFrameInInput == 0 || Current.StudioLine == Previous!.StudioLine && Current.RepeatIndex == Previous.RepeatIndex && Current.FrameOffset == Previous.FrameOffset) {
             CurrentFrameInInput++;
         } else {
             CurrentFrameInInput = 1;
@@ -262,16 +262,16 @@ public class InputController {
                 Comments[CurrentParsingFrame] = comments = [];
             }
             comments.Add(new Comment(CurrentParsingFrame, path, fileLine, lineText));
-        } else if (!AutoInputCommand.TryInsert(path, lineText, studioLine, repeatIndex, repeatCount)) {
-            AddFrames(lineText, studioLine, repeatIndex, repeatCount);
+        } else if (!AutoInputCommand.TryInsert(path, fileLine, lineText, studioLine, repeatIndex, repeatCount)) {
+            AddFrames(lineText, path, fileLine, studioLine, repeatIndex, repeatCount);
         }
 
         return true;
     }
 
     /// Parses the input line and adds it to the TAS
-    public void AddFrames(string line, int studioLine, int repeatIndex = 0, int repeatCount = 0, int frameOffset = 0, Command? parentCommand = null) {
-        if (InputFrame.TryParse(line, studioLine, Inputs.LastOrDefault(), out var inputFrame, repeatIndex, repeatCount, frameOffset, parentCommand)) {
+    public void AddFrames(string line, string path, int fileLine, int studioLine, int repeatIndex = 0, int repeatCount = 0, int frameOffset = 0, Command? parentCommand = null) {
+        if (InputFrame.TryParse(line, path, fileLine, studioLine, Inputs.LastOrDefault(), out var inputFrame, repeatIndex, repeatCount, frameOffset, parentCommand)) {
             AddFrames(inputFrame);
         }
     }

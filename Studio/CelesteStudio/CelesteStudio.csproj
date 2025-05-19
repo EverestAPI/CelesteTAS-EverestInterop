@@ -6,7 +6,7 @@
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
-        <Version>3.8.4</Version>
+        <Version>3.9.1</Version>
     </PropertyGroup>
 
     <PropertyGroup Condition="($(RuntimeIdentifier) == '' and $([MSBuild]::IsOSPlatform('Linux'))) or $(RuntimeIdentifier.StartsWith('linux'))">
@@ -28,6 +28,7 @@
         <PackageReference Include="SkiaSharp" Version="2.88.8" />
         <PackageReference Include="Samboy063.Tomlet" Version="5.3.1"/>
         <PackageReference Include="Markdig" Version="0.37.0"/>
+        <PackageReference Include="Tedd.RandomUtils" Version="1.0.6" />
 
         <ProjectReference Include="..\..\StudioCommunication\StudioCommunication.csproj"/>
         <ProjectReference Include="..\..\external\Featherline\Featherline.csproj"/>
@@ -49,12 +50,6 @@
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Bold.otf" LogicalName="JetBrainsMono/JetBrainsMono-Bold"/>
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-Italic.otf" LogicalName="JetBrainsMono/JetBrainsMono-Italic"/>
         <EmbeddedResource Include="Assets\JetBrainsMono\JetBrainsMonoNL-BoldItalic.otf" LogicalName="JetBrainsMono/JetBrainsMono-BoldItalic"/>
-    </ItemGroup>
-
-    <!-- Changelog (generated during Release action) -->
-    <ItemGroup>
-        <EmbeddedResource Condition="Exists('Assets\VersionInfo.txt')" Include="Assets\VersionInfo.txt" LogicalName="VersionInfo.txt"/>
-        <EmbeddedResource Condition="Exists('Assets\Changelog.md')" Include="Assets\Changelog.md" LogicalName="Changelog.md"/>
     </ItemGroup>
 
 </Project>

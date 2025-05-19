@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace StudioCommunication.Util;
 
@@ -217,5 +218,82 @@ public static class TypeExtensions {
             ? type.Namespace.Length + 1
             : 0;
         return type.FullName[namespaceLen..];
+    }
+}
+
+public static class EnumExtensions {
+#if NET7_0_OR_GREATER
+    /// Split a flags enum into the individual flags
+    public static unsafe IEnumerable<T> ToValues<T>(this T flags) where T : unmanaged, Enum {
+        return sizeof(T) switch {
+            1 => ToValuesInternal<T, byte>(flags),
+            2 => ToValuesInternal<T, ushort>(flags),
+            4 => ToValuesInternal<T, uint>(flags),
+            8 => ToValuesInternal<T, ulong>(flags),
+            _ => throw new Exception("Size does not match a known Enum backing type."),
+        };
+    }
+
+    private static IEnumerable<TEnum> ToValuesInternal<TEnum, TBacking>(this TEnum flags) where TEnum : unmanaged, Enum where TBacking : unmanaged, INumber<TBacking>, IBitwiseOperators<TBacking, TBacking, TBacking>, IEqualityOperators<TBacking, TBacking, bool> {
+        var flagsInt = Unsafe.As<TEnum, TBacking>(ref flags);
+        foreach (object? valueObject in Enum.GetValues(typeof(TEnum))) {
+            var value = (TEnum) valueObject;
+            var valueInt = Unsafe.As<TEnum, TBacking>(ref value);
+            if ((valueInt & flagsInt) != TBacking.CreateChecked(0)) {
+                yield return value;
+            }
+        }
+    }
+#endif
+}
+
+public static class DictionaryExtensions {
+    /// Adds an element to the list stored under the specified key
+    public static void AddToKey<TKey, TValue>(this IDictionary<TKey, List<TValue>> dict, TKey key, TValue value) {
+        if (dict.TryGetValue(key, out var list)) {
+            list.Add(value);
+            return;
+        }
+        dict[key] = [value];
+    }
+    /// Adds all elements to the list stored under the specified key
+    public static void AddRangeToKey<TKey, TValue>(this IDictionary<TKey, List<TValue>> dict, TKey key, IEnumerable<TValue> values) {
+        if (dict.TryGetValue(key, out var list)) {
+            list.AddRange(values);
+            return;
+        }
+        dict[key] = [..values];
+    }
+}
+
+public static class StackExtensions {
+    /// Pushes a range of elements onto the queue, in order
+    public static void PushRange<T>(this Stack<T> stack, IEnumerable<T> items) {
+        switch (items) {
+            case IList<T> list: {
+#if NET7_0_OR_GREATER
+                stack.EnsureCapacity(stack.Count + list.Count);
+#endif
+                for (int i = 0; i < list.Count; i++) {
+                    stack.Push(list[i]);
+                }
+                break;
+            }
+            case ICollection<T> collection: {
+#if NET7_0_OR_GREATER
+                stack.EnsureCapacity(stack.Count + collection.Count);
+#endif
+                foreach (var item in collection) {
+                    stack.Push(item);
+                }
+                break;
+            }
+            default: {
+                foreach (var item in items) {
+                    stack.Push(item);
+                }
+                break;
+            }
+        }
     }
 }

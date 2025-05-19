@@ -173,7 +173,7 @@ public static class InfoHud {
         var previous = current.Previous;
         var next = current.Next;
 
-        int maxLine = Math.Max(current.Line, Math.Max(previous?.Line ?? 0, next?.Line ?? 0)) + 1;
+        int maxLine = Math.Max(current.StudioLine, Math.Max(previous?.StudioLine ?? 0, next?.StudioLine ?? 0)) + 1;
         int linePadLeft = maxLine.ToString().Length;
 
         int maxFrames = Math.Max(current.Frames, Math.Max(previous?.Frames ?? 0, next?.Frames ?? 0));
@@ -181,7 +181,7 @@ public static class InfoHud {
 
         string FormatInputFrame(InputFrame inputFrame) {
             return
-                $"{(inputFrame.Line + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - inputFrame.Frames.ToString().Length)}{inputFrame}";
+                $"{(inputFrame.StudioLine + 1).ToString().PadLeft(linePadLeft)}: {string.Empty.PadLeft(framesPadLeft - inputFrame.Frames.ToString().Length)}{inputFrame}";
         }
 
         if (previous != null) {

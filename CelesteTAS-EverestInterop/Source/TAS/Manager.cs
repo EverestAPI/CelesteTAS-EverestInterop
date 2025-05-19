@@ -15,6 +15,7 @@ using TAS.Input;
 using TAS.Input.Commands;
 using TAS.ModInterop;
 using TAS.Module;
+using TAS.Tools;
 using TAS.Utils;
 
 namespace TAS;
@@ -71,7 +72,16 @@ public static class Manager {
         // Stop TAS to avoid blocking reload
         typeof(AssetReloadHelper)
             .GetMethodInfo(nameof(AssetReloadHelper.Do), [typeof(string), typeof(Func<bool, Task>), typeof(bool), typeof(bool)])!
-            .HookBefore(DisableRun);
+            .IlHook((cursor, _) => {
+                var start = cursor.MarkLabel();
+                cursor.MoveBeforeLabels();
+
+                cursor.EmitLdarg2(); // bool silent
+
+                // Only disable TAS for non-silent reload actions
+                cursor.EmitBrtrue(start);
+                cursor.EmitDelegate(DisableRun);
+            });
     }
 
     [Unload]
@@ -95,8 +105,9 @@ public static class Manager {
         Controller.RefreshInputs();
 
         if (Controller.Inputs.Count == 0) {
-            // Empty file
+            // Empty / Invalid file
             CurrState = NextState = State.Disabled;
+            SyncChecker.ReportRunFinished();
             return;
         }
 
@@ -116,6 +127,7 @@ public static class Manager {
         "Stopping TAS".Log();
 
         AttributeUtils.Invoke<DisableRunAttribute>();
+        SyncChecker.ReportRunFinished();
         CurrState = NextState = State.Disabled;
         Controller.Stop();
     }
@@ -165,7 +177,7 @@ public static class Manager {
         }
 
         // Auto-pause at end of drafts
-        if (!Controller.CanPlayback && IsDraft()) {
+        if (!Controller.CanPlayback && TasSettings.AutoPauseDraft && IsDraft()) {
             NextState = State.Paused;
         }
         // Pause the TAS if breakpoint is hit
@@ -179,6 +191,7 @@ public static class Manager {
         if (SafeCommand.DisallowUnsafeInput && Controller.CurrentFrameInTas > 1) {
             // Only allow specific scenes
             if (Engine.Scene is not (Level or LevelLoader or LevelExit or Emulator or LevelEnter)) {
+                SyncChecker.ReportUnsafeAction();
                 DisableRun();
             }
             // Disallow modifying options
@@ -190,6 +203,7 @@ public static class Manager {
                         || Dialog.Has("MODOPTIONS_EXTENDEDVARIANTS_PAUSEMENU_BUTTON") && title == Dialog.Clean("MODOPTIONS_EXTENDEDVARIANTS_PAUSEMENU_BUTTON").ToUpperInvariant())
                     || item is TextMenuExt.HeaderImage { Image: "menu/everest" }
                 ) {
+                    SyncChecker.ReportUnsafeAction();
                     DisableRun();
                 }
             }
@@ -365,7 +379,7 @@ public static class Manager {
         }
         var previous = Controller.Previous;
         var state = new StudioState {
-            CurrentLine = previous?.Line ?? -1,
+            CurrentLine = previous?.StudioLine ?? -1,
             CurrentLineSuffix = $"{Controller.CurrentFrameInInput + (previous?.FrameOffset ?? 0)}{previous?.RepeatString ?? ""}",
             CurrentFrameInTas = Controller.CurrentFrameInTas,
             SaveStateLine = Savestates.StudioHighlightLine,

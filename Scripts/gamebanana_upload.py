@@ -117,7 +117,7 @@ def main():
 
     # Add description
     print("Adding description to file...", end="    ", flush=True)
-    desc = f"CelesteTAS {celestetas_version}, Studio {studio_version}"
+    desc = f"CelesteTAS v{celestetas_version}, Studio v{studio_version}"
     driver.execute_script(f"$(\"fieldset[id='Files'] ul[id$='_UploadedFiles'] li:first .DescriptionInput\")[0].value = '{desc}'")
     print("Done.", flush=True)
     driver.implicitly_wait(1)
@@ -153,8 +153,8 @@ def main():
                                "body": '{json.dumps({
                                    "_aChangeLog": update_json,
                                    "_aFileRowIds": [file_id],
-                                   "_sName": f"CelesteTAS {celestetas_version} / Studio {studio_version}",
-                                   "_sVersion": celestetas_version,
+                                   "_sName": f"CelesteTAS v{celestetas_version} / Studio v{studio_version}",
+                                   "_sVersion": f"v{celestetas_version}",
                                 }).replace("\\", "\\\\").replace("'", "\\'")}',
                                "method": "POST",
                                "mode": "cors"

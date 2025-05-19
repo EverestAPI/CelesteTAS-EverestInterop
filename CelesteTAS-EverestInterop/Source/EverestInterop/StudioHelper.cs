@@ -1,5 +1,6 @@
 ﻿// ReSharper disable HeuristicUnreachableCode
 #pragma warning disable CS0162 // Unreachable code detected
+#define INSTALL_STUDIO
 
 using System;
 using System.Diagnostics;
@@ -14,6 +15,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using TAS.Module;
+using TAS.Tools;
 using TAS.Utils;
 
 namespace TAS.EverestInterop;
@@ -31,12 +33,12 @@ public static class StudioHelper {
     private const string DownloadURL_MacOS_ARM64 = "##URL_MACOS_ARM64##";
 
     private const string FileName_Windows_x64    = "##FILENAME_WINDOWS_x64##";
-    private const string FileName_Linux_x64      = "##FILENAME_LINUX_x64##";
+    private const string FileName_Linux_x64      = "CelesteStudio-linux-x64.zip";
     private const string FileName_MacOS_x64      = "##FILENAME_MACOS_x64##";
     private const string FileName_MacOS_ARM64    = "##FILENAME_MACOS_ARM64##";
 
     private const string Checksum_Windows_x64    = "##CHECKSUM_WINDOWS_x64##";
-    private const string Checksum_Linux_x64      = "##CHECKSUM_LINUX_x64##";
+    private const string Checksum_Linux_x64      = "ba05639be7bf096c36b4993512fee75f";
     private const string Checksum_MacOS_x64      = "##CHECKSUM_MACOS_x64##";
     private const string Checksum_MacOS_ARM64    = "##CHECKSUM_MACOS_ARM64##";
 
@@ -107,6 +109,10 @@ public static class StudioHelper {
 
     [Load]
     private static void Load() {
+        if (Everest.Flags.IsHeadless || SyncChecker.Active) {
+            return;
+        }
+
         // INSTALL_STUDIO is only set during builds from Build.yml/Release.yml, since otherwise the URLs / checksums are invalid
 #if INSTALL_STUDIO
         // Check if Studio is already up-to-date
@@ -347,6 +353,30 @@ public static class StudioHelper {
             }
         }
 
+        // Copy over assets
+        var metadata = CelesteTasModule.Instance.Metadata;
+        if (!string.IsNullOrEmpty(metadata.PathArchive)) {
+            using var zip = ZipFile.OpenRead(metadata.PathArchive);
+            foreach (var entry in zip.Entries.Where(entry => entry.FullName.StartsWith("Assets"))) {
+                string targetPath = Path.Combine(TempStudioInstallDirectory, entry.FullName);
+                if (Path.GetDirectoryName(targetPath) is { } targetDirectory) {
+                    Directory.CreateDirectory(targetDirectory);
+                }
+
+                entry.ExtractToFile(targetPath);
+            }
+        } else if (!string.IsNullOrEmpty(metadata.PathDirectory)) {
+            string assetsDir = Path.Combine(metadata.PathDirectory, "Assets");
+            foreach (string path in Directory.GetFiles(assetsDir, "*", new EnumerationOptions { RecurseSubdirectories = true })) {
+                string targetPath = Path.Combine(TempStudioInstallDirectory, "Assets", Path.GetRelativePath(assetsDir, path));
+                if (Path.GetDirectoryName(targetPath) is { } targetDirectory) {
+                    Directory.CreateDirectory(targetDirectory);
+                }
+
+                File.Copy(path, targetPath);
+            }
+        }
+
         // Cleanup old install
         foreach (string file in Directory.GetFiles(StudioDirectory)) {
             if (file == DownloadPath || file == TempStudioInstallDirectory) {
@@ -421,6 +451,10 @@ public static class StudioHelper {
     }
 
     internal static void LaunchStudio() => Task.Run(async () => {
+        if (Everest.Flags.IsHeadless || SyncChecker.Active) {
+            return;
+        }
+
         "Launching Studio...".Log();
         try {
             // Wait until the installation is verified
