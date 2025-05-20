@@ -13,6 +13,7 @@ using TAS.Gameplay;
 using TAS.InfoHUD;
 using TAS.Input.Commands;
 using TAS.Module;
+using TAS.Utils;
 
 namespace TAS.ModInterop;
 
@@ -89,55 +90,57 @@ public static class SpeedrunToolInterop {
 
         saveLoadHandle = SpeedrunToolSaveLoadImport.RegisterSaveLoadAction!(
             (savedValues, _) => {
-                savedValues[typeof(SpeedrunToolInterop)] = new Dictionary<string, object> {
-                    {"savedEntityData", EntityDataHelper.CachedEntityData },
-                    {"groupCounter", CycleHitboxColor.GroupCounter },
-                    {"simulatePauses", StunPauseCommand.SimulatePauses },
-                    {"pauseOnCurrentFrame", StunPauseCommand.PauseOnCurrentFrame },
-                    {"skipFrames", StunPauseCommand.SkipFrames },
-                    {"waitingFrames",StunPauseCommand.WaitingFrames },
-                    {"localMode", StunPauseCommand.LocalMode },
-                    {"globalModeRuntime", StunPauseCommand.GlobalModeRuntime },
-                    {"pressKeys", PressCommand.PressKeys },
-                    {"tasStartInfo", MetadataCommands.TasStartInfo },
-                    {"mouseState", MouseCommand.CurrentState },
-                    {"followers", HitboxSimplified.Followers},
-                    {"disallowUnsafeInput", SafeCommand.DisallowUnsafeInput },
-                    {"auraRandom", DesyncFixer.AuraHelperSharedRandom },
-                    {"betterInvincible", Manager.Running && BetterInvincible.Invincible },
+                savedValues[typeof(SpeedrunToolInterop)] = new Dictionary<string, object?> {
+                    { nameof(EntityDataHelper.CachedEntityData), EntityDataHelper.CachedEntityData },
+                    { nameof(CycleHitboxColor.GroupCounter), CycleHitboxColor.GroupCounter },
+                    { nameof(StunPauseCommand.SimulatePauses), StunPauseCommand.SimulatePauses },
+                    { nameof(StunPauseCommand.PauseOnCurrentFrame), StunPauseCommand.PauseOnCurrentFrame },
+                    { nameof(StunPauseCommand.SkipFrames), StunPauseCommand.SkipFrames },
+                    { nameof(StunPauseCommand.WaitingFrames), StunPauseCommand.WaitingFrames },
+                    { nameof(StunPauseCommand.LocalMode), StunPauseCommand.LocalMode },
+                    { nameof(StunPauseCommand.GlobalModeRuntime), StunPauseCommand.GlobalModeRuntime },
+                    { nameof(PressCommand.PressKeys), PressCommand.PressKeys },
+                    { nameof(MetadataCommands.TasStartInfo), MetadataCommands.TasStartInfo },
+                    { nameof(MouseCommand.CurrentState), MouseCommand.CurrentState },
+                    { nameof(HitboxSimplified.Followers), HitboxSimplified.Followers },
+                    { nameof(SafeCommand.DisallowUnsafeInput), SafeCommand.DisallowUnsafeInput },
+                    { nameof(DesyncFixer.AuraHelperSharedRandom), DesyncFixer.AuraHelperSharedRandom },
+                    { nameof(BetterInvincible), Manager.Running && BetterInvincible.Invincible },
                 }.DeepClone();
+
+                // Store ourselves to be able to clear it, when the user asks to
                 InfoWatchEntity.WatchedEntities_Save = InfoWatchEntity.WatchedEntities.DeepClone();
-                // if cleared by user manually, then it should not appear after load state, even if you load from another saveslot?
-                // i'm not sure
             },
             (savedValues, _) => {
                 var clonedValues = savedValues[typeof(SpeedrunToolInterop)].DeepClone();
 
-                EntityDataHelper.CachedEntityData = (Dictionary<Entity, EntityData>)clonedValues["savedEntityData"];
-                CycleHitboxColor.GroupCounter = (int)clonedValues["groupCounter"];
-                StunPauseCommand.SimulatePauses = (bool)clonedValues["simulatePauses"];
-                StunPauseCommand.PauseOnCurrentFrame = (bool)clonedValues["pauseOnCurrentFrame"];
-                StunPauseCommand.SkipFrames = (int)clonedValues["skipFrames"];
-                StunPauseCommand.WaitingFrames = (int)clonedValues["waitingFrames"];
-                StunPauseCommand.LocalMode = (StunPauseCommand.StunPauseMode?)clonedValues["localMode"];
-                StunPauseCommand.GlobalModeRuntime = (StunPauseCommand.StunPauseMode?)clonedValues["globalModeRuntime"];
+                EntityDataHelper.CachedEntityData = (Dictionary<Entity, EntityData>) clonedValues[nameof(EntityDataHelper.CachedEntityData)]!;
+                CycleHitboxColor.GroupCounter = (int) clonedValues[nameof(CycleHitboxColor.GroupCounter)]!;
+                StunPauseCommand.SimulatePauses = (bool) clonedValues[nameof(StunPauseCommand.SimulatePauses)]!;
+                StunPauseCommand.PauseOnCurrentFrame = (bool) clonedValues[nameof(StunPauseCommand.PauseOnCurrentFrame)]!;
+                StunPauseCommand.SkipFrames = (int) clonedValues[nameof(StunPauseCommand.SkipFrames)]!;
+                StunPauseCommand.WaitingFrames = (int) clonedValues[nameof(StunPauseCommand.WaitingFrames)]!;
+                StunPauseCommand.LocalMode = (StunPauseCommand.StunPauseMode?) clonedValues[nameof(StunPauseCommand.LocalMode)];
+                StunPauseCommand.GlobalModeRuntime = (StunPauseCommand.StunPauseMode?) clonedValues[nameof(StunPauseCommand.GlobalModeRuntime)];
+
                 PressCommand.PressKeys.Clear();
-                foreach (var keys in (HashSet<Keys>)clonedValues["pressKeys"]) {
-                    PressCommand.PressKeys.Add(keys);
-                }
+                PressCommand.PressKeys.AddRange((HashSet<Keys>) clonedValues[nameof(PressCommand.PressKeys)]!);
 
-                MetadataCommands.TasStartInfo = ((long FileTimeTicks, int FileSlot)?)clonedValues["tasStartInfo"];
-                MouseCommand.CurrentState = (MouseState)clonedValues["mouseState"];
-                HitboxSimplified.Followers = (Dictionary<Follower, bool>)clonedValues["followers"];
-                SafeCommand.DisallowUnsafeInput = (bool)clonedValues["disallowUnsafeInput"];
-                DesyncFixer.AuraHelperSharedRandom = (Random)clonedValues["auraRandom"];
-                BetterInvincible.Invincible = Manager.Running && (bool)clonedValues["betterInvincible"];
+                MetadataCommands.TasStartInfo = ((long FileTimeTicks, int FileSlot)?) clonedValues[nameof(MetadataCommands.TasStartInfo)];
+                MouseCommand.CurrentState = (MouseState) clonedValues[nameof(MouseCommand.CurrentState)]!;
+                HitboxSimplified.Followers = (Dictionary<Follower, bool>) clonedValues[nameof(HitboxSimplified.Followers)]!;
+                SafeCommand.DisallowUnsafeInput = (bool) clonedValues[nameof(SafeCommand.DisallowUnsafeInput)]!;
+                DesyncFixer.AuraHelperSharedRandom = (Random) clonedValues[nameof(DesyncFixer.AuraHelperSharedRandom)]!;
+                BetterInvincible.Invincible = Manager.Running && (bool) clonedValues[nameof(BetterInvincible)]!;
 
-                InfoWatchEntity.WatchedEntities = (List<WeakReference>)SpeedrunToolSaveLoadImport.DeepClone(InfoWatchEntity.WatchedEntities_Save);
+                InfoWatchEntity.WatchedEntities = InfoWatchEntity.WatchedEntities_Save.DeepClone();
             },
             () => {
                 InfoWatchEntity.WatchedEntities_Save.Clear();
-            }, null, null, null
+            },
+            beforeSaveState: null,
+            beforeLoadState: null,
+            preCloneEntities: null
         );
     }
 
@@ -151,10 +154,9 @@ public static class SpeedrunToolInterop {
 
 [ModImportName("SpeedrunTool.SaveLoad")]
 internal static class SpeedrunToolSaveLoadImport {
-    public delegate void SaveLoadDelegate(Dictionary<Type, Dictionary<string, object>> savedValues, Level level);
     public delegate object RegisterSaveLoadActionDelegate(
-        SaveLoadDelegate saveState,
-        SaveLoadDelegate loadState,
+        Action<Dictionary<Type, Dictionary<string, object?>>, Level> saveState,
+        Action<Dictionary<Type, Dictionary<string, object?>>, Level> loadState,
         Action clearState,
         Action<Level>? beforeSaveState,
         Action<Level>? beforeLoadState,
