@@ -11,6 +11,7 @@ public enum StyleType : byte {
     Action,
     Angle,
     Breakpoint,
+    ForceStop,
     Savestate,
     Delimiter,
     Command,
@@ -51,7 +52,7 @@ public class SyntaxHighlighter {
     private void LoadTheme(Theme theme) {
         cache.Clear();
         // IMPORTANT: Must be the same order as the StyleType enum!
-        styles = [theme.ActionPaint, theme.AnglePaint, theme.BreakpointPaint, theme.SavestateBreakpointPaint, theme.DelimiterPaint, theme.CommandPaint, theme.CommentPaint, theme.FramePaint];
+        styles = [theme.ActionPaint, theme.AnglePaint, theme.BreakpointPaint, theme.ForceStopBreakpointPaint, theme.SavestateBreakpointPaint, theme.DelimiterPaint, theme.CommandPaint, theme.CommentPaint, theme.FramePaint];
     }
 
     public void DrawLine(SKCanvas canvas, float x, float y, string line) {
@@ -101,50 +102,63 @@ public class SyntaxHighlighter {
     }
 
     private LineStyle ComputeLineStyle(string line) {
-        var trimmed = line.TrimStart();
+        string trimmed = line.TrimStart();
 
-        if (trimmed.StartsWith("#"))
+        if (trimmed.StartsWith("#")) {
             return new LineStyle { Segments = [new LineStyle.Segment { StartIdx = 0, EndIdx = line.Length - 1, Type = StyleType.Comment } ] };
+        }
 
         if (trimmed.StartsWith("***")) {
             int idx = line.IndexOf("***", StringComparison.Ordinal);
-            if (idx + 3 < line.Length && char.ToLower(line[idx + 3]) == 's') {
-                // Savestate breakpoint
-                return new LineStyle { Segments = [
-                    new LineStyle.Segment { StartIdx = 0, EndIdx = idx + 2, Type = StyleType.Breakpoint },
-                    new LineStyle.Segment { StartIdx = idx + 3, EndIdx = idx + 3, Type = StyleType.Savestate },
-                    new LineStyle.Segment { StartIdx = idx + 4, EndIdx = line.Length - 1, Type = StyleType.Breakpoint },
-                ]};
-            } else {
-                // Regular breakpoint
-                return new LineStyle { Segments = [
-                    new LineStyle.Segment { StartIdx = 0, EndIdx = line.Length - 1, Type = StyleType.Breakpoint },
-                ]};
+            int currIdx = idx + "***".Length;
+
+            int? forceIdx = currIdx < line.Length && char.ToUpper(line[currIdx]) == '!' ? currIdx++ : null;
+            int? saveIdx  = currIdx < line.Length && char.ToUpper(line[currIdx]) == 'S' ? currIdx++ : null;
+
+            var segments = new LineStyle.Segment[1
+                + (forceIdx != null ? 1 : 0)
+                + (saveIdx != null ? 1 : 0)
+                + (line.Length > currIdx ? 1 : 0)];
+
+            segments[0] = new LineStyle.Segment { StartIdx = 0, EndIdx = (forceIdx ?? saveIdx ?? line.Length) - 1, Type = StyleType.Breakpoint };
+
+            int segmentIdx = 1;
+            if (forceIdx != null) {
+                segments[segmentIdx++] = new LineStyle.Segment { StartIdx = forceIdx.Value, EndIdx = forceIdx.Value, Type = StyleType.ForceStop };
             }
+            if (saveIdx != null) {
+                segments[segmentIdx++] = new LineStyle.Segment { StartIdx = saveIdx.Value, EndIdx = saveIdx.Value, Type = StyleType.Savestate };
+            }
+            if (line.Length > currIdx) {
+                segments[segmentIdx] = new LineStyle.Segment { StartIdx = currIdx, EndIdx = line.Length - 1, Type = StyleType.Breakpoint };
+            }
+
+            return new LineStyle { Segments = segments };
         }
 
-        if (!ActionLine.TryParse(line, out _)) {
-            return new LineStyle { Segments = [new LineStyle.Segment { StartIdx = 0, EndIdx = line.Length - 1, Type = StyleType.Command } ] };
+        if (ActionLine.TryParse(line, out _)) {
+            var segments = new List<LineStyle.Segment> {
+                new() { StartIdx = 0, EndIdx = Math.Min(line.Length - 1, ActionLine.MaxFramesDigits - 1), Type = StyleType.Frame }
+            };
+
+            for (int idx = ActionLine.MaxFramesDigits; idx < line.Length; idx++) {
+                StyleType style;
+                char c = line[idx];
+
+                if (c == ActionLine.Delimiter) {
+                    style = StyleType.Delimiter;
+                } else if (char.IsDigit(c) || c == '.') {
+                    style = StyleType.Angle;
+                } else {
+                    style = StyleType.Action;
+                }
+
+                segments.Add(new LineStyle.Segment { StartIdx = idx, EndIdx = idx, Type = style });
+            }
+
+            return new LineStyle { Segments = segments.ToArray() };
         }
 
-        var segments = new List<LineStyle.Segment> {
-            new() { StartIdx = 0, EndIdx = Math.Min(line.Length - 1, ActionLine.MaxFramesDigits - 1), Type = StyleType.Frame }
-        };
-
-        for (int idx = ActionLine.MaxFramesDigits; idx < line.Length; idx++) {
-            StyleType style;
-            char c = line[idx];
-
-            if (c == ActionLine.Delimiter)
-                style = StyleType.Delimiter;
-            else if (char.IsDigit(c) || c == '.')
-                style = StyleType.Angle;
-            else
-                style = StyleType.Action;
-
-            segments.Add(new LineStyle.Segment { StartIdx = idx, EndIdx = idx, Type = style });
-        }
-
-        return new LineStyle { Segments = segments.ToArray() };
+        return new LineStyle { Segments = [new LineStyle.Segment { StartIdx = 0, EndIdx = line.Length - 1, Type = StyleType.Command } ] };
     }
 }

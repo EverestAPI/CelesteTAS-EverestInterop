@@ -20,7 +20,7 @@ internal static class SavestateManager {
         public int Frame => Controller.CurrentFrameInTas;
         public int StudioLine =>
             (SavedByBreakpoint
-                ? (Manager.Controller.FastForwards.GetValueOrDefault(Frame)?.Line ??
+                ? (Manager.Controller.FastForwards.GetValueOrDefault(Frame)?.StudioLine ??
                    Manager.Controller.Comments.GetValueOrDefault(Frame)?.Where(comment => {
                        var span = comment.Text.AsSpan().TrimStart();
                        return span.StartsWith("***") && span["***".Length..].Contains("s", StringComparison.OrdinalIgnoreCase);

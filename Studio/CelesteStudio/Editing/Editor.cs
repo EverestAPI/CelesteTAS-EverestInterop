@@ -2262,7 +2262,16 @@ public sealed class Editor : SkiaDrawable {
         }
         // Manually handle breakpoints
         else if (FastForwardLine.TryParse(Document.Lines[Document.Caret.Row], out var fastForward)) {
-            if (char.ToUpper(typedCharacter) == 'S') {
+            if (typedCharacter == '!') {
+                fastForward.ForceStop = !fastForward.ForceStop;
+                if (fastForward.ForceStop) {
+                    Document.Caret.Col++;
+                } else {
+                    Document.Caret.Col--;
+                }
+
+                Document.ReplaceLine(Document.Caret.Row, fastForward.ToString());
+            } else if (char.ToUpper(typedCharacter) == 'S') {
                 fastForward.SaveState = !fastForward.SaveState;
                 if (fastForward.SaveState) {
                     Document.Caret.Col++;

@@ -257,7 +257,7 @@ internal static class SyncChecker {
             }
 
             // Insert breakpoint at the end
-            Manager.Controller.FastForwards[Manager.Controller.Inputs.Count] = new FastForward(Manager.Controller.Inputs.Count, "", Manager.Controller.Inputs[^1].StudioLine);
+            Manager.Controller.FastForwards[Manager.Controller.Inputs.Count] = new FastForward(Manager.Controller.Inputs.Count, Manager.Controller.Inputs[^1].StudioLine);
         }
     }
 }
