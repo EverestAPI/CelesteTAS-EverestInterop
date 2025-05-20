@@ -9,9 +9,11 @@ using TAS.Module;
 
 namespace TAS.Utils;
 
+/// Base class for priority-ordered events
+/// Should NOT be directly references, outside CelesteTAS
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-internal class EventAttribute(int priority) : Attribute {
-    public readonly int Priority = priority;
+public class EventAttribute(int priority) : Attribute {
+    internal readonly int Priority = priority;
 }
 
 public static class AttributeUtils {

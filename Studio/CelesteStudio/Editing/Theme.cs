@@ -65,6 +65,7 @@ public class Theme {
     public Style Action;
     public Style Angle;
     public Style Breakpoint;
+    public Style ForceStopBreakpoint;
     public Style SavestateBreakpoint;
     public Style Delimiter;
     public Style Command;
@@ -75,7 +76,7 @@ public class Theme {
     // Cache SKPaint instances to avoid creating, disposing and configuring them for every draw
 
     [TomlNonSerialized]
-    private StylePaint? _actionPaint, _anglePaint, _breakpointPaint, _savestateBreakpointPaint, _delimiter, _command, _frame, _comment;
+    private StylePaint? _actionPaint, _anglePaint, _breakpointPaint, _forceStopBreakpointPaint, _savestateBreakpointPaint, _delimiter, _command, _frame, _comment;
     [TomlNonSerialized]
     private SKPaint? _commentBox, _statusFgPaint, _subpixelIndicatorDotPaint, _popupMenuFgPaint, _popupMenuFgDisabledPaint, _popupMenuFgExtraPaint, _popupMenuBgPaint, _popupMenuSelectedPaint;
 
@@ -85,6 +86,8 @@ public class Theme {
     public StylePaint AnglePaint => _anglePaint ??= Angle.CreatePaint();
     [TomlNonSerialized]
     public StylePaint BreakpointPaint => _breakpointPaint ??= Breakpoint.CreatePaint();
+    [TomlNonSerialized]
+    public StylePaint ForceStopBreakpointPaint => _forceStopBreakpointPaint ??= ForceStopBreakpoint.CreatePaint();
     [TomlNonSerialized]
     public StylePaint SavestateBreakpointPaint => _savestateBreakpointPaint ??= SavestateBreakpoint.CreatePaint();
     [TomlNonSerialized]
@@ -184,6 +187,7 @@ public class Theme {
             Action = new Style(Color.FromRgb(0x1F7BEC)),
             Angle = new Style(Color.FromRgb(0xC835C8)),
             Breakpoint = new Style(Color.FromRgb(0xFFFFFF), Color.FromRgb(0xFF5555), FontStyle.Bold),
+            ForceStopBreakpoint = new Style(Color.FromRgb(0xFFFFFF), Color.FromRgb(0xD5A910), FontStyle.Bold),
             SavestateBreakpoint = new Style(Color.FromRgb(0xFFFFFF), Color.FromRgb(0x4682B4), FontStyle.Bold),
             Delimiter = new Style(Color.FromRgb(0x727272)),
             Command = new Style(Color.FromRgb(0xBC6628)),
@@ -230,6 +234,7 @@ public class Theme {
             Action = new Style(Color.FromRgb(0x8BE9FD)),
             Angle = new Style(Color.FromRgb(0xFF79C6)),
             Breakpoint = new Style(Color.FromRgb(0xFFFFFF), Color.FromRgb(0xFF5555), FontStyle.Bold),
+            ForceStopBreakpoint = new Style(Color.FromRgb(0xFFFFFF), Color.FromRgb(0xD5A910), FontStyle.Bold),
             SavestateBreakpoint = new Style(Color.FromRgb(0xFFFFFF), Color.FromRgb(0x4682B4), FontStyle.Bold),
             Delimiter = new Style(Color.FromRgb(0x707996)),
             Command = new Style(Color.FromRgb(0xFFB86C)),
@@ -277,6 +282,7 @@ public class Theme {
             Action = new Style(Color.FromRgb(0x2222FF)),
             Angle = new Style(Color.FromRgb(0xEE22EE)),
             Breakpoint = new Style(Color.FromRgb(0xFFFFFF), Color.FromRgb(0xFF5555), FontStyle.Bold),
+            ForceStopBreakpoint = new Style(Color.FromRgb(0xFFFFFF), Color.FromRgb(0xD5A910), FontStyle.Bold),
             SavestateBreakpoint = new Style(Color.FromRgb(0xFFFFFF), Color.FromRgb(0x4682B4), FontStyle.Bold),
             Delimiter = new Style(Color.FromRgb(0x808080)),
             Command = new Style(Color.FromRgb(0xD2691E)),
@@ -323,6 +329,7 @@ public class Theme {
             Action = new Style(Color.FromRgb(0x8BE9FD)),
             Angle = new Style(Color.FromRgb(0xFF79C6)),
             Breakpoint = new Style(Color.FromRgb(0xFFFFFF), Color.FromRgb(0xFF5555), FontStyle.Bold),
+            ForceStopBreakpoint = new Style(Color.FromRgb(0xFFFFFF), Color.FromRgb(0xD5A910), FontStyle.Bold),
             SavestateBreakpoint = new Style(Color.FromRgb(0xFFFFFF), Color.FromRgb(0x4682B4), FontStyle.Bold),
             Delimiter = new Style(Color.FromRgb(0x6272A4)),
             Command = new Style(Color.FromRgb(0xFFB86C)),

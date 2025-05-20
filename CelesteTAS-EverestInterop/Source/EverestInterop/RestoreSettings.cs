@@ -47,8 +47,8 @@ internal static class RestoreSettings {
             }
 
             // When using savestates, need to deep clone settings, to avoid issues with ButtonBindings breaking
-            if (SpeedrunToolInterop.Installed) {
-                origModSettings.Add(module, SpeedrunToolInterop.DeepCloneShared(module._Settings));
+            if (module._Settings.TryDeepClone(out var clonedSettings)) {
+                origModSettings.Add(module, clonedSettings);
             } else {
                 origModSettings.Add(module, module._Settings.ShallowClone());
             }

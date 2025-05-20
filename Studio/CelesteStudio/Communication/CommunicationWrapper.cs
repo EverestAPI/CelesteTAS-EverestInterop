@@ -167,7 +167,7 @@ public static class CommunicationWrapper {
     public static int CurrentFrameInTas => Connected ? State.CurrentFrameInTas : -1;
     public static int CurrentFrameInInput => Connected ? State.CurrentFrameInInput : -1;
     public static int TotalFrames => Connected ? State.TotalFrames : -1;
-    public static int SaveStateLine => Connected ? State.SaveStateLine : -1;
+    public static int[] SaveStateLines => Connected ? State.SaveStateLines : [];
     public static bool PlaybackRunning => Connected ? State.PlaybackRunning : false;
 
     public static string GameInfo => Connected ? State.GameInfo : string.Empty;

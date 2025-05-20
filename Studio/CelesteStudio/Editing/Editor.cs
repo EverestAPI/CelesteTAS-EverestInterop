@@ -393,7 +393,7 @@ public sealed class Editor : SkiaDrawable {
             }
 
             if (prevState.CurrentLine == state.CurrentLine &&
-                prevState.SaveStateLine == state.SaveStateLine &&
+                prevState.SaveStateLines.SequenceEqual(state.SaveStateLines) &&
                 prevState.CurrentLineSuffix == state.CurrentLineSuffix) {
                 // Nothing to do
                 return;
@@ -2262,7 +2262,16 @@ public sealed class Editor : SkiaDrawable {
         }
         // Manually handle breakpoints
         else if (FastForwardLine.TryParse(Document.Lines[Document.Caret.Row], out var fastForward)) {
-            if (char.ToUpper(typedCharacter) == 'S') {
+            if (typedCharacter == '!') {
+                fastForward.ForceStop = !fastForward.ForceStop;
+                if (fastForward.ForceStop) {
+                    Document.Caret.Col++;
+                } else {
+                    Document.Caret.Col--;
+                }
+
+                Document.ReplaceLine(Document.Caret.Row, fastForward.ToString());
+            } else if (char.ToUpper(typedCharacter) == 'S') {
                 fastForward.SaveState = !fastForward.SaveState;
                 if (fastForward.SaveState) {
                     Document.Caret.Col++;
@@ -3859,19 +3868,23 @@ public sealed class Editor : SkiaDrawable {
                         h: Font.LineHeight(),
                         fillPaint);
                 }
-                if (CommunicationWrapper.SaveStateLine != -1 && CommunicationWrapper.SaveStateLine < actualToVisualRows.Length) {
+                foreach (int saveStateLine in CommunicationWrapper.SaveStateLines) {
+                    if (saveStateLine < 0 || saveStateLine >= actualToVisualRows.Length) {
+                        continue;
+                    }
+
                     fillPaint.ColorF = Settings.Instance.Theme.SavestateBg.ToSkia();
-                    if (CommunicationWrapper.SaveStateLine == CommunicationWrapper.CurrentLine) {
+                    if (saveStateLine == CommunicationWrapper.CurrentLine) {
                         canvas.DrawRect(
                             x: scrollablePosition.X,
-                            y: actualToVisualRows[CommunicationWrapper.SaveStateLine] * Font.LineHeight(),
+                            y: actualToVisualRows[saveStateLine] * Font.LineHeight(),
                             w: 5.0f,
                             h: Font.LineHeight(),
                             fillPaint);
                     } else {
                         canvas.DrawRect(
                             x: scrollablePosition.X,
-                            y: actualToVisualRows[CommunicationWrapper.SaveStateLine] * Font.LineHeight(),
+                            y: actualToVisualRows[saveStateLine] * Font.LineHeight(),
                             w: textOffsetX - LineNumberPadding,
                             h: Font.LineHeight(),
                             fillPaint);
@@ -3885,10 +3898,10 @@ public sealed class Editor : SkiaDrawable {
                 int oldRow = row;
                 var numberString = (row + 1).ToString();
 
+                int currVisualRow = actualToVisualRows[row];
                 bool isPlayingLine = CommunicationWrapper.CurrentLine >= 0 && CommunicationWrapper.CurrentLine < actualToVisualRows.Length &&
-                                     actualToVisualRows[CommunicationWrapper.CurrentLine] == actualToVisualRows[row];
-                bool isSaveStateLine = CommunicationWrapper.SaveStateLine >= 0 && CommunicationWrapper.SaveStateLine < actualToVisualRows.Length &&
-                                       actualToVisualRows[CommunicationWrapper.SaveStateLine] == actualToVisualRows[row];
+                                     actualToVisualRows[CommunicationWrapper.CurrentLine] == currVisualRow;
+                bool isSaveStateLine = CommunicationWrapper.SaveStateLines.Any(line => line >= 0 && line < actualToVisualRows.Length && actualToVisualRows[line] == currVisualRow);
 
                 if (isPlayingLine) {
                     fillPaint.ColorF = Settings.Instance.Theme.PlayingLineFg.ToSkia();
