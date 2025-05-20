@@ -6,6 +6,7 @@ using MonoMod.ModInterop;
 using System;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
+using TAS.ModInterop;
 using TAS.Utils;
 
 namespace TAS.Module;
@@ -22,6 +23,15 @@ public static class CelesteTasImports {
     public delegate void AddSettingsRestoreHandlerDelegate(EverestModule module, (Func<object> Backup, Action<object> Restore)? handler);
     public delegate void RemoveSettingsRestoreHandlerDelegate(EverestModule module);
     public delegate void DrawAccurateLineDelegate(Vector2 from, Vector2 to, Color color);
+
+    /// Checks if a TAS is active (i.e. running / paused / etc.)
+    public static Func<bool> IsTasActive = null!;
+
+    /// Checks if a TAS is currently actively running (i.e. not paused)
+    public static Func<bool> IsTasRunning = null!;
+
+    /// Checks if the current TAS is being recorded with TAS Recorder
+    public static Func<bool> IsTasRecording = null!;
 
     /// Registers custom delegates for backing up and restoring mod setting before / after running a TAS
     /// A `null` handler causes the settings to not be backed up and later restored
@@ -52,6 +62,10 @@ public static class CelesteTasExports {
     private static void Load() {
         typeof(CelesteTasExports).ModInterop();
     }
+
+    public static bool IsTasActive() => Manager.Running;
+    public static bool IsTasRunning() => Manager.CurrState == Manager.State.Running;
+    public static bool IsTasRecording() => TASRecorderInterop.IsRecording;
 
     public static void AddSettingsRestoreHandler(EverestModule module, (Func<object> Backup, Action<object> Restore)? handler) {
         if (RestoreSettings.ignoredModules.Contains(module) || RestoreSettings.customHandlers.ContainsKey(module)) {
