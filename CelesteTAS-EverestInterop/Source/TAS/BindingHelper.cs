@@ -91,6 +91,7 @@ public static class BindingHelper {
         }
 
         CoreModule.Instance.OnInputDeregister();
+        SpeedrunToolInterop.TryInputDeregister();
 
         Settings.Instance.CopyAllFields(settingsBackup);
         MInput.Active = true;

@@ -177,7 +177,9 @@ internal static class SpeedrunToolInterop {
         }
     }
 
-    internal static T DeepCloneShared<T>(T obj) => (T)SpeedrunToolImport.DeepClone(obj);
+    internal static void TryInputDeregister() {
+        SpeedrunToolTasActionImports.InputDeregister?.Invoke();
+    }
 }
 
 [ModImportName("SpeedrunTool.SaveLoad")]
@@ -212,4 +214,5 @@ internal static class SpeedrunToolTasActionImports {
     public static Func<string, bool>? LoadState;
     public static Action<string>? ClearState;
     public static Func<string, bool>? TasIsSaved;
+    public static Action? InputDeregister;
 }
