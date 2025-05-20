@@ -30,7 +30,7 @@ public static class Savestates {
 
     private static int SavedLine =>
         (savedByBreakpoint
-            ? Manager.Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.Line
+            ? Manager.Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.StudioLine
             : Manager.Controller.Inputs!.GetValueOrDefault(SavedCurrentFrame)?.StudioLine) ?? -1;
 
     public static int StudioHighlightLine => IsSaved_Safe ? SavedLine : -1;
