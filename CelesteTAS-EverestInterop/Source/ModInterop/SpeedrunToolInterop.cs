@@ -91,6 +91,11 @@ public static class SpeedrunToolInterop {
         saveLoadHandle = SpeedrunToolSaveLoadImport.RegisterSaveLoadAction!(
             (savedValues, _) => {
                 savedValues[typeof(SpeedrunToolInterop)] = new Dictionary<string, object?> {
+                    { nameof(GameInfo.LastPos), GameInfo.LastPos },
+                    { nameof(GameInfo.LastDiff), GameInfo.LastDiff },
+                    { nameof(GameInfo.LastPlayerSeekerPos), GameInfo.LastPlayerSeekerPos },
+                    { nameof(GameInfo.LastPlayerSeekerDiff), GameInfo.LastPlayerSeekerDiff },
+
                     { nameof(EntityDataHelper.CachedEntityData), EntityDataHelper.CachedEntityData },
                     { nameof(CycleHitboxColor.GroupCounter), CycleHitboxColor.GroupCounter },
                     { nameof(StunPauseCommand.SimulatePauses), StunPauseCommand.SimulatePauses },
@@ -113,6 +118,11 @@ public static class SpeedrunToolInterop {
             },
             (savedValues, _) => {
                 var clonedValues = savedValues[typeof(SpeedrunToolInterop)].DeepClone();
+
+                GameInfo.LastPos = (Vector2Double) clonedValues[nameof(GameInfo.LastPos)]!;
+                GameInfo.LastDiff = (Vector2Double) clonedValues[nameof(GameInfo.LastDiff)]!;
+                GameInfo.LastPlayerSeekerPos = (Vector2Double) clonedValues[nameof(GameInfo.LastPlayerSeekerPos)]!;
+                GameInfo.LastPlayerSeekerDiff = (Vector2Double) clonedValues[nameof(GameInfo.LastPlayerSeekerDiff)]!;
 
                 EntityDataHelper.CachedEntityData = (Dictionary<Entity, EntityData>) clonedValues[nameof(EntityDataHelper.CachedEntityData)]!;
                 CycleHitboxColor.GroupCounter = (int) clonedValues[nameof(CycleHitboxColor.GroupCounter)]!;

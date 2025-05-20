@@ -42,8 +42,9 @@ public static class BindingHelper {
     private static CrouchDashModes? origCrouchDashMode;
     private static GrabModes? origGrabMode;
 
-    // ReSharper disable once UnusedMember.Local
-    [EnableRun]
+    internal const int EnableRunPriority = 0;
+
+    [EnableRun(EnableRunPriority)]
     private static void SetTasBindings() {
         Settings settingsBackup = Settings.Instance.ShallowClone();
 
