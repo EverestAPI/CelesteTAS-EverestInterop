@@ -1,12 +1,9 @@
 using System.Collections.Generic;
 using Celeste;
 using Celeste.Mod;
-using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Monocle;
 using System;
-using System.Runtime.CompilerServices;
 using TAS.InfoHUD;
-using TAS.Input.Commands;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
