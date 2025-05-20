@@ -367,10 +367,12 @@ internal static class SkinModFix {
 
     private static void ApplyPlayer(Player player) {
         var newSprite = new PlayerSprite(actualSpriteMode.TryGetValue(player.Sprite, out object? boxedMode) ? (PlayerSpriteMode) boxedMode : player.Sprite.Mode);
+        newSprite.Animating = player.Sprite.Animating;
         newSprite.CurrentAnimationID = player.Sprite.CurrentAnimationID;
         newSprite.CurrentAnimationFrame = player.Sprite.CurrentAnimationFrame;
         newSprite.currentAnimation = newSprite.Animations.TryGetValue(newSprite.CurrentAnimationID, out var anim) ? anim : player.Sprite.currentAnimation;
         newSprite.animationTimer = player.Sprite.animationTimer;
+        newSprite.Scale = player.Sprite.Scale;
 
         if (gameplayToVisualSprites.TryGetValue(newSprite, out var visualSprite)) {
             gameplayToVisualSprites.Remove(newSprite);
