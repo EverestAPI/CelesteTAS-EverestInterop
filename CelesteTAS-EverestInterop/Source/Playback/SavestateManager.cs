@@ -41,7 +41,7 @@ internal static class SavestateManager {
                 && Manager.Controller.FastForwards.GetValueOrDefault(Frame)?.SaveState != true
                 && !BreakpointCommented;
 
-        public void Load() => SavestateManager.Load(this);
+        public bool Load() => SavestateManager.Load(this);
         public void Clear() => SavestateManager.Clear(this);
     }
 

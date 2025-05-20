@@ -4,9 +4,11 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.ModInterop;
 using System;
+using System.Linq;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.ModInterop;
+using TAS.Playback;
 using TAS.Utils;
 
 namespace TAS.Module;
@@ -39,6 +41,24 @@ public static class CelesteTasImports {
 
     /// De-registers a previously registered handler for the module
     public static RemoveSettingsRestoreHandlerDelegate RemoveSettingsRestoreHandler = null!;
+
+    #region Savestates
+
+    public delegate object? GetLatestSavestateForFrameDelegate(int frame);
+    public delegate int GetSavestateFrameDelegate(object savestate);
+    public delegate bool LoadSavestateDelegate(object savestate);
+
+    /// Provides an opaque savestate-handle to the latest savestate before or at the specified frame.
+    /// Returns null if no savestate is found
+    public static GetLatestSavestateForFrameDelegate GetLatestSavestateForFrame = null!;
+
+    /// Provides the frame into the TAS for the specified savestate-handle
+    public static GetSavestateFrameDelegate GetSavestateFrame = null!;
+
+    /// Attempts to load the specified savestate-handle. Returns whether it was successful
+    public static LoadSavestateDelegate LoadSavestate = null!;
+
+    #endregion
 
     #region Rendering
 
@@ -87,6 +107,24 @@ public static class CelesteTasExports {
         } else {
             $"Tried to de-register a custom setting-restore handler for mod '{module.Metadata.Name}', without having a handler previously registered".Log(LogLevel.Warn);
         }
+    }
+
+    public static object? GetLatestSavestateForFrame(int frame) {
+        foreach (var state in SavestateManager.AllSavestates.Reverse()) {
+            if (frame <= state.Frame) {
+                return state;
+            }
+        }
+
+        return null;
+    }
+    public static int GetSavestateFrame(object savestate) {
+        var state = (SavestateManager.Savestate) savestate;
+        return state.Frame;
+    }
+    public static bool LoadSavestate(object savestate) {
+        var state = (SavestateManager.Savestate) savestate;
+        return state.Load();
     }
 
     public static void DrawAccurateLine(Vector2 from, Vector2 to, Color color) => HitboxFixer.DrawExactLine(from, to, color);
