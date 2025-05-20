@@ -3,30 +3,29 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Celeste;
 using Celeste.Mod;
-using Celeste.Mod.SpeedrunTool.Other;
-using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using MonoMod.ModInterop;
+using System.Diagnostics.CodeAnalysis;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.Gameplay;
 using TAS.InfoHUD;
 using TAS.Input.Commands;
 using TAS.Module;
-using TAS.Utils;
 
 namespace TAS.ModInterop;
 
 public static class SpeedrunToolInterop {
     public static bool Installed { get; private set; }
-
-    private static object? saveLoadAction;
+    private static object saveLoadHandle = null!;
 
     [Initialize]
     private static void Initialize() {
-        typeof(SpeedrunToolImport).ModInterop();
-        Installed = SpeedrunToolImport.DeepClone is not null;
+        typeof(SpeedrunToolSaveLoadImport).ModInterop();
+        typeof(SpeedrunToolTasActionImports).ModInterop();
+
+        Installed = CheckInstalled();
         Everest.Events.AssetReload.OnBeforeReload += _ => {
             if (Installed) {
                 ClearSaveLoadAction();
@@ -35,7 +34,7 @@ public static class SpeedrunToolInterop {
             Installed = false;
         };
         Everest.Events.AssetReload.OnAfterReload += _ => {
-            Installed = SpeedrunToolImport.DeepClone is not null;
+            Installed = CheckInstalled();
 
             if (Installed) {
                 AddSaveLoadAction();
@@ -45,6 +44,10 @@ public static class SpeedrunToolInterop {
         if (Installed) {
             AddSaveLoadAction();
         }
+
+        return;
+
+        static bool CheckInstalled() => SpeedrunToolSaveLoadImport.DeepClone != null && SpeedrunToolTasActionImports.SaveState != null;
     }
     [Unload]
     private static void Unload() {
@@ -53,16 +56,41 @@ public static class SpeedrunToolInterop {
         }
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    public const string DefaultSlot = "CelesteTAS";
+
+    /// Saves the current state into the specified slot. Returns whether it was successful
+    public static bool SaveState(string? slot = null) => SpeedrunToolTasActionImports.SaveState?.Invoke(slot ?? DefaultSlot) ?? false;
+    /// Loads the specified slot into the current state. Returns whether it was successful
+    public static bool LoadState(string? slot = null) => SpeedrunToolTasActionImports.LoadState?.Invoke(slot ?? DefaultSlot) ?? false;
+    /// Clears the specified save slot
+    public static void ClearState(string? slot = null) => SpeedrunToolTasActionImports.ClearState?.Invoke(slot ?? DefaultSlot);
+    /// Checks if something is saved in the specified save slot
+    public static bool IsSaved(string? slot = null) => SpeedrunToolTasActionImports.TasIsSaved?.Invoke(slot ?? DefaultSlot) ?? false;
+
+    /// Creates a deep clone of the object. Crashes if SpeedrunTool isn't installed.
+    public static T DeepClone<T>(this T from) where T: notnull {
+        return (T) SpeedrunToolSaveLoadImport.DeepClone!(from);
+    }
+    /// Attempts to create a deep clone of the object. Fails if SpeedrunTool isn't installed.
+    public static bool TryDeepClone<T>(this T from, [NotNullWhen(true)] out T? to) where T : notnull {
+        if (SpeedrunToolSaveLoadImport.DeepClone is { } deepClone) {
+            to = (T) deepClone(from);
+            return true;
+        }
+
+        to = default;
+        return false;
+    }
+
     private static void AddSaveLoadAction() {
         if (!Installed) {
             return;
         }
 
-        saveLoadAction = SpeedrunToolImport.RegisterSaveLoadAction(
+        saveLoadHandle = SpeedrunToolSaveLoadImport.RegisterSaveLoadAction!(
             (savedValues, _) => {
-                savedValues[typeof(SpeedrunToolInterop)] = (Dictionary<string, object>)SpeedrunToolImport.DeepClone(new Dictionary<string, object> {
-                    { "savedEntityData", EntityDataHelper.CachedEntityData },
+                savedValues[typeof(SpeedrunToolInterop)] = new Dictionary<string, object> {
+                    {"savedEntityData", EntityDataHelper.CachedEntityData },
                     {"groupCounter", CycleHitboxColor.GroupCounter },
                     {"simulatePauses", StunPauseCommand.SimulatePauses },
                     {"pauseOnCurrentFrame", StunPauseCommand.PauseOnCurrentFrame },
@@ -77,14 +105,13 @@ public static class SpeedrunToolInterop {
                     {"disallowUnsafeInput", SafeCommand.DisallowUnsafeInput },
                     {"auraRandom", DesyncFixer.AuraHelperSharedRandom },
                     {"betterInvincible", Manager.Running && BetterInvincible.Invincible },
-                });
-                InfoWatchEntity.WatchedEntities_Save = (List<WeakReference>)SpeedrunToolImport.DeepClone(InfoWatchEntity.WatchedEntities);
+                }.DeepClone();
+                InfoWatchEntity.WatchedEntities_Save = InfoWatchEntity.WatchedEntities.DeepClone();
                 // if cleared by user manually, then it should not appear after load state, even if you load from another saveslot?
                 // i'm not sure
             },
             (savedValues, _) => {
-                Dictionary<string, object> clonedValues =
-                    ((Dictionary<Type, Dictionary<string, object>>)SpeedrunToolImport.DeepClone(savedValues))[typeof(SpeedrunToolInterop)];
+                var clonedValues = savedValues[typeof(SpeedrunToolInterop)].DeepClone();
 
                 EntityDataHelper.CachedEntityData = (Dictionary<Entity, EntityData>)clonedValues["savedEntityData"];
                 CycleHitboxColor.GroupCounter = (int)clonedValues["groupCounter"];
@@ -106,7 +133,7 @@ public static class SpeedrunToolInterop {
                 DesyncFixer.AuraHelperSharedRandom = (Random)clonedValues["auraRandom"];
                 BetterInvincible.Invincible = Manager.Running && (bool)clonedValues["betterInvincible"];
 
-                InfoWatchEntity.WatchedEntities = (List<WeakReference>)SpeedrunToolImport.DeepClone(InfoWatchEntity.WatchedEntities_Save);
+                InfoWatchEntity.WatchedEntities = (List<WeakReference>)SpeedrunToolSaveLoadImport.DeepClone(InfoWatchEntity.WatchedEntities_Save);
             },
             () => {
                 InfoWatchEntity.WatchedEntities_Save.Clear();
@@ -117,19 +144,42 @@ public static class SpeedrunToolInterop {
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ClearSaveLoadAction() {
         if (Installed) {
-            SpeedrunToolImport.Unregister(saveLoadAction);
+            SpeedrunToolSaveLoadImport.Unregister!(saveLoadHandle);
         }
     }
 }
 
 [ModImportName("SpeedrunTool.SaveLoad")]
-internal static class SpeedrunToolImport {
+internal static class SpeedrunToolSaveLoadImport {
+    public delegate void SaveLoadDelegate(Dictionary<Type, Dictionary<string, object>> savedValues, Level level);
+    public delegate object RegisterSaveLoadActionDelegate(
+        SaveLoadDelegate saveState,
+        SaveLoadDelegate loadState,
+        Action clearState,
+        Action<Level>? beforeSaveState,
+        Action<Level>? beforeLoadState,
+        Action? preCloneEntities);
+    public delegate object RegisterStaticTypesDelegate(Type type, string[] memberNames);
+    public delegate object DeepCloneDelegate(object from);
 
-    public static Func<Action<Dictionary<Type, Dictionary<string, object>>, Level>, Action<Dictionary<Type, Dictionary<string, object>>, Level>, Action, Action<Level>, Action<Level>, Action, object> RegisterSaveLoadAction;
+    /// Registers a new save-load action
+    /// Provides an opaque handle to unregister later
+    public static RegisterSaveLoadActionDelegate? RegisterSaveLoadAction;
+    /// Specifies which static members should be cloned
+    /// Provides an opaque handle to unregister later
+    public static RegisterStaticTypesDelegate? RegisterStaticTypes;
 
-    public static Func<Type, string[], object> RegisterStaticTypes;
+    /// Unregisters a previously registered object with the returned handle
+    public static Action<object>? Unregister;
 
-    public static Action<object> Unregister;
+    /// Creates a deep recursive clone of the object and returns it
+    public static DeepCloneDelegate? DeepClone;
+}
 
-    public static Func<object, object> DeepClone;
+[ModImportName("SpeedrunTool.TasAction")]
+internal static class SpeedrunToolTasActionImports {
+    public static Func<string, bool>? SaveState;
+    public static Func<string, bool>? LoadState;
+    public static Action<string>? ClearState;
+    public static Func<string, bool>? TasIsSaved;
 }

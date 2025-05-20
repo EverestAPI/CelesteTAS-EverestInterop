@@ -40,10 +40,10 @@ public static class Savestates {
                                                     savedByBreakpoint &&
                                                     Manager.Controller.FastForwards.GetValueOrDefault(SavedCurrentFrame)?.SaveState != true;
 
-    public static bool IsSaved_Safe => TasSpeedrunToolInterop.Installed && IsSaved;
+    public static bool IsSaved_Safe => SpeedrunToolInterop.Installed && IsSaved;
 
     [MemberNotNullWhen(true, nameof(savedController))]
-    private static bool IsSaved => TasSpeedrunToolInterop.TasIsSaved() &&
+    private static bool IsSaved => SpeedrunToolInterop.IsSaved() &&
                                    savedController != null &&
                                    savedController.FilePath == Manager.Controller.FilePath;
 
@@ -56,7 +56,7 @@ public static class Savestates {
 
     /// Update for each TAS frame
     public static void Update() {
-        if (!TasSpeedrunToolInterop.Installed) {
+        if (!SpeedrunToolInterop.Installed) {
             return;
         }
 
@@ -81,7 +81,7 @@ public static class Savestates {
 
     /// Update for checking hotkeys
     internal static void UpdateMeta() {
-        if (!TasSpeedrunToolInterop.Installed) {
+        if (!SpeedrunToolInterop.Installed) {
             return;
         }
 
@@ -102,7 +102,7 @@ public static class Savestates {
 
     // Called explicitly to ensure correct execution order
     internal static void EnableRun() {
-        if (TasSpeedrunToolInterop.Installed && IsSaved && Engine.Scene is Level) {
+        if (SpeedrunToolInterop.Installed && IsSaved && Engine.Scene is Level) {
             LoadState();
         }
     }
@@ -115,7 +115,7 @@ public static class Savestates {
             return; // Already saved
         }
 
-        if (!TasSpeedrunToolInterop.SaveState()) {
+        if (!SpeedrunToolInterop.SaveState()) {
             return;
         }
 
@@ -141,7 +141,7 @@ public static class Savestates {
                 }
 
                 if (Engine.Scene is Level) {
-                    TasSpeedrunToolInterop.LoadState();
+                    SpeedrunToolInterop.LoadState();
                     Manager.Controller.CopyProgressFrom(savedController);
 
                     LoadGameInfo();
@@ -155,7 +155,7 @@ public static class Savestates {
     }
 
     public static void ClearState() {
-        TasSpeedrunToolInterop.ClearState();
+        SpeedrunToolInterop.ClearState();
         ClearGameInfo();
         savedByBreakpoint = false;
         savedChecksum = -1;
