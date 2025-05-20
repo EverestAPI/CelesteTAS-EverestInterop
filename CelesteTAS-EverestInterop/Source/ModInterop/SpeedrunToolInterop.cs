@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework.Input;
 using Monocle;
 using MonoMod.ModInterop;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.Gameplay;
@@ -17,8 +18,11 @@ using TAS.Utils;
 
 namespace TAS.ModInterop;
 
-public static class SpeedrunToolInterop {
+/// Mod-Interop with Speedrun Tool
+internal static class SpeedrunToolInterop {
     public static bool Installed { get; private set; }
+    public static bool MultipleSaveSlotsSupported { get; private set; }
+
     private static object saveLoadHandle = null!;
 
     [Initialize]
@@ -27,6 +31,15 @@ public static class SpeedrunToolInterop {
         typeof(SpeedrunToolTasActionImports).ModInterop();
 
         Installed = CheckInstalled();
+
+        // NOTE: SpeedrunToolTasActionImports first appeared in SRT v3.24.4
+        //       In v3.24.4, everything is same as before, except that this mod-interop is added for compatibility issue
+        //       After v3.25.0, SRT supports multiple saveslots
+        if (Everest.Modules.FirstOrDefault(module => module.Metadata.Name == "SpeedrunTool") is { } srtModule) {
+            MultipleSaveSlotsSupported = srtModule.Metadata.Version >= new Version(3, 25, 0);
+        }
+
+#if DEBUG
         Everest.Events.AssetReload.OnBeforeReload += _ => {
             if (Installed) {
                 ClearSaveLoadAction();
@@ -41,6 +54,7 @@ public static class SpeedrunToolInterop {
                 AddSaveLoadAction();
             }
         };
+#endif
 
         if (Installed) {
             AddSaveLoadAction();
@@ -61,10 +75,13 @@ public static class SpeedrunToolInterop {
 
     /// Saves the current state into the specified slot. Returns whether it was successful
     public static bool SaveState(string? slot = null) => SpeedrunToolTasActionImports.SaveState?.Invoke(slot ?? DefaultSlot) ?? false;
+
     /// Loads the specified slot into the current state. Returns whether it was successful
     public static bool LoadState(string? slot = null) => SpeedrunToolTasActionImports.LoadState?.Invoke(slot ?? DefaultSlot) ?? false;
+
     /// Clears the specified save slot
     public static void ClearState(string? slot = null) => SpeedrunToolTasActionImports.ClearState?.Invoke(slot ?? DefaultSlot);
+
     /// Checks if something is saved in the specified save slot
     public static bool IsSaved(string? slot = null) => SpeedrunToolTasActionImports.TasIsSaved?.Invoke(slot ?? DefaultSlot) ?? false;
 

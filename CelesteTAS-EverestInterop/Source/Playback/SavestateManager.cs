@@ -49,11 +49,14 @@ internal static class SavestateManager {
         .Concat(ManualSavestate.HasValue ? [ManualSavestate.Value] : [])
         .OrderBy(state => state.Frame);
 
-    private static readonly List<Savestate> BreakpointSavestates = [];
     private static Savestate? ManualSavestate;
+    private static readonly List<Savestate> BreakpointSavestates = [];
 
     [Unload]
     private static void Unload() {
+        ManualSavestate?.Clear();
+        ManualSavestate = null;
+
         foreach (var state in BreakpointSavestates) {
             state.Clear();
         }
@@ -72,7 +75,12 @@ internal static class SavestateManager {
             && Manager.Controller.CurrentFrameInTas == currentFastForward.Frame
             && Save(byBreakpoint: true, out var savestate)
         ) {
-            BreakpointSavestates.Add(savestate);
+            if (SpeedrunToolInterop.MultipleSaveSlotsSupported) {
+                BreakpointSavestates.Add(savestate);
+            } else {
+                ManualSavestate = savestate;
+            }
+
             return;
         }
 
@@ -115,13 +123,17 @@ internal static class SavestateManager {
 
         if (Manager.Running) {
             // Purge deleted breakpoint savestates
-            foreach (var state in BreakpointSavestates) {
-                if (state.BreakpointDeleted) {
-                    state.Clear();
+            if (SpeedrunToolInterop.MultipleSaveSlotsSupported) {
+                foreach (var state in BreakpointSavestates) {
+                    if (state.BreakpointDeleted) {
+                        state.Clear();
+                    }
                 }
+                BreakpointSavestates.RemoveAll(state => state.BreakpointDeleted);
+            } else if (ManualSavestate is { SavedByBreakpoint: true, BreakpointDeleted: true } manual) {
+                manual.Clear();
+                ManualSavestate = null;
             }
-
-            BreakpointSavestates.RemoveAll(state => state.BreakpointDeleted);
         }
     }
 
