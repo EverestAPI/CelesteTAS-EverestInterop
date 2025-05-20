@@ -6,7 +6,7 @@
       Version: 1.5421.0
   OptionalDependencies:
     - Name: SpeedrunTool
-      Version: 3.24.0
+      Version: 3.24.4
     - Name: TASRecorder
       Version: 1.6.0
     - Name: ExtendedCameraDynamics

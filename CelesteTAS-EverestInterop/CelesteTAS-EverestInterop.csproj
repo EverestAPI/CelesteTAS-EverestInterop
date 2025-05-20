@@ -32,7 +32,6 @@
         <Reference Include="$(CelestePrefix)\FNA.dll" Private="false" Publicize="true" />
         <Reference Include="$(CelestePrefix)\MMHOOK_Celeste.dll" Private="false" />
 
-        <Reference Include="lib-stripped\SpeedrunTool.dll" Private="false" />
         <Reference Include="lib-stripped\TASRecorder.dll" Private="false" />
         <Reference Include="lib-stripped\ExCameraDynamics.dll" Private="false" />
     </ItemGroup>

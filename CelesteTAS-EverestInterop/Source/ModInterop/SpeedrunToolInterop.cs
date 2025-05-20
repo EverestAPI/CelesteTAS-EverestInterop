@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Celeste;
 using Celeste.Mod;
-using Celeste.Mod.SpeedrunTool.Other;
-using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using MonoMod.ModInterop;
@@ -14,7 +12,6 @@ using TAS.Gameplay;
 using TAS.InfoHUD;
 using TAS.Input.Commands;
 using TAS.Module;
-using TAS.Utils;
 
 namespace TAS.ModInterop;
 
@@ -61,7 +58,7 @@ public static class SpeedrunToolInterop {
 
         saveLoadAction = SpeedrunToolImport.RegisterSaveLoadAction(
             (savedValues, _) => {
-                savedValues[typeof(SpeedrunToolInterop)] = (Dictionary<string, object>)SpeedrunToolImport.DeepClone(new Dictionary<string, object> {
+                savedValues[typeof(SpeedrunToolInterop)] = DeepCloneShared(new Dictionary<string, object> {
                     { "savedEntityData", EntityDataHelper.CachedEntityData },
                     {"groupCounter", CycleHitboxColor.GroupCounter },
                     {"simulatePauses", StunPauseCommand.SimulatePauses },
@@ -78,13 +75,12 @@ public static class SpeedrunToolInterop {
                     {"auraRandom", DesyncFixer.AuraHelperSharedRandom },
                     {"betterInvincible", Manager.Running && BetterInvincible.Invincible },
                 });
-                InfoWatchEntity.WatchedEntities_Save = (List<WeakReference>)SpeedrunToolImport.DeepClone(InfoWatchEntity.WatchedEntities);
+                InfoWatchEntity.WatchedEntities_Save = DeepCloneShared(InfoWatchEntity.WatchedEntities);
                 // if cleared by user manually, then it should not appear after load state, even if you load from another saveslot?
                 // i'm not sure
             },
             (savedValues, _) => {
-                Dictionary<string, object> clonedValues =
-                    ((Dictionary<Type, Dictionary<string, object>>)SpeedrunToolImport.DeepClone(savedValues))[typeof(SpeedrunToolInterop)];
+                Dictionary<string, object> clonedValues = DeepCloneShared(savedValues)[typeof(SpeedrunToolInterop)];
 
                 EntityDataHelper.CachedEntityData = (Dictionary<Entity, EntityData>)clonedValues["savedEntityData"];
                 CycleHitboxColor.GroupCounter = (int)clonedValues["groupCounter"];
@@ -106,7 +102,7 @@ public static class SpeedrunToolInterop {
                 DesyncFixer.AuraHelperSharedRandom = (Random)clonedValues["auraRandom"];
                 BetterInvincible.Invincible = Manager.Running && (bool)clonedValues["betterInvincible"];
 
-                InfoWatchEntity.WatchedEntities = (List<WeakReference>)SpeedrunToolImport.DeepClone(InfoWatchEntity.WatchedEntities_Save);
+                InfoWatchEntity.WatchedEntities = DeepCloneShared(InfoWatchEntity.WatchedEntities_Save);
             },
             () => {
                 InfoWatchEntity.WatchedEntities_Save.Clear();
@@ -120,6 +116,8 @@ public static class SpeedrunToolInterop {
             SpeedrunToolImport.Unregister(saveLoadAction);
         }
     }
+
+    internal static T DeepCloneShared<T>(T obj) => (T)SpeedrunToolImport.DeepClone(obj);
 }
 
 [ModImportName("SpeedrunTool.SaveLoad")]

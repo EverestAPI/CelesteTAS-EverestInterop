@@ -2,9 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Celeste;
-using Celeste.Mod.SpeedrunTool.SaveLoad;
 using Monocle;
-using System;
 using System.Diagnostics.CodeAnalysis;
 using TAS.EverestInterop;
 using TAS.Input;
@@ -43,9 +41,9 @@ public static class Savestates {
     public static bool IsSaved_Safe => TasSpeedrunToolInterop.Installed && IsSaved;
 
     [MemberNotNullWhen(true, nameof(savedController))]
-    private static bool IsSaved => TasSpeedrunToolInterop.TasIsSaved() &&
-                                   savedController != null &&
-                                   savedController.FilePath == Manager.Controller.FilePath;
+    private static bool IsSaved => savedController != null &&
+                                   savedController.FilePath == Manager.Controller.FilePath &&
+                                   TasSpeedrunToolInterop.TasIsSaved();
 
     [Unload]
     private static void Unload() {
