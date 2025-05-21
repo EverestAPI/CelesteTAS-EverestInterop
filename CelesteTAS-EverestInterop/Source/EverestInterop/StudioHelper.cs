@@ -1,6 +1,5 @@
 ﻿// ReSharper disable HeuristicUnreachableCode
 #pragma warning disable CS0162 // Unreachable code detected
-#define INSTALL_STUDIO
 
 using System;
 using System.Diagnostics;
@@ -33,12 +32,12 @@ public static class StudioHelper {
     private const string DownloadURL_MacOS_ARM64 = "##URL_MACOS_ARM64##";
 
     private const string FileName_Windows_x64    = "##FILENAME_WINDOWS_x64##";
-    private const string FileName_Linux_x64      = "CelesteStudio-linux-x64.zip";
+    private const string FileName_Linux_x64      = "##FILENAME_LINUX_x64##";
     private const string FileName_MacOS_x64      = "##FILENAME_MACOS_x64##";
     private const string FileName_MacOS_ARM64    = "##FILENAME_MACOS_ARM64##";
 
     private const string Checksum_Windows_x64    = "##CHECKSUM_WINDOWS_x64##";
-    private const string Checksum_Linux_x64      = "ba05639be7bf096c36b4993512fee75f";
+    private const string Checksum_Linux_x64      = "##CHECKSUM_LINUX_x64##";
     private const string Checksum_MacOS_x64      = "##CHECKSUM_MACOS_x64##";
     private const string Checksum_MacOS_ARM64    = "##CHECKSUM_MACOS_ARM64##";
 
