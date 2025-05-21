@@ -22,6 +22,9 @@ public static class DesyncFixer {
     // this random needs to be used all through aura entity's lifetime
     internal static Random AuraHelperSharedRandom = new Random(1234);
 
+    // this random needs to be used all through VortexHelper entity's lifetime
+    internal static Random VortexHelperSharedRandom = new Random(2345);
+
     [Initialize]
     private static void Initialize() {
         Dictionary<MethodInfo, int> methods = new() {
@@ -73,6 +76,11 @@ public static class DesyncFixer {
             auraLanternType.GetConstructor([typeof(Vector2), typeof(string), typeof(int)])?.IlHook(SetupAuraHelperRandom);
             auraLanternType.GetMethodInfo("Update")?.IlHook(FixAuraEntityDesync);
             ModUtils.GetType("AuraHelper", "AuraHelper.Generator")?.GetMethodInfo("Update")?.IlHook(FixAuraEntityDesync);
+        }
+
+        if (ModUtils.GetType("VortexHelper", "Celeste.Mod.VortexHelper.Entities.ColorSwitch") is { } colorSwitchType) {
+            colorSwitchType.GetConstructor([typeof(Vector2), typeof(int), typeof(int), typeof(bool), typeof(bool), typeof(bool), typeof(bool), typeof(bool)])?.IlHook(SetupVortexHelperRandom);
+            colorSwitchType.GetMethodInfo("Switch")?.IlHook(FixVortexEntityDesync);
         }
     }
 
@@ -233,6 +241,7 @@ public static class DesyncFixer {
         return binding.Pressed ? count : 0;
     }
 
+    #region AuraHelper
     private static void SetupAuraHelperRandom(ILContext il) {
         ILCursor cursor = new ILCursor(il);
         cursor.Emit(OpCodes.Ldarg_1);
@@ -269,4 +278,45 @@ public static class DesyncFixer {
             Calc.PopRandom();
         }
     }
+    #endregion
+
+    #region VortexHelper
+    private static void SetupVortexHelperRandom(ILContext il) {
+        ILCursor cursor = new ILCursor(il);
+        cursor.Emit(OpCodes.Ldarg_1);
+        cursor.Emit(OpCodes.Ldarg_S, 7);
+        cursor.EmitDelegate(CreateVortexHelperRandom);
+    }
+
+    private static void CreateVortexHelperRandom(Vector2 vector2, bool random) {
+        if (random && Manager.Running) {
+            int seed = vector2.GetHashCode();
+            if (Engine.Scene.GetLevel() is { } level) {
+                seed += level.Session.LevelData.LoadSeed;
+            }
+            VortexHelperSharedRandom = new Random(seed);
+        }
+    }
+
+    private static void FixVortexEntityDesync(ILContext il) {
+        ILCursor cursor = new ILCursor(il);
+        cursor.EmitDelegate(VortexPushRandom);
+        while (cursor.TryGotoNext(MoveType.AfterLabel, i => i.OpCode == OpCodes.Ret)) {
+            cursor.EmitDelegate(VortexPopRandom);
+            cursor.Index++;
+        }
+    }
+
+    private static void VortexPushRandom() {
+        if (Manager.Running) {
+            Calc.PushRandom(VortexHelperSharedRandom);
+        }
+    }
+
+    private static void VortexPopRandom() {
+        if (Manager.Running) {
+            Calc.PopRandom();
+        }
+    }
+    #endregion
 }
