@@ -14,6 +14,7 @@ using TAS.Gameplay;
 using TAS.InfoHUD;
 using TAS.Input.Commands;
 using TAS.Module;
+using TAS.Utils;
 
 namespace TAS.ModInterop;
 
