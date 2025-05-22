@@ -309,7 +309,7 @@ public static class DesyncFixer {
         internal static void SetupVortexHelperRandom(ILContext il) {
             ILCursor cursor = new ILCursor(il);
             cursor.Emit(OpCodes.Ldarg_1);
-            cursor.Emit(OpCodes.Ldarg_S, 7);
+            cursor.Emit(OpCodes.Ldarg, 8);
             cursor.EmitDelegate(CreateVortexHelperRandom);
         }
 
