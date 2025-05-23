@@ -8,6 +8,7 @@ using StudioCommunication;
 using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
+using TAS.Gameplay;
 using TAS.Gameplay.Hitboxes;
 using TAS.ModInterop;
 using YamlDotNet.Serialization;
@@ -179,7 +180,14 @@ public class CelesteTasSettings : EverestModuleSettings {
     [YamlIgnore]
     public bool SimplifiedGraphics {
         get => Enabled && _SimplifiedGraphics;
-        set => _SimplifiedGraphics = value;
+        set {
+            if (_SimplifiedGraphics == value) {
+                return;
+            }
+
+            _SimplifiedGraphics = value;
+            Gameplay.SimplifiedGraphics.OnSpinnerColorChanged();
+        }
     }
 
     [YamlMember(Alias = "ShowGameplay")]
@@ -199,7 +207,20 @@ public class CelesteTasSettings : EverestModuleSettings {
     public int? SimplifiedLighting { get; set; } = 10;
     public int? SimplifiedBloomBase { get; set; } = 0;
     public int? SimplifiedBloomStrength { get; set; } = 1;
-    public SimplifiedGraphicsFeature.SpinnerColor SimplifiedSpinnerColor { get; set; } = SimplifiedGraphicsFeature.SpinnerColor.All[1];
+
+    private SpinnerColor simplifiedSpinnerColor = SpinnerColor.White;
+    public SpinnerColor SimplifiedSpinnerColor {
+        get => simplifiedSpinnerColor;
+        set {
+            if (simplifiedSpinnerColor == value) {
+                return;
+            }
+
+            simplifiedSpinnerColor = value;
+            Gameplay.SimplifiedGraphics.OnSpinnerColorChanged();
+        }
+    }
+
     public bool SimplifiedDustSpriteEdge { get; set; } = true;
     public bool SimplifiedScreenWipe { get; set; } = true;
     public bool SimplifiedColorGrade { get; set; } = true;

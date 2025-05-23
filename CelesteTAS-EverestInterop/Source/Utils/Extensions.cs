@@ -105,14 +105,18 @@ internal static class ReflectionExtensions {
     [UsedImplicitly]
     private readonly record struct MemberKey(Type Type, string Name);
     [UsedImplicitly]
-    private readonly record struct AllMemberKey(Type Type, BindingFlags BindingFlags);
-    [UsedImplicitly]
     private readonly record struct MethodKey(Type Type, string Name, long ParameterHash);
+    [UsedImplicitly]
+    private readonly record struct ConstructorKey(Type Type, long ParameterHash);
+
+    [UsedImplicitly]
+    private readonly record struct AllMemberKey(Type Type, BindingFlags BindingFlags);
 
     private static readonly ConcurrentDictionary<MemberKey, MemberInfo?> CachedMemberInfos = new();
     private static readonly ConcurrentDictionary<MemberKey, FieldInfo?> CachedFieldInfos = new();
     private static readonly ConcurrentDictionary<MemberKey, PropertyInfo?> CachedPropertyInfos = new();
     private static readonly ConcurrentDictionary<MethodKey, MethodInfo?> CachedMethodInfos = new();
+    private static readonly ConcurrentDictionary<ConstructorKey, ConstructorInfo?> CachedConstructorInfos = new();
     private static readonly ConcurrentDictionary<MemberKey, EventInfo?> CachedEventInfos = new();
 
     private static readonly ConcurrentDictionary<MemberKey, MethodInfo?> CachedGetMethodInfos = new();
@@ -121,6 +125,7 @@ internal static class ReflectionExtensions {
     private static readonly ConcurrentDictionary<AllMemberKey, IEnumerable<FieldInfo>> CachedAllFieldInfos = new();
     private static readonly ConcurrentDictionary<AllMemberKey, IEnumerable<PropertyInfo>> CachedAllPropertyInfos = new();
     private static readonly ConcurrentDictionary<AllMemberKey, IEnumerable<MethodInfo>> CachedAllMethodInfos = new();
+    private static readonly ConcurrentDictionary<AllMemberKey, IEnumerable<ConstructorInfo>> CachedAllConstructorInfos = new();
 
     /// Resolves the target member on the type, caching the result
     public static MemberInfo? GetMemberInfo(this Type type, string name, BindingFlags bindingFlags = StaticInstanceAnyVisibility, bool logFailure = true) {
@@ -250,6 +255,58 @@ internal static class ReflectionExtensions {
         return CachedMethodInfos[key] = result;
     }
 
+    /// Resolves the target method on the type, with the specific parameter types, caching the result
+    public static ConstructorInfo? GetConstructorInfo(this Type type, Type?[] parameterTypes, BindingFlags bindingFlags = StaticInstanceAnyVisibility, bool logFailure = true) {
+        var key = new ConstructorKey(type, parameterTypes.GetCustomHashCode());
+        if (CachedConstructorInfos.TryGetValue(key, out var result)) {
+            return result;
+        }
+
+        var currentType = type;
+        do {
+            foreach (var constructor in currentType.GetAllConstructorInfos(bindingFlags)) {
+
+                var parameters = constructor.GetParameters();
+                if (parameters.Length != parameterTypes.Length) {
+                    continue;
+                }
+
+                for (int i = 0; i < parameters.Length; i++) {
+                    // Treat a null type as a wild card
+                    if (parameterTypes[i] != null && parameterTypes[i] != parameters[i].ParameterType) {
+                        goto NextMethod;
+                    }
+                }
+
+                if (result != null) {
+                    // "Amphibious" matches on different types indicate overrides. Choose the "latest" method
+                    if (result.DeclaringType != null && result.DeclaringType != constructor.DeclaringType) {
+                        if (constructor.DeclaringType!.IsSubclassOf(result.DeclaringType)) {
+                            result = constructor;
+                        }
+                    } else {
+                        if (logFailure) {
+                            $"Constructor with parameters ({string.Join<Type?>(", ", parameterTypes)}) on type '{type}' is ambiguous between '{result}' and '{constructor}'".Log(LogLevel.Error);
+                        }
+                        result = null;
+                        break;
+                    }
+                } else {
+                    result = constructor;
+                }
+
+                NextMethod:;
+            }
+            currentType = currentType.BaseType;
+        } while (result == null && currentType != null);
+
+        if (result == null && logFailure) {
+            $"Failed to find constructor with parameters ({string.Join<Type?>(", ", parameterTypes)}) on type '{type}'".Log(LogLevel.Error);
+        }
+
+        return CachedConstructorInfos[key] = result;
+    }
+
     /// Resolves the target event on the type, with the specific parameter types, caching the result
     public static EventInfo? GetEventInfo(this Type type, string name, BindingFlags bindingFlags = StaticInstanceAnyVisibility) {
         var key = new MemberKey(type, name);
@@ -361,6 +418,18 @@ internal static class ReflectionExtensions {
         }
 
         return CachedAllMethodInfos[key] = allMethods;
+    }
+
+    /// Resolves all constructors of the type, caching the result
+    public static IEnumerable<ConstructorInfo> GetAllConstructorInfos(this Type type, BindingFlags bindingFlags = InstanceAnyVisibility) {
+        bindingFlags |= BindingFlags.DeclaredOnly;
+
+        var key = new AllMemberKey(type, bindingFlags);
+        if (CachedAllConstructorInfos.TryGetValue(key, out var result)) {
+            return result;
+        }
+
+        return CachedAllConstructorInfos[key] = type.GetConstructors(bindingFlags);
     }
 
     /// Gets the value of the instance field on the object

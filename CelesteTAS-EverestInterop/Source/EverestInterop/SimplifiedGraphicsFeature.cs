@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Reflection;
 using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.Entities;
@@ -63,7 +62,13 @@ public static class SimplifiedGraphicsFeature {
                 new TextMenuExt.EnumerableSlider<int?>("Bloom Strength".ToDialogText(), CelesteTasMenu.CreateSliderOptions(1, 10),
                     TasSettings.SimplifiedBloomStrength).Change(value => TasSettings.SimplifiedBloomStrength = value));
             subMenu.Add(
-                new TextMenuExt.EnumerableSlider<SpinnerColor>("Spinner Color".ToDialogText(), SpinnerColor.All,
+                new TextMenuExt.EnumerableSlider<SpinnerColor>("Spinner Color".ToDialogText(), [
+                    new KeyValuePair<SpinnerColor, string>(SpinnerColor.Default, "Default".ToDialogText()),
+                    new KeyValuePair<SpinnerColor, string>(SpinnerColor.White, "White".ToDialogText()),
+                    new KeyValuePair<SpinnerColor, string>(SpinnerColor.Blue, "Blue".ToDialogText()),
+                    new KeyValuePair<SpinnerColor, string>(SpinnerColor.Red, "Red".ToDialogText()),
+                    new KeyValuePair<SpinnerColor, string>(SpinnerColor.Purple, "Purple".ToDialogText()),
+                ],
                     TasSettings.SimplifiedSpinnerColor).Change(value => TasSettings.SimplifiedSpinnerColor = value));
             subMenu.Add(
                 new TextMenuExt.EnumerableSlider<bool>("Dust Sprite Edge".ToDialogText(), CelesteTasMenu.CreateDefaultHideOptions(),
@@ -131,29 +136,12 @@ public static class SimplifiedGraphicsFeature {
         // Optional: Various graphical simplifications to cut down on visual noise.
         On.Celeste.Level.Update += Level_Update;
 
-        if (ModUtils.GetType("FrostHelper", "FrostHelper.CustomSpinner") is { } customSpinnerType) {
-            foreach (ConstructorInfo constructorInfo in customSpinnerType.GetConstructors()) {
-                constructorInfo.HookAfter<object>(SetCustomSpinnerColor);
-            }
-        }
-
-        ModUtils.GetType("MaxHelpingHand", "Celeste.Mod.MaxHelpingHand.Entities.RainbowSpinnerColorController")
-            ?.GetMethodInfo("getModHue")
-            ?.OverrideReturn(IsSimplifiedSpinnerColorNotNull, GetSimplifiedSpinnerColor);
-        ModUtils.GetType("SpringCollab2020", "Celeste.Mod.SpringCollab2020.Entities.RainbowSpinnerColorController")
-            ?.GetMethodInfo("getModHue")
-            ?.OverrideReturn(IsSimplifiedSpinnerColorNotNull, GetSimplifiedSpinnerColor);
-
-        if (ModUtils.GetType("VivHelper", "VivHelper.Entities.CustomSpinner")?.GetMethodInfo("CreateSprites") is { } customSpinnerCreateSprites) {
-            customSpinnerCreateSprites.IlHook(ModVivCustomSpinnerColor);
-        }
-
         if (ModUtils.GetType("PandorasBox", "Celeste.Mod.PandorasBox.TileGlitcher")?.GetMethodInfo("tileGlitcher") is { } tileGlitcher) {
             tileGlitcher.GetStateMachineTarget()!.IlHook(ModTileGlitcher);
         }
 
-        On.Celeste.CrystalStaticSpinner.CreateSprites += CrystalStaticSpinner_CreateSprites;
-        IL.Celeste.CrystalStaticSpinner.GetHue += CrystalStaticSpinnerOnGetHue;
+        // On.Celeste.CrystalStaticSpinner.CreateSprites += CrystalStaticSpinner_CreateSprites;
+        // IL.Celeste.CrystalStaticSpinner.GetHue += CrystalStaticSpinnerOnGetHue;
 
         typeof(MirrorSurfaces).GetMethodInfo(nameof(MirrorSurfaces.Render))!.SkipMethod(IsSimplifiedGraphics);
 
@@ -260,8 +248,8 @@ public static class SimplifiedGraphicsFeature {
     [Unload]
     private static void Unload() {
         On.Celeste.Level.Update -= Level_Update;
-        On.Celeste.CrystalStaticSpinner.CreateSprites -= CrystalStaticSpinner_CreateSprites;
-        IL.Celeste.CrystalStaticSpinner.GetHue -= CrystalStaticSpinnerOnGetHue;
+        // On.Celeste.CrystalStaticSpinner.CreateSprites -= CrystalStaticSpinner_CreateSprites;
+        // IL.Celeste.CrystalStaticSpinner.GetHue -= CrystalStaticSpinnerOnGetHue;
         IL.Celeste.LightingRenderer.Render -= LightingRenderer_Render;
         On.Celeste.LightningRenderer.Bolt.Render -= BoltOnRender;
         IL.Celeste.Level.Render -= LevelOnRender;
@@ -512,31 +500,6 @@ public static class SimplifiedGraphicsFeature {
         }
     }
 
-    private static void CrystalStaticSpinner_CreateSprites(On.Celeste.CrystalStaticSpinner.orig_CreateSprites orig, CrystalStaticSpinner self) {
-        if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSpinnerColor.Name >= 0) {
-            self.color = TasSettings.SimplifiedSpinnerColor.Name;
-        }
-
-        orig(self);
-    }
-
-    private static void CrystalStaticSpinnerOnGetHue(ILContext il) {
-        var cursor = new ILCursor(il);
-        if (cursor.TryGotoNext(MoveType.After, ins => ins.MatchCall(typeof(Calc), nameof(Calc.HsvToColor)))) {
-            cursor.EmitDelegate(SimplifySpinnerColor);
-        }
-
-        static Color SimplifySpinnerColor(Color color) {
-            return TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSpinnerColor.Name == CrystalColor.Rainbow ? Color.White : color;
-        }
-    }
-
-    private static void SetCustomSpinnerColor(object self) {
-        if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSpinnerColor.Value != null) {
-            self.SetFieldValue("Tint", TasSettings.SimplifiedSpinnerColor.Color);
-        }
-    }
-
     private static DustStyles.DustStyle DustStyles_Get_Session(On.Celeste.DustStyles.orig_Get_Session orig, Session session) {
         if (TasSettings.SimplifiedGraphics && TasSettings.SimplifiedDustSpriteEdge) {
             Color color = Color.Transparent;
@@ -655,58 +618,6 @@ public static class SimplifiedGraphicsFeature {
         }
 
         orig(self, scene);
-    }
-
-    private static bool IsSimplifiedSpinnerColorNotNull() => TasSettings.SimplifiedGraphics && TasSettings.SimplifiedSpinnerColor.Value != null;
-    private static Color GetSimplifiedSpinnerColor() => TasSettings.SimplifiedSpinnerColor.Color;
-
-    private static void ModVivCustomSpinnerColor(ILCursor cursor, ILContext il) {
-        var start = cursor.MarkLabel();
-        cursor.MoveBeforeLabels();
-
-        cursor.EmitDelegate(IsSimplifiedSpinnerColorNotNull);
-        cursor.EmitBrfalse(start);
-
-        Type type = ModUtils.GetType("VivHelper", "VivHelper.Entities.CustomSpinner")!;
-        if (type.GetFieldInfo("color") is { } colorField) {
-            cursor.EmitLdarg0();
-            cursor.EmitDelegate(GetSimplifiedSpinnerColor);
-            cursor.EmitStfld(colorField);
-        }
-
-        if (type.GetFieldInfo("borderColor") is { } borderColorField) {
-            cursor.EmitLdarg0();
-            cursor.EmitDelegate(GetTransparentColor);
-            cursor.EmitStfld(borderColorField);
-        }
-    }
-
-    private static Color GetTransparentColor() => Color.Transparent;
-
-    // ReSharper disable FieldCanBeMadeReadOnly.Global
-    public record struct SpinnerColor {
-        public static readonly SpinnerColor[] All = [
-            new SpinnerColor((CrystalColor) (-1), null),
-            new SpinnerColor(CrystalColor.Rainbow, "#FFFFFF"),
-            new SpinnerColor(CrystalColor.Blue, "#639BFF"),
-            new SpinnerColor(CrystalColor.Red, "#FF4F4F"),
-            new SpinnerColor(CrystalColor.Purple, "#FF4FEF"),
-        ];
-
-        public CrystalColor Name;
-        public string? Value;
-        public Color Color;
-
-        private SpinnerColor(CrystalColor name, string? value) {
-            Name = name;
-            Value = value;
-            Color = value == null ? default : Calc.HexToColor(value);
-        }
-
-        public override string ToString() {
-            string result = Name == (CrystalColor) (-1) ? "Default" : Name == CrystalColor.Rainbow ? "White" : Name.ToString();
-            return result.ToDialogText();
-        }
     }
 
     public record struct SolidTilesStyle(string Name, char Value) {
