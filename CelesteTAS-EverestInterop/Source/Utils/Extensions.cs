@@ -1059,15 +1059,6 @@ internal static class EnumerableExtension {
     }
 }
 
-internal static class CollectionExtension {
-    /// Adds all items from the collection to the HashSet
-    public static void AddRange<T>(this HashSet<T> hashSet, params IEnumerable<T> items) {
-        foreach (var item in items) {
-            hashSet.Add(item);
-        }
-    }
-}
-
 internal static class GameStateExtension {
     public static GameState.Vec2 ToGameStateVec2(this Vector2 vec) => new(vec.X, vec.Y);
     public static GameState.RectI ToGameStateRectI(this Rectangle rect) => new(rect.X, rect.Y, rect.Width, rect.Height);
