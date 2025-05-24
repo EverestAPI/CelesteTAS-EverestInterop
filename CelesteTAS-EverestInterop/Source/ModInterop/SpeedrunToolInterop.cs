@@ -36,6 +36,7 @@ public static class SpeedrunToolInterop {
     private static Dictionary<Follower, bool>? followers;
     private static bool disallowUnsafeInput;
     private static Random? auraRandom;
+    private static Random? vortexRandom;
     private static bool betterInvincible = false;
 
     [Initialize]
@@ -89,7 +90,8 @@ public static class SpeedrunToolInterop {
             mouseState = MouseCommand.CurrentState;
             followers = HitboxSimplified.Followers.DeepCloneShared();
             disallowUnsafeInput = SafeCommand.DisallowUnsafeInput;
-            auraRandom = DesyncFixer.AuraHelperSharedRandom.DeepCloneShared();
+            auraRandom = DesyncFixer.AuraHelperRandom.AuraHelperSharedRandom.DeepCloneShared();
+            vortexRandom = DesyncFixer.VortexHelperRandom.VortexHelperSharedRandom.DeepCloneShared();
             betterInvincible = Manager.Running && BetterInvincible.Invincible;
         }
 
@@ -112,7 +114,8 @@ public static class SpeedrunToolInterop {
             MouseCommand.CurrentState = mouseState;
             HitboxSimplified.Followers = followers!.DeepCloneShared();
             SafeCommand.DisallowUnsafeInput = disallowUnsafeInput;
-            DesyncFixer.AuraHelperSharedRandom = auraRandom!.DeepCloneShared();
+            DesyncFixer.AuraHelperRandom.AuraHelperSharedRandom = auraRandom!.DeepCloneShared();
+            DesyncFixer.VortexHelperRandom.VortexHelperSharedRandom = vortexRandom!.DeepCloneShared();
             BetterInvincible.Invincible = Manager.Running && betterInvincible;
         }
 
