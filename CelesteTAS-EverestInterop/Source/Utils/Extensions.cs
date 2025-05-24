@@ -1039,6 +1039,15 @@ internal static class EnumerableExtension {
     }
 
     /// Returns the first matching element; otherwise null
+    public static T? FirstOrNull<T>(this IEnumerable<T> enumerable) where T : struct {
+        using var enumerator = enumerable.GetEnumerator();
+        if (enumerator.MoveNext()) {
+            return enumerator.Current;
+        }
+
+        return null;
+    }
+    /// Returns the first matching element; otherwise null
     public static T? FirstOrNull<T>(this IEnumerable<T> enumerable, Func<T, bool> predicate) where T : struct {
         foreach (var item in enumerable) {
             if (predicate(item)) {

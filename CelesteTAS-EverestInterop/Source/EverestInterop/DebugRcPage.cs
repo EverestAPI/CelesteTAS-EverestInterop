@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Web;
 using TAS.Communication;
 using TAS.Module;
+using TAS.Playback;
 using TAS.Tools;
 using TAS.Utils;
 
@@ -26,7 +27,7 @@ internal static class DebugRcPage {
 
             WriteLine(builder, $"Running: {Manager.Running}");
             WriteLine(builder, $"State: {Manager.CurrState}");
-            WriteLine(builder, $"SaveState: {Savestates.IsSaved_Safe}");
+            WriteLine(builder, $"SaveState Lines: {string.Join(", ", SavestateManager.AllSavestates.Select(state => state.StudioLine))}");
             WriteLine(builder, $"CurrentFrame: {Manager.Controller.CurrentFrameInTas}");
             WriteLine(builder, $"TotalFrames: {Manager.Controller.Inputs.Count}");
             WriteLine(builder, $"RoomName: {GameInfo.LevelName}");

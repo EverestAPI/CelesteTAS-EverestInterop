@@ -8,7 +8,7 @@ public partial struct StudioState() {
     public string CurrentLineSuffix = string.Empty;
     public int CurrentFrameInTas = -1;
     public int CurrentFrameInInput = -1;
-    public int SaveStateLine = -1;
+    public int[] SaveStateLines = [];
 
     /// Whether a TAS is actively playing (i.e. not paused)
     public bool PlaybackRunning;

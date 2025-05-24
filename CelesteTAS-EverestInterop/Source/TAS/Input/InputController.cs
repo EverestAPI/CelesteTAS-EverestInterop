@@ -287,7 +287,7 @@ public class InputController {
             if (!Comments.TryGetValue(CurrentParsingFrame, out var comments)) {
                 Comments[CurrentParsingFrame] = comments = [];
             }
-            comments.Add(new Comment(CurrentParsingFrame, path, fileLine, lineText));
+            comments.Add(new Comment(CurrentParsingFrame, path, fileLine, studioLine, lineText));
         } else if (!AutoInputCommand.TryInsert(path, fileLine, lineText, studioLine, repeatIndex, repeatCount)) {
             AddFrames(lineText, path, fileLine, studioLine, repeatIndex, repeatCount);
         }

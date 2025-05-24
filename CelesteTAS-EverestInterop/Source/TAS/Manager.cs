@@ -15,20 +15,21 @@ using TAS.Input;
 using TAS.Input.Commands;
 using TAS.ModInterop;
 using TAS.Module;
+using TAS.Playback;
 using TAS.Tools;
 using TAS.Utils;
 
 namespace TAS;
 
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-public class EnableRunAttribute : Attribute;
+public class EnableRunAttribute(int priority = 0) : EventAttribute(priority);
 
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-public class DisableRunAttribute : Attribute;
+public class DisableRunAttribute(int priority = 0) : EventAttribute(priority);
 
 /// Causes the method to be called every real-time frame, even if a TAS is currently running / paused
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-public class UpdateMetaAttribute : Attribute;
+public class UpdateMetaAttribute(int priority = 0) : EventAttribute(priority);
 
 /// Main controller, which manages how the TAS is played back
 public static class Manager {
@@ -113,9 +114,6 @@ public static class Manager {
 
         AttributeUtils.Invoke<EnableRunAttribute>();
 
-        // This needs to happen after EnableRun, otherwise the input state will be reset in BindingHelper.SetTasBindings
-        Savestates.EnableRun();
-
         $"Starting TAS: {Controller.FilePath}".Log();
     }
 
@@ -127,6 +125,7 @@ public static class Manager {
         "Stopping TAS".Log();
 
         AttributeUtils.Invoke<DisableRunAttribute>();
+
         SyncChecker.ReportRunFinished();
         CurrState = NextState = State.Disabled;
         Controller.Stop();
@@ -152,7 +151,7 @@ public static class Manager {
             action.Invoke();
         }
 
-        Savestates.Update();
+        SavestateManager.Update();
 
         if (!Running || CurrState == State.Paused || IsLoading()) {
             return;
@@ -217,7 +216,7 @@ public static class Manager {
         }
 
         Hotkeys.UpdateMeta();
-        Savestates.UpdateMeta();
+        SavestateManager.UpdateMeta();
         AttributeUtils.Invoke<UpdateMetaAttribute>();
 
         SendStudioState();
@@ -382,7 +381,7 @@ public static class Manager {
             CurrentLine = previous?.StudioLine ?? -1,
             CurrentLineSuffix = $"{Controller.CurrentFrameInInput + (previous?.FrameOffset ?? 0)}{previous?.RepeatString ?? ""}",
             CurrentFrameInTas = Controller.CurrentFrameInTas,
-            SaveStateLine = Savestates.StudioHighlightLine,
+            SaveStateLines = SavestateManager.AllSavestates.Select(state => state.StudioLine).ToArray(),
             PlaybackRunning = CurrState == State.Running,
 
             FileNeedsReload = Controller.NeedsReload,
