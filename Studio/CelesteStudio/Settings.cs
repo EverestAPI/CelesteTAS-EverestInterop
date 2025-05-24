@@ -11,6 +11,7 @@ using Eto.Drawing;
 using Eto.Forms;
 using StudioCommunication.Util;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Tomlet;
 using Tomlet.Attributes;
 using Tomlet.Exceptions;
@@ -45,7 +46,7 @@ public abstract record Hotkey {
     public string ToHotkeyString(string separator = "+") {
         switch (this) {
             case HotkeyChar hotkeyChar:
-                return hotkeyChar.ToString();
+                return hotkeyChar.C.ToString();
 
             case HotkeyNative hotkeyNative:
                 var hotkey = hotkeyNative.Keys;
@@ -113,6 +114,20 @@ public record HotkeyNative(Keys Keys) : Hotkey {
 }
 public record HotkeyChar(char C) : Hotkey {
     public override string ToString() => char.ToUpper(C).ToString();
+
+    public bool TryConvertToNative([NotNullWhen(true)] out HotkeyNative? hotkeyNative) {
+        if (!Enum.TryParse(char.ToUpper(C).ToString(), out Keys keys)) {
+            hotkeyNative = null;
+            return false;
+        }
+
+        if (char.IsUpper(C)) {
+            keys |= Keys.Shift;
+        }
+
+        hotkeyNative = new HotkeyNative(keys);
+        return true;
+    }
 }
 
 public sealed class Settings {
