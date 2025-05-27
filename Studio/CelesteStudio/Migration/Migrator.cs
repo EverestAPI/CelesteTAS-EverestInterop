@@ -3,11 +3,8 @@ using CelesteStudio.Dialog;
 using Eto.Forms;
 using StudioCommunication.Util;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Text.Json;
 using Tomlet.Models;
 
 namespace CelesteStudio.Migration;
@@ -24,8 +21,6 @@ public static class Migrator {
     private static Version oldCelesteTasVersion = null!, newCelesteTasVersion = null!;
     private static Version oldStudioVersion = null!, newStudioVersion = null!;
     private static readonly Version InvalidVersion = new(0, 0, 0);
-
-    private static readonly List<(string versionName, Stream stream)> changelogs = [];
 
     public static void WriteSettings(TomlDocument document) {
         // Write to another file and then move that over, to avoid getting interrupted while writing and corrupting the settings
@@ -66,8 +61,10 @@ public static class Migrator {
         if (firstV3Launch) {
             if (studioV2Present) {
                 oldStudioVersion = new Version(2, 0, 0);
+                oldCelesteTasVersion = new Version(3, 39, 5); // Latest version before Studio v3
             } else {
                 oldStudioVersion = newStudioVersion;
+                oldCelesteTasVersion = newCelesteTasVersion;
                 // TODO: Show a "Getting started" guide
             }
         } else {
