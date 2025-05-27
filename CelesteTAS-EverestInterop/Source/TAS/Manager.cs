@@ -62,6 +62,16 @@ public static class Manager {
 
     private static readonly ConcurrentQueue<Action> mainThreadActions = new();
 
+    private static PopupToast.Entry? frameStepEofToast = null;
+    private static PopupToast.Entry? autoPauseDraft = null;
+
+    // Allow accumulation of frames to step back, since the operation is time intensive
+    private const float FrameStepBackTime = 1.0f;
+    private static float frameStepBackAmount = 0.0f;
+    private static float frameStepBackTimeout = 0.0f;
+    private static int frameStepBackTargetFrame = -1;
+    private static PopupToast.Entry? frameStepBackToast = null;
+
 #if DEBUG
     // Hot-reloading support
     [Load]
@@ -101,6 +111,8 @@ public static class Manager {
 
         CurrState = NextState = State.Running;
         PlaybackSpeed = 1.0f;
+
+        frameStepBackTargetFrame = -1;
 
         Controller.Stop();
         Controller.RefreshInputs();
@@ -164,7 +176,7 @@ public static class Manager {
             return;
         }
 
-        if (Controller.HasFastForward) {
+        if (Controller.HasFastForward || frameStepBackTargetFrame > 0) {
             NextState = State.Running;
         }
 
@@ -175,9 +187,23 @@ public static class Manager {
             return;
         }
 
-        // Auto-pause at end of drafts
-        if (!Controller.CanPlayback && TasSettings.AutoPauseDraft && IsDraft()) {
+        // Catch frame step-back
+        if (frameStepBackTargetFrame > 0 && Controller.CurrentFrameInTas >= frameStepBackTargetFrame) {
+            frameStepBackTargetFrame = -1;
             NextState = State.Paused;
+        }
+        // Auto-pause at end of drafts
+        else if (!Controller.CanPlayback && TasSettings.AutoPauseDraft && IsDraft()) {
+            NextState = State.Paused;
+
+            const string text = "Auto-pause draft on end:\nInsert any Time command or disable the setting to prevent the pausing";
+            const float duration = 5.0f;
+            if (autoPauseDraft is not { Active: true }) {
+                autoPauseDraft = PopupToast.Show(text, duration);
+            } else {
+                autoPauseDraft.Text = text;
+                autoPauseDraft.Timeout = duration;
+            }
         }
         // Pause the TAS if breakpoint is hit
         // Special-case for end of regular files, to update *Time-commands
@@ -242,11 +268,6 @@ public static class Manager {
             return;
         }
 
-        if (Running && Hotkeys.FastForwardComment.Pressed) {
-            Controller.FastForwardToNextLabel();
-            return;
-        }
-
         if (TASRecorderInterop.IsRecording) {
             // Force recording at 1x playback
             NextState = State.Running;
@@ -254,10 +275,45 @@ public static class Manager {
             return;
         }
 
+        if (frameStepBackAmount > 0.0f) {
+            int frames = (int) Math.Round(frameStepBackAmount / Core.PlaybackDeltaTime);
+            frameStepBackTimeout -= Core.PlaybackDeltaTime;
+
+            // Advance a frame extra, since otherwise 0s would only be rendered AFTER the lag from the TAS restart
+            string text = $"Frame Step Back: -{frames}f   (in {Math.Max(0.0f, frameStepBackTimeout - Core.PlaybackDeltaTime):F2}s)";
+            if (frameStepBackToast is not { Active: true }) {
+                frameStepBackToast = PopupToast.Show(text);
+            } else {
+                frameStepBackToast.Text = text;
+            }
+            frameStepBackToast.Timeout = frameStepBackTimeout;
+
+            if (frameStepBackTimeout <= 0.0f) {
+                frameStepBackTargetFrame = Math.Max(1, Controller.CurrentFrameInTas - frames);
+
+                Controller.Stop();
+                AttributeUtils.Invoke<EnableRunAttribute>();
+                Savestates.EnableRun();
+                CurrState = NextState = State.Running;
+
+                frameStepBackTimeout = 0.0f;
+                frameStepBackAmount = 0.0f;
+            }
+        }
+
+        if (Running && Hotkeys.FastForwardComment.Pressed) {
+            Controller.FastForwardToNextLabel();
+            return;
+        }
+
         switch (CurrState) {
             case State.Running:
                 if (Hotkeys.PauseResume.Pressed || Hotkeys.FrameAdvance.Pressed) {
                     NextState = State.Paused;
+                } else if (Hotkeys.FrameStepBack.Pressed) {
+                    NextState = State.Paused;
+                    frameStepBackTimeout = FrameStepBackTime;
+                    frameStepBackAmount = Core.PlaybackDeltaTime;
                 }
                 break;
 
@@ -266,7 +322,22 @@ public static class Manager {
                 break;
 
             case State.Paused:
-                if (Hotkeys.PauseResume.Pressed) {
+                if (frameStepBackAmount > 0.0f) {
+                    if (Hotkeys.FrameStepBack.Repeated) {
+                        frameStepBackTimeout = FrameStepBackTime;
+                        frameStepBackAmount += Core.PlaybackDeltaTime;
+                    } else if (Hotkeys.FastForward.Check) {
+                        // Fast-forward during pause plays at 0.5x speed (due to alternating advancing / pausing)
+                        frameStepBackTimeout = FrameStepBackTime;
+                        frameStepBackAmount += Core.PlaybackDeltaTime * 2.0f;
+                    } else if (Hotkeys.SlowForward.Check) {
+                        frameStepBackTimeout = FrameStepBackTime;
+                        frameStepBackAmount += TasSettings.SlowForwardSpeed;
+                    }
+                } else if (Hotkeys.FrameStepBack.Repeated) {
+                    frameStepBackTimeout = FrameStepBackTime;
+                    frameStepBackAmount = Core.PlaybackDeltaTime;
+                } else if (Hotkeys.PauseResume.Pressed) {
                     NextState = State.Running;
                 } else if (Hotkeys.FrameAdvance.Repeated || Hotkeys.FastForward.Check) {
                     // Prevent frame-advancing into the end of the TAS
@@ -276,7 +347,14 @@ public static class Manager {
                     if (Controller.CanPlayback) {
                         NextState = State.FrameAdvance;
                     } else {
-                        // TODO: Display toast "Reached end-of-file". Currently not possible due to them not being updated
+                        const string text = "Cannot advance further: Reached end-of-file";
+                        const float duration = 1.0f;
+                        if (frameStepEofToast is not { Active: true }) {
+                            frameStepEofToast = PopupToast.Show(text, duration);
+                        } else {
+                            frameStepEofToast.Text = text;
+                            frameStepEofToast.Timeout = duration;
+                        }
                     }
                 }
                 break;
@@ -295,6 +373,9 @@ public static class Manager {
 
         // Apply fast / slow forwarding
         switch (NextState) {
+            case State.Running when frameStepBackTargetFrame != -1:
+                PlaybackSpeed = FastForward.DefaultSpeed;
+                break;
             case State.Running when Hotkeys.FastForward.Check:
                 PlaybackSpeed = TasSettings.FastForwardSpeed;
                 break;
@@ -302,7 +383,7 @@ public static class Manager {
                 PlaybackSpeed = TasSettings.SlowForwardSpeed;
                 break;
 
-            case State.Paused or State.SlowForward when Hotkeys.SlowForward.Check:
+            case State.Paused or State.SlowForward when Hotkeys.SlowForward.Check && frameStepBackAmount <= 0.0f:
                 PlaybackSpeed = TasSettings.SlowForwardSpeed;
                 NextState = State.SlowForward;
                 break;
@@ -341,7 +422,7 @@ public static class Manager {
 
     /// Whether the game is currently truly loading, i.e. waiting an undefined amount of time
     public static bool IsActuallyLoading() {
-        if (Controller.Inputs!.GetValueOrDefault(Controller.CurrentFrameInTas) is { } current && current.ParentCommand is { } command && command.Is("SaveAndQuitReenter")) {
+        if (Controller.Inputs.GetValueOrDefault(Controller.CurrentFrameInTas) is { } current && current.ParentCommand is { } command && command.Is("SaveAndQuitReenter")) {
             // SaveAndQuitReenter manually adds the optimal S&Q real-time
             return true;
         }

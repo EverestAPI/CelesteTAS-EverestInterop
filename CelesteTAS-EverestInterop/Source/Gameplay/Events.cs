@@ -14,6 +14,9 @@ internal static class Events {
     /// Invoked after all other entity hitboxes have been rendered
     public static event Action<Scene>? PostDebugRender;
 
+    /// Invoked after everything is rendered
+    public static event Action? PostRender;
+
     [Load]
     private static void Load() {
         typeof(EntityList)
@@ -23,5 +26,9 @@ internal static class Events {
         typeof(EntityList)
             .GetMethodInfo(nameof(EntityList.DebugRender))!
             .HookAfter((EntityList entityList) => PostDebugRender?.Invoke(entityList.Scene));
+
+        typeof(Engine)
+            .GetMethodInfo(nameof(Engine.RenderCore))!
+            .HookAfter(() => PostRender?.Invoke());
     }
 }

@@ -35,6 +35,7 @@ public static class Hotkeys {
     public static Hotkey FastForwardComment { get; private set; } = null!;
     public static Hotkey SlowForward { get; private set; } = null!;
     public static Hotkey FrameAdvance { get; private set; } = null!;
+    public static Hotkey FrameStepBack { get; private set; } = null!;
     public static Hotkey PauseResume { get; private set; } = null!;
     public static Hotkey Hitboxes { get; private set; } = null!;
     public static Hotkey TriggerHitboxes { get; private set; } = null!;
@@ -94,6 +95,7 @@ public static class Hotkeys {
         AllHotkeys[HotkeyID.FastForward] = FastForward = BindingToHotkey(TasSettings.KeyFastForward, true);
         AllHotkeys[HotkeyID.FastForwardComment] = FastForwardComment = BindingToHotkey(TasSettings.KeyFastForwardComment);
         AllHotkeys[HotkeyID.FrameAdvance] = FrameAdvance = BindingToHotkey(TasSettings.KeyFrameAdvance);
+        AllHotkeys[HotkeyID.FrameStepBack] = FrameStepBack = BindingToHotkey(TasSettings.KeyFrameStepBack);
         AllHotkeys[HotkeyID.SlowForward] = SlowForward = BindingToHotkey(TasSettings.KeySlowForward, true);
         AllHotkeys[HotkeyID.Pause] = PauseResume = BindingToHotkey(TasSettings.KeyPause);
         AllHotkeys[HotkeyID.Hitboxes] = Hitboxes = BindingToHotkey(TasSettings.KeyHitboxes);

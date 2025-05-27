@@ -11,7 +11,6 @@ using TAS.EverestInterop;
 using TAS.EverestInterop.Lua;
 using TAS.Utils;
 using StudioCommunication.Util;
-using StringExtensions = StudioCommunication.Util.StringExtensions;
 
 namespace TAS.InfoHUD;
 
@@ -32,7 +31,7 @@ public static class InfoCustom {
 
     /// Returns the parsed info for the current template
     public static string GetInfo(int? decimals = null, bool forceAllowCodeExecution = false) {
-        return string.Join('\n', ParseTemplate(StringExtensions.SplitLines(TasSettings.InfoCustomTemplate), decimals ?? TasSettings.CustomInfoDecimals, forceAllowCodeExecution));
+        return string.Join('\n', ParseTemplate(TasSettings.InfoCustomTemplate.SplitLines(), decimals ?? TasSettings.CustomInfoDecimals, forceAllowCodeExecution));
     }
 
     #region Parsing
@@ -112,8 +111,8 @@ public static class InfoCustom {
                     continue;
                 }
 
-                foreach ((object? value, object? baseInstance) in result.Value) {
-                    var currResultType = baseInstance?.GetType();
+                foreach ((object baseInstance, object? value) in result.Value) {
+                    var currResultType = baseInstance is Type type ? type : baseInstance.GetType();
                     firstResultType ??= currResultType;
 
                     if (firstResultType != currResultType) {
@@ -124,7 +123,7 @@ public static class InfoCustom {
                         valueStr = DefaultFormatter(value, decimals);
                     }
 
-                    string key = currResultType?.Name ?? "";
+                    string key = currResultType.Name;
                     string queryResult = $"{queryPrefix}{valueStr}";
 
                     if (baseInstance is Entity entity && entity.GetEntityData()?.ToEntityId() is { } entityId) {
@@ -191,7 +190,7 @@ public static class InfoCustom {
 
             var resultCollection = new StringBuilder("{ ");
             bool firstValue = true;
-            foreach ((object? value, object? baseInstance) in result.Value) {
+            foreach ((object baseInstance, object? value) in result.Value) {
                 if (!firstValue) {
                     resultCollection.Append(", ");
                 }

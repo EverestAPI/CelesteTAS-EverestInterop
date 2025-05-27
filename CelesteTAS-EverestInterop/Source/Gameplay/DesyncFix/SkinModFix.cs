@@ -376,7 +376,7 @@ internal static class SkinModFix {
 
         if (gameplayToVisualSprites.TryGetValue(newSprite, out var visualSprite)) {
             gameplayToVisualSprites.Remove(newSprite);
-            gameplayToVisualSprites.Add(player.Sprite, visualSprite);
+            gameplayToVisualSprites.AddOrUpdate(player.Sprite, visualSprite);
 
             player.Sprite.CloneInto(visualSprite);
         }

@@ -36,9 +36,9 @@ public static class TargetQuery {
         /// Only invoked if <see cref="CanResolveInstances"/> returned <c>true</c> for the type.
         public virtual object[] ResolveInstances(Type type) => [];
 
-        /// Resolve a list of base target-types for a query. <br/>
+        /// Resolve a set of base target-types for a query. <br/>
         /// <c>null</c> should be returned when no base-types could be resolved.
-        public virtual (List<Type> Types, string[] MemberArgs)? ResolveBaseTypes(string[] queryArgs) => null;
+        public virtual (HashSet<Type> Types, string[] MemberArgs)? ResolveBaseTypes(string[] queryArgs) => null;
 
         /// Attempts to resolve the next member value for all current objects in parallel. <br/>
         /// <c>true</c> should be returned when the handler could resolve the next member, otherwise <c>false</c>.
@@ -103,8 +103,8 @@ public static class TargetQuery {
     /// Prevents invocations of methods / execution of Lua code in the Custom Info
     public static bool PreventCodeExecution => EnforceLegalCommand.EnabledWhenRunning;
 
-    internal static readonly Dictionary<string, List<Type>> AllTypes = new();
-    internal static readonly Dictionary<string, (List<Type> Types, string[] MemberArgs)> BaseTypeCache = [];
+    internal static readonly Dictionary<string, HashSet<Type>> AllTypes = new();
+    internal static readonly Dictionary<string, (HashSet<Type> Types, string[] MemberArgs)> BaseTypeCache = [];
 
     private static readonly Handler[] Handlers = [
         new SettingsQueryHandler(),
@@ -327,7 +327,7 @@ public static class TargetQuery {
                     }
 
                     var targetTypes = targetTypeResult.Value;
-                    if (!targetValueCache.TryGetValue(targetTypes, out object?[] values)) {
+                    if (!targetValueCache.TryGetValue(targetTypes, out object?[]? values)) {
                         var valueResult = ResolveValue(arguments, targetTypes);
                         if (valueResult.Failure) {
                             return VoidResult<QueryError>.Fail(valueResult.Error);
@@ -765,7 +765,7 @@ public static class TargetQuery {
     #endregion
 
     /// Parses the first part of a query into types and an optional EntityID
-    public static List<Type> ResolveBaseTypes(string[] queryArgs, out string[] memberArgs) {
+    public static HashSet<Type> ResolveBaseTypes(string[] queryArgs, out string[] memberArgs) {
         if (queryArgs.Length == 0) {
             memberArgs = queryArgs;
             return [];
@@ -791,7 +791,7 @@ public static class TargetQuery {
 
     /// Parses query-arguments into a list of types, while only searching for generic .NET types
     /// Does not reference any defined special-case handlers
-    internal static List<Type> ParseGenericBaseTypes(string[] queryArgs, out string[] memberArgs) {
+    internal static HashSet<Type> ParseGenericBaseTypes(string[] queryArgs, out string[] memberArgs) {
         string fullQueryArgs = string.Join('.', queryArgs);
 
         if (BaseTypeCache.TryGetValue(fullQueryArgs, out var cache)) {
@@ -1061,7 +1061,7 @@ public static class TargetQuery {
                     }
 
                     if (currentType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property && IsPropertyUsable(property, needsFlush ? Variant.Set : Variant.Get, isFinal)) {
-                        if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
+                        if (PreventCodeExecution && !forceAllowCodeExecution) {
                             values[valueIdx] = new MemberAccessError.CodeExecutionNotAllowed(currentType, memberIdx, memberArgs);
 
                             // Invalidate all other instances of this type to avoid duplicates
@@ -1295,7 +1295,7 @@ public static class TargetQuery {
 
                 goto PropagateValueTypeStack;
             } else if (targetType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property && IsPropertyUsable(property, Variant.Set, isFinal: true)) {
-                if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
+                if (PreventCodeExecution && !forceAllowCodeExecution) {
                     return VoidResult<MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(targetType, memberArgs.Length - 1, memberArgs));
                 }
 
@@ -1342,7 +1342,7 @@ public static class TargetQuery {
                             field.SetValue(currentTarget, currentValue);
                         }
                     } else if (currentTargetType.GetPropertyInfo(member, ReflectionExtensions.InstanceAnyVisibility, logFailure: false) is { } property) {
-                        if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
+                        if (PreventCodeExecution && !forceAllowCodeExecution) {
                             return VoidResult<MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(currentTargetType, memberIdx, memberArgs));
                         }
 
@@ -1391,7 +1391,7 @@ public static class TargetQuery {
                             field.SetValue(holder.BaseInstance, currentValue);
                         }
                     } else if (baseTargetType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property) {
-                        if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
+                        if (PreventCodeExecution && !forceAllowCodeExecution) {
                             return VoidResult<MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(baseTargetType, memberIdx, memberArgs));
                         }
 
@@ -1418,7 +1418,7 @@ public static class TargetQuery {
         object target = (targetObject as BoxedValueHolder)?.ValueStack.Peek() ?? targetObject;
         var targetType = target as Type ?? target.GetType();
 
-        if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
+        if (PreventCodeExecution && !forceAllowCodeExecution) {
             return VoidResult<MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(targetType, memberArgs.Length - 1, memberArgs));
         }
 
@@ -1496,7 +1496,7 @@ public static class TargetQuery {
                             field.SetValue(currentTarget, currentValue);
                         }
                     } else if (currentTargetType.GetPropertyInfo(member, ReflectionExtensions.InstanceAnyVisibility, logFailure: false) is { } property) {
-                        if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
+                        if (PreventCodeExecution && !forceAllowCodeExecution) {
                             return VoidResult<MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(currentTargetType, memberIdx, memberArgs));
                         }
 
@@ -1545,7 +1545,7 @@ public static class TargetQuery {
                             field.SetValue(holder.BaseInstance, currentValue);
                         }
                     } else if (baseTargetType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property) {
-                        if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
+                        if (PreventCodeExecution && !forceAllowCodeExecution) {
                             return VoidResult<MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(baseTargetType, memberIdx, memberArgs));
                         }
 
@@ -1631,7 +1631,7 @@ public static class TargetQuery {
 
             if (type.GetFieldInfo(member, bindingFlags, logFailure: false) is { } field && IsFieldUsable(field, variant, isFinal)) {
                 if (field.FieldType.IsSameOrSubclassOf(typeof(Delegate))) {
-                    if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
+                    if (PreventCodeExecution && !forceAllowCodeExecution) {
                         return Result<Type[], MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(type, memberArgs.Length - 1, memberArgs));
                     }
 
@@ -1644,7 +1644,7 @@ public static class TargetQuery {
             }
             if (type.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property && IsPropertyUsable(property, variant, isFinal)) {
                 if (property.PropertyType.IsSameOrSubclassOf(typeof(Delegate))) {
-                    if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
+                    if (PreventCodeExecution && !forceAllowCodeExecution) {
                         return Result<Type[], MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(type, memberArgs.Length - 1, memberArgs));
                     }
 

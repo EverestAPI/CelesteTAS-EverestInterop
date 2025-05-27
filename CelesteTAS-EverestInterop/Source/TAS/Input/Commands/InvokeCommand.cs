@@ -6,10 +6,10 @@ using JetBrains.Annotations;
 using Monocle;
 using StudioCommunication;
 using StudioCommunication.Util;
-using TAS.Entities;
 using TAS.EverestInterop;
 using TAS.InfoHUD;
 using TAS.ModInterop;
+using TAS.Playback;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -64,10 +64,10 @@ public static class InvokeCommand {
         if (activeFile == null) {
             $"Invoke Command Failed: {message}".ConsoleLog(LogLevel.Error);
         } else {
-            Toast.ShowAndLog($"""
-                              Invoke '{activeFile.Value.Name}' line {activeFile.Value.Line} failed:
-                              {message}
-                              """);
+            PopupToast.ShowAndLog($"""
+                                   Invoke '{activeFile.Value.Name}' line {activeFile.Value.Line} failed:
+                                   {message}
+                                   """);
         }
     }
 

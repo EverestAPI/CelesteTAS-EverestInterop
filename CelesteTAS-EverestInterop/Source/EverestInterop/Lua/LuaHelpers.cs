@@ -251,8 +251,8 @@ public static class LuaHelpers {
     private static bool TryGetInstance(object? instanceOrTargetQuery, [NotNullWhen(true)] out Type? type, out object? instance) {
         if (instanceOrTargetQuery is string targetQuery) {
             if (TargetQuery.ResolveBaseTypes(targetQuery.Split('.'), out _) is { } types && types.IsNotEmpty()) {
-                type = types[0];
-                instance = TargetQuery.ResolveTypeInstances(types[0]).FirstOrDefault();
+                type = types.First();
+                instance = TargetQuery.ResolveTypeInstances(type).FirstOrDefault();
                 return true;
             } else {
                 type = null;

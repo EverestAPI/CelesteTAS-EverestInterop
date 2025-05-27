@@ -264,6 +264,55 @@ public static class DictionaryExtensions {
         }
         dict[key] = [..values];
     }
+
+    /// Adds an element to the list stored under the specified key
+    public static void AddToKey<TKey, TValue>(this IDictionary<TKey, HashSet<TValue>> dict, TKey key, TValue value) {
+        if (dict.TryGetValue(key, out var set)) {
+            set.Add(value);
+            return;
+        }
+        dict[key] = [value];
+    }
+    /// Adds all elements to the list stored under the specified key
+    public static void AddRangeToKey<TKey, TValue>(this IDictionary<TKey, HashSet<TValue>> dict, TKey key, IEnumerable<TValue> values) {
+        if (dict.TryGetValue(key, out var set)) {
+            set.AddRange(values);
+            return;
+        }
+        dict[key] = [..values];
+    }
+}
+
+public static class HashSetExtensions {
+    /// Adds a range of elements to the set
+    public static void AddRange<T>(this HashSet<T> set, params IEnumerable<T> items) {
+        switch (items) {
+            case IList<T> list: {
+#if NET7_0_OR_GREATER
+                set.EnsureCapacity(set.Count + list.Count);
+#endif
+                for (int i = 0; i < list.Count; i++) {
+                    set.Add(list[i]);
+                }
+                break;
+            }
+            case ICollection<T> collection: {
+#if NET7_0_OR_GREATER
+                set.EnsureCapacity(set.Count + collection.Count);
+#endif
+                foreach (var item in collection) {
+                    set.Add(item);
+                }
+                break;
+            }
+            default: {
+                foreach (var item in items) {
+                    set.Add(item);
+                }
+                break;
+            }
+        }
+    }
 }
 
 public static class StackExtensions {

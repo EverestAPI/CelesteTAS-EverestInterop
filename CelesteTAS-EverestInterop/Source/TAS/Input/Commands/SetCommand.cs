@@ -6,10 +6,10 @@ using Monocle;
 using StudioCommunication;
 using StudioCommunication.Util;
 using System.Collections.Generic;
-using TAS.Entities;
 using TAS.EverestInterop;
 using TAS.Gameplay;
 using TAS.InfoHUD;
+using TAS.Playback;
 using TAS.Utils;
 
 namespace TAS.Input.Commands;
@@ -73,10 +73,10 @@ public static class SetCommand {
         if (activeFile == null) {
             $"Set Command Failed: {message}".ConsoleLog(LogLevel.Error);
         } else {
-            Toast.ShowAndLog($"""
-                              Set '{activeFile.Value.Name}' line {activeFile.Value.Line} failed:
-                              {message}
-                              """);
+            PopupToast.ShowAndLog($"""
+                                   Set '{activeFile.Value.Name}' line {activeFile.Value.Line} failed:
+                                   {message}
+                                   """);
         }
     }
 

@@ -137,7 +137,12 @@ public class Document : IDisposable {
     /// Reports insertions and deletions of the document
     public event Action<Document, Dictionary<int, string>, Dictionary<int, string>>? TextChanged;
     private void OnTextChanged(Dictionary<int, string> insertions, Dictionary<int, string> deletions)
-        => Application.Instance.Invoke(() => TextChanged?.Invoke(this, insertions, deletions));
+        => TextChanged?.Invoke(this, insertions, deletions);
+
+    /// Allows the editor to fix invalid syntax in a patch-series before it is ever saved
+    public event Func<Document, Dictionary<int, string>, Dictionary<int, string>, Patch?>? FixupPatch;
+    private Patch? OnFixupPatch(Dictionary<int, string> insertions, Dictionary<int, string> deletions)
+        => FixupPatch?.Invoke(this, insertions, deletions);
 
     /// Formats lines of a file into a single string, using consistent formatting rules
     public static string FormatLinesToText(IEnumerable<string> lines) {
@@ -445,6 +450,10 @@ public class Document : IDisposable {
             document.updateStack.Push(this);
         }
 
+        public void Discard() {
+            Document.updateStack.Pop();
+        }
+
         /// Pushes the modification onto the undo-stack and raises events if enabled
         /// Automatically called with the using-syntax
         public void Dispose() {
@@ -455,30 +464,26 @@ public class Document : IDisposable {
             }
 
             if (Document.updateStack.Count == 0) {
-                if (raiseEvents) {
-                    var totalPatch = Patches
-                        .Select(patch => patch.Copy())
-                        .Aggregate(Patch.Merge);
-                    totalPatch.CleanupNoOps();
-                    if (totalPatch.Insertions.Count == 0 && totalPatch.Deletions.Count == 0) {
-                        return;
-                    }
+                var totalPatch = Patches
+                    .Select(patch => patch.Copy())
+                    .Aggregate(Patch.Merge);
+                if (Document.OnFixupPatch(totalPatch.Insertions, totalPatch.Deletions) is { } fixupPatch) {
+                    totalPatch = Patch.Merge(totalPatch, fixupPatch);
+                }
+                totalPatch.CleanupNoOps();
+                if (totalPatch.Insertions.Count == 0 && totalPatch.Deletions.Count == 0) {
+                    return;
+                }
 
+                if (raiseEvents) {
                     Document.undoStack.PushPatches(Patches);
                     Document.OnTextChanged(totalPatch.Insertions, totalPatch.Deletions);
+                }
 
-                    if (Settings.Instance.AutoSave) {
-                        Document.Save();
-                    } else {
-                        Document.Dirty = true;
-                    }
+                if (Settings.Instance.AutoSave) {
+                    Document.Save();
                 } else {
-                    // Still save, even if there isn't an event triggered
-                    if (Settings.Instance.AutoSave) {
-                        Document.Save();
-                    } else {
-                        Document.Dirty = true;
-                    }
+                    Document.Dirty = true;
                 }
             } else {
                 Document.updateStack.Peek().Patches.AddRange(Patches);
@@ -679,6 +684,9 @@ public class Document : IDisposable {
         }
 
         var totalPatch = diff.Patches.Aggregate(Patch.Merge);
+        if (OnFixupPatch(totalPatch.Insertions, totalPatch.Deletions) is { } fixupPatch) {
+            totalPatch = Patch.Merge(totalPatch, fixupPatch);
+        }
         totalPatch.CleanupNoOps();
         if (totalPatch.Insertions.Count > 0 && totalPatch.Deletions.Count > 0) {
             OnTextChanged(totalPatch.Insertions, totalPatch.Deletions);
@@ -704,6 +712,9 @@ public class Document : IDisposable {
         }
 
         var totalPatch = diff.Patches.Aggregate(Patch.Merge);
+        if (OnFixupPatch(totalPatch.Insertions, totalPatch.Deletions) is { } fixupPatch) {
+            totalPatch = Patch.Merge(totalPatch, fixupPatch);
+        }
         totalPatch.CleanupNoOps();
         if (totalPatch.Insertions.Count > 0 && totalPatch.Deletions.Count > 0) {
             OnTextChanged(totalPatch.Insertions, totalPatch.Deletions);

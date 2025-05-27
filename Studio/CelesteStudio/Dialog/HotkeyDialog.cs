@@ -88,6 +88,10 @@ public class HotkeyDialog : Dialog<Hotkey> {
     }
 
     private void OnHotkeyDown(Hotkey currentHotkey, Hotkey newHotkey) {
+        if (newHotkey is HotkeyChar hotkeyChar && hotkeyChar.TryConvertToNative(out var hotkeyNative)) {
+            newHotkey = hotkeyNative;
+        }
+
         if (newHotkey == currentHotkey) {
             Close();
             return;
