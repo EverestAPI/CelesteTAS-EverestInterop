@@ -6,6 +6,7 @@ using Celeste.Mod;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using MonoMod.ModInterop;
+using StudioCommunication.Util;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using TAS.EverestInterop;
@@ -14,7 +15,6 @@ using TAS.Gameplay;
 using TAS.InfoHUD;
 using TAS.Input.Commands;
 using TAS.Module;
-using TAS.Utils;
 
 namespace TAS.ModInterop;
 

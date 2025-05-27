@@ -66,10 +66,10 @@ public static class Manager {
     private static PopupToast.Entry? autoPauseDraft = null;
 
     // Allow accumulation of frames to step back, since the operation is time intensive
+    internal static int FrameStepBackTargetFrame = -1;
     private const float FrameStepBackTime = 1.0f;
     private static float frameStepBackAmount = 0.0f;
     private static float frameStepBackTimeout = 0.0f;
-    private static int frameStepBackTargetFrame = -1;
     private static PopupToast.Entry? frameStepBackToast = null;
 
 #if DEBUG
@@ -92,6 +92,7 @@ public static class Manager {
                 // Only disable TAS for non-silent reload actions
                 cursor.EmitBrtrue(start);
                 cursor.EmitDelegate(DisableRun);
+                cursor.EmitDelegate(SavestateManager.ClearAllSavestates); // Clean-up savestates
             });
     }
 
@@ -112,7 +113,7 @@ public static class Manager {
         CurrState = NextState = State.Running;
         PlaybackSpeed = 1.0f;
 
-        frameStepBackTargetFrame = -1;
+        FrameStepBackTargetFrame = -1;
 
         Controller.Stop();
         Controller.RefreshInputs();
@@ -176,7 +177,7 @@ public static class Manager {
             return;
         }
 
-        if (Controller.HasFastForward || frameStepBackTargetFrame > 0) {
+        if (Controller.HasFastForward || FrameStepBackTargetFrame > 0) {
             NextState = State.Running;
         }
 
@@ -188,8 +189,8 @@ public static class Manager {
         }
 
         // Catch frame step-back
-        if (frameStepBackTargetFrame > 0 && Controller.CurrentFrameInTas >= frameStepBackTargetFrame) {
-            frameStepBackTargetFrame = -1;
+        if (FrameStepBackTargetFrame > 0 && Controller.CurrentFrameInTas >= FrameStepBackTargetFrame) {
+            FrameStepBackTargetFrame = -1;
             NextState = State.Paused;
         }
         // Auto-pause at end of drafts
@@ -207,7 +208,7 @@ public static class Manager {
         }
         // Pause the TAS if breakpoint is hit
         // Special-case for end of regular files, to update *Time-commands
-        else if (Controller.Break && (Controller.CanPlayback || IsDraft())) {
+        else if (FrameStepBackTargetFrame == -1 && Controller.Break && (Controller.CanPlayback || IsDraft())) {
             Controller.NextLabelFastForward = null;
             NextState = State.Paused;
         }
@@ -289,12 +290,11 @@ public static class Manager {
             frameStepBackToast.Timeout = frameStepBackTimeout;
 
             if (frameStepBackTimeout <= 0.0f) {
-                frameStepBackTargetFrame = Math.Max(1, Controller.CurrentFrameInTas - frames);
+                FrameStepBackTargetFrame = Math.Max(1, Controller.CurrentFrameInTas - frames);
 
                 Controller.Stop();
-                AttributeUtils.Invoke<EnableRunAttribute>();
-                Savestates.EnableRun();
                 CurrState = NextState = State.Running;
+                AttributeUtils.Invoke<EnableRunAttribute>();
 
                 frameStepBackTimeout = 0.0f;
                 frameStepBackAmount = 0.0f;
@@ -373,7 +373,7 @@ public static class Manager {
 
         // Apply fast / slow forwarding
         switch (NextState) {
-            case State.Running when frameStepBackTargetFrame != -1:
+            case State.Running when FrameStepBackTargetFrame != -1:
                 PlaybackSpeed = FastForward.DefaultSpeed;
                 break;
             case State.Running when Hotkeys.FastForward.Check:

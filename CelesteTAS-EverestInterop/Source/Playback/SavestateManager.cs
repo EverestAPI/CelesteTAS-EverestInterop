@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Celeste;
+using JetBrains.Annotations;
 using Monocle;
 using System;
 using TAS.EverestInterop;
@@ -52,8 +53,8 @@ internal static class SavestateManager {
     private static Savestate? ManualSavestate;
     private static readonly List<Savestate> BreakpointSavestates = [];
 
-    [Unload]
-    private static void Unload() {
+    [UsedImplicitly] // Only included in hot-reloading support
+    public static void ClearAllSavestates() {
         ManualSavestate?.Clear();
         ManualSavestate = null;
 
@@ -69,10 +70,12 @@ internal static class SavestateManager {
             return;
         }
 
+        var controller = Manager.Controller;
+
         // Only save-state when the current breakpoint is new
-        if (Manager.Controller.CurrentFrameInTas < Manager.Controller.Inputs.Count
-            && Manager.Controller.FastForwards.GetValueOrDefault(Manager.Controller.CurrentFrameInTas) is { SaveState: true } currentFastForward
-            && Manager.Controller.CurrentFrameInTas == currentFastForward.Frame
+        if (controller.CurrentFrameInTas < controller.Inputs.Count
+            && controller.FastForwards.GetValueOrDefault(controller.CurrentFrameInTas) is { SaveState: true } currentFastForward
+            && controller.CurrentFrameInTas == currentFastForward.Frame
             && Save(byBreakpoint: true, out var savestate)
         ) {
             if (SpeedrunToolInterop.MultipleSaveSlotsSupported) {
@@ -85,9 +88,26 @@ internal static class SavestateManager {
         }
 
         // Autoload state after entering the level, if the TAS was started outside the level
-        if (Manager.Running && Engine.Scene is Level) {
+        if (Manager.CurrState is Manager.State.Running && Engine.Scene is Level) {
+            // Load ideal savestate to start playing from for frame step back
+            if (Manager.FrameStepBackTargetFrame > 0) {
+                foreach (var state in AllSavestates.Reverse()) {
+                    if (state.Frame > Manager.FrameStepBackTargetFrame || state.Frame <= controller.CurrentFrameInTas) {
+                        continue;
+                    }
+
+                    state.Load();
+                    return;
+                }
+
+                // No viable state found
+                return;
+            }
+
             foreach (var state in AllSavestates.Reverse()) {
-                if (Manager.Controller.CurrentFrameInTas >= state.Frame || Manager.Controller.FilePath != state.Controller.FilePath || state.BreakpointCommented) {
+                if (state.Frame <= controller.CurrentFrameInTas
+                    || Manager.Controller.FastForwards.Values.Any(val => val.Frame > controller.CurrentFrameInTas && val.Frame < state.Frame && val.ForceStop)
+                    || controller.FilePath != state.Controller.FilePath || state.BreakpointCommented) {
                     continue;
                 }
 
@@ -141,15 +161,34 @@ internal static class SavestateManager {
 
     [EnableRun(EnableRunPriority)]
     internal static void EnableRun() {
-        if (SpeedrunToolInterop.Installed && Engine.Scene is Level) {
+        if (!SpeedrunToolInterop.Installed || Engine.Scene is not Level) {
+            return;
+        }
+
+        // Load ideal savestate to start playing from for frame step back
+        if (Manager.FrameStepBackTargetFrame > 0) {
             foreach (var state in AllSavestates.Reverse()) {
-                if (state.BreakpointCommented) {
+                if (state.Frame > Manager.FrameStepBackTargetFrame) {
                     continue;
                 }
 
                 state.Load();
                 return;
             }
+
+            // No viable state found
+            return;
+        }
+
+        foreach (var state in AllSavestates.Reverse()) {
+            if (state.BreakpointCommented
+                || Manager.Controller.FastForwards.Any(entry => entry.Value.Frame < state.Frame && entry.Value.ForceStop)
+            ) {
+                continue;
+            }
+
+            state.Load();
+            return;
         }
     }
 
@@ -168,8 +207,6 @@ internal static class SavestateManager {
         }
 
         UpdateStudio();
-        SetTasState();
-
         return true;
     }
     private static bool Load(Savestate savestate) {
@@ -195,7 +232,6 @@ internal static class SavestateManager {
         Manager.Controller.CopyProgressFrom(savestate.Controller);
 
         UpdateStudio();
-        SetTasState();
         return true;
     }
     private static void Clear(Savestate savestate) {
@@ -204,13 +240,6 @@ internal static class SavestateManager {
         UpdateStudio();
     }
 
-    private static void SetTasState() {
-        if (Manager.Controller.HasFastForward) {
-            Manager.CurrState = Manager.NextState = Manager.State.Running;
-        } else {
-            Manager.CurrState = Manager.NextState = Manager.State.Paused;
-        }
-    }
     private static void UpdateStudio() {
         GameInfo.Update();
         Manager.SendStudioState();
