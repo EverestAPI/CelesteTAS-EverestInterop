@@ -44,8 +44,9 @@ internal static class Core {
         On.Celeste.RunThread.Start -= On_RunThread_Start;
     }
 
+    // Usually equal to Engine.RawDeltaTime, but some mods change that value
+    public static readonly float PlaybackDeltaTime = (float) TimeSpan.FromTicks(166667L).TotalSeconds;
     private static float elapsedTime = 0.0f;
-    private static readonly float playbackDeltaTime = (float) TimeSpan.FromTicks(166667L).TotalSeconds; // Usually equal to Engine.RawDeltaTime, but some mods change that value
 
     private static void On_Celeste_Update(On.Celeste.Celeste.orig_Update orig, Celeste.Celeste self, GameTime gameTime) {
         if (!TasSettings.Enabled) {
@@ -70,12 +71,12 @@ internal static class Core {
             return;
         }
 
-        elapsedTime += Manager.PlaybackSpeed * playbackDeltaTime;
+        elapsedTime += Manager.PlaybackSpeed * PlaybackDeltaTime;
 
         Manager.UpdateMeta();
         var lastMetaUpdate = DateTime.UtcNow;
 
-        while (elapsedTime >= playbackDeltaTime) {
+        while (elapsedTime >= PlaybackDeltaTime) {
             try {
                 orig(self, gameTime);
             } catch (Exception ex) {
@@ -88,11 +89,11 @@ internal static class Core {
                 return;
             }
 
-            elapsedTime -= playbackDeltaTime;
+            elapsedTime -= PlaybackDeltaTime;
 
             // Call UpdateMeta every real-time frame
             var now = DateTime.UtcNow;
-            if ((now - lastMetaUpdate).TotalSeconds > playbackDeltaTime) {
+            if ((now - lastMetaUpdate).TotalSeconds > PlaybackDeltaTime) {
                 // We need to manually poll FNA events, since we don't return to the FNA game-loop while fast-forwarding
                 var game = Engine.Instance;
                 FNAPlatform.PollEvents(game, ref game.currentAdapter, game.textInputControlDown, ref game.textInputSuppress);

@@ -15,6 +15,7 @@ using TAS.Input;
 using TAS.Input.Commands;
 using TAS.ModInterop;
 using TAS.Module;
+using TAS.Playback;
 using TAS.Tools;
 using TAS.Utils;
 
@@ -60,6 +61,12 @@ public static class Manager {
     public static readonly InputController Controller = new();
 
     private static readonly ConcurrentQueue<Action> mainThreadActions = new();
+
+    // Allow accumulation of frames to step back, since the operation is time intensive
+    private const float FrameStepBackTime = 1.0f;
+    private static float frameStepBackAmount = 0.0f;
+    private static float frameStepBackTimeout = 0.0f;
+    private static int frameStepBackTargetFrame = -1;
 
 #if DEBUG
     // Hot-reloading support
@@ -165,7 +172,7 @@ public static class Manager {
             return;
         }
 
-        if (Controller.HasFastForward) {
+        if (Controller.HasFastForward || frameStepBackTargetFrame > 0) {
             NextState = State.Running;
         }
 
@@ -176,8 +183,13 @@ public static class Manager {
             return;
         }
 
+        // Catch frame step-back
+        if (Controller.CurrentFrameInTas == frameStepBackTargetFrame) {
+            frameStepBackTargetFrame = -1;
+            NextState = State.Paused;
+        }
         // Auto-pause at end of drafts
-        if (!Controller.CanPlayback && TasSettings.AutoPauseDraft && IsDraft()) {
+        else if (!Controller.CanPlayback && TasSettings.AutoPauseDraft && IsDraft()) {
             NextState = State.Paused;
         }
         // Pause the TAS if breakpoint is hit
@@ -243,11 +255,6 @@ public static class Manager {
             return;
         }
 
-        if (Running && Hotkeys.FastForwardComment.Pressed) {
-            Controller.FastForwardToNextLabel();
-            return;
-        }
-
         if (TASRecorderInterop.IsRecording) {
             // Force recording at 1x playback
             NextState = State.Running;
@@ -255,10 +262,35 @@ public static class Manager {
             return;
         }
 
+        if (frameStepBackAmount > 0.0f) {
+            frameStepBackTimeout -= Core.PlaybackDeltaTime;
+            if (frameStepBackTimeout <= 0.0f) {
+                int frames = (int) Math.Round(frameStepBackAmount / Core.PlaybackDeltaTime);
+                frameStepBackTargetFrame = Math.Max(0, Controller.CurrentFrameInTas - frames);
+
+                Controller.Stop();
+                AttributeUtils.Invoke<EnableRunAttribute>();
+                Savestates.EnableRun();
+                CurrState = NextState = State.Running;
+
+                frameStepBackTimeout = 0.0f;
+                frameStepBackAmount = 0.0f;
+            }
+        }
+
+        if (Running && Hotkeys.FastForwardComment.Pressed) {
+            Controller.FastForwardToNextLabel();
+            return;
+        }
+
         switch (CurrState) {
             case State.Running:
                 if (Hotkeys.PauseResume.Pressed || Hotkeys.FrameAdvance.Pressed) {
                     NextState = State.Paused;
+                } else if (Hotkeys.FrameStepBack.Pressed) {
+                    NextState = State.Paused;
+                    frameStepBackTimeout = FrameStepBackTime;
+                    frameStepBackAmount = Core.PlaybackDeltaTime;
                 }
                 break;
 
@@ -267,7 +299,22 @@ public static class Manager {
                 break;
 
             case State.Paused:
-                if (Hotkeys.PauseResume.Pressed) {
+                if (frameStepBackAmount > 0.0f) {
+                    if (Hotkeys.FrameStepBack.Repeated) {
+                        frameStepBackTimeout = FrameStepBackTime;
+                        frameStepBackAmount += Core.PlaybackDeltaTime;
+                    } else if (Hotkeys.FastForward.Check) {
+                        // Fast-forward during pause plays at 0.5x speed (due to alternating advancing / pausing)
+                        frameStepBackTimeout = FrameStepBackTime;
+                        frameStepBackAmount += 0.5f;
+                    } else if (Hotkeys.SlowForward.Check) {
+                        frameStepBackTimeout = FrameStepBackTime;
+                        frameStepBackAmount += TasSettings.SlowForwardSpeed;
+                    }
+                } else if (Hotkeys.FrameStepBack.Repeated) {
+                    frameStepBackTimeout = FrameStepBackTime;
+                    frameStepBackAmount = Core.PlaybackDeltaTime;
+                } else if (Hotkeys.PauseResume.Pressed) {
                     NextState = State.Running;
                 } else if (Hotkeys.FrameAdvance.Repeated || Hotkeys.FastForward.Check) {
                     // Prevent frame-advancing into the end of the TAS
@@ -296,6 +343,9 @@ public static class Manager {
 
         // Apply fast / slow forwarding
         switch (NextState) {
+            case State.Running when frameStepBackTargetFrame != -1:
+                PlaybackSpeed = FastForward.DefaultSpeed;
+                break;
             case State.Running when Hotkeys.FastForward.Check:
                 PlaybackSpeed = TasSettings.FastForwardSpeed;
                 break;
@@ -342,7 +392,7 @@ public static class Manager {
 
     /// Whether the game is currently truly loading, i.e. waiting an undefined amount of time
     public static bool IsActuallyLoading() {
-        if (Controller.Inputs!.GetValueOrDefault(Controller.CurrentFrameInTas) is { } current && current.ParentCommand is { } command && command.Is("SaveAndQuitReenter")) {
+        if (Controller.Inputs.GetValueOrDefault(Controller.CurrentFrameInTas) is { } current && current.ParentCommand is { } command && command.Is("SaveAndQuitReenter")) {
             // SaveAndQuitReenter manually adds the optimal S&Q real-time
             return true;
         }
