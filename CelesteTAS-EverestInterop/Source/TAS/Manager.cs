@@ -62,11 +62,15 @@ public static class Manager {
 
     private static readonly ConcurrentQueue<Action> mainThreadActions = new();
 
+    private static PopupToast.Entry? frameStepEofToast = null;
+    private static PopupToast.Entry? autoPauseDraft = null;
+
     // Allow accumulation of frames to step back, since the operation is time intensive
     private const float FrameStepBackTime = 1.0f;
     private static float frameStepBackAmount = 0.0f;
     private static float frameStepBackTimeout = 0.0f;
     private static int frameStepBackTargetFrame = -1;
+    private static PopupToast.Entry? frameStepBackToast = null;
 
 #if DEBUG
     // Hot-reloading support
@@ -107,6 +111,8 @@ public static class Manager {
 
         CurrState = NextState = State.Running;
         PlaybackSpeed = 1.0f;
+
+        frameStepBackTargetFrame = -1;
 
         Controller.Stop();
         Controller.RefreshInputs();
@@ -184,13 +190,22 @@ public static class Manager {
         }
 
         // Catch frame step-back
-        if (Controller.CurrentFrameInTas == frameStepBackTargetFrame) {
+        if (frameStepBackTargetFrame > 0 && Controller.CurrentFrameInTas >= frameStepBackTargetFrame) {
             frameStepBackTargetFrame = -1;
             NextState = State.Paused;
         }
         // Auto-pause at end of drafts
         else if (!Controller.CanPlayback && TasSettings.AutoPauseDraft && IsDraft()) {
             NextState = State.Paused;
+
+            const string text = "Auto-pause draft on end:\nInsert any Time command or disable the setting to prevent the pausing";
+            const float duration = 5.0f;
+            if (autoPauseDraft is not { Active: true }) {
+                autoPauseDraft = PopupToast.Show(text, duration);
+            } else {
+                autoPauseDraft.Text = text;
+                autoPauseDraft.Timeout = duration;
+            }
         }
         // Pause the TAS if breakpoint is hit
         // Special-case for end of regular files, to update *Time-commands
@@ -263,10 +278,20 @@ public static class Manager {
         }
 
         if (frameStepBackAmount > 0.0f) {
+            int frames = (int) Math.Round(frameStepBackAmount / Core.PlaybackDeltaTime);
             frameStepBackTimeout -= Core.PlaybackDeltaTime;
+
+            // Advance a frame extra, since otherwise 0s would only be rendered AFTER the lag from the TAS restart
+            string text = $"Frame Step Back: -{frames}f   (in {Math.Max(0.0f, frameStepBackTimeout - Core.PlaybackDeltaTime):F2}s)";
+            if (frameStepBackToast is not { Active: true }) {
+                frameStepBackToast = PopupToast.Show(text);
+            } else {
+                frameStepBackToast.Text = text;
+            }
+            frameStepBackToast.Timeout = frameStepBackTimeout;
+
             if (frameStepBackTimeout <= 0.0f) {
-                int frames = (int) Math.Round(frameStepBackAmount / Core.PlaybackDeltaTime);
-                frameStepBackTargetFrame = Math.Max(0, Controller.CurrentFrameInTas - frames);
+                frameStepBackTargetFrame = Math.Max(1, Controller.CurrentFrameInTas - frames);
 
                 Controller.Stop();
                 AttributeUtils.Invoke<EnableRunAttribute>();
@@ -306,7 +331,7 @@ public static class Manager {
                     } else if (Hotkeys.FastForward.Check) {
                         // Fast-forward during pause plays at 0.5x speed (due to alternating advancing / pausing)
                         frameStepBackTimeout = FrameStepBackTime;
-                        frameStepBackAmount += 0.5f;
+                        frameStepBackAmount += Core.PlaybackDeltaTime * 2.0f;
                     } else if (Hotkeys.SlowForward.Check) {
                         frameStepBackTimeout = FrameStepBackTime;
                         frameStepBackAmount += TasSettings.SlowForwardSpeed;
@@ -324,7 +349,14 @@ public static class Manager {
                     if (Controller.CanPlayback) {
                         NextState = State.FrameAdvance;
                     } else {
-                        // TODO: Display toast "Reached end-of-file". Currently not possible due to them not being updated
+                        const string text = "Cannot advance further: Reached end-of-file";
+                        const float duration = 1.0f;
+                        if (frameStepEofToast is not { Active: true }) {
+                            frameStepEofToast = PopupToast.Show(text, duration);
+                        } else {
+                            frameStepEofToast.Text = text;
+                            frameStepEofToast.Timeout = duration;
+                        }
                     }
                 }
                 break;
@@ -353,7 +385,7 @@ public static class Manager {
                 PlaybackSpeed = TasSettings.SlowForwardSpeed;
                 break;
 
-            case State.Paused or State.SlowForward when Hotkeys.SlowForward.Check:
+            case State.Paused or State.SlowForward when Hotkeys.SlowForward.Check && frameStepBackAmount <= 0.0f:
                 PlaybackSpeed = TasSettings.SlowForwardSpeed;
                 NextState = State.SlowForward;
                 break;

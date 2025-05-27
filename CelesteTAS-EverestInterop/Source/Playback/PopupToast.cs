@@ -72,7 +72,7 @@ internal static class PopupToast {
             float yOffset = Engine.Height;
             foreach (ref var entry in span) {
                 var size = ActiveFont.Measure(entry.Text);
-                yOffset -= size.Y * Math.Min(1.0f, entry.Fade * 2.0f) - Padding / 2.0f;
+                yOffset -= size.Y * Math.Min(1.0f, entry.Fade * 2.0f) + Padding / 2.0f;
 
                 float alpha = entry.Timeout > 0.0
                     ? Ease.SineIn(entry.Fade)
