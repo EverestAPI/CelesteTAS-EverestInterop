@@ -6,7 +6,6 @@ using StudioCommunication;
 using System;
 using System.Reflection;
 using TAS.Communication;
-using TAS.Entities;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;

@@ -6,9 +6,9 @@ using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication;
-using TAS.Entities;
 using TAS.Input;
 using TAS.Module;
+using TAS.Playback;
 using TAS.Utils;
 
 namespace TAS.EverestInterop.InfoHUD;
@@ -60,7 +60,7 @@ public static class InfoHud {
 
             if (TasSettings.InfoHud && TasSettings.EnableInfoHudFirstTime) {
                 TasSettings.EnableInfoHudFirstTime = false;
-                Toast.Show($"Info HUD is provided by TAS Mod\nDouble press {Hotkeys.InfoHud} to toggle it", 5);
+                PopupToast.Show($"Info HUD is provided by TAS Mod\nDouble press {Hotkeys.InfoHud} to toggle it", 10.0f);
             }
 
             CelesteTasModule.Instance.SaveSettings();

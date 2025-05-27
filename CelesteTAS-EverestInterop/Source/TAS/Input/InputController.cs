@@ -6,9 +6,9 @@ using Celeste.Mod;
 using JetBrains.Annotations;
 using Monocle;
 using StudioCommunication;
-using TAS.Entities;
 using TAS.Input.Commands;
 using TAS.Module;
+using TAS.Playback;
 using TAS.Utils;
 
 namespace TAS.Input;
@@ -182,15 +182,15 @@ public class InputController {
                         continue;
                     }
 
-                    Toast.ShowAndLog($"""
-                                      {comment.FilePath} line {comment.FileLine}:
-                                      Room label 'lvl_{match.Groups[1].ValueSpan}' does not match actual name 'lvl_{session.Level}'
-                                      """);
+                    PopupToast.ShowAndLog($"""
+                                          {comment.FilePath} line {comment.FileLine}:
+                                          Room label 'lvl_{match.Groups[1].ValueSpan}' does not match actual name 'lvl_{session.Level}'
+                                          """);
                 } else {
-                    Toast.ShowAndLog($"""
-                                      {comment.FilePath} line {comment.FileLine}:
-                                      Found room label '#{comment.Text}' outside of level
-                                      """);
+                    PopupToast.ShowAndLog($"""
+                                           {comment.FilePath} line {comment.FileLine}:
+                                           Found room label '#{comment.Text}' outside of level
+                                           """);
                 }
             }
         }
