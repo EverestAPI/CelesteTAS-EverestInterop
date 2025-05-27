@@ -404,6 +404,7 @@ public class InputController {
         var hash = new HashCode();
         hash.Add(filePath);
 
+        upToFrame = Calc.Clamp(upToFrame, 0, Inputs.Count);
         for (int i = 0; i < upToFrame; i++) {
             hash.Add(Inputs[i]);
 

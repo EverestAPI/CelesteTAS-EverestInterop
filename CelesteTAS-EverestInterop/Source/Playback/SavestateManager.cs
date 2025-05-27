@@ -112,6 +112,9 @@ internal static class SavestateManager {
                 }
 
                 state.Load();
+                if (state.Frame == controller.CurrentFrameInTas) {
+                    Manager.CurrState = Manager.NextState = Manager.State.Paused;
+                }
                 return;
             }
         }
@@ -173,6 +176,9 @@ internal static class SavestateManager {
                 }
 
                 state.Load();
+                if (state.Frame == Manager.FrameStepBackTargetFrame) {
+                    Manager.CurrState = Manager.NextState = Manager.State.Paused;
+                }
                 return;
             }
 
@@ -188,6 +194,7 @@ internal static class SavestateManager {
             }
 
             state.Load();
+            Manager.CurrState = Manager.NextState = Manager.State.Paused;
             return;
         }
     }
