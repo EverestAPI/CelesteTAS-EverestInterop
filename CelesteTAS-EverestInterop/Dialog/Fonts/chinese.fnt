@@ -3,8 +3,8 @@
   <info face="Noto Sans CJK SC Medium" size="64" bold="0" italic="0" charset="" unicode="1" stretchH="100" smooth="1" aa="4" padding="0,0,0,0" spacing="1,1" outline="0"/>
   <common lineHeight="64" base="51" scaleW="256" scaleH="256" pages="2" packed="0" alphaChnl="0" redChnl="4" greenChnl="4" blueChnl="4"/>
   <pages>
-    <page id="0" file="chinese_638833673365007174_0.png" />
-    <page id="1" file="chinese_638833673365007174_1.png" />
+    <page id="0" file="chinese_638841541920980364_0.png" />
+    <page id="1" file="chinese_638841541920980364_1.png" />
   </pages>
   <chars count="47">
     <char id="20113" x="120" y="40" width="39" height="37" xoffset="2" yoffset="17" xadvance="43" page="1" chnl="15" />
