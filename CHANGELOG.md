@@ -1,3 +1,59 @@
+# CelesteTAS v3.45.0, Studio v3.9.2
+
+## Multiple Savestate Slots
+
+With the release of multiple savestate slots for Speedrun Tool, by Lozen, CelesteTAS follows with exposing that functionally to regular TASes.  
+Simply use as many savestate-breakpoints as you desire, and it'll use the most appropriate when restarting the TAS.
+
+While there is no hard upper limit, for your own computers sake, try to keep the amount reasonable and only in the area you're currently working in.
+
+**NOTE:** For backwards compatibility reasons, the minimum required SpeedrunTool version is _not_ v3.25.0. However, you will need it (or later), to be able to use multiple savestates at once, so make sure it's up-to-date.
+
+---
+
+## Frame Step Back
+
+Previously a feature of TAS Helper, this now has been moved over to CelesteTAS itself.  
+By pressing the hotkey (`Ctrl+I` by default), you'll be able to step in time to previously executed inputs.
+
+This an accumulative action, allowing you to specify the amount of frames by repeatedly pressing the hotkey (and hotkeys which would usually forward to TAS), before the action is performed.  
+Since the game does not support going back in time, it has to play back to the target frame from a breakpoint before or the start if none is available. Since that is an expensive operation, it is best to specify the desired frame count once, to avoid re-running the TAS multiple times.
+
+---
+
+## Force-Stop Breakpoints
+
+By placing a breakpoint after a breakpoint (`***!`), it will **always** cause the TAS to be stopped at the desired location.  
+This can be useful when wanting to go back without having to comment-out / delete all breakpoints after it.
+
+---
+
+## Improved Runtime Validation
+
+While playing a TAS back, the current level and room will be validated, based on available information such as a `console load` command or room labels.  
+This is useful to identify desyncs in the TAS early.
+
+**NOTE:** Since some projects currently have incorrect room labels, it's only a warning right now. However, it is intended to become an error later on. 
+
+---
+
+- Feature: Multiple Savestate Slots support
+- Feature: Migrate Frame Step Back from TAS Helper
+- Feature: Force-Stop Breakpoints
+- Feature: Live-update simplified spinner color when changing the setting
+- Feature: Validate active level and room labels
+- Fix: Crashes / Desyncs caused by attempting to fix desyncs caused by SkinMods
+- Fix: Custom Info Template displaying instance instead of value for arrays
+- Fix: Specifying a `@ModName` suffix on target-queries returning duplicate results
+- Fix: Command separator placeholder not being replaced when inserted from command menu in Studio
+- Fix: Not being able to undo past implicit formatting changes
+- Fix: Studio auto-installer having wrong checksum hardcoded on Linux
+- Fix: Desync caused by Simplified Graphics with some custom FrostHelper spinners
+- Fix: Info HUD not accounting delta-time for frame count calculations
+- Fix: Debug Console commands not allowing same separators, like respective TAS commands
+- Fix: Crash when launching Studio v3 for the first time
+- Tweak: Display popup-message for various actions during TAS playback
+
 # CelesteTAS v3.44.1, Studio v3.9.1
 
 - Fix: Crash on first start-up on Windows

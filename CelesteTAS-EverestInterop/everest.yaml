@@ -1,12 +1,12 @@
 - Name: CelesteTAS
-  Version: 3.44.1
+  Version: 3.45.0
   DLL: bin/CelesteTAS-EverestInterop.dll
   Dependencies:
     - Name: EverestCore
       Version: 1.5421.0
   OptionalDependencies:
     - Name: SpeedrunTool
-      Version: 3.24.4
+      Version: 3.24.5
     - Name: TASRecorder
       Version: 1.6.0
     - Name: ExtendedCameraDynamics
