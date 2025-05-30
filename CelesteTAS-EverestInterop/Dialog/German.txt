@@ -134,6 +134,7 @@ TAS_KEY_FAST_FORWARD=                       TAS Vorspulen
 TAS_KEY_FAST_FORWARD_COMMENT=               TAS zum nächstem Label Vorspulen
 TAS_KEY_SLOW_FORWARD=                       Langsame TAS Wiedergabe
 TAS_KEY_FRAME_ADVANCE=                      Nächster Frame im TAS
+TAS_KEY_FRAME_STEP_BACK=                    Vorheriger Frame im TAS
 TAS_KEY_PAUSE_RESUME=                       TAS Pausieren/Wiedergeben
 TAS_KEY_HITBOXES=                           Hitboxen ein/ausschalten
 TAS_KEY_TRIGGER_HITBOXES=                   Triggerhitboxen ein/ausschalten

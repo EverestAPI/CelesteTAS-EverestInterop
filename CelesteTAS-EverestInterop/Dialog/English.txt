@@ -133,6 +133,7 @@ TAS_KEY_FAST_FORWARD=                       Fast Forward TAS
 TAS_KEY_FAST_FORWARD_COMMENT=               Fast Forward TAS to Next Label
 TAS_KEY_SLOW_FORWARD=                       Slow Forward TAS
 TAS_KEY_FRAME_ADVANCE=                      Frame Advance TAS
+TAS_KEY_FRAME_STEP_BACK=                    Frame Step Back TAS
 TAS_KEY_PAUSE_RESUME=                       Pause/Resume TAS
 TAS_KEY_HITBOXES=                           Toggle Hitboxes
 TAS_KEY_TRIGGER_HITBOXES=                   Toggle Trigger Hitboxes
@@ -143,7 +144,6 @@ TAS_KEY_SAVE_STATE=                         Save State in TAS
 TAS_KEY_CLEAR_STATE=                        Clear State in TAS
 TAS_KEY_INFO_HUD=                           Info HUD
 TAS_KEY_FREE_CAMERA=                        Free Camera
-TAS_KEY_FRAME_STEP_BACK=                    Reverse Frame Advance TAS
 
 # ============================================== Option Values ==============================================
 TAS_DEFAULT=                                Default
