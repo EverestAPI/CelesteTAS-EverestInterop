@@ -158,13 +158,13 @@ public static class Manager {
             DisableRun();
         }
 
+        SavestateManager.Update();
+
         CurrState = NextState;
 
         while (mainThreadActions.TryDequeue(out var action)) {
             action.Invoke();
         }
-
-        SavestateManager.Update();
 
         if (!Running || CurrState == State.Paused || IsLoading()) {
             return;

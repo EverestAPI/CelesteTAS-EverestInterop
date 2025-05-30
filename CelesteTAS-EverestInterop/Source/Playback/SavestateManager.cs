@@ -69,6 +69,10 @@ internal static class SavestateManager {
         if (!SpeedrunToolInterop.Installed) {
             return;
         }
+        if (Manager.CurrState != Manager.State.Running) {
+            // Only savestate while TAS is activly running and not while paused
+            return;
+        }
 
         var controller = Manager.Controller;
 
@@ -88,7 +92,7 @@ internal static class SavestateManager {
         }
 
         // Autoload state after entering the level, if the TAS was started outside the level
-        if (Manager.CurrState is Manager.State.Running && Engine.Scene is Level) {
+        if (Engine.Scene is Level) {
             // Load ideal savestate to start playing from for frame step back
             if (Manager.FrameStepBackTargetFrame > 0) {
                 foreach (var state in AllSavestates.Reverse()) {
@@ -106,7 +110,7 @@ internal static class SavestateManager {
 
             foreach (var state in AllSavestates.Reverse()) {
                 if (state.Frame <= controller.CurrentFrameInTas
-                    || Manager.Controller.FastForwards.Values.Any(val => val.Frame > controller.CurrentFrameInTas && val.Frame < state.Frame && val.ForceStop)
+                    || Manager.Controller.FastForwards.Values.Any(val => val.Frame >= controller.CurrentFrameInTas && val.Frame < state.Frame && val.ForceStop)
                     || controller.FilePath != state.Controller.FilePath || state.BreakpointCommented) {
                     continue;
                 }
