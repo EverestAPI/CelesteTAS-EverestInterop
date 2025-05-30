@@ -302,12 +302,14 @@ public class Document : IDisposable {
             return; // Nothing to do
         }
 
-        // No unsaved changes are discarded since this is just a regular, undo-able update
-        using var __ = Update();
-        using var patch = new Patch(this);
+        Application.Instance.Invoke(() => {
+            // No unsaved changes are discarded since this is just a regular, undo-able update
+            using var __ = Update();
+            using var patch = new Patch(this);
 
-        patch.DeleteRange(0, CurrentLines.Count - 1);
-        patch.InsertRange(0, newLines);
+            patch.DeleteRange(0, CurrentLines.Count - 1);
+            patch.InsertRange(0, newLines);
+        });
     }
 
     private void OnLinesUpdated(Dictionary<int, string> newLines) {
