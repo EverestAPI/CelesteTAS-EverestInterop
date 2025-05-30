@@ -28,8 +28,8 @@ public class CelesteTasModule : EverestModule {
 
     public override Type SettingsType => typeof(CelesteTasSettings);
 
-    // CelesteTAS v3.45.0 caused an ABI breakage, which is fixed in TAS Helper v2.2.0
-    public static Version RequiredTasHelperVersion = new Version(2, 2, 0);
+    // CelesteTAS v3.45.0 caused an ABI breakage, which is fixed in TAS Helper v2.2.1
+    public static Version RequiredTasHelperVersion = new Version(2, 2, 1);
     public override void Initialize() {
         if (Everest.Modules.FirstOrDefault(module => module.Metadata.Name == "TASHelper") is { } tasHelperModule) {
             if (tasHelperModule.Metadata.Version < RequiredTasHelperVersion) {
