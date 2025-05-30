@@ -198,7 +198,13 @@ internal static class SavestateManager {
             }
 
             state.Load();
-            Manager.CurrState = Manager.NextState = Manager.State.Paused;
+
+            // Pause TAS if latest breakpoint
+            if (Manager.Controller.FastForwards.LastOrDefault().Value?.Frame <= state.Frame) {
+                Manager.CurrState = Manager.NextState = Manager.State.Paused;
+            } else {
+                Manager.CurrState = Manager.NextState = Manager.State.Running;
+            }
             return;
         }
     }
