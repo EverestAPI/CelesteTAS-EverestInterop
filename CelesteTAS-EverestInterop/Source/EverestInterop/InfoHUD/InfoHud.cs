@@ -165,7 +165,7 @@ public static class InfoHud {
             return;
         }
 
-        var current = controller.Current;
+        var current = controller.Current!;
         if (controller.CurrentFrameInTas >= 1 && current != controller.Previous) {
             current = controller.Previous!;
         }

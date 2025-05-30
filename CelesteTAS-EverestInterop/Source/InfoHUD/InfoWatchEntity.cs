@@ -138,8 +138,7 @@ public static class InfoWatchEntity {
 
         static bool IgnoreEntity(Entity entity) {
             return entity.GetType() == typeof(Entity)
-                   || entity is ParticleSystem
-                   || TasHelperInterop.GetUnimportantTriggers().Contains(entity);
+                   || entity is ParticleSystem;
         }
     }
 

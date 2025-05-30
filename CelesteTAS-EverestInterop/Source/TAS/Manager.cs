@@ -22,14 +22,14 @@ using TAS.Utils;
 namespace TAS;
 
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-public class EnableRunAttribute : Attribute;
+public class EnableRunAttribute(int priority = 0) : EventAttribute(priority);
 
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-public class DisableRunAttribute : Attribute;
+public class DisableRunAttribute(int priority = 0) : EventAttribute(priority);
 
 /// Causes the method to be called every real-time frame, even if a TAS is currently running / paused
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
-public class UpdateMetaAttribute : Attribute;
+public class UpdateMetaAttribute(int priority = 0) : EventAttribute(priority);
 
 /// Main controller, which manages how the TAS is played back
 public static class Manager {
@@ -66,10 +66,10 @@ public static class Manager {
     private static PopupToast.Entry? autoPauseDraft = null;
 
     // Allow accumulation of frames to step back, since the operation is time intensive
+    internal static int FrameStepBackTargetFrame = -1;
     private const float FrameStepBackTime = 1.0f;
     private static float frameStepBackAmount = 0.0f;
     private static float frameStepBackTimeout = 0.0f;
-    private static int frameStepBackTargetFrame = -1;
     private static PopupToast.Entry? frameStepBackToast = null;
 
 #if DEBUG
@@ -92,6 +92,7 @@ public static class Manager {
                 // Only disable TAS for non-silent reload actions
                 cursor.EmitBrtrue(start);
                 cursor.EmitDelegate(DisableRun);
+                cursor.EmitDelegate(SavestateManager.ClearAllSavestates); // Clean-up savestates
             });
     }
 
@@ -112,7 +113,7 @@ public static class Manager {
         CurrState = NextState = State.Running;
         PlaybackSpeed = 1.0f;
 
-        frameStepBackTargetFrame = -1;
+        FrameStepBackTargetFrame = -1;
 
         Controller.Stop();
         Controller.RefreshInputs();
@@ -126,9 +127,6 @@ public static class Manager {
 
         AttributeUtils.Invoke<EnableRunAttribute>();
 
-        // This needs to happen after EnableRun, otherwise the input state will be reset in BindingHelper.SetTasBindings
-        Savestates.EnableRun();
-
         $"Starting TAS: {Controller.FilePath}".Log();
     }
 
@@ -140,6 +138,7 @@ public static class Manager {
         "Stopping TAS".Log();
 
         AttributeUtils.Invoke<DisableRunAttribute>();
+
         SyncChecker.ReportRunFinished();
         CurrState = NextState = State.Disabled;
         Controller.Stop();
@@ -165,7 +164,7 @@ public static class Manager {
             action.Invoke();
         }
 
-        Savestates.Update();
+        SavestateManager.Update();
 
         if (!Running || CurrState == State.Paused || IsLoading()) {
             return;
@@ -178,7 +177,7 @@ public static class Manager {
             return;
         }
 
-        if (Controller.HasFastForward || frameStepBackTargetFrame > 0) {
+        if (Controller.HasFastForward || FrameStepBackTargetFrame > 0) {
             NextState = State.Running;
         }
 
@@ -190,8 +189,8 @@ public static class Manager {
         }
 
         // Catch frame step-back
-        if (frameStepBackTargetFrame > 0 && Controller.CurrentFrameInTas >= frameStepBackTargetFrame) {
-            frameStepBackTargetFrame = -1;
+        if (FrameStepBackTargetFrame > 0 && Controller.CurrentFrameInTas >= FrameStepBackTargetFrame) {
+            FrameStepBackTargetFrame = -1;
             NextState = State.Paused;
         }
         // Auto-pause at end of drafts
@@ -209,7 +208,7 @@ public static class Manager {
         }
         // Pause the TAS if breakpoint is hit
         // Special-case for end of regular files, to update *Time-commands
-        else if (Controller.Break && (Controller.CanPlayback || IsDraft())) {
+        else if (FrameStepBackTargetFrame == -1 && Controller.Break && (Controller.CanPlayback || IsDraft())) {
             Controller.NextLabelFastForward = null;
             NextState = State.Paused;
         }
@@ -244,7 +243,7 @@ public static class Manager {
         }
 
         Hotkeys.UpdateMeta();
-        Savestates.UpdateMeta();
+        SavestateManager.UpdateMeta();
         AttributeUtils.Invoke<UpdateMetaAttribute>();
 
         SendStudioState();
@@ -291,12 +290,11 @@ public static class Manager {
             frameStepBackToast.Timeout = frameStepBackTimeout;
 
             if (frameStepBackTimeout <= 0.0f) {
-                frameStepBackTargetFrame = Math.Max(1, Controller.CurrentFrameInTas - frames);
+                FrameStepBackTargetFrame = Math.Max(1, Controller.CurrentFrameInTas - frames);
 
                 Controller.Stop();
-                AttributeUtils.Invoke<EnableRunAttribute>();
-                Savestates.EnableRun();
                 CurrState = NextState = State.Running;
+                AttributeUtils.Invoke<EnableRunAttribute>();
 
                 frameStepBackTimeout = 0.0f;
                 frameStepBackAmount = 0.0f;
@@ -375,7 +373,7 @@ public static class Manager {
 
         // Apply fast / slow forwarding
         switch (NextState) {
-            case State.Running when frameStepBackTargetFrame != -1:
+            case State.Running when FrameStepBackTargetFrame != -1:
                 PlaybackSpeed = FastForward.DefaultSpeed;
                 break;
             case State.Running when Hotkeys.FastForward.Check:
@@ -464,7 +462,7 @@ public static class Manager {
             CurrentLine = previous?.StudioLine ?? -1,
             CurrentLineSuffix = $"{Controller.CurrentFrameInInput + (previous?.FrameOffset ?? 0)}{previous?.RepeatString ?? ""}",
             CurrentFrameInTas = Controller.CurrentFrameInTas,
-            SaveStateLine = Savestates.StudioHighlightLine,
+            SaveStateLines = SavestateManager.AllSavestates.Select(state => state.StudioLine).ToArray(),
             PlaybackRunning = CurrState == State.Running,
 
             FileNeedsReload = Controller.NeedsReload,
