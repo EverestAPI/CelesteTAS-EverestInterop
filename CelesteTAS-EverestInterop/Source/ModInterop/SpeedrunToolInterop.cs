@@ -183,6 +183,9 @@ internal static class SpeedrunToolInterop {
     }
 }
 
+// Fields will be assigned through ModInterop
+#pragma warning disable CS0649
+
 [ModImportName("SpeedrunTool.SaveLoad")]
 internal static class SpeedrunToolSaveLoadImport {
     public delegate object RegisterSaveLoadActionDelegate(
