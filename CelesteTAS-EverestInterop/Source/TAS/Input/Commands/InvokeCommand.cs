@@ -73,7 +73,7 @@ public static class InvokeCommand {
 
     [Monocle.Command("invoke", "Invoke level/session/entity method. eg invoke Level.Pause; invoke Player.Jump (CelesteTAS)"), UsedImplicitly]
     private static void InvokeCmd() {
-        Invoke(Engine.Commands.commandHistory[0].Split(' ', ',')[1..]);
+        Invoke(Engine.Commands.commandHistory[0].Split([' ', ','], StringSplitOptions.RemoveEmptyEntries)[1..]);
     }
 
     // Invoke, Level.Method, Parameters...

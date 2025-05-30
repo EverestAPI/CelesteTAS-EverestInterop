@@ -82,7 +82,7 @@ public static class SetCommand {
 
     [Monocle.Command("set", "'set Settings/Level/Session/Entity value' | Example: 'set DashMode Infinite', 'set Player.Speed 325 -52.5' (CelesteTAS)"), UsedImplicitly]
     private static void SetCmd() {
-        Set(Engine.Commands.commandHistory[0].Split(' ', ',')[1..]);
+        Set(Engine.Commands.commandHistory[0].Split([' ', ','], StringSplitOptions.RemoveEmptyEntries)[1..]);
     }
 
     // Set, Setting, Value
