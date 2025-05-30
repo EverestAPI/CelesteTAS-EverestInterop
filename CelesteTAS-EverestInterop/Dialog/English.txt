@@ -143,6 +143,7 @@ TAS_KEY_SAVE_STATE=                         Save State in TAS
 TAS_KEY_CLEAR_STATE=                        Clear State in TAS
 TAS_KEY_INFO_HUD=                           Info HUD
 TAS_KEY_FREE_CAMERA=                        Free Camera
+TAS_KEY_FRAME_STEP_BACK=                    Reverse Frame Advance TAS
 
 # ============================================== Option Values ==============================================
 TAS_DEFAULT=                                Default

@@ -42,6 +42,16 @@ public static class CelesteTasImports {
     /// De-registers a previously registered handler for the module
     public static RemoveSettingsRestoreHandlerDelegate RemoveSettingsRestoreHandler = null!;
 
+    #region GroupCounter
+
+    /// Get CycleHitboxColor GroupCounter
+    public static Func<int> GetGroupCounter = null!;
+
+    /// Set CycleHitboxColor GroupCounter
+    public static Action<int> SetGroupCounter = null!;
+
+    #endregion
+
     #region Savestates
 
     public delegate object? GetLatestSavestateForFrameDelegate(int frame);
@@ -107,6 +117,12 @@ public static class CelesteTasExports {
         } else {
             $"Tried to de-register a custom setting-restore handler for mod '{module.Metadata.Name}', without having a handler previously registered".Log(LogLevel.Warn);
         }
+    }
+
+    public static int GetGroupCounter() => CycleHitboxColor.GroupCounter;
+
+    public static void SetGroupCounter(int counter) {
+        CycleHitboxColor.GroupCounter = counter;
     }
 
     public static object? GetLatestSavestateForFrame(int frame) {

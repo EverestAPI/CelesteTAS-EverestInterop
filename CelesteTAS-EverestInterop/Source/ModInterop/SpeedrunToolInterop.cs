@@ -71,6 +71,12 @@ internal static class SpeedrunToolInterop {
         }
     }
 
+    [DisableRun]
+
+    private static void OnTasDisableRun() {
+        SpeedrunToolTasActionImports.OnTasDisableRun?.Invoke();
+    }
+
     public const string DefaultSlot = "CelesteTAS";
 
     /// Saves the current state into the specified slot. Returns whether it was successful
@@ -219,4 +225,5 @@ internal static class SpeedrunToolTasActionImports {
     public static Action<string>? ClearState;
     public static Func<string, bool>? TasIsSaved;
     public static Action? InputDeregister;
+    public static Action? OnTasDisableRun;
 }
