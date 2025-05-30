@@ -449,7 +449,7 @@ public static class GameInfo {
         }
 
         if (Engine.FreezeTimer > 0f) {
-            statuses.Add($"Frozen({Engine.FreezeTimer.ToCeilingFrames()})");
+            statuses.Add($"Frozen({(int) Math.Ceiling(Engine.FreezeTimer / Engine.RawDeltaTime)})");
         }
 
         if (player.InControl && !level.Transitioning && unpauseTimer <= 0f) {
@@ -540,16 +540,11 @@ public static class GameInfo {
         return builder.ToString();
     }
 
-    private static int ToCeilingFrames(this float seconds) {
-        return (int) Math.Ceiling(seconds / Engine.RawDeltaTime / Engine.TimeRateB);
+    internal static int ToCeilingFrames(this float timer) {
+        return (int) Math.Ceiling(timer / Engine.DeltaTime);
     }
-
-    public static int ToFloorFrames(this float seconds) {
-        return (int) Math.Floor(seconds / Engine.RawDeltaTime / Engine.TimeRateB);
-    }
-
-    public static int ConvertToFrames(float seconds) {
-        return seconds.ToCeilingFrames();
+    public static int ToFloorFrames(this float timer) {
+        return (int) Math.Floor(timer / Engine.DeltaTime);
     }
 
     private static string GetAdjustedPos(Actor actor, out string exactPos) {
