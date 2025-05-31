@@ -105,7 +105,8 @@ public record EnumBinding<T>(string identifier, string DisplayName, Dictionary<T
         for (int i = 0; i < selector.Items.Count; i++) {
             var item = (RadioMenuItem)selector.Items[i];
             item.Checked = i == currIdx;
-            item.Click += (_, _) => SetValue(values[i]);
+            var valueIndex = i;
+            item.Click += (_, _) => SetValue(values[valueIndex]);
         }
 
         return selector;
