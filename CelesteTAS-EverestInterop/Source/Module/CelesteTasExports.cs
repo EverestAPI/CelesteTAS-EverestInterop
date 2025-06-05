@@ -13,6 +13,9 @@ using TAS.Utils;
 
 namespace TAS.Module;
 
+// The code below is only intended to be copy-pasted and not actually shipped with CelesteTAS itself
+#if false
+
 /* How to use the CelesteTAS ModInterop API:
  *  1. Copy-Paste the CelesteTasImports class into your mod
  *  2. Remove the [PublicAPI] attribute if you aren't using JetBrains' annotations
@@ -85,9 +88,11 @@ public static class CelesteTasImports {
     #endregion
 }
 
+#endif
+
 /// Official stable API for interacting with CelesteTAS
 [ModExportName("CelesteTAS"), PublicAPI]
-public static class CelesteTasExports {
+internal static class CelesteTasExports {
     [Load]
     private static void Load() {
         typeof(CelesteTasExports).ModInterop();
