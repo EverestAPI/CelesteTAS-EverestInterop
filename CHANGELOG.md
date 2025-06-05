@@ -1,3 +1,15 @@
+# CelesteTAS v3.45.1, Studio v3.9.3
+
+- Feature: Allow adjusting repeat count slightly, just like how frame counts can be adjusted (with Ctrl+Shift+Up/Down and Shift+MouseWheel)
+- Feature: Allow zooming in/out of Studio with Ctrl+Plus/Minus keyboard bindings
+- Tweak: Only show auto-pause toast message when playing TAS back normally. Also reduce duration from 5s to 2s
+- Tweak: Change default hotkey for Frame Step Back to Ctrl+[ in order to match the regular Frame Advance default hotkey
+- Tweak: Limit Repeat command at 10 million iterations to avoid accidentally running out of memory
+- Tweak: Use TAS command parsing for `get`/`set`/`invoke` debug commands to support spaces in arguments
+- Fix: Re-saving frame after clearing when paused on savestate breakpoint
+- Fix: Invalid playback state being set after loading a savestate
+- Fix: Slightly incorrect logic for determining save point for savestate breakpoint
+
 # CelesteTAS v3.45.0, Studio v3.9.2
 
 ## Multiple Savestate Slots
@@ -23,7 +35,7 @@ Since the game does not support going back in time, it has to play back to the t
 
 ## Force-Stop Breakpoints
 
-By placing a breakpoint after a breakpoint (`***!`), it will **always** cause the TAS to be stopped at the desired location.  
+By placing an exclamation mark after a breakpoint (`***!`), it will **always** cause the TAS to be stopped at the desired location.  
 This can be useful when wanting to go back without having to comment-out / delete all breakpoints after it.
 
 ---
