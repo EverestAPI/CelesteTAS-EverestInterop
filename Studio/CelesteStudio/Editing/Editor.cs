@@ -138,6 +138,8 @@ public sealed class Editor : SkiaDrawable {
     private static readonly Regex AllBreakpointRegex = new(@"^\s*#?\s*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex TimestampRegex = new(@"^\s*#+\s*(\d+:)?\d{1,2}:\d{2}\.\d{3}\(\d+\)", RegexOptions.Compiled);
 
+    private const int MaxRepeatCount = 9_999_999;
+
     #region Bindings
 
     private static ActionBinding CreateAction(string identifier, string displayName, Hotkey defaultHotkey, Action<Editor> action)
@@ -578,7 +580,7 @@ public sealed class Editor : SkiaDrawable {
             commandLine.Arguments.Length >= 1 &&
             int.TryParse(commandLine.Arguments[0], out int repeatCount)
         ) {
-            commandLine.Arguments[0] = Math.Clamp(repeatCount, 0, 9_999_999).ToString();
+            commandLine.Arguments[0] = Math.Clamp(repeatCount, 1, MaxRepeatCount).ToString();
 
             Document.ReplaceLine(row, commandLine.ToString());
             return;
@@ -875,15 +877,33 @@ public sealed class Editor : SkiaDrawable {
         }
     }
 
-    private void AdjustFrameCounts(int rowA, int rowB, int dir) {
+    /// Tweaks frame counts between multiple lines and certain special cases for some commands
+    private void AdjustNumericValues(int rowA, int rowB, int dir) {
         int topRow = Math.Min(rowA, rowB);
         int bottomRow = Math.Max(rowA, rowB);
+
+        // Multiline is not supported for commands
+        if (topRow == bottomRow && CommandLine.TryParse(Document.Lines[topRow], out var commandLine)) {
+            using var __ = Document.Update();
+
+            // Adjust repeat count
+            if (commandLine.IsCommand("Repeat") &&
+                commandLine.Arguments.Length >= 1 &&
+                int.TryParse(commandLine.Arguments[0], out int repeatCount)
+            ) {
+                commandLine.Arguments[0] = Math.Clamp(repeatCount + dir, 1, MaxRepeatCount).ToString();
+
+                Document.ReplaceLine(topRow, commandLine.ToString());
+                return;
+            }
+        }
 
         var topLine = ActionLine.Parse(Document.Lines[topRow]);
         var bottomLine = ActionLine.Parse(Document.Lines[bottomRow]);
 
-        if (topLine == null && bottomLine == null || dir == 0)
+        if (topLine == null && bottomLine == null || dir == 0) {
             return;
+        }
 
         using (Document.Update()) {
             // Adjust single line
@@ -894,11 +914,7 @@ public sealed class Editor : SkiaDrawable {
                 var line = topLine ?? bottomLine!.Value;
                 int row = topLine != null ? topRow : bottomRow;
 
-                if (dir > 0) {
-                    Document.ReplaceLine(row, (line with { FrameCount = Math.Min(line.FrameCount + 1, ActionLine.MaxFrames) }).ToString());
-                } else {
-                    Document.ReplaceLine(row, (line with { FrameCount = Math.Max(line.FrameCount - 1, 0) }).ToString());
-                }
+                Document.ReplaceLine(row, (line with { FrameCount = Math.Clamp(line.FrameCount + dir, 0, ActionLine.MaxFrames) }).ToString());
             }
             // Move frames between lines
             else {
@@ -1134,9 +1150,9 @@ public sealed class Editor : SkiaDrawable {
                 if (e.HasCommonModifier() && e.Shift) {
                     // Adjust frame count
                     if (Document.Selection.Empty) {
-                        AdjustFrameCounts(Document.Caret.Row, Document.Caret.Row, 1);
+                        AdjustNumericValues(Document.Caret.Row, Document.Caret.Row, 1);
                     } else {
-                        AdjustFrameCounts(Document.Selection.Start.Row, Document.Selection.End.Row, 1);
+                        AdjustNumericValues(Document.Selection.Start.Row, Document.Selection.End.Row, 1);
                     }
                 } else if (e.HasAlternateModifier()) {
                     // Move lines
@@ -1164,9 +1180,9 @@ public sealed class Editor : SkiaDrawable {
                 if (e.HasCommonModifier() && e.Shift) {
                     // Adjust frame count
                     if (Document.Selection.Empty) {
-                        AdjustFrameCounts(Document.Caret.Row, Document.Caret.Row, -1);
+                        AdjustNumericValues(Document.Caret.Row, Document.Caret.Row, -1);
                     } else {
-                        AdjustFrameCounts(Document.Selection.Start.Row, Document.Selection.End.Row, -1);
+                        AdjustNumericValues(Document.Selection.Start.Row, Document.Selection.End.Row, -1);
                     }
                 } else if (e.HasAlternateModifier()) {
                     // Move lines
@@ -3554,9 +3570,9 @@ public sealed class Editor : SkiaDrawable {
             if (Document.Selection.Empty) {
                 var (position, _) = LocationToCaretPosition(e.Location);
                 position = ClampCaret(position);
-                AdjustFrameCounts(Document.Caret.Row, position.Row, Math.Sign(e.Delta.Height));
+                AdjustNumericValues(Document.Caret.Row, position.Row, Math.Sign(e.Delta.Height));
             } else {
-                AdjustFrameCounts(Document.Selection.Start.Row, Document.Selection.End.Row, Math.Sign(e.Delta.Height));
+                AdjustNumericValues(Document.Selection.Start.Row, Document.Selection.End.Row, Math.Sign(e.Delta.Height));
             }
 
             e.Handled = true;
