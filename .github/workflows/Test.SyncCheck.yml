@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: max480/everest:dev
+      image: max480/everest:beta
 
     env:
       CELESTE_INSTALL: '/home/ubuntu/celeste'
