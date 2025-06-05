@@ -82,7 +82,12 @@ public static class SetCommand {
 
     [Monocle.Command("set", "'set Settings/Level/Session/Entity value' | Example: 'set DashMode Infinite', 'set Player.Speed 325 -52.5' (CelesteTAS)"), UsedImplicitly]
     private static void SetCmd() {
-        Set(Engine.Commands.commandHistory[0].Split([' ', ','], StringSplitOptions.RemoveEmptyEntries)[1..]);
+        if (!CommandLine.TryParse(Engine.Commands.commandHistory[0], out var commandLine)) {
+            "Set Command Failed: Couldn't parse arguments of command".ConsoleLog(LogLevel.Error);
+            return;
+        }
+
+        Set(commandLine.Arguments);
     }
 
     // Set, Setting, Value
@@ -97,9 +102,13 @@ public static class SetCommand {
     }
 
     private static void Set(string[] args) {
-        if (args.Length < 2) {
-            ReportError("Target-query and value required");
-            return;
+        switch (args.Length) {
+            case < 1:
+                ReportError("Expected target-query and value");
+                return;
+            case < 2:
+                ReportError($"Expected value (only get target-query '{args[0]}')");
+                return;
         }
 
         var result = TargetQuery.SetMemberValues(args[0], args[1..]);

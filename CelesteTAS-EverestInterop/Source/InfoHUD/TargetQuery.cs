@@ -154,20 +154,27 @@ public static class TargetQuery {
     }
 
     [MonocleCommand("get", "'get Type.fieldOrProperty' -> value | Example: 'get Player.Position', 'get Level.Wind' (CelesteTAS)"), UsedImplicitly]
-    private static void GetCmd(string? query) {
-        if (query == null) {
-            "No target-query specified".ConsoleLog(LogLevel.Error);
+    private static void GetCmd() {
+        if (!CommandLine.TryParse(Engine.Commands.commandHistory[0], out var commandLine)) {
+            "Get Command Failed: Couldn't parse arguments of command".ConsoleLog(LogLevel.Error);
             return;
         }
 
+        if (commandLine.Arguments.Length == 0) {
+            "Get Command Failed: No target-query specified".ConsoleLog(LogLevel.Error);
+            return;
+        }
+
+        string query = string.Join(commandLine.ArgumentSeparator, commandLine.Arguments);
+
         var result = GetMemberValues(query);
         if (result.Failure) {
-            result.Error.ConsoleLog(LogLevel.Error);
+            $"Get Command Failed: {result.Error}".ConsoleLog(LogLevel.Error);
             return;
         }
 
         if (result.Value.Count == 0) {
-            "No instances found".ConsoleLog(LogLevel.Error);
+            "Get Command Failed: No instances found".ConsoleLog(LogLevel.Error);
         } else if (result.Value.Count == 1) {
             result.Value[0].Value.ConsoleLog();
         } else {

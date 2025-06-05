@@ -73,7 +73,12 @@ public static class InvokeCommand {
 
     [Monocle.Command("invoke", "Invoke level/session/entity method. eg invoke Level.Pause; invoke Player.Jump (CelesteTAS)"), UsedImplicitly]
     private static void InvokeCmd() {
-        Invoke(Engine.Commands.commandHistory[0].Split([' ', ','], StringSplitOptions.RemoveEmptyEntries)[1..]);
+        if (!CommandLine.TryParse(Engine.Commands.commandHistory[0], out var commandLine)) {
+            "Invoke Command Failed: Couldn't parse arguments of command".ConsoleLog(LogLevel.Error);
+            return;
+        }
+
+        Invoke(commandLine.Arguments);
     }
 
     // Invoke, Level.Method, Parameters...
