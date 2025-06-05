@@ -1221,6 +1221,15 @@ public sealed class Editor : SkiaDrawable {
                 MoveCaret(e.HasCommonModifier() ? CaretMovementType.DocumentEnd : CaretMovementType.LineEnd, updateSelection: e.Shift);
                 e.Handled = true;
                 break;
+
+            // Allow zoom in/out
+            case Keys.Equal when e.HasCommonModifier():
+                AdjustZoom(+0.1f);
+                break;
+            case Keys.Minus when e.HasCommonModifier():
+                AdjustZoom(-0.1f);
+                break;
+
             case Keys.C when e.HasCommonModifier() && e.HasAlternateModifier():
                 Clipboard.Instance.Clear();
                 Clipboard.Instance.Text = Document.FilePath;
@@ -3580,25 +3589,8 @@ public sealed class Editor : SkiaDrawable {
         }
         // Zoom in/out
         if (e.HasCommonModifier()) {
-            float oldCarY = Font.LineHeight() * GetVisualPosition(Document.Caret).Row;
-            float oldOffset = scrollablePosition.Y - oldCarY;
-
             const float scrollSpeed = 0.1f;
-            if (e.Delta.Height > 0.0f) {
-                Settings.Instance.FontZoom *= 1.0f + scrollSpeed;
-            } else if (e.Delta.Height < 0.0f) {
-                Settings.Instance.FontZoom *= 1.0f - scrollSpeed;
-            }
-
-            Settings.OnFontChanged();
-            Recalc();
-
-            float newCarY = Font.LineHeight() * GetVisualPosition(Document.Caret).Row;
-
-            // Adjust scroll to keep caret centered
-            scrollable.ScrollPosition = scrollablePosition with {
-                Y = (int)(newCarY + oldOffset)
-            };
+            AdjustZoom(Math.Sign(e.Delta.Height) * scrollSpeed);
 
             e.Handled = true;
             return;
@@ -3640,6 +3632,22 @@ public sealed class Editor : SkiaDrawable {
 
             Cursor = Cursors.IBeam;
         }
+    }
+
+    private void AdjustZoom(float zoomDelta) {
+        float oldCarY = Font.LineHeight() * GetVisualPosition(Document.Caret).Row;
+        float oldOffset = scrollablePosition.Y - oldCarY;
+
+        Settings.Instance.FontZoom *= 1.0f + zoomDelta;
+        Settings.OnFontChanged();
+        Recalc();
+
+        float newCarY = Font.LineHeight() * GetVisualPosition(Document.Caret).Row;
+
+        // Adjust scroll to keep caret centered
+        scrollable.ScrollPosition = scrollablePosition with {
+            Y = (int)(newCarY + oldOffset)
+        };
     }
 
     private (CaretPosition Actual, CaretPosition Visual) LocationToCaretPosition(PointF location, SnappingDirection direction = SnappingDirection.Ignore) {
