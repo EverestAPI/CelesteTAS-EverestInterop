@@ -126,7 +126,7 @@ public class CelesteTasSettings : EverestModuleSettings {
     public ButtonBinding KeyFrameAdvance { get; set; } = null!;
 
     [SettingName("TAS_KEY_FRAME_STEP_BACK")]
-    [DefaultButtonBinding([0], [Keys.LeftControl, Keys.I])]
+    [DefaultButtonBinding([0], [Keys.LeftControl, Keys.OemOpenBrackets])]
     public ButtonBinding KeyFrameStepBack { get; set; } = null!;
 
     [SettingName("TAS_KEY_PAUSE_RESUME")]
