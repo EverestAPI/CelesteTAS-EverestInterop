@@ -553,16 +553,35 @@ public sealed class Editor : SkiaDrawable {
 
         for (int row = 0; row < Document.Lines.Count; row++) {
             FixInvalidInput(row);
+
+            if (Document.Caret.Row == row) {
+                Document.Caret.Col = Math.Min(Document.Caret.Col, Document.Lines[row].Length);
+            }
         }
     }
     private void FixInvalidInput(int row) {
         using var __ = Document.Update(raiseEvents: false);
 
+        string line = Document.Lines[row];
+
         // Frameless action lines are only intended for editing and shouldn't be part of the final TAS
-        if (ActionLine.TryParse(Document.Lines[row], out var actionLine)) {
+        if (ActionLine.TryParse(line, out var actionLine)) {
             actionLine.FrameCount = Math.Clamp(actionLine.FrameCount, 0, ActionLine.MaxFrames);
 
             Document.ReplaceLine(row, actionLine.ToString());
+            return;
+        }
+        // Repeat command count should be clamped to a valid value
+        // Needs to be kept in sync with the CelesteTAS' validation
+        if (CommandLine.TryParse(line, out var commandLine) &&
+            commandLine.IsCommand("Repeat") &&
+            commandLine.Arguments.Length >= 1 &&
+            int.TryParse(commandLine.Arguments[0], out int repeatCount)
+        ) {
+            commandLine.Arguments[0] = Math.Clamp(repeatCount, 0, 9_999_999).ToString();
+
+            Document.ReplaceLine(row, commandLine.ToString());
+            return;
         }
     }
 
