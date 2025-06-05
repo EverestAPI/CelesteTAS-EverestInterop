@@ -116,11 +116,11 @@ public class SyntaxHighlighter {
             int? saveIdx  = currIdx < line.Length && char.ToUpper(line[currIdx]) == 'S' ? currIdx++ : null;
 
             var segments = new LineStyle.Segment[1
-                + (forceIdx != null ? 1 : 0)
-                + (saveIdx != null ? 1 : 0)
-                + (line.Length > currIdx ? 1 : 0)];
+                + (forceIdx != null ? 1 : 0)        // For '!'
+                + (saveIdx != null ? 1 : 0)         // For 'S'
+                + (line.Length > currIdx ? 1 : 0)]; // For playback speed
 
-            segments[0] = new LineStyle.Segment { StartIdx = 0, EndIdx = (forceIdx ?? saveIdx ?? line.Length) - 1, Type = StyleType.Breakpoint };
+            segments[0] = new LineStyle.Segment { StartIdx = 0, EndIdx = "***".Length - 1, Type = StyleType.Breakpoint };
 
             int segmentIdx = 1;
             if (forceIdx != null) {
