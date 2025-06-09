@@ -197,7 +197,7 @@ public static class Manager {
         else if (!Controller.CanPlayback && TasSettings.AutoPauseDraft && IsDraft()) {
             NextState = State.Paused;
 
-            if (!FastForwarding) {
+            if (CurrState == State.Running && !FastForwarding) {
                 const string text = "Auto-pause draft on end:\nInsert any Time command or disable the setting to prevent the pausing";
                 const float duration = 2.0f;
                 if (autoPauseDraft is not { Active: true }) {
