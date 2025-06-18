@@ -70,7 +70,7 @@ internal static class SavestateManager {
             return;
         }
         if (Manager.CurrState != Manager.State.Running) {
-            // Only savestate while TAS is activly running and not while paused
+            // Only savestate while TAS is actively running and not while paused
             return;
         }
 
@@ -149,18 +149,22 @@ internal static class SavestateManager {
         }
 
         if (Manager.Running) {
-            // Purge deleted breakpoint savestates
-            if (SpeedrunToolInterop.MultipleSaveSlotsSupported) {
-                foreach (var state in BreakpointSavestates) {
-                    if (state.BreakpointDeleted) {
-                        state.Clear();
-                    }
+            ClearDeletedSavestates();
+        }
+    }
+
+    /// Clean-up deleted breakpoint savestates, to free unused memory
+    private static void ClearDeletedSavestates() {
+        if (SpeedrunToolInterop.MultipleSaveSlotsSupported) {
+            foreach (var state in BreakpointSavestates) {
+                if (state.BreakpointDeleted) {
+                    state.Clear();
                 }
-                BreakpointSavestates.RemoveAll(state => state.BreakpointDeleted);
-            } else if (ManualSavestate is { SavedByBreakpoint: true, BreakpointDeleted: true } manual) {
-                manual.Clear();
-                ManualSavestate = null;
             }
+            BreakpointSavestates.RemoveAll(state => state.BreakpointDeleted);
+        } else if (ManualSavestate is { SavedByBreakpoint: true, BreakpointDeleted: true } manual) {
+            manual.Clear();
+            ManualSavestate = null;
         }
     }
 
@@ -172,6 +176,9 @@ internal static class SavestateManager {
             return;
         }
 
+        // If the file was changed, there might be leftover breakpoints
+        ClearDeletedSavestates();
+
         // Load ideal savestate to start playing from for frame step back
         if (Manager.FrameStepBackTargetFrame > 0) {
             foreach (var state in AllSavestates.Reverse()) {
@@ -179,7 +186,9 @@ internal static class SavestateManager {
                     continue;
                 }
 
-                state.Load();
+                if (!state.Load()) {
+                    continue;
+                }
                 if (state.Frame == Manager.FrameStepBackTargetFrame) {
                     Manager.CurrState = Manager.NextState = Manager.State.Paused;
                 }
@@ -197,7 +206,9 @@ internal static class SavestateManager {
                 continue;
             }
 
-            state.Load();
+            if (!state.Load()) {
+                continue;
+            }
 
             // Pause TAS if latest breakpoint
             if (Manager.Controller.FastForwards.LastOrDefault().Value?.Frame <= state.Frame) {
