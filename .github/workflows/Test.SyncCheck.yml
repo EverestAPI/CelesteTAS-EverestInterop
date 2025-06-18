@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: max480/everest:beta
+      image: max480/everest:stable
 
     env:
       CELESTE_INSTALL: '/home/ubuntu/celeste'
@@ -77,10 +77,7 @@ jobs:
         mv ${{ env.CELESTETAS_REPO_NAME }} ${{ env.CELESTE_INSTALL }}/Mods/${{ env.CELESTETAS_REPO_NAME }}
     - name: Build CelesteTAS
       working-directory: ${{ env.CELESTE_INSTALL }}/Mods/${{ env.CELESTETAS_REPO_NAME }}
-      run: |
-        # The dev branch is on .NET 8, but we can't update to it in the repo until it has reached stable
-        sed -i 's/net7.0/net8.0/' CelesteTAS-EverestInterop/CelesteTAS-EverestInterop.csproj
-        dotnet build CelesteTAS-EverestInterop -c ${{ inputs.build-cfg }} -p:UseSymlinks=false
+      run: dotnet build CelesteTAS-EverestInterop -c ${{ inputs.build-cfg }} -p:UseSymlinks=false
 
     - name: Checkout TAS files
       uses: actions/checkout@v4
