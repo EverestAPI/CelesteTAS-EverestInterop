@@ -128,9 +128,24 @@ public class CelesteTasModule : EverestModule {
                 }
                 return true;
             }
+
             case "--sync-check-file": {
                 if (args.TryDequeue(out string? path)) {
                     SyncChecker.AddFile(path);
+                } else {
+                    "Expected file path after --sync-check-file CLI argument".Log(LogLevel.Error);
+                }
+                return true;
+            }
+            case "--sync-check-file-list": {
+                if (args.TryDequeue(out string? fileListPath)) {
+                    if (File.Exists(fileListPath)) {
+                        foreach (string path in File.ReadLines(fileListPath)) {
+                            SyncChecker.AddFile(path);
+                        }
+                    } else {
+                        $"File-list providing TASes to sync-check not found: '{fileListPath}'".Log(LogLevel.Error);
+                    }
                 } else {
                     "Expected file path after --sync-check-file CLI argument".Log(LogLevel.Error);
                 }

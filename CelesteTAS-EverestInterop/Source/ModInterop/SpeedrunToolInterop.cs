@@ -33,7 +33,7 @@ internal static class SpeedrunToolInterop {
         Installed = CheckInstalled();
 
         // NOTE: SpeedrunToolTasActionImports first appeared in SRT v3.24.4
-        //       In v3.24.4, everything is same as before, except that this mod-interop is added for compatibility issue
+        //       In v3.24.4, everything is same as before, except that this mod-interop is added for compatibility reasons
         //       After v3.25.0, SRT supports multiple saveslots
         if (Everest.Modules.FirstOrDefault(module => module.Metadata.Name == "SpeedrunTool") is { } srtModule) {
             MultipleSaveSlotsSupported = srtModule.Metadata.Version >= new Version(3, 25, 0);

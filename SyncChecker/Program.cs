@@ -486,6 +486,7 @@ public static class Program {
         List<string> filesRemaining = [..config.Files.Distinct()];
 
         string gameName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "Celeste.exe" : "Celeste";
+        string gameFileListPath = Path.Combine(config.GameDirectory, "sync-check-file-list.txt");
         string gameResultPath = Path.Combine(config.GameDirectory, "sync-check-result.json");
         string gameSavePath = Path.Combine(config.GameDirectory, "sync-check-saves");
 
@@ -510,22 +511,25 @@ public static class Program {
         while (filesRemaining.Count > 0) {
             LogInfo($"Running Celeste with {filesRemaining.Count} TAS(es) remaining...");
 
+            // Generate file list
+            await File.WriteAllLinesAsync(gameFileListPath, filesRemaining);
+
             using var gameProc = new Process();
             gameProc.StartInfo = new ProcessStartInfo {
                 FileName = Path.Combine(config.GameDirectory, gameName),
-                ArgumentList = { "--sync-check-result", gameResultPath },
-                Environment = { { "EVEREST_SAVEPATH", gameSavePath } },
+                ArgumentList = {
+                    "--sync-check-file-list", gameFileListPath,
+                    "--sync-check-result", gameResultPath,
+                },
+                Environment = {
+                    { "EVEREST_SAVEPATH", gameSavePath },
+                },
                 UseShellExecute = false,
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 CreateNoWindow = true,
             };
-
-            foreach (string file in filesRemaining) {
-                gameProc.StartInfo.ArgumentList.Add("--sync-check-file");
-                gameProc.StartInfo.ArgumentList.Add(file);
-            }
 
             gameProc.OutputDataReceived += (_, e) => Console.Out.WriteLine(e.Data);
             gameProc.ErrorDataReceived += (_, e) => Console.Error.WriteLine(e.Data);
@@ -645,6 +649,9 @@ public static class Program {
         await JsonSerializer.SerializeAsync(resultFile, fullResult, jsonOptions);
 
         // Cleanup
+        if (File.Exists(gameFileListPath)) {
+            File.Delete(gameFileListPath);
+        }
         if (File.Exists(gameResultPath)) {
             File.Delete(gameResultPath);
         }
