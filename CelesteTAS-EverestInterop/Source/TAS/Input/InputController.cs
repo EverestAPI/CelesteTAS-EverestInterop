@@ -9,6 +9,7 @@ using StudioCommunication;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Playback;
+using TAS.Tools;
 using TAS.Utils;
 
 namespace TAS.Input;
@@ -356,7 +357,11 @@ public class InputController {
 
     /// Create file-system-watchers for all TAS-files used, to detect changes
     public void StartWatchers() {
-        foreach (var path in UsedFiles) {
+        if (SyncChecker.Active) {
+            return; // Avoid reloading TASes during sync-check
+        }
+
+        foreach (string path in UsedFiles) {
             string fullPath = Path.GetFullPath(path);
 
             // Watch TAS file
