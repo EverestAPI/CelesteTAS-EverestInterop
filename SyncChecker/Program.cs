@@ -156,6 +156,7 @@ public static class Program {
                 }
 
                 byte[] bytes = await File.ReadAllBytesAsync(file);
+                LogInfo($" - Hashing file '{file}': {Convert.ToHexString(sha1.ComputeHash(bytes)).ToLowerInvariant()}");
                 sha1.TransformBlock(bytes, 0, bytes.Length, bytes, 0);
             }
             if (anyNotFound) {
@@ -163,6 +164,7 @@ public static class Program {
             }
 
             byte[] celesteBytes = await File.ReadAllBytesAsync(Path.Combine(config.GameDirectory, "Celeste.dll"));
+            LogInfo($" - Hashing file 'Celeste.dll': {Convert.ToHexString(sha1.ComputeHash(celesteBytes)).ToLowerInvariant()}");
             sha1.TransformFinalBlock(celesteBytes, 0, celesteBytes.Length);
         }
 
@@ -447,6 +449,7 @@ public static class Program {
         // Calculate checksum
         foreach (var info in requiredMods) {
             byte[] bytes = Convert.FromHexString(info.xxHash[0]);
+            LogInfo($" - Hashing mod '{info.Name}' v{info.Version}: {Convert.ToHexString(sha1.ComputeHash(bytes)).ToLowerInvariant()}");
             sha1.TransformBlock(bytes, 0, bytes.Length, bytes, 0);
         }
         if (!installReleaseCelesteTas) {
@@ -458,6 +461,7 @@ public static class Program {
             using var sha256 = SHA1.Create();
             foreach (string file in allFiles) {
                 byte[] bytes = await File.ReadAllBytesAsync(file);
+                LogInfo($" - Hashing file '{file}': {Convert.ToHexString(sha1.ComputeHash(bytes)).ToLowerInvariant()}");
                 sha1.TransformBlock(bytes, 0, bytes.Length, bytes, 0);
             }
         }
