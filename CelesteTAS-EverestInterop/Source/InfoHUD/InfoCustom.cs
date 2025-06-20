@@ -270,7 +270,7 @@ public static class InfoCustom {
     /// Formats a value in seconds into frames
     private static bool Formatter_toFrame(object? value, int _, out string formattedValue) {
         if (value is float floatValue) {
-            formattedValue = floatValue.ToCeilingFrames().ToString();
+            formattedValue = floatValue.ToCeilingFrames().FormatFrames();
             return true;
         }
 

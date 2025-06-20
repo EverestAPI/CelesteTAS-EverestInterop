@@ -330,7 +330,7 @@ public static class InfoWatchEntity {
 
             if (value is float floatValue) {
                 if (info.Name.EndsWith("Timer")) {
-                    value = $"{floatValue.ToCeilingFrames()}f ({floatValue.ToFormattedString(decimals)})" ;
+                    value = $"{floatValue.ToCeilingFrames().FormatFrames()}f ({floatValue.ToFormattedString(decimals)})" ;
                 } else {
                     value = floatValue.ToFormattedString(decimals);
                 }
