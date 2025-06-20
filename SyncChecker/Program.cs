@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 using TAS.Tools;
 
 namespace SyncChecker;
@@ -163,9 +164,10 @@ public static class Program {
                 return 1;
             }
 
-            byte[] celesteBytes = await File.ReadAllBytesAsync(Path.Combine(config.GameDirectory, "Celeste.dll"));
-            LogInfo($" - Hashing file 'Celeste.dll': {Convert.ToHexString(sha1.ComputeHash(celesteBytes)).ToLowerInvariant()}");
-            sha1.TransformFinalBlock(celesteBytes, 0, celesteBytes.Length);
+            var (status, celesteVersion, everestVersion) = GetCurrentVersion(config.GameDirectory);
+            byte[] statusBytes = Encoding.Default.GetBytes(status); // Status already contains Celeste and Everest version
+            LogInfo($" - Hashing assembly '{status}' (Celeste v{celesteVersion} / Everest v{everestVersion}): {Convert.ToHexString(sha1.ComputeHash(statusBytes)).ToLowerInvariant()}");
+            sha1.TransformFinalBlock(statusBytes, 0, statusBytes.Length);
         }
 
         string checksum = Convert.ToHexString(sha1.Hash!).ToLowerInvariant();
@@ -208,7 +210,7 @@ public static class Program {
         }
 
         // Determine currently installed version
-        (string currentStatus, var celesteVersion, var everestVersion) = GetCurrentVersion(config.GameDirectory);
+        var (_, _, everestVersion) = GetCurrentVersion(config.GameDirectory);
 
         if (everestVersion == null || everestVersion < targetVersion) {
             if (everestVersion == null) {
