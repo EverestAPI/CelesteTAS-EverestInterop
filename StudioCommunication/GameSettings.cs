@@ -71,9 +71,15 @@ public enum SpeedUnit {
     PixelPerFrame
 }
 
-/// Condition for when to enable certain features
-public enum EnableCondition {
+/// Condition for when to enable certain features, related to Studio connection
+public enum StudioEnableCondition {
     Never,
     Always,
     WhileStudioConnected,
+}
+/// Condition for when to enable certain features, related to gameplay state
+public enum GameplayEnableCondition {
+    Never,
+    Always,
+    DuringTAS,
 }

@@ -119,6 +119,8 @@ TAS_BETTER_INVINCIBLE_DESCRIPTION=          Running "Set Invincible true" will s
 TAS_FORCE_ALLOW_ACCESS_TOOLS=               Force Allow Accessibility Tools
 TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC=          Forcefully re-enabled accessibility tools (such as the Debug Map) which were intentionally disabled.
                                             This goes against the intended experience of a casual playthrough and you could ruin your own experience.
+TAS_PREVENT_SKINMOD_CHANGES_RTA=            Prevent Skin-Mod Gameplay Changes
+TAS_PREVENT_SKINMOD_CHANGES_RTA_DESC=       Applies the vanilla gameplay behaviour for player animation lengths and holdable positions.
 TAS_HIDE_FREEZE_FRAMES=                     Hide Freeze Frames during TAS
 TAS_HIDE_FREEZE_FRAMES_DESCRIPTION=         When a freeze-frame is encountered, skip it without rendering
                                             Applies only while a TAS is active.
@@ -160,6 +162,7 @@ TAS_TRANSPARENT=                            Transparent
 TAS_OFF=                                    OFF
 TAS_OVERRIDE=                               Override
 TAS_APPEND=                                 Append
-TAS_EnableCondition_Never=                  Never
-TAS_EnableCondition_Always=                 Always
-TAS_EnableCondition_WhileStudioConnected=   While Studio is Connected
+TAS_NEVER=                                  Never
+TAS_ALWAYS=                                 Always
+TAS_StudioEnableCondition_StudioConnected=  While Studio is Connected
+TAS_GameplayEnableCondition_DuringTAS=      During TAS

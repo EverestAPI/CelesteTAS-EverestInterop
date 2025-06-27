@@ -500,7 +500,8 @@ public class CelesteTasSettings : EverestModuleSettings {
         set => _BetterInvincible = value;
     }
 
-    public EnableCondition ForceAllowAccessibilityTools = EnableCondition.WhileStudioConnected;
+    public StudioEnableCondition ForceAllowAccessibilityTools = StudioEnableCondition.WhileStudioConnected;
+    public GameplayEnableCondition PreventSkinModGameplayChanges = GameplayEnableCondition.DuringTAS;
 
     public bool HideFreezeFrames { get; set; } = false;
     public bool IgnoreGcCollect { get; set; } = true;
