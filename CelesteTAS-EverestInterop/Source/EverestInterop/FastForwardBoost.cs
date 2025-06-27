@@ -59,7 +59,6 @@ public static class FastForwardBoost {
         On.Celeste.BackdropRenderer.Update += BackdropRendererOnUpdate;
         On.Celeste.SoundEmitter.Update += SoundEmitterOnUpdate;
         IL.Celeste.ReflectionTentacles.Update += SkipUpdateMethod;
-        IL.Monocle.ParticleSystem.Update += SkipUpdateMethod;
         IL.Celeste.Decal.Update += SkipUpdateMethod;
         IL.Celeste.FloatingDebris.Update += SkipUpdateMethod;
         IL.Celeste.AnimatedTiles.Update += SkipUpdateMethod;
@@ -84,7 +83,6 @@ public static class FastForwardBoost {
         On.Celeste.BackdropRenderer.Update -= BackdropRendererOnUpdate;
         On.Celeste.SoundEmitter.Update -= SoundEmitterOnUpdate;
         IL.Celeste.ReflectionTentacles.Update -= SkipUpdateMethod;
-        IL.Monocle.ParticleSystem.Update -= SkipUpdateMethod;
         IL.Celeste.Decal.Update -= SkipUpdateMethod;
         IL.Celeste.FloatingDebris.Update -= SkipUpdateMethod;
         IL.Celeste.AnimatedTiles.Update -= SkipUpdateMethod;
