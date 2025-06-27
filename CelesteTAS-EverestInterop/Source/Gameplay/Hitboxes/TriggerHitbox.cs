@@ -170,17 +170,17 @@ internal static class TriggerHitbox {
         // Last update: 2025-01-28
 
         // Gather camera triggers to recolor them
-        AddModdedTypes("AvBdayHelper2021", "Celeste.Mod.AvBdayHelper.Code.Triggers.FadeCameraAngleTrigger", "Celeste.Mod.AvBdayHelper.Code.Triggers.ChangeCameraAngleTrigger"); // v1.0.3
-        AddModdedTypes("bitsbolts", "Bitsbolts.Triggers.UnlockCamera"); // v1.3.9
+        AddCameraTypes("AvBdayHelper2021", "Celeste.Mod.AvBdayHelper.Code.Triggers.FadeCameraAngleTrigger", "Celeste.Mod.AvBdayHelper.Code.Triggers.ChangeCameraAngleTrigger"); // v1.0.3
+        AddCameraTypes("bitsbolts", "Bitsbolts.Triggers.UnlockCamera"); // v1.3.9
         AddCameraTypes("ContortHelper", "ContortHelper.PatchedCameraAdvanceTargetTrigger", "ContortHelper.PatchedCameraOffsetTrigger", "ContortHelper.PatchedCameraTargetTrigger", "ContortHelper.PatchedSmoothCameraOffsetTrigger"); // v1.5.5
-        AddModdedTypes("ChroniaHelper", "ChroniaHelper.Triggers.SmoothToOffsetCamera", "ChroniaHelper.Triggers.SpeedAdaptiveCamera", "ChroniaHelper.Triggers.AxisCameraOffset"); // v1.28.15
-        AddModdedTypes("ExtendedCameraDynamics", "ExtendedCameraDynamics.Code.Triggers.CameraSnapTrigger", "Celeste.Mod.ExCameraDynamics.Code.Triggers.CameraZoomTrigger"); // v1.0.5
+        AddCameraTypes("ChroniaHelper", "ChroniaHelper.Triggers.SmoothToOffsetCamera", "ChroniaHelper.Triggers.SpeedAdaptiveCamera", "ChroniaHelper.Triggers.AxisCameraOffset"); // v1.28.15
+        AddCameraTypes("ExtendedCameraDynamics", "ExtendedCameraDynamics.Code.Triggers.CameraSnapTrigger", "Celeste.Mod.ExCameraDynamics.Code.Triggers.CameraZoomTrigger"); // v1.0.5
         AddCameraTypes("FrostHelper", "FrostHelper.EasedCameraZoomTrigger"); // v1.65.0
         AddCameraTypes("FurryHelper", "Celeste.Mod.FurryHelper.MomentumCameraOffsetTrigger"); // v1.0.6
         AddCameraTypes("HonlyHelper", "Celeste.Mod.HonlyHelper.CameraTargetCornerTrigger", "Celeste.Mod.HonlyHelper.CameraTargetCrossfadeTrigger"); // v1.7.5
         AddCameraTypes("MaxHelpingHand", "Celeste.Mod.MaxHelpingHand.Triggers.CameraCatchupSpeedTrigger", "Celeste.Mod.MaxHelpingHand.Triggers.CameraOffsetBorder", "Celeste.Mod.MaxHelpingHand.Triggers.OneWayCameraTrigger"); // v1.33.7
         AddCameraTypes("Microlith57MiscellaneousMechanics", "Celeste.Mod.Microlith57Misc.Entities.SliderCameraOffsetTrigger", "Celeste.Mod.Microlith57Misc.Entities.SliderCameraTargetTrigger"); // v1.2.0
-        AddModdedTypes("ProgHelper", "Celeste.Mod.ProgHelper.CameraConstraintTrigger", "Celeste.Mod.ProgHelper.CameraHardBorder", "Celeste.Mod.ProgHelper.SpeedCameraOffsetTrigger"); // v1.3.1
+        AddCameraTypes("ProgHelper", "Celeste.Mod.ProgHelper.CameraConstraintTrigger", "Celeste.Mod.ProgHelper.CameraHardBorder", "Celeste.Mod.ProgHelper.SpeedCameraOffsetTrigger"); // v1.3.1
         AddCameraTypes("Sardine7", "Celeste.Mod.Sardine7.Triggers.SmoothieCameraTargetTrigger"); // v1.2.0
         AddCameraTypes("VivHelper", "VivHelper.Triggers.InstantLockingCameraTrigger", "VivHelper.Triggers.MultiflagCameraTargetTrigger"); // v1.14.8
         AddCameraTypes("XaphanHelper", "Celeste.Mod.XaphanHelper.Triggers.CameraBlocker"); // v1.0.70
@@ -204,8 +204,8 @@ internal static class TriggerHitbox {
         AddModdedTypes("FemtoHelper", "ParticleRemoteEmit", "Celeste.Mod.FemtoHelper.Triggers.CinematicTextTrigger"); // v1.12.26
         AddModdedTypes("FlaglinesAndSuch", "FlaglinesAndSuch.FlagLightFade", "FlaglinesAndSuch.MusicIfFlag"); // v1.6.30
         AddModdedTypes("FrostHelper", "FrostHelper.Triggers.ArbitraryShapeCloudEditColorTrigger", "FrostHelper.Triggers.ArbitraryShapeCloudEditRainbowTrigger", "FrostHelper.BloomColorTrigger", "FrostHelper.BloomColorFadeTrigger", "FrostHelper.BloomColorPulseTrigger", "FrostHelper.RainbowBloomTrigger", "FrostHelper.Triggers.TimerEntity", "FrostHelper.Triggers.IncrementingTimerEntity", "FrostHelper.Triggers.CounterDisplayEntity", "FrostHelper.Triggers.LightingBaseColorTrigger", "FrostHelper.LightningColorTrigger", "ColoredLights.FlashlightColorTrigger", "FrostHelper.FlashlightColorTrigger", "FrostHelper.Triggers.StylegroundBlendStateTrigger", "FrostHelper.StylegroundMoveTrigger", "FrostHelper.BetterShaderTrigger"); // v1.65.0
-        AddCameraTypes("GameHelper", "Celeste.Mod.GameHelper.Triggers.AutoSaveTrigger"); // v1.6.2.0
-        AddCameraTypes("Hateline", "Celeste.Mod.Hateline.Triggers.HatOnFlagTrigger", "Celeste.Mod.Hateline.Triggers.HatResetTrigger", "Celeste.Mod.Hateline.Triggers.HatForceTrigger"); // v0.2.0
+        AddModdedTypes("GameHelper", "Celeste.Mod.GameHelper.Triggers.AutoSaveTrigger"); // v1.6.2.0
+        AddModdedTypes("Hateline", "Celeste.Mod.Hateline.Triggers.HatOnFlagTrigger", "Celeste.Mod.Hateline.Triggers.HatResetTrigger", "Celeste.Mod.Hateline.Triggers.HatForceTrigger"); // v0.2.0
         AddModdedTypes("JungleHelper", "Celeste.Mod.JungleHelper.Triggers.GeckoTutorialTrigger", "Celeste.Mod.JungleHelper.Triggers.UIImageTrigger", "Celeste.Mod.JungleHelper.Triggers.UITextTrigger"); // v1.3.3
         AddModdedTypes("Long Name Helper by Helen, Helen's Helper, hELPER", "Celeste.Mod.hELPER.ColourChangeTrigger", "Celeste.Mod.hELPER.SpriteReplaceTrigger"); // v1.9.10
         AddModdedTypes("MaxHelpingHand", "Celeste.Mod.MaxHelpingHand.Triggers.AllBlackholesStrengthTrigger", "Celeste.Mod.MaxHelpingHand.Triggers.FloatFadeTrigger", "Celeste.Mod.MaxHelpingHand.Triggers.ColorGradeFadeTrigger", "Celeste.Mod.MaxHelpingHand.Triggers.GradientDustTrigger", "Celeste.Mod.MaxHelpingHand.Triggers.MadelinePonytailTrigger", "Celeste.Mod.MaxHelpingHand.Triggers.MadelineSilhouetteTrigger", "Celeste.Mod.MaxHelpingHand.Triggers.PersistentMusicFadeTrigger", "Celeste.Mod.MaxHelpingHand.Triggers.RainbowSpinnerColorFadeTrigger", "Celeste.Mod.MaxHelpingHand.Triggers.RainbowSpinnerColorTrigger", "Celeste.Mod.MaxHelpingHand.Triggers.SetBloomBaseTrigger", "Celeste.Mod.MaxHelpingHand.Triggers.SetBloomStrengthTrigger", "Celeste.Mod.MaxHelpingHand.Triggers.SetDarknessAlphaTrigger"); // v1.33.7
@@ -224,12 +224,13 @@ internal static class TriggerHitbox {
         AddModdedTypes("StrawberryJam2021", "Celeste.Mod.StrawberryJam2021.StylegroundMasks.Mask"); // v1.0.11
 
         triggerChecks.Add((_, entityType) => moddedTriggers.Contains(entityType));
+        return;
 
         static void AddModdedTypes(string modName, params string[] fullTypeNames) {
-            cameraTriggers.AddRange(ModUtils.GetTypes(modName, fullTypeNames));
+            moddedTriggers.AddRange(ModUtils.GetTypes(modName, fullTypeNames));
         }
         static void AddCameraTypes(string modName, params string[] fullTypeNames) {
-            moddedTriggers.AddRange(ModUtils.GetTypes(modName, fullTypeNames));
+            cameraTriggers.AddRange(ModUtils.GetTypes(modName, fullTypeNames));
         }
     }
 }
