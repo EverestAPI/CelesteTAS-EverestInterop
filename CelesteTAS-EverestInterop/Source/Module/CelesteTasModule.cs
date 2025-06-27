@@ -169,6 +169,13 @@ public class CelesteTasModule : EverestModule {
         CreateModMenuSectionHeader(menu, inGame, snapshot);
         CelesteTasMenu.CreateMenu(this, menu, inGame);
     }
+
+    public override void OnInputInitialize() {
+        base.OnInputInitialize();
+
+        // CelesteTAS handles all inputs by itself, so there's no need for the ButtonBindings to be registered
+        OnInputDeregister();
+    }
 }
 
 /// Invokes the target method when the module is loaded

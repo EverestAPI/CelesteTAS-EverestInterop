@@ -89,6 +89,9 @@ internal static class SyncChecker {
         result.WriteToFile(resultFile);
 
         if (fileQueue.TryDequeue(out string? file)) {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
             // Add to action queue, since we're still in DisableRun and can't start the next one immediately
             Manager.AddMainThreadAction(() => CheckFile(file));
         } else {
