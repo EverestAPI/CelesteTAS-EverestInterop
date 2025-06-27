@@ -195,7 +195,8 @@ internal static class SkinModFix {
         if (!moddedMaps.TryGetValue(session.Area.SID, out var mod)) {
             var area = session.MapData.Area;
             if (Everest.Content.TryGet($"Maps/{AreaData.Get(area).Mode[(int)area.Mode].Path}", out var mapAsset)) {
-                moddedMaps[session.Area.SID] = mod = mapAsset.Source.Mod;
+                // The mod source is null for stay .bin maps
+                moddedMaps[session.Area.SID] = mod = (mapAsset.Source.Mod ?? vanillaModule);
             } else {
                 moddedMaps[session.Area.SID] = mod = vanillaModule;
             }
