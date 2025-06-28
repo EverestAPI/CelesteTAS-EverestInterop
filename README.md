@@ -1,112 +1,55 @@
-# CelesteTAS
+<h1 align="center">Celeste TAS <img id="logo" src="https://raw.githubusercontent.com/EverestAPI/CelesteTAS-EverestInterop/refs/heads/master/Assets/icon.png" width="20"/></h1>
+<h3 align="center">Advanced TAS tools for Celeste / Everest</h3>
 
-## TAS tools for Celeste / Everest
+## Quick Start
 
-### License: MIT
+To get started with TASing Celeste, you first need to make sure the [Everest Mod Loader](https://everestapi.github.io) is installed and up-to-date.  
+After that you want to install the CelesteTAS mod, either by searching for in Olympus under "Download Mods" or by simply using the [2-click-installer](https://0x0a.de/twoclick/?github.com/EverestAPI/CelesteTAS-EverestInterop/releases/latest/download/CelesteTAS.zip).
 
----
+If you now launch the game, Celeste Studio, our own purpose-built TAS editor, should've been installed automatically. On the main menu, you can go into the Mod Settings and under `Celeste TAS > More Options` you will find an option called `Launch Studio at Boot`. If you enable that setting, it should automatically open now, and also every time alongside the game being opened.  
+If you wish to manually open it, you can find the program in the `CelesteStudio` folder inside your Celeste install.  
+You can find the documentation about Celeste Studio on the [wiki](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Celeste-Studio). It is **strongly recommended** to at least check out the available [keyboard shortcuts](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Key-Bindings) which Studio offers.
 
-- Install [Everest](https://everestapi.github.io/) if you haven't already.
-- (Recommended) Use the 1-click installer [here](https://gamebanana.com/tools/6715). (Alternatively) [Download the latest auto-build](https://0x0a.de/twoclick/?nightly.link/EverestAPI/CelesteTAS-EverestInterop/workflows/Build/master/CelesteTAS.zip).
-- Make sure the mod is enabled in the in-game mod options.
-- Enable the mod-setting `Celeste TAS > More Options > Launch Studio at Boot`. Celeste Studio, our input editor, should now automatically launch. (You can find the Studio documentation [here](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Celeste-Studio))
-- Alternatively, you can start Celeste Studio directly. It'll be installed in the `CelesteStudio` directory inside your Celeste install. 
-- You can find the most up-to-date input files [here](https://github.com/VampireFlower/CelesteTAS).
+Now that both CelesteTAS and Celeste Studio are set up, you can immediately start with TASing, by writing a [`console load` command](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Commands#console-load) for your desired level, followed by your inputs (see [here](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Input-File) on how inputs are written).  
+To play back your TAS (which you want to do _while_ TASing, not after), check out the available [keyboard controls](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Controls) for CelesteTAS 
 
-## Documentation
+Alternatively, you can find a (non-exhaustive!) list of community projects to which you might want to contribute [here](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Community-Projects).
 
-You can find documentation around CelesteTAS and Celeste Studio, as well as general TASing references on the [wiki](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki).  
-If you want to contribute to tooling documentation or TASing references, feel free to edit the wiki!
+> [!important]
+> If you want know how something works, please **first** check if it is documented on the [CelesteTAS Wiki](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki).
+> It contains both information about the tooling with CelesteTAS and Celeste Studio, but also references on how certain mechanics work to better understand them while TASing.
+> The wiki is free for _anyone_ (who has a GitHub account) to contribute to, so if you feel like something is missing, wrong or just worded weirdly, don't shy away from editing it!
+>
+> If you're stuck with a problem _which isn't described in the wiki_, consider joining the [Celeste Discord](https://discord.gg/celeste) and asking in the `#tas_general` channel in the TASing category.
 
-## Input File
-The input file is a text file with `tas` as a suffix, e.g. `1A.tas`.
+## Building CelesteTAS yourself
 
-Format for the input file is (Frames),(Actions)
+If you just want to use CelesteTAS and not modify it, you can skip this section.
 
-e.g. `123,R,J` (For `123` frames, hold `Right` and `Jump`)
+To build CelesteTAS yourself, you just need to (recursively!) clone this repository into your Mods folder and then inside the repository's root run `dotnet build`.
+Alternatively you can open the solution in your favourite C# IDE.
+Note that the .NET 9 SDK or higher is required.
 
-## Available Actions
-- `R` = Right
-- `L` = Left
-- `U` = Up
-- `D` = Down
-- `J` = Jump / Confirm
-- `K` = Jump Bind 2
-- `X` = Dash / Talk / Cancel
-- `C` = Dash Bind 2 / Cancel Bind 2
-- `Z` = Crouch Dash
-- `V` = Crouch Dash Bind 2
-- `G` = Grab
-- `H` = Grab Bind 2
-- `S` = Pause
-- `Q` = Quick Restart
-- `F` = Feather Aim
-  * Format: F, angle, optional upper limit of single axis (default value is 1, range is 0.26 to 1, works in all [analog modes](Docs/Commands.md#analoguemode))
-- `O` = Confirm Bind 2
-- `N` = Journal / Talk Bind 2
-- `A` = Dash Only Directional Modifier (generally used to manipulate camera with binocular control storage. eg: `15,R,X,ALU`)
-- `M` = Move Only Directional Modifier (eg: `15,X,AL,MR`)
-- `P` = Custom Button Press Modifier (used to press inputs added by mods after binding them using the [Set command](Docs/Commands.md#set), e.g. `15,R,X,PA` after binding A to a custom input)
+## Contributing
 
-## Controls
-While in game or in Studio:
-- Start/Stop Playback: `RightControl`
-- Restart Playback: `Equals`
-- Fast Forward / Frame Advance Continuously: `RightShift` or `Controller Right Analog Stick`
-- Fast Forward to Next Comment: `RightAlt + RightShift`
-- Slow Forward: `\`
-- Pause / Frame Advance: `[`
-- Pause / Resume: `]`
-- Toggle Hitboxes: `LeftControl + B`
-- Toggle Simplified Graphics: `LeftControl + N`
-- Toggle Center Camera: `LeftControl + M`
-- Save State: `RightAlt + Minus`
-- Clear State: `RightAlt + Back`
-- Info HUD:
-  * While holding the Info HUD hotkey, left-click to move the HUD around
-  * Double press the Info HUD hotkey to toggle it
-  * While Holding the Info HUD hotkey, left-click on entity to watch the entity
-- These can be rebound in Mod Options
-  * You will have to rebind some of these if you are on a non-US keyboard layout.
-  * Binding multiple keys to a control will cause those keys to act as a key-combo.
+If you want to contribute to CelesteTAS or Celeste Studio (not the wiki, that is separate!), simply open a Pull Request with your desired changes.  
+If you can't code you can still contribute by, for example, translating CelesteTAS into your language. (See `CelesteTAS-EverestInterop/Dialog` for dialog files).
 
-## Special Input
+## Credits
 
-### Breakpoints
-- You can create a breakpoint in the input file by typing `***` by itself on a single line
-- The TAS, when played back from the start will fast-forward until it reaches that line and will then pause the TAS
-- `***S` will make a [savestate](#savestate), which can reduce TAS playback time. 
-- You can specify the speed with `***X`, where `X` is the speedup factor. e.g. `***10` will go at 10x speed, `***0.5` will go at 0.5x speed.
+Many people have helped to bring CelesteTAS and the tools surrounding it into the amazing state they currently are. This list just highlights a few which have played a big role, but that doesn't mean other smaller contributions aren't appreciated!
 
-### Commands
-- Various commands exist to facilitate TAS playback. [Documentation can be found here](https://github.com/EverestAPI/CelesteTAS-EverestInterop/blob/master/Docs/Commands.md).
+- [Kilaye](https://github.com/clementgallet) (`@kilaye` on Discord): Developer of [libTAS](https://clementgallet.github.io/libTAS/) and among the first TASers of the game.
+- [DevilSquirrel](https://github.com/ShootMe) (`@devilsquirrel` on Discord): Started development of the CelesteTAS project in 2018 and maintained it for the first year.
+- [0x0ade](https://github.com/0x0ade) (`@0x0ade` on Discord): Helped with porting the mod to the Everest mod-loader, to avoid having to manually patch the game and allow for improved mod compatibility
+- [EuniverseCat](https://github.com/EuniverseCat) (`@eunidiscriminator0317` on Discord): Occasional but active contributor the project from 2019 to 2023
+- [DemoJameson](https://github.com/DemoJameson) (`@demojameson` on Discord): Maintainer of the project from 2020 to 2024, massively pushing it forward with new features and improvements
+- [psyGamer](https://github.com/psyGamer) (`@psyGamer` on Discord): Current maintainer of the project since 2024, reworking Studio to be cross-platform and in general trying to modernize and improve the project.
 
-## Savestate
-- Savestates require the [SpeedrunTool](https://gamebanana.com/tools/6597) mod.
-- Reliable in vanilla maps.
-- Savestates may not work properly in custom maps that use code mods. Placing a savestate right before leaving a room can help with this.
-- Currently, cannot savestate when paused.
-- Crashes due to running out of memory are possible, although uncommon.
-
-## Misc
-
-### Move Camera
-When center camera is enabled, free camera hotkey + holding mouse right button or free camera hotkey + arrow move canvas, when zooming out holding mouse right button or info hud hotkey + arrow move camera.
-
-### Zoom Camera
-When center camera is enabled, scroll wheel or free camera hotkey + home/end zoom camera.
-
-### Reset Camera
-When center camera is enabled, double press mouse right button or double press free camera hotkey reset camera.
-
-### Rectangle Selection Info
-Hold the Info HUD hotkey and the mouse right down to select a rectangle. Copies the position of the top left and bottom right corners when the mouse button is released. This helps to define checkpoints for [Featherline](https://github.com/tntfalle/featherline).
-
-## Other Useful Tools
-- [TAS Recorder](https://gamebanana.com/tools/14085): High quality fixed framerate TAS encoder, cross-platform (use this instead of .kkapture or ldcapture) 
-- [GhostMod](https://gamebanana.com/mods/500759): Compare new TASes with old ones.
+## Additional Tools
+- [Speedrun Tool](https://gamebanana.com/tools/6597): Provides savestate functionally to CelesteTAS to easily get back to a certain spot in the TAS without having to wait.
+- [TAS Recorder](https://gamebanana.com/tools/14085): Create high quality fixed framerate video recordings of your TAS.
+- [TAS Helper](https://gamebanana.com/tools/12383): Additional features which don't fit into the main CelesteTAS mod, but are still very useful while TASing.
+- [GhostModForTas](https://gamebanana.com/mods/500759): Compare new TASes with old ones.
 - [Radeline](https://github.com/Kataiser/radeline): Chaos monkey that optimizes a Celeste TAS by randomly (or sequentially) changing inputs.
 - [Lobby Router](https://jakobhellermann.github.io/trout/): Helps find the fastest route for a collab lobby
-- [Featherline](https://github.com/tntfalle/featherline): Algorithm for analog feather movement in Celeste. (built-in into Studio)
-- [.kkapture](https://github.com/DemoJameson/kkapture/wiki): High quality fixed framerate TAS encoder, Windows only.
-- [ldcapture](https://github.com/psyGamer/ldcapture): High quality fixed framerate TAS encoder, Linux only.
