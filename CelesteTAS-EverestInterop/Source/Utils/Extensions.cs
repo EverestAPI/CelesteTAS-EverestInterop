@@ -864,7 +864,7 @@ internal static class Vector2Extensions {
 }
 
 internal static class SceneExtensions {
-    public static Player GetPlayer(this Scene scene) => scene.Tracker.GetEntity<Player>();
+    public static Player? GetPlayer(this Scene scene) => scene.Tracker.GetEntity<Player>();
 
     public static Level? GetLevel(this Scene scene) {
         return scene switch {

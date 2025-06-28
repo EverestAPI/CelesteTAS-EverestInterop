@@ -131,7 +131,8 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                             case GameDataType.LevelInfo:
                                 gameData = new LevelInfo {
                                     ModUrl = GameData.GetModUrl(),
-                                    WakeupTime = GameData.GetWakeupTime(),
+                                    IntroTime = GameData.GetIntroTime(),
+                                    StartingRoom = GameData.GetStartingRoom(),
                                 };
                                 break;
 

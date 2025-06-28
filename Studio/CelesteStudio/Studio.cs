@@ -557,15 +557,18 @@ public sealed class Studio : Form {
         var levelInfo = CommunicationWrapper.GetLevelInfo();
 
         string initText = $"RecordCount: 1{Document.NewLine}";
-        if (levelInfo != null && !string.IsNullOrWhiteSpace(levelInfo.Value.ModUrl)) {
-            initText = levelInfo.Value.ModUrl + initText;
+        if (levelInfo?.ModUrl is { } modUrl && !string.IsNullOrWhiteSpace(modUrl)) {
+            initText = modUrl + initText;
         }
         if (!string.IsNullOrWhiteSpace(simpleConsoleCommand)) {
-            initText += $"{Document.NewLine}{simpleConsoleCommand}{Document.NewLine}   1{Document.NewLine}";
+            initText += $"{Document.NewLine}{simpleConsoleCommand}{Document.NewLine}{"1",ActionLine.MaxFramesDigits}{Document.NewLine}";
         }
         initText += $"{Document.NewLine}#Start{Document.NewLine}";
-        if (levelInfo?.WakeupTime is { } wakeupTime) {
-            initText += wakeupTime.ToString().PadLeft(ActionLine.MaxFramesDigits) + Document.NewLine;
+        if (levelInfo?.IntroTime is { } wakeupTime) {
+            initText += $"{wakeupTime.ToString(),ActionLine.MaxFramesDigits}{Document.NewLine}{Document.NewLine}";
+        }
+        if (levelInfo?.StartingRoom is { } startingRoom && !string.IsNullOrWhiteSpace(startingRoom)) {
+            initText += $"#lvl_{startingRoom}{Document.NewLine}{string.Empty,ActionLine.MaxFramesDigits}";
         }
 
         File.WriteAllText(Document.ScratchFile, initText);

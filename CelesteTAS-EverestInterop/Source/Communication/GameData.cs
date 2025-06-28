@@ -5,6 +5,7 @@ using System.Linq;
 using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.Helpers;
+using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication;
 using TAS.Input.Commands;
@@ -157,32 +158,150 @@ public static class GameData {
         return string.Empty;
     }
 
-    public static int? GetWakeupTime() {
+    /// Attempt to guess the amount of frames the intro animation takes for the current level
+    public static int? GetIntroTime() {
         if (Engine.Scene is not Level level) {
             return null;
         }
 
-        AreaData areaData = AreaData.Get(level);
+        var areaData = AreaData.Get(level);
+        var player = level.GetPlayer();
 
-        int? wakeupTime = areaData.IntroType switch {
+        int? wakeupTime;
+        switch (areaData.IntroType) {
             // Player.IntroTypes.Transition => expr,
-            Player.IntroTypes.Respawn => 36,
-            // Player.IntroTypes.WalkInRight => expr,
-            // Player.IntroTypes.WalkInLeft => expr,
-            // Player.IntroTypes.Jump => expr,
-            Player.IntroTypes.WakeUp => 190,
-            // Player.IntroTypes.Fall => expr,
-            // Player.IntroTypes.TempleMirrorVoid => expr,
-            Player.IntroTypes.None => null,
-            // Player.IntroTypes.ThinkForABit => expr,
-            _ => null,
-        };
+            case Player.IntroTypes.Respawn: {
+                wakeupTime = (int) Math.Ceiling(0.6f / Engine.DeltaTime); // respawnTween = Tween.Create(Tween.TweenMode.Oneshot, null, 0.6f, start: true);
+                break;
+            }
+
+            case Player.IntroTypes.WalkInRight:
+            case Player.IntroTypes.WalkInLeft: {
+                if (player == null) {
+                    wakeupTime = null;
+                    break;
+                }
+
+                bool isRight = areaData.IntroType == Player.IntroTypes.WalkInRight;
+                var direction = isRight ? Facings.Right : Facings.Left;
+
+                var spawnPoint = level.DefaultSpawnPoint;
+                float startX = isRight
+                    ? level.Bounds.Left - 16.0f
+                    : level.Bounds.Right + 16.0f;
+                float targetX = spawnPoint.X;
+
+                // Simulate walk done by IntroWalkCoroutine
+                int walkFrames = 0;
+
+                var was = player.Collider;
+                player.Collider = player.normalHitbox;
+
+                float xPos = startX;
+                while (Math.Abs(Math.Round(xPos) - targetX) > 2.0f && !player.CollideCheck<Solid>(new Vector2(xPos + (float) direction, spawnPoint.Y))) {
+                    xPos = Calc.Approach(xPos, targetX, 64.0f * Engine.DeltaTime);
+                    walkFrames++;
+                }
+
+                player.Collider = was;
+
+                wakeupTime = 1 + // From state-machine coroutine
+                     (int) (Math.Ceiling(0.3f / Engine.DeltaTime) + 1) + // yield return 0.3f;
+                     (int) (Math.Ceiling(0.2f / Engine.DeltaTime) + 1) + // yield return 0.2f;
+                     walkFrames;
+                break;
+            }
+
+            case Player.IntroTypes.Jump: {
+                if (player == null) {
+                    wakeupTime = null;
+                    break;
+                }
+
+                var spawnPoint = level.DefaultSpawnPoint;
+                float startY = level.Bounds.Bottom + 16.0f;
+                float targetY = spawnPoint.Y - 8.0f;
+
+                // Simulate jump done by IntroJumpCoroutine
+                int jumpFrames = 0;
+
+                float yPos = startY;
+                while (yPos > targetY) {
+                    yPos += -120.0f * Engine.DeltaTime;
+                    jumpFrames++;
+                }
+                yPos = MathF.Round(yPos);
+
+                float ySpeed = -100.0f;
+                while (ySpeed < 0.0f) {
+                    ySpeed += 800.0f * Engine.DeltaTime;
+                    yPos += ySpeed * Engine.DeltaTime;
+                    jumpFrames++;
+                }
+                ySpeed = 0.0f;
+
+                var was = player.Collider;
+                player.Collider = player.normalHitbox;
+
+                static bool CheckGround(Player player, Vector2 pos) => player.CollideCheck<Solid>(pos) || player.CollideCheck<JumpThru>(pos);
+                while (!CheckGround(player, new Vector2(spawnPoint.X, yPos))) {
+                    ySpeed += 800.0f * Engine.DeltaTime;
+                    yPos += ySpeed * Engine.DeltaTime;
+                    jumpFrames++;
+                }
+
+                player.Collider = was;
+
+                wakeupTime = 1 + // From state-machine coroutine
+                     (int) (Math.Ceiling(0.5f / Engine.DeltaTime) + 1) + // yield return 0.5f;
+                     (int) (Math.Ceiling(0.1f / Engine.DeltaTime) + 1) + // yield return 0.1f;
+                     jumpFrames;
+                break;
+            }
+
+            case Player.IntroTypes.WakeUp: {
+                float wakeUpTime = player != null && player.Sprite.Animations.TryGetValue("wakeUp", out var wakeUpAnim)
+                    ? wakeUpAnim.Frames.Length * wakeUpAnim.Delay
+                    : 24 * 0.1f; // Taken from vanilla Sprites.xml
+
+                wakeupTime = 1 + // From state-machine coroutine
+                     (int) (Math.Ceiling(0.5f / Engine.DeltaTime) + 1) +       // yield return 0.5f;
+                     (int) (Math.Ceiling(wakeUpTime / Engine.DeltaTime) + 1) + // yield return Sprite.PlayRoutine("wakeUp");
+                     (int) (Math.Ceiling(0.2f / Engine.DeltaTime) + 1);        // yield return 0.2f;
+                break;
+            }
+
+            case Player.IntroTypes.ThinkForABit: {
+                wakeupTime = 1 + // From state-machine coroutine
+                     (int) (Math.Ceiling(0.1f / Engine.DeltaTime) + 1) +     // yield return 0.1f;
+                     (int) Math.Ceiling((8.0f / 32.0f) / Engine.DeltaTime) + // MoveH(32f * Engine.DeltaTime);
+                     (int) (Math.Ceiling(0.3f / Engine.DeltaTime) + 1) +     // yield return 0.3f;
+                     (int) (Math.Ceiling(0.8f / Engine.DeltaTime) + 1) +     // yield return 0.8f;
+                     (int) (Math.Ceiling(0.1f / Engine.DeltaTime) + 1);      // yield return 0.1f;
+                break;
+            }
+
+            case Player.IntroTypes.None:
+            default:
+                wakeupTime = null;
+                break;
+        }
 
         if (wakeupTime == null) {
             $"Couldn't determine wakeup time for intro type '{areaData.IntroType}'".Log(LogLevel.Warn);
         }
 
         return wakeupTime;
+    }
+
+    /// Retrieves the starting room for the current level
+    public static string GetStartingRoom() {
+        if (Engine.Scene is not Level level) {
+            return string.Empty;
+        }
+
+        var mapData = level.Session.MapData;
+        return mapData.StartLevel()?.Name ?? string.Empty;
     }
 
     public static GameState? GetGameState() {
