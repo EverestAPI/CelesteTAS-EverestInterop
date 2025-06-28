@@ -51,5 +51,8 @@ Many people have helped to bring CelesteTAS and the tools surrounding it into th
 - [TAS Recorder](https://gamebanana.com/tools/14085): Create high quality fixed framerate video recordings of your TAS.
 - [TAS Helper](https://gamebanana.com/tools/12383): Additional features which don't fit into the main CelesteTAS mod, but are still very useful while TASing.
 - [GhostModForTas](https://gamebanana.com/mods/500759): Compare new TASes with old ones.
-- [Radeline](https://github.com/Kataiser/radeline): Chaos monkey that optimizes a Celeste TAS by randomly (or sequentially) changing inputs.
+- Jadderline (integrated into Studio under `Tools`): Simple tool to generate inputs for a [Jelly Ladder](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Holdable-Movement#jelly-ladder) from a certain stating condition.
+- Featherline (integrated into Studio under `Tools`): Genetic algorithm to attempt to generate optimal inputs for feather movement.
+- Radeline Simulator (integrated into Studio under `Tools`): Attempts to get the player into a desired specific position by brute-forcing input combinations.
+- [Radeline Optimizer](https://github.com/Kataiser/radeline): Chaos monkey that optimizes a Celeste TAS by randomly (or sequentially) changing inputs.
 - [Lobby Router](https://jakobhellermann.github.io/trout/): Helps find the fastest route for a collab lobby
