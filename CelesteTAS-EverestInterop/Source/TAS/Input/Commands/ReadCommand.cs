@@ -211,6 +211,13 @@ public static class ReadCommand {
 
         // Windows allows case-insensitive names, but Linux/macOS don't...
         string[] components = filePath.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
+        if (components.Length == 0) {
+            errorMessage = $"""
+                            "{commandName}" failed
+                            No file path specified
+                            """;
+            return null;
+        }
 
         string realDirectory = fileDirectory;
         for (int i = 0; i < components.Length - 1; i++) {
