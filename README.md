@@ -8,12 +8,14 @@ After that you want to install the CelesteTAS mod, either by searching for in Ol
 
 If you now launch the game, Celeste Studio, our own purpose-built TAS editor, should've been installed automatically. On the main menu, you can go into the Mod Settings and under `Celeste TAS > More Options` you will find an option called `Launch Studio at Boot`. If you enable that setting, it should automatically open now, and also every time alongside the game being opened.  
 If you wish to manually open it, you can find the program in the `CelesteStudio` folder inside your Celeste install.  
-You can find the documentation about Celeste Studio on the [wiki](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Celeste-Studio). It is **strongly recommended** to at least check out the available [keyboard shortcuts](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Key-Bindings) which Studio offers.
+You can find the documentation about Celeste Studio [here](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Celeste-Studio). It is **strongly recommended** to at least check out the available [keyboard shortcuts](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Key-Bindings) which Studio offers.
 
-Now that both CelesteTAS and Celeste Studio are set up, you can immediately start with TASing, by writing a [`console load` command](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Commands#console-load) for your desired level, followed by your inputs (see [here](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Input-File) on how inputs are written).  
-To play back your TAS (which you want to do _while_ TASing, not after), check out the available [keyboard controls](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Controls) for CelesteTAS 
+Now both CelesteTAS and Celeste Studio are set up!
 
-Alternatively, you can find a (non-exhaustive!) list of community projects to which you might want to contribute [here](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Community-Projects).
+Depending on what you're planning to do with CelesteTAS, consider following on of these guide on how to get started:
+- [I want to start creating my own TASes](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Getting-Started#creating-your-own-tases)
+- [I want to help improve existing TASes](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Getting-Started#helping-on-improving-existing-tases)
+- [I want to just watch a TAS](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Getting-Started#watching-a-tas)
 
 > [!important]
 > If you want know how something works, please **first** check if it is documented on the [CelesteTAS Wiki](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki).
