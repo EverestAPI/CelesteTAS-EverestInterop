@@ -46,7 +46,7 @@ Many people have helped to bring CelesteTAS and the tools surrounding it into th
 - [0x0ade](https://github.com/0x0ade) (`@0x0ade` on Discord): Helped with porting the mod to the Everest mod-loader, to avoid having to manually patch the game and allow for improved mod compatibility
 - [EuniverseCat](https://github.com/EuniverseCat) (`@eunidiscriminator0317` on Discord): Occasional but active contributor the project from 2019 to 2023
 - [DemoJameson](https://github.com/DemoJameson) (`@demojameson` on Discord): Maintainer of the project from 2020 to 2024, massively pushing it forward with new features and improvements
-- [psyGamer](https://github.com/psyGamer) (`@psyGamer` on Discord): Current maintainer of the project since 2024, reworking Studio to be cross-platform and in general trying to modernize and improve the project.
+- [psyGamer](https://github.com/psyGamer) (`@psygamer` on Discord): Current maintainer of the project since 2024, reworking Studio to be cross-platform and in general trying to modernize and improve the project.
 
 ## Additional Tools
 - [Speedrun Tool](https://gamebanana.com/tools/6597): Provides savestate functionally to CelesteTAS to easily get back to a certain spot in the TAS without having to wait.
