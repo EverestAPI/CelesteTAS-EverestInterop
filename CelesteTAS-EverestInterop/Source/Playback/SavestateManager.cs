@@ -4,10 +4,10 @@ using Celeste;
 using JetBrains.Annotations;
 using Monocle;
 using System;
+using System.IO;
 using TAS.EverestInterop;
 using TAS.Input;
 using TAS.ModInterop;
-using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.Playback;
@@ -66,15 +66,24 @@ internal static class SavestateManager {
 
     /// Update for each TAS frame
     public static void Update() {
-        if (!SpeedrunToolInterop.Installed) {
-            return;
-        }
+        var controller = Manager.Controller;
+
         if (Manager.CurrState != Manager.State.Running) {
             // Only savestate while TAS is actively running and not while paused
             return;
         }
+        if (!SpeedrunToolInterop.Installed) {
+            // Validate that no savestate breakpoints are used
+            if (controller.FastForwards.GetValueOrDefault(controller.CurrentFrameInTas) is { SaveState: true} fastForward) {
+                PopupToast.ShowAndLog($"""
+                                       {Path.GetFileName(fastForward.FilePath)} line {fastForward.FileLine}:
+                                       Found savestate breakpoint '{fastForward.Format()}'. 
+                                       The 'Speedrun Tool' mod is required to use savestates with CelesteTAS.
+                                       """, timeout: 5.0f);
+            }
 
-        var controller = Manager.Controller;
+            return;
+        }
 
         // Only save-state when the current breakpoint is new
         if (controller.CurrentFrameInTas < controller.Inputs.Count

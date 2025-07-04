@@ -37,8 +37,8 @@ public class InputController {
     public readonly List<InputFrame> Inputs = [];
     public readonly SortedDictionary<int, List<Command>> Commands = new();
     public readonly SortedDictionary<int, List<Comment>> Comments = new();
-    public readonly SortedDictionary<int, FastForward> FastForwards = new();
-    public readonly SortedDictionary<int, FastForward> FastForwardLabels = new();
+    internal readonly SortedDictionary<int, FastForward> FastForwards = new();
+    internal readonly SortedDictionary<int, FastForward> FastForwardLabels = new();
 
     public InputFrame? Previous => Inputs.GetValueOrDefault(CurrentFrameInTas - 1);
     public InputFrame? Current => Inputs.GetValueOrDefault(CurrentFrameInTas);
@@ -51,13 +51,13 @@ public class InputController {
     public List<Command> CurrentCommands => Commands.GetValueOrDefault(CurrentFrameInTas) ?? [];
     public List<Comment> CurrentComments => Comments.GetValueOrDefault(CurrentFrameInTas) ?? [];
 
-    public FastForward? CurrentFastForward => FastForwards.FirstOrDefault(entry => entry.Key > CurrentFrameInTas && entry.Value.ForceStop).Value ??
-                                              NextLabelFastForward ??
-                                              FastForwards.FirstOrDefault(pair => pair.Key > CurrentFrameInTas).Value ??
-                                              FastForwards.LastOrDefault().Value;
+    internal FastForward? CurrentFastForward => FastForwards.FirstOrDefault(entry => entry.Key > CurrentFrameInTas && entry.Value.ForceStop).Value ??
+                                                NextLabelFastForward ??
+                                                FastForwards.FirstOrDefault(pair => pair.Key > CurrentFrameInTas).Value ??
+                                                FastForwards.LastOrDefault().Value;
     public bool HasFastForward => CurrentFastForward is { } forward && forward.Frame > CurrentFrameInTas;
 
-    public FastForward? NextLabelFastForward;
+    internal FastForward? NextLabelFastForward;
 
     /// Indicates whether the current TAS file needs to be reparsed before running
     public bool NeedsReload = true;
@@ -251,7 +251,7 @@ public class InputController {
 
         // Add a hidden label at the of the text block
         if (path == FilePath) {
-            FastForwardLabels[CurrentParsingFrame] = new FastForward(CurrentParsingFrame, studioLine);
+            FastForwardLabels[CurrentParsingFrame] = new FastForward(CurrentParsingFrame, studioLine, path, fileLine);
         }
     }
 
@@ -274,7 +274,7 @@ public class InputController {
                 return false;
             }
         } else if (FastForwardLine.TryParse(lineText, out var fastForwardLine)) {
-            var fastForward = new FastForward(CurrentParsingFrame, studioLine, fastForwardLine);
+            var fastForward = new FastForward(CurrentParsingFrame, studioLine, path, fileLine, fastForwardLine);
             if (FastForwards.TryGetValue(CurrentParsingFrame, out var oldFastForward) && oldFastForward.SaveState && !fastForward.SaveState) {
                 // ignore
             } else {
@@ -282,7 +282,7 @@ public class InputController {
             }
         } else if (lineText.StartsWith("#")) {
             if (CommentLine.IsLabel(lineText)) {
-                FastForwardLabels[CurrentParsingFrame] = new FastForward(CurrentParsingFrame, studioLine);
+                FastForwardLabels[CurrentParsingFrame] = new FastForward(CurrentParsingFrame, studioLine, path, fileLine);
             }
 
             if (!Comments.TryGetValue(CurrentParsingFrame, out var comments)) {
