@@ -27,12 +27,34 @@ public static class CommunicationWrapper {
 
     #region Bindings
 
-    private static readonly ActionBinding StartTAS = new("Game_Start", "Start TAS", Binding.Category.Game, Hotkey.None, () => SendHotkey(HotkeyID.Start));
-    private static readonly ActionBinding RestartTAS = new("Game_Restart", "Restart TAS", Binding.Category.Game, Hotkey.None, () => SendHotkey(HotkeyID.Restart));
-    private static readonly ActionBinding PauseTAS = new("Game_Pause", "Pause TAS", Binding.Category.Game, Hotkey.None, () => SendHotkey(HotkeyID.Pause));
-    private static readonly ActionBinding FrameAdvanceTAS = new("Game_FrameAdvance", "Frame Advance TAS", Binding.Category.Game, Hotkey.None, () => SendHotkey(HotkeyID.FrameAdvance));
+    private static readonly ConditionalActionBinding StartTAS = new("Game_Start", "Start TAS", Binding.Category.Game, Hotkey.None, () => AttemptSendHotkey(HotkeyID.Start));
+    private static readonly ConditionalActionBinding RestartTAS = new("Game_Restart", "Restart TAS", Binding.Category.Game, Hotkey.None, () => AttemptSendHotkey(HotkeyID.Restart));
+    private static readonly ConditionalActionBinding PauseTAS = new("Game_Pause", "Pause TAS", Binding.Category.Game, Hotkey.None, () => AttemptSendHotkey(HotkeyID.Pause));
+    private static readonly ConditionalActionBinding FrameAdvanceTAS = new("Game_FrameAdvance", "Frame Advance TAS", Binding.Category.Game, Hotkey.None, () => AttemptSendHotkey(HotkeyID.FrameAdvance));
 
     public static readonly Binding[] AllBindings = [StartTAS, RestartTAS, PauseTAS, FrameAdvanceTAS];
+
+    /// Send inputs to Celeste if applicable
+    private static bool AttemptSendHotkey(HotkeyID hotkey) {
+        var editor = Studio.Instance.Editor;
+        string lineTrimmed = editor.Document.Lines[editor.Document.Caret.Row].TrimStart();
+
+        bool isActionLine = lineTrimmed.StartsWith("***") ||
+                            ActionLine.TryParse(editor.Document.Lines[editor.Document.Caret.Row], out _ );
+        bool isComment = lineTrimmed.StartsWith('#');
+        bool isTyping = (DateTime.UtcNow - editor.LastModification).TotalSeconds < Settings.Instance.SendInputsTypingTimeout;
+        bool sendInputs =
+            (Settings.Instance.SendInputsOnActionLines && isActionLine) ||
+            (Settings.Instance.SendInputsOnComments && isComment) ||
+            (Settings.Instance.SendInputsOnCommands && !isActionLine && !isComment);
+
+        if (Settings.Instance.SendInputsToCeleste && Connected && !isTyping && sendInputs) {
+            SendHotkey(hotkey);
+            return true;
+        }
+
+        return false;
+    }
 
     #endregion
 

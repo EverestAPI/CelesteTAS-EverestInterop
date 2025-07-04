@@ -99,7 +99,7 @@ public sealed class Editor : SkiaDrawable {
             return;
 
             void HandleTextChanged(Document _, Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
-                lastModification = DateTime.UtcNow;
+                LastModification = DateTime.UtcNow;
 
                 // Adjust total frame count
                 foreach (string deletion in deletions.Values) {
@@ -304,7 +304,7 @@ public sealed class Editor : SkiaDrawable {
     private const float LineNumberPadding = 5.0f;
 
     /// Indicates last modification time, used to check if the user is currently typing
-    private DateTime lastModification = DateTime.UtcNow;
+    public DateTime LastModification = DateTime.UtcNow;
 
     /// Current total frame count (including commands if connected to Celeste)
     public int TotalFrameCount;
@@ -1014,7 +1014,7 @@ public sealed class Editor : SkiaDrawable {
         bool isActionLine = lineTrimmed.StartsWith("***") ||
                             ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _ );
         bool isComment = lineTrimmed.StartsWith('#');
-        bool isTyping = (DateTime.UtcNow - lastModification).TotalSeconds < Settings.Instance.SendInputsTypingTimeout;
+        bool isTyping = (DateTime.UtcNow - LastModification).TotalSeconds < Settings.Instance.SendInputsTypingTimeout;
         bool sendInputs =
             (Settings.Instance.SendInputsOnActionLines && isActionLine) ||
             (Settings.Instance.SendInputsOnComments && isComment) ||
@@ -1327,7 +1327,7 @@ public sealed class Editor : SkiaDrawable {
         bool isActionLine = lineTrimmed.StartsWith("***") ||
                             ActionLine.TryParse(Document.Lines[Document.Caret.Row], out _ );
         bool isComment = lineTrimmed.StartsWith('#');
-        bool isTyping = (DateTime.UtcNow - lastModification).TotalSeconds < Settings.Instance.SendInputsTypingTimeout;
+        bool isTyping = (DateTime.UtcNow - LastModification).TotalSeconds < Settings.Instance.SendInputsTypingTimeout;
         bool sendInputs =
             (Settings.Instance.SendInputsOnActionLines && isActionLine) ||
             (Settings.Instance.SendInputsOnComments && isComment) ||

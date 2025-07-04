@@ -491,7 +491,10 @@ public sealed class Studio : Form {
         () => Settings.Instance.SendInputsToCeleste,
         value => {
             Instance.Editor.ShowToastMessage($"{(value ? "Enabled" : "Disabled")} Sending Inputs to Celeste", Editor.DefaultToastTime);
+
             Settings.Instance.SendInputsToCeleste = value;
+            Settings.OnChanged();
+            Settings.Save();
         });
 
     private static readonly EnumBinding<GameInfoType> ShowGameInfo = CreateSettingOption<GameInfoType>("View_ShowGameInfo", "Game Info", new(), Binding.Category.View, Hotkey.None, Hotkey.None, new(), nameof(Settings.GameInfo));
