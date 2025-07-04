@@ -58,6 +58,12 @@ internal static class PopupToast {
     [Load]
     private static void Load() {
         Events.PostRender += () => {
+            // Wait for font / dialog to be loaded
+            // NOTE: 'loader.loaded' is checked instead of 'loader.dialogLoaded' since for the latter, there is a race condition with Fast-Texture-Loading not yet being done
+            if ((Engine.Scene is GameLoader loader && !loader.loaded) || !GFX.Loaded || Dialog.Languages == null || !Dialog.Languages.ContainsKey(Settings.EnglishLanguage) || ActiveFont.Font == null) {
+                return;
+            }
+
             var span = CollectionsMarshal.AsSpan(entries);
 
             // Fade in/out
