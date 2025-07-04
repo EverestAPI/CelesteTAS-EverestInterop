@@ -178,6 +178,8 @@ public readonly record struct CommandLine(
 
         // Wrap arguments in "" if necessary
         return string.Join(separator, [commandName, ..Arguments.Select(arg => {
+            arg = arg.Replace("\n", "\\n"); // Un-escape sequences
+
             if (!arg.Contains(separator)
                 || arg.StartsWith('[') && arg.EndsWith(']')
                 || arg.StartsWith('{') && arg.EndsWith('}')
