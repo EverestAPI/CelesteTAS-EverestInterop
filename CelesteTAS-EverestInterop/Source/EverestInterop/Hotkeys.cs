@@ -179,6 +179,13 @@ public static class Hotkeys {
             }
 
             if (Engine.Scene?.Tracker is { } tracker) {
+                if (!tracker.IsEntityTracked<KeyboardConfigUI>()) {
+                    Tracker.AddTypeToTracker(typeof(KeyboardConfigUI), trackedAs: null, subtypes: typeof(ModuleSettingsKeyboardConfigUI));
+                }
+                if (!tracker.IsEntityTracked<ButtonConfigUI>()) {
+                    Tracker.AddTypeToTracker(typeof(ButtonConfigUI), trackedAs: null, subtypes: typeof(ModuleSettingsButtonConfigUI));
+                }
+
                 if (tracker.GetEntity<KeyboardConfigUI>() != null) {
                     updateKey = false;
                 }

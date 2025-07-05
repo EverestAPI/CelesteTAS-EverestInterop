@@ -271,7 +271,7 @@ public static class HitboxOptimized {
             return;
         }
 
-        List<LockBlock> lockBlocks = level.Tracker.GetCastEntities<LockBlock>();
+        var lockBlocks = level.Tracker.GetEntitiesTrackIfNeeded<LockBlock>();
         if (lockBlocks.IsEmpty()) {
             return;
         }
@@ -281,7 +281,8 @@ public static class HitboxOptimized {
         Vector2 playerCenter = player.Center;
         player.Collider = origCollider;
 
-        foreach (LockBlock lockBlock in lockBlocks) {
+        foreach (var entity in lockBlocks) {
+            var lockBlock = (LockBlock) entity;
             if (lockBlock.Get<PlayerCollider>() is not {Collider: Circle circle}) {
                 continue;
             }
@@ -299,14 +300,14 @@ public static class HitboxOptimized {
             lockBlock.Collidable = false;
 
             List<Entity> solidTilesList = Engine.Scene.Tracker.GetEntities<SolidTiles>();
-            Dictionary<Entity, bool> solidTilesCollidableDict = solidTilesList.ToDictionary(entity => entity, entity => entity.Collidable);
+            Dictionary<Entity, bool> solidTilesCollidableDict = solidTilesList.ToDictionary(e => e, e => e.Collidable);
 
             // check if the line collides with any solid except solid tiles
-            solidTilesList.ForEach(entity => entity.Collidable = false);
+            solidTilesList.ForEach(e => e.Collidable = false);
             bool collideSolid = Engine.Scene.CollideCheck<Solid>(playerCenter, lockBlock.Center);
 
             // check if the line collides with solid tiles
-            solidTilesList.ForEach(entity => entity.Collidable = solidTilesCollidableDict[entity]);
+            solidTilesList.ForEach(e => e.Collidable = solidTilesCollidableDict[e]);
             bool collideSolidTiles = Engine.Scene.CollideCheck<SolidTiles>(playerCenter, lockBlock.Center);
 
             lockBlock.Collidable = origCollidable;
@@ -317,8 +318,8 @@ public static class HitboxOptimized {
 
             if (!collideSolid) {
                 // draw actual checked tiles when checking collision between line and solid tiles
-                solidTilesList.ForEach(entity => {
-                    if (entity is SolidTiles {Collidable: true} solidTiles) {
+                solidTilesList.ForEach(e => {
+                    if (e is SolidTiles {Collidable: true} solidTiles) {
                         Grid grid = solidTiles.Grid;
                         grid.GetCheckedTilesInLineCollision(playerCenter, lockBlock.Center)
                             .ForEach(tuple => Draw.HollowRect(tuple.Item1, grid.CellWidth, grid.CellHeight,

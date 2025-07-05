@@ -280,7 +280,7 @@ public static class GameInfo {
 
                 int dashCooldown = player.dashCooldownTimer.ToFloorFrames();
 
-                PlayerSeeker? playerSeeker = level.Tracker.GetEntity<PlayerSeeker>();
+                PlayerSeeker? playerSeeker = level.Tracker.GetEntityTrackIfNeeded<PlayerSeeker>();
                 if (playerSeeker != null) {
                     pos = GetAdjustedPos(playerSeeker, out exactPos);
                     speed = GetAdjustedSpeed(playerSeeker.speed, out exactSpeed);

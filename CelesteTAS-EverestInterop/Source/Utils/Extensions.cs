@@ -855,6 +855,27 @@ internal static class TrackerExtensions {
     public static List<T> GetCastComponents<T>(this Tracker tracker) where T : Component {
         return tracker.GetComponents<T>().Where(component => component is T).Cast<T>().ToList();
     }
+
+    public static T? GetEntityTrackIfNeeded<T>(this Tracker tracker) where T : Entity {
+        var entities = tracker.GetEntitiesTrackIfNeeded<T>();
+        return entities.Count == 0 ? null : entities[0] as T;
+    }
+    public static T? GetNearestEntityTrackIfNeeded<T>(this Tracker tracker, Vector2 nearestTo) where T : Entity {
+        var entities = tracker.GetEntitiesTrackIfNeeded<T>();
+        T? nearest = null;
+        float nearestDistSq = 0.0f;
+
+        foreach (var entity in entities) {
+            float distSq = Vector2.DistanceSquared(nearestTo, entity.Position);
+
+            if (nearest == null || distSq < nearestDistSq) {
+                nearest = (T) entity;
+                nearestDistSq = distSq;
+            }
+        }
+
+        return nearest;
+    }
 }
 
 internal static class Vector2Extensions {

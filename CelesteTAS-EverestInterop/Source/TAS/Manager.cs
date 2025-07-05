@@ -223,7 +223,7 @@ public static class Manager {
                 DisableRun();
             }
             // Disallow modifying options
-            else if (Engine.Scene is Level level && level.Tracker.GetEntity<TextMenu>() is { } menu) {
+            else if (Engine.Scene is Level level && level.Tracker.GetEntityTrackIfNeeded<TextMenu>() is { } menu) {
                 var item = menu.Items.FirstOrDefault();
 
                 if (item is TextMenu.Header { Title: { } title }

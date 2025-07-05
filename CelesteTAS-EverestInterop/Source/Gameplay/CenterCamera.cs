@@ -274,7 +274,7 @@ internal static class CenterCamera {
         var camera = level.Camera;
         if (Engine.Scene.GetPlayer() is { } player) {
             cameraTargetPosition = lockPosition ?? player.Position;
-        } else if (Engine.Scene.Tracker.GetEntity<PlayerDeadBody>() is { } deadBody) {
+        } else if (Engine.Scene.Tracker.GetEntityTrackIfNeeded<PlayerDeadBody>() is { } deadBody) {
             cameraTargetPosition = lockPosition ?? deadBody.Position;
         }
 
