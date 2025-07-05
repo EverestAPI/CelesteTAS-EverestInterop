@@ -1349,11 +1349,11 @@ public sealed class Editor : SkiaDrawable {
     }
 
     private void CalculationHandleKey(KeyEventArgs e) {
-        if (calculationState == null)
+        if (calculationState == null) {
             return;
+        }
 
-        switch (e.Key)
-        {
+        switch (e.Key) {
             case Keys.Escape:
                 calculationState = null;
                 e.Handled = true;
@@ -1377,9 +1377,8 @@ public sealed class Editor : SkiaDrawable {
                 calculationState = null;
                 e.Handled = true;
                 return;
-            case >= Keys.D0 and <= Keys.D9 when !e.Shift:
-            {
-                var num = e.Key - Keys.D0;
+            case >= Keys.D0 and <= Keys.D9 when !e.Shift: {
+                int num = e.Key - Keys.D0;
                 calculationState.Operand += num;
                 e.Handled = true;
                 return;
@@ -1393,6 +1392,20 @@ public sealed class Editor : SkiaDrawable {
         }
 
         e.Handled = false;
+    }
+    private bool CalculationHandleText(char c) {
+        if (c is >= '0' and <= '9') {
+            int num = c - '0';
+            calculationState.Operand += num;
+            return true;
+        }
+
+        // Allow A-Z to be handled by the action line editing
+        if (c is >= 'a' and <= 'z' or >= 'A' and <= 'Z') {
+            calculationState = null;
+        }
+
+        return false;
     }
 
     private void CommitCalculation(int stealFrom = 0) {
@@ -2160,6 +2173,11 @@ public sealed class Editor : SkiaDrawable {
         }
 
         if (e.Text.Length == 1 && CheckHotkey(Hotkey.Char(e.Text[0]))) {
+            return;
+        }
+
+        if (calculationState != null && CalculationHandleText(e.Text[0])) {
+            Invalidate();
             return;
         }
 
