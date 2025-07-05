@@ -45,6 +45,10 @@ public class HotkeyDialog : Dialog<Hotkey> {
                 : mods.ToShortcutString()[..^"None".Length];
         };
         KeyDown += (_, e) => {
+            if (e.Key == Keys.None && e.KeyChar == char.MaxValue) {
+                return; // Completly unusable
+            }
+
             var newHotkey = preferTextHotkey && e.KeyChar != char.MaxValue
                 ? Hotkey.Char(e.KeyChar)
                 : Hotkey.FromEvent(e);

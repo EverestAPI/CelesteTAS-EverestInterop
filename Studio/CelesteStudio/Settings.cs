@@ -116,7 +116,7 @@ public record HotkeyChar(char C) : Hotkey {
     public override string ToString() => char.ToUpper(C).ToString();
 
     public bool TryConvertToNative([NotNullWhen(true)] out HotkeyNative? hotkeyNative) {
-        if (!Enum.TryParse(char.ToUpper(C).ToString(), out Keys keys)) {
+        if (!Enum.TryParse(char.ToUpper(C).ToString(), out Keys keys) || keys == Keys.None || !Enum.IsDefined(keys)) {
             hotkeyNative = null;
             return false;
         }
