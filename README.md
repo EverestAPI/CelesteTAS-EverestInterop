@@ -24,6 +24,22 @@ Depending on what you're planning to do with CelesteTAS, consider following on o
 >
 > If you're stuck with a problem _which isn't described in the wiki_, consider joining the [Celeste Discord](https://discord.gg/celeste) and asking in the `#tas_general` channel in the TASing category.
 
+## Using Development versions
+
+Using the latest development version of CelesteTAS allows you to use cutting-edge features before the public release.  
+Do note however, that it should be expected for certain features to broken / have issues, so please make sure to **properly report any oddities** as mentioned below.
+
+You can install the latest development version from [here](https://0x0a.de/twoclick/?nightly.link/EverestAPI/CelesteTAS-EverestInterop/workflows/Build/master/CelesteTAS.zip).
+
+## Providing Feedback
+
+If you encounter any issues / oddities with the tools, would like to suggest a feature idea or just provide feedback in general, you have a few options on making your voice heard:
+- [Open a new issue](https://github.com/EverestAPI/CelesteTAS-EverestInterop/issues/new) here on GitHub
+- Send me (`@psygamer`) a direct-message on Discord, or ping me in the [Celeste Discord](https://discord.gg/celeste)
+- Send a message in the [`Studio v3`](https://discord.com/channels/403698615446536203/1257712832972193792) thread, found in the `#tas_offtopic` channel of the [Celeste Discord](https://discord.gg/celeste)
+
+Make sure to try to include as much information about the topic as you have available (include log files, videos, etc.)!
+
 ## Building CelesteTAS yourself
 
 If you just want to use CelesteTAS and not modify it, you can skip this section.
