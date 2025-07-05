@@ -8,10 +8,10 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication;
 using StudioCommunication.Util;
+using System.Diagnostics.CodeAnalysis;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.EverestInterop.InfoHUD;
-using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -27,10 +27,20 @@ public static class InfoWatchEntity {
         public readonly bool GlobalOrPersistent;
         public readonly Type Type;
 
-        public UniqueEntityId(Entity entity, EntityData entityData) {
+        private UniqueEntityId(Entity entity) {
             Type = entity.GetType();
             GlobalOrPersistent = entity.TagCheck(Tags.Global) || entity.TagCheck(Tags.Persistent) || entity.Get<Holdable>() != null;
-            EntityId = entityData.ToEntityId();
+            EntityId = entity.SourceId;
+        }
+
+        public static bool TryCreate(Entity entity, [NotNullWhen(true)] out UniqueEntityId? uniqueId) {
+            if (string.IsNullOrEmpty(entity.SourceId.Level)) {
+                uniqueId = null;
+                return false;
+            }
+
+            uniqueId = new(entity);
+            return true;
         }
     }
 
@@ -62,7 +72,7 @@ public static class InfoWatchEntity {
 
     [PublicAPI]
     public static bool IsWatching(Entity entity) {
-        return CurrentlyWatchedEntities.Contains(entity) || (entity.GetEntityData() is EntityData entityData && WatchedEntityIds.Contains(new UniqueEntityId(entity, entityData)));
+        return CurrentlyWatchedEntities.Contains(entity) || (UniqueEntityId.TryCreate(entity, out var uniqueId) && WatchedEntityIds.Contains(uniqueId));
     }
 
     internal static void CheckMouseButtons() {
@@ -116,7 +126,7 @@ public static class InfoWatchEntity {
         foreach (var entity in level.Entities.Where(e => !IgnoreEntity(e))) {
             if (entity.Collider == null) {
                 // Attempt to reconstruct collider from entity data
-                if (entity.GetEntityData() is { } data) {
+                if (entity.SourceData is { } data) {
                     entity.Collider = new Hitbox(data.Width, data.Height);
 
                     if (entity.CollideRect(checkRect)) {
@@ -145,8 +155,7 @@ public static class InfoWatchEntity {
     private static void AddOrRemoveWatching(Entity clickedEntity) {
         currentAreaKey = clickedEntity.SceneAs<Level>().Session.Area;
 
-        if (clickedEntity.GetEntityData() is { } entityData) {
-            var uniqueId = new UniqueEntityId(clickedEntity, entityData);
+        if (UniqueEntityId.TryCreate(clickedEntity, out var uniqueId)) {
             if (!WatchedEntityIds.Add(uniqueId)) {
                 StopWatching?.Invoke(clickedEntity);
                 WatchedEntityIds.Remove(uniqueId);
@@ -304,8 +313,8 @@ public static class InfoWatchEntity {
         var entityType = entity.GetType();
 
         string entityId = "";
-        if (entity.GetEntityData() is { } entityData) {
-            entityId = $"[{entityData.ToEntityId().ToString()}]";
+        if (!string.IsNullOrEmpty(entity.SourceId.Level)) {
+            entityId = $"[{entity.SourceId}]";
         }
 
         string entityPrefix = $"{entityType.Name}{entityId}";
@@ -412,11 +421,10 @@ public static class InfoWatchEntity {
         }
 
         foreach (var entity in possibleEntities) {
-            if (entity.GetEntityData() is not { } entityData) {
+            if (!UniqueEntityId.TryCreate(entity, out var uniqueId)) {
                 continue;
             }
 
-            var uniqueId = new UniqueEntityId(entity, entityData);
             if (!WatchedEntityIds.Contains(uniqueId) || !result.TryAdd(uniqueId, entity)) {
                 continue;
             }

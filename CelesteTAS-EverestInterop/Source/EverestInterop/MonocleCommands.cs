@@ -39,7 +39,7 @@ public static class MonocleCommands {
             if (Engine.Scene.Entities.FirstOrDefault(e => e.GetType().FullName == miniHeartDoorFullName) is HeartGemDoor door) {
                 levelSet = door.GetFieldValue<string>("levelSet");
                 if (door.Scene is Level level && amount < door.Requires) {
-                    level.Session.SetFlag($"opened_mini_heart_door_{door.GetEntityData()!.ToEntityId()}", false);
+                    level.Session.SetFlag($"opened_mini_heart_door_{door.SourceId}", false);
                     ModUtils.GetModule("CollabUtils2")
                         ?.GetPropertyValue<object>("SaveData")
                         ?.GetPropertyValue<HashSet<string>>("OpenedMiniHeartDoors")

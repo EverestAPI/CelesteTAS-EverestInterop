@@ -471,7 +471,7 @@ internal class EntityQueryHandler : TargetQuery.Handler {
             case EntityIDKey when parts.Length == 3:
                 string key = $"{parts[1]}:{parts[2]}";
                 for (int valueIdx = 0; valueIdx < values.Length; valueIdx++) {
-                    if (values[valueIdx] is not Entity entity || entity.GetEntityData()?.ToEntityId().Key != key) {
+                    if (values[valueIdx] is not Entity entity || entity.SourceId.Key != key) {
                         values[valueIdx] = TargetQuery.InvalidValue;
                     }
                 }

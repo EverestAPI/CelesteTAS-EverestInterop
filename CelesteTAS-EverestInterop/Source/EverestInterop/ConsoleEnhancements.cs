@@ -114,9 +114,9 @@ public static class ConsoleEnhancements {
                     clickedEntityInfo += type.FullName + "@" + type.Assembly.GetName().Name;
                 }
 
-                if (clickedEntity.GetEntityData() is { } entityData) {
+                if (clickedEntity.SourceData is { } entityData) {
                     clickedEntityInfo += $"\n entity name: {entityData.Name}";
-                    clickedEntityInfo += $"\n entity id  : {entityData.ToEntityId()}";
+                    clickedEntityInfo += $"\n entity id  : {clickedEntity.SourceId}";
                 }
 
                 clickedEntityInfo += $"\n mod name   : {GetModName(type)}";

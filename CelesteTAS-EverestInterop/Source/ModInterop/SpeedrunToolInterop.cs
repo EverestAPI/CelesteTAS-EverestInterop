@@ -119,7 +119,6 @@ internal static class SpeedrunToolInterop {
                     { nameof(GameInfo.LastPlayerSeekerPos), GameInfo.LastPlayerSeekerPos },
                     { nameof(GameInfo.LastPlayerSeekerDiff), GameInfo.LastPlayerSeekerDiff },
 
-                    { nameof(EntityDataHelper.CachedEntityData), EntityDataHelper.CachedEntityData },
                     { nameof(CycleHitboxColor.GroupCounter), CycleHitboxColor.GroupCounter },
                     { nameof(StunPauseCommand.SimulatePauses), StunPauseCommand.SimulatePauses },
                     { nameof(StunPauseCommand.PauseOnCurrentFrame), StunPauseCommand.PauseOnCurrentFrame },
@@ -147,7 +146,6 @@ internal static class SpeedrunToolInterop {
                 GameInfo.LastPlayerSeekerPos = (Vector2Double) clonedValues[nameof(GameInfo.LastPlayerSeekerPos)]!;
                 GameInfo.LastPlayerSeekerDiff = (Vector2Double) clonedValues[nameof(GameInfo.LastPlayerSeekerDiff)]!;
 
-                EntityDataHelper.CachedEntityData = (Dictionary<Entity, EntityData>) clonedValues[nameof(EntityDataHelper.CachedEntityData)]!;
                 CycleHitboxColor.GroupCounter = (int) clonedValues[nameof(CycleHitboxColor.GroupCounter)]!;
                 StunPauseCommand.SimulatePauses = (bool) clonedValues[nameof(StunPauseCommand.SimulatePauses)]!;
                 StunPauseCommand.PauseOnCurrentFrame = (bool) clonedValues[nameof(StunPauseCommand.PauseOnCurrentFrame)]!;

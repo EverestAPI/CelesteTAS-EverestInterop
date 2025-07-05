@@ -179,10 +179,8 @@ public static class TargetQuery {
             result.Value[0].Value.ConsoleLog();
         } else {
             foreach ((object? baseInstance, object? value) in result.Value) {
-                if (baseInstance is Entity entity &&
-                    entity.GetEntityData()?.ToEntityId().ToString() is { } id)
-                {
-                    $"[{id}] {value}".ConsoleLog();
+                if (baseInstance is Entity entity && !string.IsNullOrEmpty(entity.SourceId.Level)) {
+                    $"[{entity.SourceId}] {value}".ConsoleLog();
                 } else {
                     value.ConsoleLog();
                 }

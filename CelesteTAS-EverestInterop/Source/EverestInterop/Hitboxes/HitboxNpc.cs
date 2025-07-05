@@ -61,7 +61,7 @@ public static class HitboxNpc {
         orig(entity, camera);
 
         if (TasSettings.ShowHitboxes && TasSettings.ShowTriggerHitboxes && Engine.Scene is Level level) {
-            if (entity.GetEntityData()?.Level?.Name != level.Session.Level) {
+            if (entity.SourceData?.Level?.Name != level.Session.Level) {
                 return;
             }
 

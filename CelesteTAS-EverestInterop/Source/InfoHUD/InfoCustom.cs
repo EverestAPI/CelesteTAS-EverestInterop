@@ -126,8 +126,8 @@ public static class InfoCustom {
                     string key = currResultType.Name;
                     string queryResult = $"{queryPrefix}{valueStr}";
 
-                    if (baseInstance is Entity entity && entity.GetEntityData()?.ToEntityId() is { } entityId) {
-                        key += $"[{entityId}]";
+                    if (baseInstance is Entity entity && !string.IsNullOrEmpty(entity.SourceId.Level)) {
+                        key += $"[{entity.SourceId}]";
                     }
 
                     if (tableResults.TryGetValue(key, out var results)) {
@@ -200,8 +200,8 @@ public static class InfoCustom {
                     valueStr = DefaultFormatter(value, decimals);
                 }
 
-                if (baseInstance is Entity entity && entity.GetEntityData()?.ToEntityId() is { } entityId) {
-                    resultCollection.Append($"[{entityId}] {queryPrefix}{valueStr}");
+                if (baseInstance is Entity entity && !string.IsNullOrEmpty(entity.SourceId.Level)) {
+                    resultCollection.Append($"[{entity.SourceId}] {queryPrefix}{valueStr}");
                 } else {
                     resultCollection.Append($"{queryPrefix}{valueStr}");
                 }
@@ -306,7 +306,7 @@ public static class InfoCustom {
             case Scene sceneValue:
                 return sceneValue.ToString() ?? "null";
             case Entity entity:
-                string id = entity.GetEntityData()?.ToEntityId().ToString() is { } value ? $"[{value}]" : "";
+                string id = !string.IsNullOrEmpty(entity.SourceId.Level) ? $"[{entity.SourceId}]" : "";
                 return $"{entity}{id}";
             case Collider collider:
                 return ColliderToString(collider);
