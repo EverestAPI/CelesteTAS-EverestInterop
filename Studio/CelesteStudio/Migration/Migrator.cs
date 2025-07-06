@@ -57,6 +57,9 @@ public static class Migrator {
             newCelesteTasVersion = InvalidVersion;
             newStudioVersion = Assembly.GetExecutingAssembly().GetName().Version!;
         }
+
+        // get rid of major.minor.build.0 revision
+        newStudioVersion = new Version(newStudioVersion.Major, newStudioVersion.Minor, newStudioVersion.Build);
 #endif
         if (firstV3Launch) {
             if (studioV2Present) {
