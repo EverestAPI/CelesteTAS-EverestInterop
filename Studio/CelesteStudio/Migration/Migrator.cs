@@ -58,6 +58,7 @@ public static class Migrator {
             newStudioVersion = Assembly.GetExecutingAssembly().GetName().Version!;
         }
 #endif
+
         if (firstV3Launch) {
             if (studioV2Present) {
                 oldStudioVersion = new Version(2, 0, 0);
@@ -77,6 +78,13 @@ public static class Migrator {
                 ? celesteTasVersion
                 : new Version(3, 43, 8); // Latest version before it was stored in the file
         }
+
+        // Force a revision of 0 to avoid issues when comparing
+        oldCelesteTasVersion = new Version(oldCelesteTasVersion.Major, oldCelesteTasVersion.Minor, oldCelesteTasVersion.Build, revision: 0);
+        newCelesteTasVersion = new Version(newCelesteTasVersion.Major, newCelesteTasVersion.Minor, newCelesteTasVersion.Build, revision: 0);
+        oldStudioVersion = new Version(oldStudioVersion.Major, oldStudioVersion.Minor, oldStudioVersion.Build, revision: 0);
+        newStudioVersion = new Version(newStudioVersion.Major, newStudioVersion.Minor, newStudioVersion.Build, revision: 0);
+
 #if DEBUG
         // Always apply the next migration in debug builds
         if (migrations[^2].Version < oldStudioVersion && newStudioVersion == migrations[^1].Version) {
