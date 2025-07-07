@@ -1,6 +1,7 @@
 using Celeste;
 using Microsoft.Xna.Framework;
 using Monocle;
+using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;

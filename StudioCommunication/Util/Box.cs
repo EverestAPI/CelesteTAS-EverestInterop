@@ -1,4 +1,4 @@
-namespace TAS.Utils;
+namespace StudioCommunication.Util;
 
 /// Box for using value-types in a reference-type context
 public class Box<T>(T value) where T : struct {

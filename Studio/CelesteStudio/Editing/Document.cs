@@ -8,6 +8,7 @@ using Eto.Forms;
 using StudioCommunication;
 using StudioCommunication.Util;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CelesteStudio.Editing;
@@ -120,7 +121,10 @@ public class Document : IDisposable {
     public IEnumerable<Anchor> Anchors => CurrentAnchors.SelectMany(pair => pair.Value);
 
     public string Text => FormatLinesToText(CurrentLines);
-    public bool Dirty { get; private set; }
+
+    /// Whether the document is still waiting on the text being saved to disk
+    public bool PendingSave => dirty || saveWaitTimeOut != null;
+    private bool dirty;
 
     // Ignore file-watcher events for 10ms after saving, to avoid triggering ourselves
     // This is probably way higher than it needs to be, to avoid potential issues with slow drives
@@ -128,8 +132,15 @@ public class Document : IDisposable {
     private DateTime lastFileSave = DateTime.UtcNow;
 
     private readonly FileSystemWatcher watcher;
-
     private readonly Stack<QueuedUpdate> updateStack = [];
+
+    // Wait a bit before saving to allow accumulating multiple updates and avoid race conditions with the OS filesystem
+    private const float SaveCooldownS = 0.1f;
+    private const int SaveSleepTimeMS = 100;
+    private ReadonlyBox<DateTime>? saveWaitTimeOut = null;
+
+    private readonly object editLock = new();
+    private readonly object saveLock = new();
 
     /// Whether the document is currently being updated and might not be in a valid state
     public bool UpdateInProgress => updateStack.Count != 0;
@@ -206,23 +217,55 @@ public class Document : IDisposable {
             return;
         }
 
-        try {
-            lastFileSave = DateTime.UtcNow;
-            File.WriteAllText(FilePath, Text);
-            Dirty = false;
+        lock (saveLock) {
+            var oldTimeOut = Interlocked.Exchange(ref saveWaitTimeOut, new(DateTime.UtcNow + TimeSpan.FromSeconds(SaveCooldownS)));
+            if (oldTimeOut == null) {
+                Task.Run(async () => {
+                    Again:
+                    ReadonlyBox<DateTime>? lastTimeOut;
+                    while ((lastTimeOut = saveWaitTimeOut) is { } timeOut && DateTime.UtcNow < timeOut.Value) {
+                        await Task.Delay(SaveSleepTimeMS);
+                    }
 
-            if (Settings.Instance.AutoBackupEnabled && !string.IsNullOrWhiteSpace(FilePath)) {
-                CreateBackup();
+                    // Avoid the timeout being increased without being noticed
+                    var currTimeOut = Interlocked.CompareExchange(ref saveWaitTimeOut, null, lastTimeOut);
+                    if (currTimeOut != lastTimeOut) {
+                        goto Again;
+                    }
+
+                    string text;
+                    lock (editLock) {
+                        text = Text;
+                    }
+
+                    try {
+                        lastFileSave = DateTime.UtcNow;
+                        await File.WriteAllTextAsync(FilePath, text);
+                        dirty = false;
+
+                        if (Settings.Instance.AutoBackupEnabled && !string.IsNullOrWhiteSpace(FilePath)) {
+                            CreateBackup();
+                        }
+                    } catch (Exception e) {
+                        Console.Error.WriteLine(e);
+                    }
+
+                    await Application.Instance.InvokeAsync(Studio.Instance.RefreshTitle);
+                });
+            } else {
+                // Task already running, just update timeout
+                Interlocked.Exchange(ref saveWaitTimeOut, new(DateTime.UtcNow + TimeSpan.FromSeconds(SaveCooldownS)));
             }
-        } catch (Exception e) {
-            Console.Error.WriteLine(e);
         }
+
+        Application.Instance.AsyncInvoke(Studio.Instance.RefreshTitle);
     }
 
     private void CreateBackup() {
-        var backupDir = BackupDirectory;
-        if (!Directory.Exists(backupDir))
+        string backupDir = BackupDirectory;
+        if (!Directory.Exists(backupDir)) {
             Directory.CreateDirectory(backupDir);
+        }
 
         string[] files = Directory.GetFiles(backupDir)
             // Sort for oldest first
@@ -314,8 +357,9 @@ public class Document : IDisposable {
 
     private void OnLinesUpdated(Dictionary<int, string> newLines) {
         foreach ((int lineNum, string newText) in newLines) {
-            if (lineNum < 0 || lineNum >= CurrentLines.Count)
+            if (lineNum < 0 || lineNum >= CurrentLines.Count) {
                 continue;
+            }
 
             CurrentLines[lineNum] = newText;
             // Cannot properly update anchors
@@ -485,7 +529,8 @@ public class Document : IDisposable {
                 if (Settings.Instance.AutoSave) {
                     Document.Save();
                 } else {
-                    Document.Dirty = true;
+                    Document.dirty = true;
+                    Application.Instance.AsyncInvoke(Studio.Instance.RefreshTitle);
                 }
             } else {
                 Document.updateStack.Peek().Patches.AddRange(Patches);
@@ -494,13 +539,22 @@ public class Document : IDisposable {
     }
 
     /// Represents a small modification of the document with insertions and deletions
-    public readonly struct Patch(Document document, QueuedUpdate? update = null) : IDisposable {
+    public readonly struct Patch : IDisposable {
         /// Insertions at the lines where the new text will be (after deletions are applied!)
         public readonly Dictionary<int, string> Insertions = [];
         /// Deletions at the lines where the line currently is (before insertions are applied!)
         public readonly Dictionary<int, string> Deletions = [];
 
-        private readonly QueuedUpdate update = update ?? document.updateStack.Peek();
+        private readonly QueuedUpdate update;
+        private readonly Document document;
+        private readonly bool lockTaken;
+
+        public Patch(Document document, QueuedUpdate? update = null) {
+            Monitor.Enter(document.editLock, ref lockTaken);
+
+            this.document = document;
+            this.update = update ?? document.updateStack.Peek();
+        }
 
         /// Inserts the line at the specified row
         public void Insert(int row, string line) {
@@ -549,12 +603,20 @@ public class Document : IDisposable {
         /// Automatically called with the using-syntax
         public void Dispose() {
             CleanupNoOps();
+
             if (Insertions.Count == 0 && Deletions.Count == 0) {
+                if (lockTaken) {
+                    Monitor.Exit(document.editLock);
+                }
                 return;
             }
 
             document.ApplyPatch(Insertions, Deletions);
             update.Patches.Add(this);
+
+            if (lockTaken) {
+                Monitor.Exit(document.editLock);
+            }
         }
 
         /// Creates a deep copy
@@ -566,6 +628,11 @@ public class Document : IDisposable {
             foreach ((int row, string line) in Deletions) {
                 patch.Deletions[row] = line;
             }
+
+            if (patch.lockTaken) {
+                Monitor.Exit(patch.document.editLock);
+            }
+
             return patch;
         }
         /// Creates a deep copy with insertions / deletions swapped
@@ -577,6 +644,11 @@ public class Document : IDisposable {
             foreach ((int row, string line) in Deletions) {
                 patch.Insertions[row] = line;
             }
+
+            if (patch.lockTaken) {
+                Monitor.Exit(patch.document.editLock);
+            }
+
             return patch;
         }
 
@@ -700,7 +772,8 @@ public class Document : IDisposable {
         if (Settings.Instance.AutoSave) {
             Save();
         } else {
-            Dirty = true;
+            dirty = true;
+            Application.Instance.AsyncInvoke(Studio.Instance.RefreshTitle);
         }
     }
     public void Redo() {
@@ -728,7 +801,8 @@ public class Document : IDisposable {
         if (Settings.Instance.AutoSave) {
             Save();
         } else {
-            Dirty = true;
+            dirty = true;
+            Application.Instance.AsyncInvoke(Studio.Instance.RefreshTitle);
         }
     }
 
