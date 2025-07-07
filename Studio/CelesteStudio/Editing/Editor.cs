@@ -127,6 +127,11 @@ public sealed class Editor : SkiaDrawable {
                 FormatLines(insertions.Keys);
                 FixInvalidInputs();
 
+                // Clamp caret/selection
+                Document.Selection.Start.Col = Math.Clamp(Document.Selection.Start.Col, 0, Document.Lines[Document.Selection.Start.Row].Length);
+                Document.Selection.End.Col = Math.Clamp(Document.Selection.End.Col, 0, Document.Lines[Document.Selection.End.Row].Length);
+                Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length);
+
                 fixup.Discard(); // We don't want to part of the regular undo stack
                 return fixup.Patches.Count > 0 ? fixup.Patches.Aggregate(Document.Patch.Merge) : null;
             }
@@ -2895,11 +2900,6 @@ public sealed class Editor : SkiaDrawable {
                 }
             }
         }
-
-        // Clamp new column
-        Document.Selection.Start.Col = Math.Clamp(Document.Selection.Start.Col, 0, Document.Lines[Document.Selection.Start.Row].Length);
-        Document.Selection.End.Col = Math.Clamp(Document.Selection.End.Col, 0, Document.Lines[Document.Selection.End.Row].Length);
-        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length);
     }
 
     private void OnToggleCommentInputs() {
@@ -2980,11 +2980,6 @@ public sealed class Editor : SkiaDrawable {
             Document.Caret.Col = oldCol;
             Document.Caret.Row = Math.Min(Document.Lines.Count - 1, Document.Caret.Row + 1);
         }
-
-        // Clamp new column
-        Document.Selection.Start.Col = Math.Clamp(Document.Selection.Start.Col, 0, Document.Lines[Document.Selection.Start.Row].Length);
-        Document.Selection.End.Col = Math.Clamp(Document.Selection.End.Col, 0, Document.Lines[Document.Selection.End.Row].Length);
-        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length);
     }
 
     private void OnToggleCommentText() {
@@ -3052,11 +3047,6 @@ public sealed class Editor : SkiaDrawable {
             Document.Caret.Col = oldCol;
             Document.Caret.Row = Math.Min(Document.Lines.Count - 1, Document.Caret.Row + 1);
         }
-
-        // Clamp new column
-        Document.Selection.Start.Col = Math.Clamp(Document.Selection.Start.Col, 0, Document.Lines[Document.Selection.Start.Row].Length);
-        Document.Selection.End.Col = Math.Clamp(Document.Selection.End.Col, 0, Document.Lines[Document.Selection.End.Row].Length);
-        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, Document.Lines[Document.Caret.Row].Length);
     }
 
     private void InsertLine(string text) {
