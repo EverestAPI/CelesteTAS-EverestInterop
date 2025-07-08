@@ -77,7 +77,11 @@ jobs:
         mv ${{ env.CELESTETAS_REPO_NAME }} ${{ env.CELESTE_INSTALL }}/Mods/${{ env.CELESTETAS_REPO_NAME }}
     - name: Build CelesteTAS
       working-directory: ${{ env.CELESTE_INSTALL }}/Mods/${{ env.CELESTETAS_REPO_NAME }}
-      run: dotnet build CelesteTAS-EverestInterop -c ${{ inputs.build-cfg }} -p:UseSymlinks=false
+      run: |
+        # The StudioCom version is sometimes incremented with updates, however it shouldn't trigger a sync-check
+        sed -i 's/ProtocolVersion = [0-9]\{1,\};/ProtocolVersion = 0;/' StudioCommunication/CommunicationAdapterBase.cs
+        
+        dotnet build CelesteTAS-EverestInterop -c ${{ inputs.build-cfg }} -p:UseSymlinks=false
 
     - name: Checkout TAS files
       uses: actions/checkout@v4
