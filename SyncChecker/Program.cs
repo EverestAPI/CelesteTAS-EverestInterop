@@ -137,9 +137,9 @@ public static class Program {
             }
         }
 
-        using var sha1 = SHA1.Create();
+        using var hash = new Hash(SHA1.Create());
 
-        result = await SetupMods(config, sha1);
+        result = await SetupMods(config, hash);
         if (result != 0) {
             return result;
         }
@@ -156,21 +156,18 @@ public static class Program {
                     anyNotFound = true;
                 }
 
-                byte[] bytes = await File.ReadAllBytesAsync(file);
-                LogInfo($" - Hashing file '{file}': {Convert.ToHexString(sha1.ComputeHash(bytes)).ToLowerInvariant()}");
-                sha1.TransformBlock(bytes, 0, bytes.Length, bytes, 0);
+                await using var fs = File.OpenRead(file);
+                await hash.AddAsync(fs);
             }
             if (anyNotFound) {
                 return 1;
             }
 
-            var (status, celesteVersion, everestVersion) = GetCurrentVersion(config.GameDirectory);
-            byte[] statusBytes = Encoding.Default.GetBytes(status); // Status already contains Celeste and Everest version
-            LogInfo($" - Hashing assembly '{status}' (Celeste v{celesteVersion} / Everest v{everestVersion}): {Convert.ToHexString(sha1.ComputeHash(statusBytes)).ToLowerInvariant()}");
-            sha1.TransformFinalBlock(statusBytes, 0, statusBytes.Length);
+            var (status, _, _) = GetCurrentVersion(config.GameDirectory);
+            hash.Add(Encoding.Default.GetBytes(status)); // Status already contains Celeste and Everest version
         }
 
-        string checksum = Convert.ToHexString(sha1.Hash!).ToLowerInvariant();
+        string checksum = Convert.ToHexString(hash.Compute()).ToLowerInvariant();
         if (checksum == config.LastChecksum) {
             var fullResult = new Result {
                 StartTime = DateTime.UtcNow,
@@ -234,17 +231,20 @@ public static class Program {
                     foreach (var entry in updateZip.Entries) {
                         string name = entry.FullName;
 
-                        if (string.IsNullOrEmpty(name) || name.EndsWith('/'))
+                        if (string.IsNullOrEmpty(name) || name.EndsWith('/')) {
                             continue;
+                        }
 
-                        if (name.StartsWith(prefix))
+                        if (name.StartsWith(prefix)) {
                             name = name[prefix.Length..];
+                        }
 
                         string fullPath = Path.Combine(config.GameDirectory, name);
                         string fullDirectory = Path.GetDirectoryName(fullPath)!;
 
-                        if (!Directory.Exists(fullDirectory))
+                        if (!Directory.Exists(fullDirectory)) {
                             Directory.CreateDirectory(fullDirectory);
+                        }
 
                         entry.ExtractToFile(fullPath, overwrite: true);
                     }
@@ -323,7 +323,7 @@ public static class Program {
     }
 
     /// Sets up all required mods for the sync-check
-    private static async Task<int> SetupMods(Config config, SHA1 sha1) {
+    private static async Task<int> SetupMods(Config config, Hash hash) {
         using var hc = new CompressedHttpClient();
 
         // Get mod info
@@ -384,10 +384,10 @@ public static class Program {
             }
 
             try {
-                string hash;
+                string hashStr;
                 using var hasher = XXHash64.Create();
                 await using (var file = File.OpenRead(mod)) {
-                    hash = Convert.ToHexString(await hasher.ComputeHashAsync(file)).ToLowerInvariant();
+                    hashStr = Convert.ToHexString(await hasher.ComputeHashAsync(file)).ToLowerInvariant();
                 }
 
                 using var zipFile = ZipFile.OpenRead(mod);
@@ -398,7 +398,7 @@ public static class Program {
 
                 var metas = YamlHelper.Deserializer.Deserialize<EverestModuleMetadata[]>(yamlReader);
                 foreach (var meta in metas) {
-                    modHashes[meta.Name] = (mod, hash, meta.Version);
+                    modHashes[meta.Name] = (mod, hashStr, meta.Version);
                 }
 
                 if (metas.Any(meta => (installReleaseCelesteTas || meta.Name != "CelesteTAS") && requiredMods.Any(info => info.Name == meta.Name))) {
@@ -450,9 +450,7 @@ public static class Program {
 
         // Calculate checksum
         foreach (var info in requiredMods) {
-            byte[] bytes = Convert.FromHexString(info.xxHash[0]);
-            LogInfo($" - Hashing mod '{info.Name}' v{info.Version}: {Convert.ToHexString(sha1.ComputeHash(bytes)).ToLowerInvariant()}");
-            sha1.TransformBlock(bytes, 0, bytes.Length, bytes, 0);
+            hash.Add(Convert.FromHexString(info.xxHash[0]));
         }
         if (!installReleaseCelesteTas) {
             var options = new EnumerationOptions { RecurseSubdirectories = true };
@@ -460,11 +458,9 @@ public static class Program {
                 .Concat(Directory.EnumerateFiles(Path.Combine(celesteTasPath, "StudioCommunication"), "*.cs", options))
                 .Concat(Directory.EnumerateFiles(Path.Combine(celesteTasPath, "SyncChecker"), "*.cs", options));
 
-            using var sha256 = SHA1.Create();
             foreach (string file in allFiles) {
-                byte[] bytes = await File.ReadAllBytesAsync(file);
-                LogInfo($" - Hashing file '{file}': {Convert.ToHexString(sha1.ComputeHash(bytes)).ToLowerInvariant()}");
-                sha1.TransformBlock(bytes, 0, bytes.Length, bytes, 0);
+                await using var fs = File.OpenRead(file);
+                await hash.AddAsync(fs);
             }
         }
 
@@ -679,8 +675,9 @@ public static class Program {
             using var game = ModuleDefinition.ReadModule(gamePath);
 
             var t_Celeste = game.GetType("Celeste.Celeste");
-            if (t_Celeste == null)
+            if (t_Celeste == null) {
                 return ("Not Celeste!", null, null);
+            }
 
             // Find Celeste .ctor (luckily only has one)
 
@@ -697,8 +694,9 @@ public static class Program {
                     var instr = instrs[instrIdx];
                     var c_Version = instr.Operand as MethodReference;
 
-                    if (instr.OpCode != OpCodes.Newobj || c_Version?.DeclaringType?.FullName != "System.Version")
+                    if (instr.OpCode != OpCodes.Newobj || c_Version?.DeclaringType?.FullName != "System.Version") {
                         continue;
+                    }
 
                     // We're constructing a System.Version - check if all parameters are of type int.
                     bool c_Version_intsOnly = c_Version.Parameters.All(param => param.ParameterType.MetadataType == MetadataType.Int32);
@@ -706,8 +704,9 @@ public static class Program {
                     if (c_Version_intsOnly) {
                         // Assume that ldc.i4* instructions are right before the newobj.
                         versionInts = new int[c_Version.Parameters.Count];
-                        for (int i = -versionInts.Length; i < 0; i++)
+                        for (int i = -versionInts.Length; i < 0; i++) {
                             versionInts[i + versionInts.Length] = instrs[i + instrIdx].GetInt();
+                        }
                     }
 
                     if (c_Version.Parameters.Count == 1 && c_Version.Parameters[0].ParameterType.MetadataType == MetadataType.String) {
@@ -722,16 +721,18 @@ public static class Program {
 
             // Construct the version from our gathered data.
             var version = new Version();
-            if (versionString != null)
+            if (versionString != null) {
                 version = new Version(versionString);
-            if (versionInts == null || versionInts.Length == 0)
+            }
+            if (versionInts == null || versionInts.Length == 0) {
                 version = new Version();
-            else if (versionInts.Length == 2)
+            } else if (versionInts.Length == 2) {
                 version = new Version(versionInts[0], versionInts[1]);
-            else if (versionInts.Length == 3)
+            } else if (versionInts.Length == 3) {
                 version = new Version(versionInts[0], versionInts[1], versionInts[2]);
-            else if (versionInts.Length == 4)
+            } else if (versionInts.Length == 4) {
                 version = new Version(versionInts[0], versionInts[1], versionInts[2], versionInts[3]);
+            }
 
             string status = $"Celeste {version}-{(game.AssemblyReferences.Any(r => r.Name == "FNA") ? "fna" : "xna")}";
 
@@ -741,8 +742,9 @@ public static class Program {
                 string versionModStr = (string) t_Everest.FindMethod("System.Void .cctor()")!.Body.Instructions[0].Operand;
                 status = $"{status} + Everest {versionModStr}";
                 int versionSplitIndex = versionModStr.IndexOf('-');
-                if (versionSplitIndex != -1 && Version.TryParse(versionModStr.Substring(0, versionSplitIndex), out var versionMod))
+                if (versionSplitIndex != -1 && Version.TryParse(versionModStr.Substring(0, versionSplitIndex), out var versionMod)) {
                     return (status, version, versionMod);
+                }
             }
 
             return (status, version, null);
