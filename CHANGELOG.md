@@ -1,3 +1,27 @@
+# CelesteTAS v3.45.2, Studio v3.9.4
+
+- Feature: Automatically fill-in intro animation and first room label for new files if possible
+- Feature: Expose SkinMod desync fix to RTA gameplay
+- Fix: Breakpoint speed being shown twice in Studio
+- Fix: Prevent Frame Advance or Slow Forward from triggering auto-pause popup
+- Fix: Account for potential failure of loading a savestate
+- Fix: Incorrect classification of various triggers
+- Fix: Unexpected editing behaviour when using `\n` in commands
+- Fix: Not being able to bind number keys to actions in Studio
+- Fix: Frame Operations not working with AZERTY keyboard layout
+- Fix: Exception when using Read-command with blank file path
+- Fix: Crash when running a TAS in a map which isn't structured properly
+- Fix: Crash when starting game while TAS with errors / warnings is opened
+- Fix: Crash when commenting-out a blank line
+- Fix: Misalignment of inputs shown in the Info HUD
+- Fix: SyncChecker overflowing Windows command line length
+- Tweak: Display infinity instead of `int.MinValue` when time-rate is zero
+- Tweak: Fully disable particles while fast-forwarding
+- Tweak: Show warning when trying to use savestate breakpoints without Speedrun Tool being installed
+- Tweak: Wait 0.1s before saving a file to allow for changes to accumulate and avoid changes not being properly saved when rapidly adjusting inputs
+- Refactor: Upgrade .NET 8
+- Refactor: Use Everest's `EntityData` / `Tracker` systems instead of own solutions
+
 # CelesteTAS v3.45.1, Studio v3.9.3
 
 - Feature: Allow adjusting repeat count slightly, just like how frame counts can be adjusted (with Ctrl+Shift+Up/Down and Shift+MouseWheel)
