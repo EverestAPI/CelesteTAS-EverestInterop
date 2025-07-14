@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using TAS.Gameplay;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -62,6 +63,10 @@ internal static class PopupToast {
             // NOTE: 'loader.loaded' is checked instead of 'loader.dialogLoaded' since for the latter, there is a race condition with Fast-Texture-Loading not yet being done
             if ((Engine.Scene is GameLoader loader && !loader.loaded) || !GFX.Loaded || Dialog.Languages == null || !Dialog.Languages.ContainsKey(Settings.EnglishLanguage) || ActiveFont.Font == null) {
                 return;
+            }
+            
+            if (TASRecorderInterop.IsRecording) {
+                return; // Avoid showing popups while recording
             }
 
             var span = CollectionsMarshal.AsSpan(entries);
