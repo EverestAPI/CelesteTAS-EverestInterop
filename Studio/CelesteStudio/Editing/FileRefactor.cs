@@ -18,6 +18,7 @@ public static class FileRefactor {
     /// Caches the file contents in lines of external files
     private static readonly Dictionary<string, string[]> FileCache = [];
     private static readonly HashSet<string> lockedFiles = [];
+    private static readonly HashSet<string> pendingFilesystemWrite = [];
 
     private static readonly Dictionary<(string FilePath, bool ReturnFirst), string> projectRootCache = [];
 
@@ -30,19 +31,26 @@ public static class FileRefactor {
     #region Style Fixing
 
     /// Applies correct room label indices to the file, according to the style-configuration
-    public static void FixRoomLabelIndices(string filePath, StyleConfig config, int? caretRow = null) {
-        FixRoomLabelIndices(filePath, config.RoomLabelIndexing ?? Settings.Instance.AutoIndexRoomLabels, Math.Max(config.RoomLabelStartingIndex ?? 0, 0), caretRow);
+    public static void FixRoomLabelIndices(string filePath, StyleConfig config, int? caretRow = null, bool flushFiles = true) {
+        FixRoomLabelIndices(filePath, config.RoomLabelIndexing ?? Settings.Instance.AutoIndexRoomLabels, Math.Max(config.RoomLabelStartingIndex ?? 0, 0), caretRow, flushFiles);
     }
 
     /// Applies formatting rules to the file
-    public static void FormatFile(string filePath, bool forceCommandCasing, string? commandSeparator) {
+    public static void FormatFile(string filePath, bool forceCommandCasing, string? commandSeparator, bool flushFiles = true) {
         LockFile(filePath);
-        string[] lines = ReadLines(filePath);
+        try {
+            string[] lines = ReadLines(filePath);
 
-        FormatLines(lines, Enumerable.Range(0, lines.Length), forceCommandCasing, commandSeparator);
+            FormatLines(lines, Enumerable.Range(0, lines.Length), forceCommandCasing, commandSeparator);
 
-        WriteLines(filePath, lines);
-        UnlockFile(filePath);
+            WriteLines(filePath, lines);
+        } finally {
+            UnlockFile(filePath);
+        }
+
+        if (flushFiles) {
+            FlushFiles();
+        }
     }
     /// Applies formatting rules to the specified lines
     public static void FormatLines(string[] lines, IEnumerable<int> rows, bool forceCommandCasing, string? commandSeparator) {
@@ -66,13 +74,14 @@ public static class FileRefactor {
     }
 
     /// Applies correct room label indices to the file
-    public static void FixRoomLabelIndices(string filePath, AutoRoomIndexing roomIndexing, int startingIndex, int? caretRow = null) {
+    public static void FixRoomLabelIndices(string filePath, AutoRoomIndexing roomIndexing, int startingIndex, int? caretRow = null, bool flushFiles = true) {
         if (roomIndexing == AutoRoomIndexing.Disabled) {
             return;
         }
 
         // room label without indexing -> lines of all occurrences
         Dictionary<string, List<(int Row, bool Update)>> roomLabels = [];
+        List<(string OldLabel, string NewLabel)> refactors = [];
 
         // Allows the user to edit labels without them being auto-trimmed
         string untrimmedLabel = string.Empty;
@@ -80,69 +89,74 @@ public static class FileRefactor {
         RefactorSemaphore.Wait();
         LockFile(filePath);
 
-        foreach ((string line, int row, string path, _) in IterateLines(filePath, followReadCommands: roomIndexing == AutoRoomIndexing.IncludeReads)) {
-            if (CommentLine.RoomLabelRegex.Match(line) is not { Success: true } match) {
-                continue;
-            }
-
-            bool isCurrentFile = path == filePath;
-
-            string label = match.Groups[1].Value.Trim();
-            if (isCurrentFile && row == caretRow) {
-                untrimmedLabel = match.Groups[1].Value;
-            }
-
-            if (roomLabels.TryGetValue(label, out var list)) {
-                list.Add((row, Update: isCurrentFile));
-            } else {
-                roomLabels[label] = [(row, Update: isCurrentFile)];
-            }
-        }
-
-        List<(string OldLabel, string NewLabel)> refactors = [];
-
-        string[] lines = ReadLines(filePath);
-        foreach ((string label, var occurrences) in roomLabels) {
-            if (occurrences.Count == 1) {
-                if (!occurrences[0].Update) {
+        try {
+            foreach ((string line, int row, string path, _) in IterateLines(filePath, followReadCommands: roomIndexing == AutoRoomIndexing.IncludeReads)) {
+                if (CommentLine.RoomLabelRegex.Match(line) is not { Success: true } match) {
                     continue;
                 }
 
-                string writtenLabel = occurrences[0].Row == caretRow
-                    ? untrimmedLabel
-                    : label;
+                bool isCurrentFile = path == filePath;
 
-                string oldLabel = lines[occurrences[0].Row]["#".Length..];
-                string newLabel = $"lvl_{label}";
-                refactors.Add((oldLabel, newLabel));
+                string label = match.Groups[1].Value.Trim();
+                if (isCurrentFile && row == caretRow) {
+                    untrimmedLabel = match.Groups[1].Value;
+                }
 
-                lines[occurrences[0].Row] = $"#lvl_{writtenLabel}";
-                continue;
+                if (roomLabels.TryGetValue(label, out var list)) {
+                    list.Add((row, Update: isCurrentFile));
+                } else {
+                    roomLabels[label] = [(row, Update: isCurrentFile)];
+                }
             }
 
-            for (int i = 0; i < occurrences.Count; i++) {
-                if (!occurrences[i].Update) {
+            string[] lines = ReadLines(filePath);
+            foreach ((string label, var occurrences) in roomLabels) {
+                if (occurrences.Count == 1) {
+                    if (!occurrences[0].Update) {
+                        continue;
+                    }
+
+                    string writtenLabel = occurrences[0].Row == caretRow
+                        ? untrimmedLabel
+                        : label;
+
+                    string oldLabel = lines[occurrences[0].Row]["#".Length..];
+                    string newLabel = $"lvl_{label}";
+                    refactors.Add((oldLabel, newLabel));
+
+                    lines[occurrences[0].Row] = $"#lvl_{writtenLabel}";
                     continue;
                 }
 
-                string writtenLabel = occurrences[i].Row == caretRow
-                    ? untrimmedLabel
-                    : label;
+                for (int i = 0; i < occurrences.Count; i++) {
+                    if (!occurrences[i].Update) {
+                        continue;
+                    }
 
-                string oldLabel = lines[occurrences[i].Row]["#".Length..];
-                string newLabel = $"lvl_{label} ({i + startingIndex})";
-                refactors.Add((oldLabel, newLabel));
+                    string writtenLabel = occurrences[i].Row == caretRow
+                        ? untrimmedLabel
+                        : label;
 
-                lines[occurrences[i].Row] = $"#lvl_{writtenLabel} ({i + startingIndex})";
+                    string oldLabel = lines[occurrences[i].Row]["#".Length..];
+                    string newLabel = $"lvl_{label} ({i + startingIndex})";
+                    refactors.Add((oldLabel, newLabel));
+
+                    lines[occurrences[i].Row] = $"#lvl_{writtenLabel} ({i + startingIndex})";
+                }
             }
-        }
 
-        WriteLines(filePath, lines, raiseEvents: false);
-        UnlockFile(filePath);
-        RefactorSemaphore.Release();
+            WriteLines(filePath, lines, raiseEvents: false);
+        } finally {
+            UnlockFile(filePath);
+            RefactorSemaphore.Release();
+        }
 
         foreach ((string oldLabel, string newLabel) in refactors) {
-            RefactorLabelName(filePath, oldLabel, newLabel);
+            RefactorLabelName(filePath, oldLabel, newLabel, flushFiles: false);
+        }
+
+        if (flushFiles) {
+            FlushFiles();
         }
     }
 
@@ -151,7 +165,7 @@ public static class FileRefactor {
     #region Refactoring
 
     /// Changes the name of a label, updating all references to it in the project
-    public static void RefactorLabelName(string filePath, string oldLabel, string newLabel) {
+    public static void RefactorLabelName(string filePath, string oldLabel, string newLabel, bool flushFiles = true) {
         if (oldLabel == newLabel) {
             return; // Already has that name
         }
@@ -169,46 +183,49 @@ public static class FileRefactor {
                 }
 
                 LockFile(file);
-                string[] lines = ReadLines(file);
-                bool changed = false;
+                try {
+                    string[] lines = ReadLines(file);
+                    bool changed = false;
 
-                for (int row = 0; row < lines.Length; row++) {
-                    string line = lines[row];
-                    if (!CommandLine.TryParse(line, out var commandLine) || !commandLine.IsCommand("Read")) {
-                        continue;
+                    for (int row = 0; row < lines.Length; row++) {
+                        string line = lines[row];
+                        if (!CommandLine.TryParse(line, out var commandLine) || !commandLine.IsCommand("Read")) {
+                            continue;
+                        }
+
+                        // Verify command points to our file
+                        if (commandLine.Arguments.Length == 0 || !string.Equals(
+                                Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file)!, $"{commandLine.Arguments[0]}.tas")),
+                                Path.GetFullPath(filePath),
+                                StringComparison.OrdinalIgnoreCase
+                        )) {
+                            continue;
+                        }
+
+                        // Start label
+                        if (commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel) {
+                            commandLine.Arguments[1] = newLabel;
+                        }
+                        // End label
+                        if (commandLine.Arguments.Length >= 3 && commandLine.Arguments[2] == oldLabel) {
+                            commandLine.Arguments[2] = newLabel;
+                        }
+
+                        lines[row] = commandLine.ToString();
+                        changed = true;
                     }
 
-                    // Verify command points to our file
-                    if (commandLine.Arguments.Length == 0 || !string.Equals(
-                            Path.GetFullPath(Path.Combine(Path.GetDirectoryName(file)!, $"{commandLine.Arguments[0]}.tas")),
-                            Path.GetFullPath(filePath),
-                            StringComparison.OrdinalIgnoreCase
-                    )) {
-                        continue;
+                    if (changed) {
+                        WriteLines(file, lines);
                     }
-
-                    // Start label
-                    if (commandLine.Arguments.Length >= 2 && commandLine.Arguments[1] == oldLabel) {
-                        commandLine.Arguments[1] = newLabel;
-                    }
-                    // End label
-                    if (commandLine.Arguments.Length >= 3 && commandLine.Arguments[2] == oldLabel) {
-                        commandLine.Arguments[2] = newLabel;
-                    }
-
-                    lines[row] = commandLine.ToString();
-                    changed = true;
+                } finally {
+                    UnlockFile(file);
                 }
-
-                if (changed) {
-                    WriteLines(file, lines);
-                }
-                UnlockFile(file);
             }
 
             // Internal Play-commands
-            {
-                LockFile(filePath);
+            LockFile(filePath);
+            try {
                 string[] lines = ReadLines(filePath);
                 bool changed = false;
 
@@ -234,6 +251,7 @@ public static class FileRefactor {
                 if (changed) {
                     WriteLines(filePath, lines);
                 }
+            } finally {
                 UnlockFile(filePath);
             }
 
@@ -242,6 +260,10 @@ public static class FileRefactor {
             Console.WriteLine($"Failed to refactor room label: {ex}");
         } finally {
             RefactorSemaphore.Release();
+        }
+
+        if (flushFiles) {
+            FlushFiles();
         }
     }
 
@@ -366,7 +388,42 @@ public static class FileRefactor {
         }
     }
 
+    public static void FlushFiles() {
+        RefactorSemaphore.Wait();
+        try {
+            foreach (string filePath in pendingFilesystemWrite.Select(Path.GetFullPath)) {
+                Task.Run(async () => {
+                    const int numberOfRetries = 3;
+                    const int delayOnRetry = 1000;
+                    const int ERROR_SHARING_VIOLATION = unchecked((int) 0x80070020);
+
+                    LockFile(filePath);
+                    try {
+                        for (int i = 1; i <= numberOfRetries; i++) {
+                            try {
+                                await File.WriteAllTextAsync(filePath, Document.FormatLinesToText(FileCache[filePath]));
+                                Console.WriteLine($"Successfully flushed file '{filePath}'");
+                            } catch (IOException ex) when (ex.HResult == ERROR_SHARING_VIOLATION || ex is FileNotFoundException) {
+                                await Task.Delay(delayOnRetry);
+                            } catch (Exception ex) {
+                                // Something else failed
+                                Console.WriteLine($"Failed to flush file '{filePath}': {ex}");
+                            }
+                        }
+                    } finally {
+                        UnlockFile(filePath);
+                    }
+                });
+            }
+
+            pendingFilesystemWrite.Clear();
+        } finally {
+            RefactorSemaphore.Release();
+        }
+    }
+
     public static string[] ReadLines(string filePath) {
+        filePath = Path.GetFullPath(filePath);
         EnsureFileWatched(filePath);
 
         var document = Studio.Instance.Editor.Document;
@@ -380,6 +437,7 @@ public static class FileRefactor {
         return lines;
     }
     public static void WriteLines(string filePath, string[] lines, bool raiseEvents = true) {
+        filePath = Path.GetFullPath(filePath);
         EnsureFileWatched(filePath);
 
         lock(lockedFiles) {
@@ -403,12 +461,13 @@ public static class FileRefactor {
             patch.InsertRange(0, lines);
         } else {
             FileCache[filePath] = lines;
-            File.WriteAllText(filePath, Document.FormatLinesToText(lines));
+            pendingFilesystemWrite.Add(filePath);
         }
     }
 
     private static void LockFile(string filePath) {
-        lock(lockedFiles) {
+        filePath = Path.GetFullPath(filePath);
+        lock (lockedFiles) {
             if (lockedFiles.Contains(filePath)) {
                 Console.WriteLine($"File '{filePath}' was locked twice!");
             }
@@ -418,7 +477,8 @@ public static class FileRefactor {
     }
 
     private static void UnlockFile(string filePath) {
-        lock(lockedFiles) {
+        filePath = Path.GetFullPath(filePath);
+        lock (lockedFiles) {
             if (!lockedFiles.Contains(filePath)) {
                 Console.WriteLine($"File '{filePath}' was never locked!");
             }
@@ -444,7 +504,7 @@ public static class FileRefactor {
 
         static async void OnFileChanged(object sender, FileSystemEventArgs e) {
             try {
-                lock(lockedFiles) {
+                lock (lockedFiles) {
                     if (lockedFiles.Contains(e.FullPath)) {
                         return;
                     }

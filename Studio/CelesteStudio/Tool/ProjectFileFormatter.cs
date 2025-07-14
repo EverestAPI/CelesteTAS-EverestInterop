@@ -250,10 +250,10 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
 
                 try {
                     if (formatRoomIndices) {
-                        FileRefactor.FixRoomLabelIndices(file, includeReads ? AutoRoomIndexing.IncludeReads : AutoRoomIndexing.CurrentFile, startIndex);
+                        FileRefactor.FixRoomLabelIndices(file, includeReads ? AutoRoomIndexing.IncludeReads : AutoRoomIndexing.CurrentFile, startIndex, flushFiles: false);
                     }
                     if (formatCommands) {
-                        FileRefactor.FormatFile(file, forceCase, separator);
+                        FileRefactor.FormatFile(file, forceCase, separator, flushFiles: false);
                     }
 
                     Console.WriteLine($"Successfully reformatted '{file}'");
@@ -272,6 +272,10 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
         return;
 
         void UpdateProgress() {
+            if (finishedTasks == totalTasks) {
+                FileRefactor.FlushFiles();
+            }
+
             progressLabel.Text = finishedTasks == totalTasks
                 ? $"Successfully formatted {progressBar.MaxValue} files."
                 : $"Formatting files {progressBar.Value} / {progressBar.MaxValue}...";
