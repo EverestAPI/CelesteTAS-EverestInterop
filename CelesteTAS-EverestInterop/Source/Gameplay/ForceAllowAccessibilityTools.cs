@@ -4,6 +4,7 @@ using Monocle;
 using MonoMod.Cil;
 using StudioCommunication;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using TAS.Communication;
 using TAS.ModInterop;
@@ -21,11 +22,39 @@ internal static class ForceAllowAccessibilityTools {
         StudioEnableCondition.Never => false,
         StudioEnableCondition.Always or StudioEnableCondition.ForCurrentSession => true,
         StudioEnableCondition.WhileStudioConnected => CommunicationWrapper.Connected,
+        StudioEnableCondition.AfterCasualPlaythrough => HasBeatenMap,
         _ => throw new ArgumentOutOfRangeException()
     };
 
     /// Only active in RTA gameplay, since it would change the intended gameplay experience inside the TAS
     private static bool EnabledRTA => Enabled && !Manager.Running;
+
+    /// Checks if the current map has already been beaten
+    private static bool HasBeatenMap {
+        get {
+            if (Engine.Scene.GetSession() is not { } session || SaveData.Instance is not { } saveData) {
+                return false;
+            }
+
+            if (saveData.DebugMode) {
+                return true; // Consider all levels beaten in Debug Mode
+            }
+
+            var hashKey = (session.Area.SID, session.Area.Mode);
+            if (beatenMaps.Contains(hashKey)) {
+                return true;
+            }
+
+            bool completed = saveData.Areas[session.Area.ID].Modes[(int) session.Area.Mode].Completed;
+            if (completed) {
+                beatenMaps.Add(hashKey);
+            }
+
+            return completed;
+        }
+    }
+    // Doesn't account for switching to a non-cleared save file after being completed on another, but we don't care about that
+    private static readonly HashSet<(string SID, AreaMode Mode)> beatenMaps = new();
 
     [Initialize]
     private static void Initialize() {
