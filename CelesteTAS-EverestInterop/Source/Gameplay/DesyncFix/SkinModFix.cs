@@ -363,13 +363,13 @@ internal static class SkinModFix {
 
     [EnableRun]
     private static void Apply() {
-        if (Engine.Scene.GetPlayer() is { } player) {
+        if (Engine.Scene.GetPlayer() is { } player && TasSettings.PreventSkinModGameplayChanges == GameplayEnableCondition.DuringTAS) {
             ApplyPlayer(player);
         }
     }
     [DisableRun]
     private static void Restore() {
-        if (Engine.Scene.GetPlayer() is { } player) {
+        if (Engine.Scene.GetPlayer() is { } player && TasSettings.PreventSkinModGameplayChanges == GameplayEnableCondition.DuringTAS) {
             RestorePlayer(player);
         }
     }
