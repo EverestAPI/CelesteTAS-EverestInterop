@@ -18,6 +18,9 @@ internal static class SyncChecker {
     /// Whether the game is in sync-check mode and disallows user intervention
     public static bool Active { get; private set; } = false;
 
+    /// Promotes invalid room labels from a warning to an error
+    public static bool ValidateRoomLabels = false;
+
     private static bool waitingForLoad = true;
 
     private static readonly Queue<string> fileQueue = [];

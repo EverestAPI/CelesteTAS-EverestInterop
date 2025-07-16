@@ -176,23 +176,31 @@ public class InputController {
         // Validate that room labels are correct, to catch desyncs and ensure they're not accidentally messed up
         // Check comments of previous frame, since during the first frame of a transition, the room name won't be updated yet
         // However semantically, it is perfectly valid to do so, from a TAS perspective
-        foreach (var comment in Comments.GetValueOrDefault(CurrentFrameInTas - 1) ?? []) {
-            if (CommentLine.RoomLabelRegex.Match($"#{comment.Text}") is { Success: true } match) {
-                if (Engine.Scene.GetSession() is { } session) {
-                    if (match.Groups[1].ValueSpan.SequenceEqual(session.Level)) {
-                        continue;
-                    }
+        var logLevel = SyncChecker.ValidateRoomLabels ? LogLevel.Error : LogLevel.Warn;
 
-                    PopupToast.ShowAndLog($"""
-                                          {comment.FilePath} line {comment.FileLine}:
-                                          Room label 'lvl_{match.Groups[1].ValueSpan}' does not match actual name 'lvl_{session.Level}'
-                                          """);
-                } else {
-                    PopupToast.ShowAndLog($"""
-                                           {comment.FilePath} line {comment.FileLine}:
-                                           Found room label '#{comment.Text}' outside of level
-                                           """);
+        foreach (var comment in Comments.GetValueOrDefault(CurrentFrameInTas - 1) ?? []) {
+            if (CommentLine.RoomLabelRegex.Match($"#{comment.Text}") is not { Success: true } match) {
+                continue;
+            }
+
+            if (Engine.Scene.GetSession() is { } session) {
+                if (match.Groups[1].ValueSpan.SequenceEqual(session.Level)) {
+                    continue;
                 }
+
+                PopupToast.ShowAndLog($"""
+                                       {comment.FilePath} line {comment.FileLine}:
+                                       Room label 'lvl_{match.Groups[1].ValueSpan}' does not match actual name 'lvl_{session.Level}'
+                                       """, level: logLevel);
+            } else {
+                PopupToast.ShowAndLog($"""
+                                       {comment.FilePath} line {comment.FileLine}:
+                                       Found room label '#{comment.Text}' outside of level
+                                       """, level: logLevel);
+            }
+
+            if (SyncChecker.ValidateRoomLabels) {
+                Manager.DisableRunLater();
             }
         }
 

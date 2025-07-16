@@ -160,6 +160,11 @@ public class CelesteTasModule : EverestModule {
                 return true;
             }
 
+            case "--validate-room-labels": {
+                SyncChecker.ValidateRoomLabels = true;
+                return true;
+            }
+
             default:
                 return false;
         }
