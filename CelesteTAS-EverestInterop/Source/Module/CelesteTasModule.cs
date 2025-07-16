@@ -60,6 +60,11 @@ public class CelesteTasModule : EverestModule {
         }
 #endif
 
+        // Restore back to default value
+        if (TasSettings.ForceAllowAccessibilityTools == StudioEnableCondition.ForCurrentSession) {
+            TasSettings.ForceAllowAccessibilityTools = StudioEnableCondition.WhileStudioConnected;
+        }
+
         AttributeUtils.Invoke<LoadAttribute>();
 
 #if DEBUG
@@ -103,11 +108,6 @@ public class CelesteTasModule : EverestModule {
 
     public override void Unload() {
         AttributeUtils.Invoke<UnloadAttribute>();
-
-        if (TasSettings.ForceAllowAccessibilityTools == StudioEnableCondition.ForCurrentSession) {
-            // Restore back to default value
-            TasSettings.ForceAllowAccessibilityTools = StudioEnableCondition.WhileStudioConnected;
-        }
 
 #if DEBUG
         foreach (var watcher in assetWatchers) {

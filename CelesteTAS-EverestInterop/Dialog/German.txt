@@ -120,6 +120,12 @@ TAS_BETTER_INVINCIBLE_DESCRIPTION=          Wenn man "Set Invincible true" ausf�
 TAS_FORCE_ALLOW_ACCESS_TOOLS=               Zwinge Zulassung von Hilfswerkzeuge
 TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC=          Zwingt die Reaktivierung von Hilfswerkzeugen (wie die Debug Karte), welche bewusst deaktiviert wurden.
                                             Dies geht gegen die gewollte Erfahrung beim gewöhnlichem Durchspielen, was deine eigene Erfahrung ruinieren könnte.
+TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_A=        Nur aktiv, während Celeste Studio geöffnet und mit Celeste verbunden ist.
+TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_B=        Nur aktiv, nachdem das aktuelle Level bereits einmal abgeschlossen wurde, oder der Debug Save verwendet wird.
+TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_C=        Aktiv für alle Level! Stelle sicher, dass du nicht aus versehen deine reguläre Spielerfahrung hiermit ruiniest!
+                                            Wird auf die Standardeinstallung zurückgesetzt, nachdem das Spiel neugestartet wurde.
+TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_D=        Immer aktiv für alle Level! Es hat eine sehr hohe Wahrscheinlichkeit diese Option an zu lassen,
+                                            was deine reguläre Spielerfahrung eventuell ruinieren kann!
 TAS_HIDE_FREEZE_FRAMES=                     Verstecke Freeze-Frames im TAS
 TAS_HIDE_FREEZE_FRAMES_DESCRIPTION=         Wenn ein Freeze-Frame ausgelöst wird, wird dieser übersprungen ohne diesen anzuzeigen.
                                             Wird nur angewendet solange eine TAS aktiv ist.
