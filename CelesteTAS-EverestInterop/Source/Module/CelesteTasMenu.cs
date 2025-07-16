@@ -82,6 +82,7 @@ internal static class CelesteTasMenu {
             TextMenu.Item forceAllowAccessibilityTools;
             subMenu.Add(forceAllowAccessibilityTools = new TextMenuExt.EnumerableSlider<StudioEnableCondition>("FORCE_ALLOW_ACCESS_TOOLS".ToDialogText(), [
                     new KeyValuePair<StudioEnableCondition, string>(StudioEnableCondition.Never, "NEVER".ToDialogText()),
+                    new KeyValuePair<StudioEnableCondition, string>(StudioEnableCondition.ForCurrentSession, "StudioEnableCondition_CurrentSession".ToDialogText()),
                     new KeyValuePair<StudioEnableCondition, string>(StudioEnableCondition.WhileStudioConnected, "StudioEnableCondition_StudioConnected".ToDialogText()),
                     new KeyValuePair<StudioEnableCondition, string>(StudioEnableCondition.Always, "ALWAYS".ToDialogText())
                 ], TasSettings.ForceAllowAccessibilityTools)
@@ -89,13 +90,13 @@ internal static class CelesteTasMenu {
             subMenu.AddDescription(menu, forceAllowAccessibilityTools, "FORCE_ALLOW_ACCESS_TOOLS_DESC".ToDialogText());
 
             TextMenu.Item preventSkinModGameplayChangesRTA;
-            subMenu.Add(preventSkinModGameplayChangesRTA = new TextMenuExt.EnumerableSlider<GameplayEnableCondition>("PREVENT_SKINMOD_CHANGES_RTA".ToDialogText(), [
+            subMenu.Add(preventSkinModGameplayChangesRTA = new TextMenuExt.EnumerableSlider<GameplayEnableCondition>("PREVENT_SKINMOD_CHANGES".ToDialogText(), [
                     new KeyValuePair<GameplayEnableCondition, string>(GameplayEnableCondition.Never, "NEVER".ToDialogText()),
                     new KeyValuePair<GameplayEnableCondition, string>(GameplayEnableCondition.DuringTAS, "GameplayEnableCondition_DuringTAS".ToDialogText()),
                     new KeyValuePair<GameplayEnableCondition, string>(GameplayEnableCondition.Always, "ALWAYS".ToDialogText())
                 ], TasSettings.PreventSkinModGameplayChanges)
                 .Change(value => TasSettings.PreventSkinModGameplayChanges = value));
-            subMenu.AddDescription(menu, preventSkinModGameplayChangesRTA, "PREVENT_SKINMOD_CHANGES_RTA_DESC".ToDialogText());
+            subMenu.AddDescription(menu, preventSkinModGameplayChangesRTA, "PREVENT_SKINMOD_CHANGES_DESC".ToDialogText());
 
             TextMenu.Item hideFreezeFramesItem;
             subMenu.Add(hideFreezeFramesItem = new TextMenu.OnOff("Hide Freeze Frames".ToDialogText(), TasSettings.HideFreezeFrames).Change(value =>

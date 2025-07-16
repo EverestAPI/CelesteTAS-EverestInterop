@@ -3,6 +3,7 @@ using Celeste;
 using Celeste.Mod;
 using FMOD.Studio;
 using JetBrains.Annotations;
+using StudioCommunication;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -71,7 +72,7 @@ public class CelesteTasModule : EverestModule {
                 NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite,
                 IncludeSubdirectories = true
             };
-            watcher.Changed += (s, e) => {
+            watcher.Changed += (_, e) => {
                 try {
                     if (Everest.Content.Mods.FirstOrDefault(mod => mod.Mod == Metadata) is not FileSystemModContent tasContent) {
                         return;
@@ -102,6 +103,11 @@ public class CelesteTasModule : EverestModule {
 
     public override void Unload() {
         AttributeUtils.Invoke<UnloadAttribute>();
+
+        if (TasSettings.ForceAllowAccessibilityTools == StudioEnableCondition.ForCurrentSession) {
+            // Restore back to default value
+            TasSettings.ForceAllowAccessibilityTools = StudioEnableCondition.WhileStudioConnected;
+        }
 
 #if DEBUG
         foreach (var watcher in assetWatchers) {
