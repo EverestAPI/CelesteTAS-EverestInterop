@@ -1402,6 +1402,10 @@ public sealed class Editor : SkiaDrawable {
         e.Handled = false;
     }
     private bool CalculationHandleText(char c) {
+        if (calculationState == null) {
+            return false;
+        }
+
         if (c is >= '0' and <= '9') {
             int num = c - '0';
             calculationState.Operand += num;

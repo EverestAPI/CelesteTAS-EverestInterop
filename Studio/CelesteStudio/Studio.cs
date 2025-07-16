@@ -29,6 +29,26 @@ public sealed class Studio : Form {
 
     static Studio() {
         Version = $"v{Assembly.GetExecutingAssembly().GetName().Version!.ToString(3)}{VersionSuffix}";
+
+        // Find game directory
+        if (File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "Celeste.dll"))) {
+            // Windows / Linux
+            CelesteDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..");
+        }
+        else if (File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "Celeste.dll"))) {
+            // macOS (inside .app bundle)
+            CelesteDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..");
+        } else {
+            Console.WriteLine("Couldn't find game directory");
+        }
+
+        // Find install directory
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+            InstallDirectory = AppDomain.CurrentDomain.BaseDirectory;
+        } else {
+            // Inside .app bundle
+            InstallDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..");
+        }
     }
 
     /// Event which will be called before Studio exits
@@ -38,9 +58,9 @@ public sealed class Studio : Form {
     public readonly Action<Window> WindowCreationCallback;
 
     /// Path to the Celeste install or null if it couldn't be found
-    public static string? CelesteDirectory { get; private set; }
+    public static readonly string? CelesteDirectory;
     /// Path to the Studio install
-    public static string InstallDirectory { get; private set; }
+    public static readonly string InstallDirectory;
 
     /// For some **UNHOLY** reasons, not calling Content.UpdateLayout() in RecalculateLayout() places during startup causes themeing to crash.
     /// _However_, while this hack is active, you can't resize the window, so this has to be disabled again as soon as possible...
@@ -58,12 +78,12 @@ public sealed class Studio : Form {
     private RadelineSimForm? radelineSimForm;
     private ThemeEditor? themeEditorForm;
 
-    private RadelineSimForm.Config radelineFormPersistence = new();
+    private readonly RadelineSimForm.Config radelineFormPersistence = new();
 
     private string TitleBarText => Editor.Document.FilePath == Document.ScratchFile
-        ? $"Studio {Version} - {(Editor.Document.PendingSave ? "*" : string.Empty)}<Scratch>"
+        ? $"Studio {Version} - {(Editor.Document.Dirty ? "*" : string.Empty)}<Scratch>"
         // Hide username inside title bar
-        : $"Studio {Version} - {(Editor.Document.PendingSave ? "*" : string.Empty)}{Editor.Document.FileName}    {Editor.Document.FilePath.Replace(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "~")}";
+        : $"Studio {Version} - {(Editor.Document.Dirty ? "*" : string.Empty)}{Editor.Document.FileName}    {Editor.Document.FilePath.Replace(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "~")}";
 
     /// Size of scroll bars, depending on the current platform
     public static int ScrollBarSize {
@@ -87,26 +107,6 @@ public sealed class Studio : Form {
         MinimumSize = new Size(250, 250);
 
         WindowCreationCallback = windowCreationCallback;
-
-        // Find game directory
-        if (File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "Celeste.dll"))) {
-            // Windows / Linux
-            CelesteDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..");
-        }
-        else if (File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "Celeste.dll"))) {
-            // macOS (inside .app bundle)
-            CelesteDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..");
-        } else {
-            Console.WriteLine("Couldn't find game directory");
-        }
-
-        // Find install directory
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-            InstallDirectory = AppDomain.CurrentDomain.BaseDirectory;
-        } else {
-            // Inside .app bundle
-            InstallDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..");
-        }
 
         // Close other Studio instances to avoid conflicts
         foreach (var process in Process.GetProcesses().Where(process => process.ProcessName is "CelesteStudio" or "CelesteStudio.WPF" or "CelesteStudio.GTK" or "CelesteStudio.Mac" or "Celeste Studio")) {

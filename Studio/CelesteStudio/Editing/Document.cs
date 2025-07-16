@@ -123,8 +123,8 @@ public class Document : IDisposable {
     public string Text => FormatLinesToText(CurrentLines);
 
     /// Whether the document is still waiting on the text being saved to disk
-    public bool PendingSave => dirty || saveWaitTimeOut != null;
-    private bool dirty;
+    public bool PendingSave => Dirty || saveWaitTimeOut != null;
+    public bool Dirty { get; private set; }
 
     // Ignore file-watcher events for 10ms after saving, to avoid triggering ourselves
     // This is probably way higher than it needs to be, to avoid potential issues with slow drives
@@ -241,7 +241,7 @@ public class Document : IDisposable {
                     try {
                         lastFileSave = DateTime.UtcNow;
                         await File.WriteAllTextAsync(FilePath, text);
-                        dirty = false;
+                        Dirty = false;
 
                         if (Settings.Instance.AutoBackupEnabled && !string.IsNullOrWhiteSpace(FilePath)) {
                             CreateBackup();
@@ -529,7 +529,7 @@ public class Document : IDisposable {
                 if (Settings.Instance.AutoSave) {
                     Document.Save();
                 } else {
-                    Document.dirty = true;
+                    Document.Dirty = true;
                     Application.Instance.AsyncInvoke(Studio.Instance.RefreshTitle);
                 }
             } else {
@@ -772,7 +772,7 @@ public class Document : IDisposable {
         if (Settings.Instance.AutoSave) {
             Save();
         } else {
-            dirty = true;
+            Dirty = true;
             Application.Instance.AsyncInvoke(Studio.Instance.RefreshTitle);
         }
     }
@@ -801,7 +801,7 @@ public class Document : IDisposable {
         if (Settings.Instance.AutoSave) {
             Save();
         } else {
-            dirty = true;
+            Dirty = true;
             Application.Instance.AsyncInvoke(Studio.Instance.RefreshTitle);
         }
     }
