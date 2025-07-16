@@ -17,6 +17,7 @@
         <UseWPF>true</UseWPF>
         <UseWindowsForms>true</UseWindowsForms>
         <ApplicationIcon>Icon.ico</ApplicationIcon>
+
         <SelfContained>true</SelfContained>
         <DebugType>embedded</DebugType>
     </PropertyGroup>
