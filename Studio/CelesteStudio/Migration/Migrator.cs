@@ -143,7 +143,7 @@ public static class Migrator {
                 using var fs = File.OpenRead(versionHistoryPath);
 
                 Console.WriteLine($"Showing changelog from v{oldCelesteTasVersion.ToString(3)} to v{newCelesteTasVersion.ToString(3)}...");
-                ChangelogDialog.Show(fs, oldCelesteTasVersion, newCelesteTasVersion);
+                ChangelogDialog.Show(fs, oldCelesteTasVersion, newCelesteTasVersion, forceShow: true);
             }
         }
     }

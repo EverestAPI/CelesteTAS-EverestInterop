@@ -848,7 +848,7 @@ public sealed class Studio : Form {
             string versionHistoryPath = Path.Combine(InstallDirectory, "Assets", "version_history.json");
             if (File.Exists(versionHistoryPath)) {
                 using var fs = File.OpenRead(versionHistoryPath);
-                ChangelogDialog.Show(fs, null, null);
+                ChangelogDialog.Show(fs, null, null, forceShow: false);
             }
         });
         whatsNewItem.Enabled = File.Exists(Path.Combine(InstallDirectory, "Assets", "version_history.json"));

@@ -8,6 +8,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using StudioCommunication.Util;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using ContentPage = (Eto.Forms.Control Control, CelesteStudio.Controls.Markdown Content, Eto.Forms.ImageView? Image);
 
 namespace CelesteStudio.Dialog;
@@ -39,7 +41,13 @@ public class ChangelogDialog : Eto.Forms.Dialog {
     private const int PaddingSize = 10;
     private const int PagerHeight = 32;
 
-    private int currentPage = 0;
+    /// Require the user to spend at least 1s on each page, to discourage skipping through everything
+    /// and have them at least look at the title and hopefully the body if it sounds interessting
+    private const int MinPageTimeMS = 1000;
+    private CancellationTokenSource? unlockPageTokenSource;
+    private readonly bool forceShowPages;
+
+    private int currentPage = 0, maxAvailablePage = 0;
     private readonly LazyValue<ContentPage>[] contentPages;
 
     private readonly Button nextButton;
@@ -60,7 +68,7 @@ public class ChangelogDialog : Eto.Forms.Dialog {
             ? Math.Max(0, Height - PagerHeight * 2 - PaddingSize * 3)
             : Math.Max(0, Height - PagerHeight * 2 - PaddingSize * 4);
 
-    private ChangelogDialog(VersionHistory versionHistory, List<Page> pages, Dictionary<string, List<string>> changes, Version oldVersion, Version newVersion) {
+    private ChangelogDialog(VersionHistory versionHistory, List<Page> pages, Dictionary<string, List<string>> changes, Version oldVersion, Version newVersion, bool forceShow) {
         string title = $"# CelesteTAS v{newVersion.ToString(3)}";
         Version? oldStudioVersion = null;
         foreach (var version in versionHistory.Versions) {
@@ -79,6 +87,8 @@ public class ChangelogDialog : Eto.Forms.Dialog {
         }
 
         contentPages = new LazyValue<ContentPage>[pages.Count + 1];
+        forceShowPages = forceShow && contentPages.Length <= 10; // Let's spare the user when having more than 10 pages
+
         for (int i = 0; i < pages.Count; i++) {
             int currIdx = i;
             contentPages[i] = new LazyValue<ContentPage>(() => {
@@ -145,6 +155,7 @@ public class ChangelogDialog : Eto.Forms.Dialog {
         });
 
         Resizable = true;
+        Closeable = !forceShowPages;
         MinimumSize = new Size(400, 300);
         Size = new Size(800, 600);
         Title = "What's new?";
@@ -155,7 +166,7 @@ public class ChangelogDialog : Eto.Forms.Dialog {
         prevButton = new Button { Text = "Previous" };
         prevButton.Click += (_, _) => SwitchToPage(currentPage - 1);
 
-        buttonsLayout = new DynamicLayout() { Height = PagerHeight };
+        buttonsLayout = new DynamicLayout { Height = PagerHeight };
         buttonsLayout.BeginHorizontal();
         buttonsLayout.Add(prevButton);
         buttonsLayout.AddSpace();
@@ -213,11 +224,37 @@ public class ChangelogDialog : Eto.Forms.Dialog {
             nextButton.Text = "Close";
         }
 
+        if (forceShowPages) {
+            unlockPageTokenSource?.Cancel();
+            unlockPageTokenSource?.Dispose();
+            if (currentPage == maxAvailablePage) {
+                unlockPageTokenSource = new CancellationTokenSource();
+                nextButton.Enabled = false;
+
+                var token = unlockPageTokenSource.Token;
+                Task.Run(async () => {
+                    await Task.Delay(MinPageTimeMS, token);
+                    if (token.IsCancellationRequested) {
+                        return;
+                    }
+
+                    maxAvailablePage = Math.Max(maxAvailablePage, currentPage + 1);
+                    await Application.Instance.InvokeAsync(() => {
+                        nextButton.Enabled = true;
+                        Closeable = maxAvailablePage == contentPages.Length;
+                    });
+                }, token);
+            } else {
+                unlockPageTokenSource = null;
+                nextButton.Enabled = true;
+            }
+        }
+
         bool firstLoad = scrollable.Content == null;
         scrollable.Content = null;
         scrollable.Content = contentPages[page].Value.Control;
 
-        // Applying the proper size for the first page is already handle in the constructor
+        // Applying the proper size for the first page is already handled in the constructor
         if (!firstLoad) {
             UpdateLayout();
             ApplySize(null, EventArgs.Empty);
@@ -255,7 +292,7 @@ public class ChangelogDialog : Eto.Forms.Dialog {
         }
     }
 
-    public static void Show(FileStream versionHistoryFile, Version? oldVersion, Version? newVersion) {
+    public static void Show(FileStream versionHistoryFile, Version? oldVersion, Version? newVersion, bool forceShow) {
         var versionHistory = JsonSerializer.Deserialize<VersionHistory>(versionHistoryFile, new JsonSerializerOptions {
             IncludeFields = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -289,6 +326,6 @@ public class ChangelogDialog : Eto.Forms.Dialog {
             }
         }
 
-        new ChangelogDialog(versionHistory, pages, changes, oldVersion, newVersion).ShowModal();
+        new ChangelogDialog(versionHistory, pages, changes, oldVersion, newVersion, forceShow).ShowModal();
     }
 }
