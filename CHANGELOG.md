@@ -1,3 +1,14 @@
+# CelesteTAS v3.45.3, Studio v3.9.5
+
+- Feature: Allow force-enabling accessibility tools only for current session
+- Feature: Add `--validate-room-labels` CLI option to promote room label validation from a warning to an error
+- Fix: Crash when removing last line in Studio
+- Fix: `Project File Formatter` tool not working correctly for some cased on Windows
+- Fix: Studio requiring the user to manually install .NET 8 on Linux
+- Tweak: Hide in-game popup messages while recording with TAS Recorder
+- Tweak: Require each changelog page to be viewed for at least 1 second, to avoid users skipping over them
+- Tweak: Avoid showing "Unsaved Changes" indicator when using `Auto Save File`
+
 # CelesteTAS v3.45.2, Studio v3.9.4
 
 - Feature: Automatically fill-in intro animation and first room label for new files if possible
