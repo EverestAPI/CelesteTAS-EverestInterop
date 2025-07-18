@@ -1,6 +1,7 @@
 using Celeste;
 using Monocle;
 using MonoMod.Cil;
+using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -27,13 +28,82 @@ internal static class FastForwardOptimization {
         SkipMethods(
             typeof(ParticleSystem).GetMethodInfo(nameof(ParticleSystem.Update))!,
             typeof(ParticleSystem).GetMethodInfo(nameof(ParticleSystem.Clear))!,
-            typeof(ParticleSystem).GetMethodInfo(nameof(ParticleSystem.ClearRect))!,
-            typeof(ParticleEmitter).GetMethodInfo(nameof(ParticleEmitter.Update))!,
-            typeof(ParticleEmitter).GetMethodInfo(nameof(ParticleEmitter.Emit))!
+            typeof(ParticleSystem).GetMethodInfo(nameof(ParticleSystem.ClearRect))!
         );
-        SkipMethods(
-            typeof(ParticleSystem).GetAllMethodInfos().Where(m => m.Name == nameof(ParticleSystem.Emit))
-        );
+
+        // Some 'Emit()' methods update 'Calc.Random' which needs to be kept
+        typeof(ParticleSystem).GetAllMethodInfos()
+            .Where(m => m.Name == nameof(ParticleSystem.Emit))
+            .ForEach(m => {
+                const string typeParam = "type";
+                const string amountParam = "amount";
+                const string positionRangeParam = "positionRange";
+
+                var param = m.GetParameters();
+                if (param.All(p => p.Name is not (typeParam or positionRangeParam))) {
+                    SkipMethod(m);
+                } else {
+                    m.IlHook((cursor, _) => {
+                        var start = cursor.MarkLabel();
+                        cursor.MoveBeforeLabels();
+
+                        cursor.EmitCall(typeof(FastForwardOptimization).GetGetMethod(nameof(Active))!);
+                        cursor.EmitBrfalse(start);
+
+                        if (param.IndexOf(p => p.Name == amountParam) is var amountIdx && amountIdx != -1) {
+                            // Maintain 2 * amount 'random.NextDouble()' calls caused by 'random.Range()'
+                            cursor.EmitLdarg(amountIdx + 1);
+                            cursor.EmitStaticDelegate("SimulateRandomRangeCalls", (int amount) => {
+                                for (int i = 0; i < amount; i++) {
+                                    Calc.Random.NextDouble();
+                                    Calc.Random.NextDouble();
+                                }
+                            });
+                        }
+                        if (param.IndexOf(p => p.Name == typeParam) is var typeIdx && typeIdx != -1) {
+                            cursor.EmitLdarg(typeIdx + 1);
+                            cursor.EmitStaticDelegate("SimulateTypeCreateCalls", (ParticleType type) => {
+                                if (type.SourceChooser != null) {
+                                    // For 'particle.Source = SourceChooser.Choose();'
+                                    Calc.Random.NextDouble();
+                                }
+
+                                if (type.SizeRange != 0.0f) {
+                                    // For 'particle.StartSize = (particle.Size = Size - SizeRange * 0.5f + Calc.Random.NextFloat(SizeRange));'
+                                    Calc.Random.NextDouble();
+                                }
+
+                                if (type.ColorMode == ParticleType.ColorModes.Choose) {
+                                    // For 'particle.StartColor = (particle.Color = Calc.Random.Choose(color, Color2));'
+                                    Calc.Random.Next(2);
+                                }
+
+                                // For 'float moveDirection = direction - DirectionRange / 2f + Calc.Random.NextFloat() * DirectionRange;'
+                                Calc.Random.NextDouble();
+                                // For 'particle.Speed = Calc.AngleToVector(moveDirection, Calc.Random.Range(SpeedMin, SpeedMax));'
+                                Calc.Random.NextDouble();
+                                // For 'particle.StartLife = (particle.Life = Calc.Random.Range(LifeMin, LifeMax));'
+                                Calc.Random.NextDouble();
+
+                                if (type.RotationMode == ParticleType.RotationModes.Random) {
+                                    // For 'particle.Rotation = Calc.Random.NextAngle();'
+                                    Calc.Random.NextDouble();
+                                }
+
+                                // For 'particle.Spin = Calc.Random.Range(SpinMin, SpinMax);'
+                                Calc.Random.NextDouble();
+                                if (type.SpinFlippedChance) {
+                                    // For 'particle.Spin *= Calc.Random.Choose(1, -1);'
+                                    Calc.Random.Next(2);
+                                }
+                            });
+                        }
+
+
+                        cursor.EmitRet();
+                    });
+                }
+            });
 
         // Renderers
         SkipMethod(typeof(BackdropRenderer).GetMethodInfo(nameof(BackdropRenderer.Update))!);
