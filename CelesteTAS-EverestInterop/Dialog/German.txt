@@ -127,6 +127,8 @@ TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_C=        Aktiv für alle Level! Stelle sicher
                                             Wird auf die Standardeinstallung zurückgesetzt, nachdem das Spiel neugestartet wurde.
 TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_D=        Immer aktiv für alle Level! Es hat eine sehr hohe Wahrscheinlichkeit diese Option an zu lassen,
                                             was deine reguläre Spielerfahrung eventuell ruinieren kann!
+TAS_PREVENT_SKINMOD_CHANGES=                Verhindere Skin-Mod Spielverhaltensänderungen
+TAS_PREVENT_SKINMOD_CHANGES_DESC=           Verwendet das Vanilla Spielverhalten für Animationslängen und die Position tragbarer Gegenstände.
 TAS_HIDE_FREEZE_FRAMES=                     Verstecke Freeze-Frames im TAS
 TAS_HIDE_FREEZE_FRAMES_DESCRIPTION=         Wenn ein Freeze-Frame ausgelöst wird, wird dieser übersprungen ohne diesen anzuzeigen.
                                             Wird nur angewendet solange eine TAS aktiv ist.
