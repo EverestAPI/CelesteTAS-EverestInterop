@@ -5,6 +5,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
+using TAS.Gameplay;
 using TAS.Module;
 using TAS.Tools;
 using TAS.Utils;
@@ -134,6 +135,20 @@ internal static class Core {
         cur.EmitBrfalse(label);
         cur.EmitRet();
         cur.MarkLabel(label);
+
+        // Emit event calls
+        var emptyArrayCall = typeof(Array).GetMethodInfo(nameof(Array.Empty))!.MakeGenericMethod(typeof(object));
+        var preUpdateCall = typeof(AttributeUtils).GetMethodInfo(nameof(AttributeUtils.Invoke))!.MakeGenericMethod(typeof(Events.PreEngineUpdate));
+        var postUpdateCall = typeof(AttributeUtils).GetMethodInfo(nameof(AttributeUtils.Invoke))!.MakeGenericMethod(typeof(Events.PostEngineUpdate));
+
+        cur.EmitCall(emptyArrayCall);
+        cur.EmitCall(preUpdateCall);
+
+        while (cur.TryGotoNext(MoveType.AfterLabel, instr => instr.MatchRet())) {
+            cur.EmitCall(emptyArrayCall);
+            cur.EmitCall(postUpdateCall);
+            cur.Index += 1; // Go past ret
+        }
     }
 
     private static bool IsPaused() => Manager.CurrState == Manager.State.Paused && !Manager.IsLoading();
