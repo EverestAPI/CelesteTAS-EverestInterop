@@ -12,6 +12,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using TAS.EverestInterop;
 using TAS.Gameplay;
+using TAS.Gameplay.DesyncFix;
 using TAS.Input.Commands;
 using TAS.ModInterop;
 using TAS.Utils;
@@ -850,6 +851,37 @@ internal class SpecialValueQueryHandler : TargetQuery.Handler {
                 yield return new CommandAutoCompleteEntry { Name = key.ToString(), Extra = "Key", IsDone = true };
             }
         }
+    }
+}
+
+internal class DeterministicVariablesQueryHandler : TargetQuery.Handler {
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveMember(object? instance, out object? value, Type type, int memberIdx, string[] memberArgs) {
+        if (type == typeof(Calc) && memberArgs[memberIdx] == nameof(Calc.Random)) {
+            value = SeededRandomness.SharedUpdateHandler.SharedUpdateRandom;
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+        }
+
+        if (type == typeof(Engine) && memberArgs[memberIdx] == nameof(Engine.FrameCounter)) {
+            value = SeededRandomness.FrameCounterHandler.FrameCounter;
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+        }
+
+        value = null;
+        return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+    }
+
+    public override Result<bool, TargetQuery.MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
+        if (type == typeof(Calc) && memberArgs[memberIdx] == nameof(Calc.Random)) {
+            SeededRandomness.SharedUpdateHandler.SharedUpdateRandom = (Random) value!;
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+        }
+
+        if (type == typeof(Engine) && memberArgs[memberIdx] == nameof(Engine.FrameCounter)) {
+            SeededRandomness.FrameCounterHandler.FrameCounter = (ulong) value!;
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+        }
+
+        return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
     }
 }
 
