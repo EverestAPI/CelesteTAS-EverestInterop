@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using Monocle;
 using System;
 using TAS.Module;
@@ -17,6 +18,14 @@ internal static class Events {
     /// Invoked after everything is rendered
     public static event Action? PostRender;
 
+    /// Invoked before everything is updated
+    [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+    internal class PreEngineUpdate(int priority = 0) : EventAttribute(priority);
+
+    /// Invoked after everything was updated
+    [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+    internal class PostEngineUpdate(int priority = 0) : EventAttribute(priority);
+
     [Load]
     private static void Load() {
         typeof(EntityList)
@@ -30,5 +39,9 @@ internal static class Events {
         typeof(Engine)
             .GetMethodInfo(nameof(Engine.RenderCore))!
             .HookAfter(() => PostRender?.Invoke());
+
+        // Pre/PostEngineUpdate are invoked from the core playback hooks
+        AttributeUtils.CollectOwnMethods<PreEngineUpdate>();
+        AttributeUtils.CollectOwnMethods<PostEngineUpdate>();
     }
 }
