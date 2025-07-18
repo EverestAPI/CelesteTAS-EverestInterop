@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Celeste;
 using Celeste.Mod;
+using JetBrains.Annotations;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
 using MonoMod.ModInterop;
@@ -15,8 +16,21 @@ using TAS.Gameplay;
 using TAS.InfoHUD;
 using TAS.Input.Commands;
 using TAS.Module;
+using TAS.Utils;
 
 namespace TAS.ModInterop;
+
+/// Invoked with a <c>Dictionary&lt;string, object&gt;</c> to which relevant data should be saved.
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+internal class SaveStateAttribute(int priority = 0) : EventAttribute(priority);
+
+/// Invoked with a <c>Dictionary&lt;string, object&gt;</c> from which previously saved data should be retrieved.
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+internal class LoadStateAttribute(int priority = 0) : EventAttribute(priority);
+
+/// Invoked when savestate data is cleared
+[AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
+internal class ClearStateAttribute(int priority = 0) : EventAttribute(priority);
 
 /// Mod-Interop with Speedrun Tool
 internal static class SpeedrunToolInterop {
@@ -29,6 +43,10 @@ internal static class SpeedrunToolInterop {
     private static void Initialize() {
         typeof(SpeedrunToolSaveLoadImport).ModInterop();
         typeof(SpeedrunToolTasActionImports).ModInterop();
+
+        AttributeUtils.CollectOwnMethods<SaveStateAttribute>(typeof(Dictionary<string, object?>));
+        AttributeUtils.CollectOwnMethods<LoadStateAttribute>(typeof(Dictionary<string, object?>));
+        AttributeUtils.CollectOwnMethods<ClearStateAttribute>();
 
         Installed = CheckInstalled();
 
@@ -113,7 +131,7 @@ internal static class SpeedrunToolInterop {
 
         saveLoadHandle = SpeedrunToolSaveLoadImport.RegisterSaveLoadAction!(
             (savedValues, _) => {
-                savedValues[typeof(SpeedrunToolInterop)] = new Dictionary<string, object?> {
+                var saveData = new Dictionary<string, object?> {
                     { nameof(GameInfo.LastPos), GameInfo.LastPos },
                     { nameof(GameInfo.LastDiff), GameInfo.LastDiff },
                     { nameof(GameInfo.LastPlayerSeekerPos), GameInfo.LastPlayerSeekerPos },
@@ -133,41 +151,48 @@ internal static class SpeedrunToolInterop {
                     { nameof(SafeCommand.DisallowUnsafeInput), SafeCommand.DisallowUnsafeInput },
                     { nameof(DesyncFixer.AuraHelperSharedRandom), DesyncFixer.AuraHelperSharedRandom },
                     { nameof(BetterInvincible), Manager.Running && BetterInvincible.Invincible },
-                }.DeepClone();
+                };
+                AttributeUtils.Invoke<SaveStateAttribute>(saveData);
+
+                savedValues[typeof(SpeedrunToolInterop)] = saveData.DeepClone();
 
                 // Store ourselves to be able to clear it, when the user asks to
                 InfoWatchEntity.WatchedEntities_Save = InfoWatchEntity.WatchedEntities.DeepClone();
             },
             (savedValues, _) => {
-                var clonedValues = savedValues[typeof(SpeedrunToolInterop)].DeepClone();
+                var saveData = savedValues[typeof(SpeedrunToolInterop)].DeepClone();
 
-                GameInfo.LastPos = (Vector2Double) clonedValues[nameof(GameInfo.LastPos)]!;
-                GameInfo.LastDiff = (Vector2Double) clonedValues[nameof(GameInfo.LastDiff)]!;
-                GameInfo.LastPlayerSeekerPos = (Vector2Double) clonedValues[nameof(GameInfo.LastPlayerSeekerPos)]!;
-                GameInfo.LastPlayerSeekerDiff = (Vector2Double) clonedValues[nameof(GameInfo.LastPlayerSeekerDiff)]!;
+                GameInfo.LastPos = (Vector2Double) saveData[nameof(GameInfo.LastPos)]!;
+                GameInfo.LastDiff = (Vector2Double) saveData[nameof(GameInfo.LastDiff)]!;
+                GameInfo.LastPlayerSeekerPos = (Vector2Double) saveData[nameof(GameInfo.LastPlayerSeekerPos)]!;
+                GameInfo.LastPlayerSeekerDiff = (Vector2Double) saveData[nameof(GameInfo.LastPlayerSeekerDiff)]!;
 
-                CycleHitboxColor.GroupCounter = (int) clonedValues[nameof(CycleHitboxColor.GroupCounter)]!;
-                StunPauseCommand.SimulatePauses = (bool) clonedValues[nameof(StunPauseCommand.SimulatePauses)]!;
-                StunPauseCommand.PauseOnCurrentFrame = (bool) clonedValues[nameof(StunPauseCommand.PauseOnCurrentFrame)]!;
-                StunPauseCommand.SkipFrames = (int) clonedValues[nameof(StunPauseCommand.SkipFrames)]!;
-                StunPauseCommand.WaitingFrames = (int) clonedValues[nameof(StunPauseCommand.WaitingFrames)]!;
-                StunPauseCommand.LocalMode = (StunPauseCommand.StunPauseMode?) clonedValues[nameof(StunPauseCommand.LocalMode)];
-                StunPauseCommand.GlobalModeRuntime = (StunPauseCommand.StunPauseMode?) clonedValues[nameof(StunPauseCommand.GlobalModeRuntime)];
+                CycleHitboxColor.GroupCounter = (int) saveData[nameof(CycleHitboxColor.GroupCounter)]!;
+                StunPauseCommand.SimulatePauses = (bool) saveData[nameof(StunPauseCommand.SimulatePauses)]!;
+                StunPauseCommand.PauseOnCurrentFrame = (bool) saveData[nameof(StunPauseCommand.PauseOnCurrentFrame)]!;
+                StunPauseCommand.SkipFrames = (int) saveData[nameof(StunPauseCommand.SkipFrames)]!;
+                StunPauseCommand.WaitingFrames = (int) saveData[nameof(StunPauseCommand.WaitingFrames)]!;
+                StunPauseCommand.LocalMode = (StunPauseCommand.StunPauseMode?) saveData[nameof(StunPauseCommand.LocalMode)];
+                StunPauseCommand.GlobalModeRuntime = (StunPauseCommand.StunPauseMode?) saveData[nameof(StunPauseCommand.GlobalModeRuntime)];
 
                 PressCommand.PressKeys.Clear();
-                PressCommand.PressKeys.AddRange((HashSet<Keys>) clonedValues[nameof(PressCommand.PressKeys)]!);
+                PressCommand.PressKeys.AddRange((HashSet<Keys>) saveData[nameof(PressCommand.PressKeys)]!);
 
-                MetadataCommands.TasStartInfo = ((long FileTimeTicks, int FileSlot)?) clonedValues[nameof(MetadataCommands.TasStartInfo)];
-                MouseCommand.CurrentState = (MouseState) clonedValues[nameof(MouseCommand.CurrentState)]!;
-                HitboxSimplified.Followers = (Dictionary<Follower, bool>) clonedValues[nameof(HitboxSimplified.Followers)]!;
-                SafeCommand.DisallowUnsafeInput = (bool) clonedValues[nameof(SafeCommand.DisallowUnsafeInput)]!;
-                DesyncFixer.AuraHelperSharedRandom = (Random) clonedValues[nameof(DesyncFixer.AuraHelperSharedRandom)]!;
-                BetterInvincible.Invincible = Manager.Running && (bool) clonedValues[nameof(BetterInvincible)]!;
+                MetadataCommands.TasStartInfo = ((long FileTimeTicks, int FileSlot)?) saveData[nameof(MetadataCommands.TasStartInfo)];
+                MouseCommand.CurrentState = (MouseState) saveData[nameof(MouseCommand.CurrentState)]!;
+                HitboxSimplified.Followers = (Dictionary<Follower, bool>) saveData[nameof(HitboxSimplified.Followers)]!;
+                SafeCommand.DisallowUnsafeInput = (bool) saveData[nameof(SafeCommand.DisallowUnsafeInput)]!;
+                DesyncFixer.AuraHelperSharedRandom = (Random) saveData[nameof(DesyncFixer.AuraHelperSharedRandom)]!;
+                BetterInvincible.Invincible = Manager.Running && (bool) saveData[nameof(BetterInvincible)]!;
 
                 InfoWatchEntity.WatchedEntities = InfoWatchEntity.WatchedEntities_Save.DeepClone();
+
+                AttributeUtils.Invoke<LoadStateAttribute>(saveData);
             },
             () => {
                 InfoWatchEntity.WatchedEntities_Save.Clear();
+
+                AttributeUtils.Invoke<ClearStateAttribute>();
             },
             beforeSaveState: null,
             beforeLoadState: null,
