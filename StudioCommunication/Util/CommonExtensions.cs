@@ -247,6 +247,19 @@ public static class EnumExtensions {
 #endif
 }
 
+public static class CollectionExtensions {
+    /// Find the index of the first matching element. Otherwise -1
+    public static int IndexOf<T>(this T[] array, Func<T, bool> predicate) {
+        for (int i = 0; i < array.Length; i++) {
+            if (predicate(array[i])) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+}
+
 public static class DictionaryExtensions {
     /// Adds an element to the list stored under the specified key
     public static void AddToKey<TKey, TValue>(this IDictionary<TKey, List<TValue>> dict, TKey key, TValue value) {
