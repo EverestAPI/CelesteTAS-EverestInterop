@@ -117,11 +117,12 @@ TAS_BETTER_INVINCIBILITY=                   Verbesserte Unbesiegbarkeit
 TAS_BETTER_INVINCIBLE_DESCRIPTION=          Wenn man "Set Invincible true" ausführt, kann man weiterhin nicht sterben,
                                             jedoch vermeidet Gameplayveränderungen wie auf der Toteszone zu springen,
                                             um versehentliche TAS-Desyncs to vermeiden. Wird nur angewendet solange eine TAS aktiv ist.
-TAS_FORCE_ALLOW_ACCESS_TOOLS=               Zwinge Zulassung von Hilfswerkzeuge
-TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC=          Zwingt die Reaktivierung von Hilfswerkzeugen (wie die Debug Karte), welche bewusst deaktiviert wurden.
-                                            Dies geht gegen die gewollte Erfahrung beim gewöhnlichem Durchspielen, was deine eigene Erfahrung ruinieren könnte.
+TAS_FORCE_ALLOW_ACCESS_TOOLS=               Zwinge Zulassung von Hilfswerkzeugen
+TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_1=        Zwingt die Reaktivierung von Hilfswerkzeugen (wie die Debug Karte), welche bewusst deaktiviert wurden.
+TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_2=        Dies geht gegen die gewollte Erfahrung beim gewöhnlichem Durchspielen, was deine eigene Erfahrung ruinieren könnte,
+                                            indem ausversehen Geheimnisse verraten werden oder dein Spielstand in ungewollter / kaputter weise modifiziert wird.
 TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_A=        Nur aktiv, während Celeste Studio geöffnet und mit Celeste verbunden ist.
-TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_B=        Nur aktiv, nachdem das aktuelle Level bereits einmal abgeschlossen wurde, oder der Debug Save verwendet wird.
+TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_B=        Nur aktiv, nachdem das aktuelle Level bereits einmal abgeschlossen wurde, oder der Debug Spielstand verwendet wird.
 TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_C=        Aktiv für alle Level! Stelle sicher, dass du nicht aus versehen deine reguläre Spielerfahrung hiermit ruiniest!
                                             Wird auf die Standardeinstallung zurückgesetzt, nachdem das Spiel neugestartet wurde.
 TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_D=        Immer aktiv für alle Level! Es hat eine sehr hohe Wahrscheinlichkeit diese Option an zu lassen,
@@ -170,6 +171,6 @@ TAS_APPEND=                                 Anhängen
 TAS_NEVER=                                  Niemals
 TAS_ALWAYS=                                 Immer
 TAS_StudioEnableCondition_StudioConnected=  Wenn Studio verbunden ist
-TAS_StudioEnableCondition_AfterCasual=      Nach regulärem Durchspielen
+TAS_StudioEnableCondition_AfterCasual=      Nach Durchspielen
 TAS_StudioEnableCondition_CurrentSession=   Für Aktuelle Sitzung
 TAS_GameplayEnableCondition_DuringTAS=      Während TAS

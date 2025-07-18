@@ -120,8 +120,9 @@ internal static class CelesteTasMenu {
                     TasSettings.ForceAllowAccessibilityTools = value;
                     UpdateForceAllowAccessibilityDesc(forceAllowAccessibilityToolsExtraDesc, value);
                 }));
-            subMenu.AddDescription(menu, forceAllowAccessibilityTools, "FORCE_ALLOW_ACCESS_TOOLS_DESC".ToDialogText());
-            forceAllowAccessibilityToolsExtraDesc = subMenu.AddDescription(menu, forceAllowAccessibilityTools, "FORCE_ALLOW_ACCESS_TOOLS_DESC".ToDialogText());
+            subMenu.AddDescription(menu, forceAllowAccessibilityTools, "FORCE_ALLOW_ACCESS_TOOLS_DESC_1".ToDialogText());
+            subMenu.AddDescription(menu, forceAllowAccessibilityTools, "FORCE_ALLOW_ACCESS_TOOLS_DESC_2".ToDialogText(), Color.Orange);
+            forceAllowAccessibilityToolsExtraDesc = subMenu.AddDescription(menu, forceAllowAccessibilityTools, string.Empty);
             UpdateForceAllowAccessibilityDesc(forceAllowAccessibilityToolsExtraDesc, TasSettings.ForceAllowAccessibilityTools);
             forceAllowAccessibilityToolsExtraDesc.FadeVisible = false;
 

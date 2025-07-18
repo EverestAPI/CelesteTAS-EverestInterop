@@ -117,8 +117,9 @@ TAS_BETTER_INVINCIBILITY=                   Better Invincibility
 TAS_BETTER_INVINCIBLE_DESCRIPTION=          Running "Set Invincible true" will still prevent dying, but avoids gameplay changes like bouncing of the death plane,
                                             to avoid accidentally desyncing the TAS. Applies only while a TAS is active.
 TAS_FORCE_ALLOW_ACCESS_TOOLS=               Force Allow Accessibility Tools
-TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC=          Forcefully re-enabled accessibility tools (such as the Debug Map) which were intentionally disabled.
-                                            This goes against the intended experience of a casual playthrough and you could ruin your own experience.
+TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_1=        Forcefully re-enabled accessibility tools (such as the Debug Map) which were intentionally disabled.
+TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_2=        This goes against the intended experience of a casual playthrough and could ruin your experience
+                                            by accidentally spoiling secrets or modifying your save data in unintentional / broken ways.
 TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_A=        Only activated while Celeste Studio is open and connected to Celeste.
 TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_B=        Only activated after the current level has already been beaten once, or the Debug Save is used.
 TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_C=        Activated for all levels! Make sure to not accidentally ruin your casual experience with this being active!
