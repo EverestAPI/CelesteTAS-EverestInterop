@@ -10,7 +10,7 @@ namespace TAS.Gameplay.DesyncFix;
 
 /// Provides a universal system for seeding normally unseeded randomness
 internal static class SeededRandomness {
-    public abstract class Handler {
+    private abstract class Handler {
         /// Targets used with the 'SeedRandom,[Target]' command
         public abstract string Name { get; }
 
@@ -40,7 +40,7 @@ internal static class SeededRandomness {
 
     /// 'Calc.Random' is shared between Update() and Render() code, however the latter is undeterministic,
     /// so this random instances is reserved to only be used during Update()
-    public class SharedUpdateHandler : Handler {
+    private class SharedUpdateHandler : Handler {
         public override string Name => "Update";
 
         private static Random sharedUpdateRandom = new();
@@ -76,8 +76,48 @@ internal static class SeededRandomness {
         }
     }
 
+    /// Some entities perform an 'Engine.FrameCounter % n == 0' check to do something every n frames
+    /// However this is not bound to gameplay will increment everywhere globally
+    /// A separate settable Update-only counter is used to avoid pausing the TAS causing desyncs
+    private class FrameCounterHandler : Handler {
+        public override string Name => "FrameCounter";
+
+        private static ulong frameCounter = 0;
+        private static ulong? origFrameCounter;
+
+        public override void PreUpdate() {
+            if (NextSeed(out int seed)) {
+                AssertNoSeedsRemaining();
+                frameCounter = unchecked((uint) seed);
+            }
+
+            if (Manager.Running && origFrameCounter == null) {
+                origFrameCounter = Engine.FrameCounter;
+                Engine.FrameCounter = frameCounter++;
+            }
+        }
+        public override void PostUpdate() {
+            if (origFrameCounter != null) {
+                Engine.FrameCounter = origFrameCounter.Value;
+                origFrameCounter = null;
+            }
+        }
+
+        [SaveState]
+        private static void SaveState(Dictionary<string, object?> data) {
+            data[$"{nameof(FrameCounterHandler)}_{nameof(frameCounter)}"] = frameCounter;
+            data[$"{nameof(FrameCounterHandler)}_{nameof(origFrameCounter)}"] = origFrameCounter;
+        }
+        [LoadState]
+        private static void LoadState(Dictionary<string, object?> data) {
+            frameCounter = (ulong) data[$"{nameof(FrameCounterHandler)}_{nameof(frameCounter)}"]!;
+            origFrameCounter = (ulong?) data[$"{nameof(FrameCounterHandler)}_{nameof(origFrameCounter)}"]!;
+        }
+    }
+
     private static readonly List<Handler> handlers = [
-        new SharedUpdateHandler()
+        new SharedUpdateHandler(),
+        new FrameCounterHandler()
     ];
 
     [Events.PreEngineUpdate]
