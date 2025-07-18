@@ -1,3 +1,8 @@
+# CelesteTAS v3.45.4, Studio v3.9.5
+
+- Feature: Allow force-enabling accessibility tools only after doing a casual playthrough
+- Tweak: Better communicate warnings / risks about force-enabling accessibility tools in options
+
 # CelesteTAS v3.45.3, Studio v3.9.5
 
 - Feature: Allow force-enabling accessibility tools only for current session
