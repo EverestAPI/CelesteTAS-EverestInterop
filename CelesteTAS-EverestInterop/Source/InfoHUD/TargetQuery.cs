@@ -119,6 +119,7 @@ public static class TargetQuery {
         new EntityQueryHandler(),
         new ComponentQueryHandler(),
         new SpecialValueQueryHandler(),
+        new DeterministicVariablesQueryHandler(),
         new ModInteropQueryHandler(),
     ];
 
