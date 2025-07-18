@@ -24,7 +24,8 @@ internal static class FastForwardOptimization {
 
     [Initialize]
     private static void Initialize() {
-        // Particles
+        #region Particles
+
         SkipMethods(
             typeof(ParticleSystem).GetMethodInfo(nameof(ParticleSystem.Update))!,
             typeof(ParticleSystem).GetMethodInfo(nameof(ParticleSystem.Clear))!,
@@ -105,14 +106,20 @@ internal static class FastForwardOptimization {
                 }
             });
 
-        // Renderers
-        SkipMethod(typeof(BackdropRenderer).GetMethodInfo(nameof(BackdropRenderer.Update))!);
+        #endregion
+        #region Renderers
+
+        // BackdropRenderer needs to update, since it contains relevant 'Calc.Random' calls
         SkipMethod(typeof(SeekerBarrierRenderer).GetMethodInfo(nameof(SeekerBarrierRenderer.Update)));
 
-        // Sound
+        #endregion
+        #region Sound
+
         On.Celeste.SoundEmitter.Update += On_SoundEmitter_Update;
 
-        // Visual Entities
+        #endregion
+        #region Visual Entities
+
         SkipMethods(
             typeof(ReflectionTentacles).GetMethodInfo(nameof(ReflectionTentacles.Update)),
             typeof(Decal).GetMethodInfo(nameof(Decal.Update)),
@@ -131,13 +138,17 @@ internal static class FastForwardOptimization {
             ModUtils.GetMethod("IsaGrabBag", "Celeste.Mod.IsaGrabBag.DreamSpinnerBorder", nameof(Entity.Update))
         );
 
-        // Garbage Collection
+        #endregion
+        #region Garbage Collection
+
         IL.Monocle.Engine.OnSceneTransition += SkipGC;
         IL.Celeste.Level.Reload += SkipGC;
         typeof(Level).GetMethodInfo(nameof(Level._GCCollect))
             ?.SkipMethod(static () => IgnoreGarbageCollect);
 
-        // Special
+        #endregion
+        #region Special
+
         ModUtils.GetMethod("StrawberryJam2021", "Celeste.Mod.StrawberryJam2021.Cutscenes.CS_Credits", "Level_OnLoadEntity")
             ?.IlHook((cursor, _) => {
                 // Reduce LINQ usage of 'CS_Credits credits = level.Entities.ToAdd.OfType<CS_Credits>().FirstOrDefault();'
@@ -153,7 +164,7 @@ internal static class FastForwardOptimization {
                 sjCreditsType = ModUtils.GetType("StrawberryJam2021", "Celeste.Mod.StrawberryJam2021.Cutscenes.CS_Credits")!;
 
                 // Nothing else should be hooking the SJ credits. This is just for performance
-#pragma warning disable CL0005
+                #pragma warning disable CL0005
                 cursor.RemoveRange(4);
                 cursor.EmitStaticDelegate(static Entity? (Level level) => {
                     foreach (var entity in level.Entities.ToAdd) {
@@ -164,12 +175,13 @@ internal static class FastForwardOptimization {
 
                     return null;
                 });
-#pragma warning restore CL0005
+                #pragma warning restore CL0005
             });
+
+        #endregion
     }
     [Unload]
     private static void Unload() {
-        // On.Celeste.BackdropRenderer.Render -= On_BackdropRenderer_Render;
         On.Celeste.SoundEmitter.Update -= On_SoundEmitter_Update;
 
         IL.Monocle.Engine.OnSceneTransition -= SkipGC;
