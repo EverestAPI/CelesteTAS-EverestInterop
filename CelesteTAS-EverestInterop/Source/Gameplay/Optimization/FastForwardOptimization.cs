@@ -126,7 +126,6 @@ internal static class FastForwardOptimization {
             typeof(FloatingDebris).GetMethodInfo(nameof(FloatingDebris.Update)),
             typeof(AnimatedTiles).GetMethodInfo(nameof(AnimatedTiles.Update)),
             typeof(Water.Surface).GetMethodInfo(nameof(Water.Surface.Update)),
-            typeof(DustGraphic).GetMethodInfo(nameof(DustGraphic.Update)),
             typeof(LavaRect).GetMethodInfo(nameof(LavaRect.Update)),
             typeof(CliffsideWindFlag).GetMethodInfo(nameof(CliffsideWindFlag.Update)),
             typeof(CrystalStaticSpinner).GetMethodInfo(nameof(CrystalStaticSpinner.UpdateHue)),
@@ -137,6 +136,15 @@ internal static class FastForwardOptimization {
 
             ModUtils.GetMethod("IsaGrabBag", "Celeste.Mod.IsaGrabBag.DreamSpinnerBorder", nameof(Entity.Update))
         );
+        // The dust sprites being 'Estableshed' (yes, that's how it's spelled :p) is required for gameplay during stuns
+        SkipMethod(typeof(DustGraphic).GetMethodInfo(nameof(DustGraphic.Update)), cursor => {
+            cursor.EmitLdarg0();
+            cursor.EmitStaticDelegate("EstableshedNodes", (DustGraphic dust) => {
+                if (dust.nodes.Count <= 0 && dust.Entity.Scene != null && !dust.Estableshed) {
+                    dust.AddDustNodesIfInCamera();
+                }
+            });
+        });
 
         #endregion
         #region Garbage Collection
@@ -189,7 +197,7 @@ internal static class FastForwardOptimization {
     }
 
     /// Skips calling the original method while fast forwarding
-    public static void SkipMethod(MethodInfo? method) {
+    public static void SkipMethod(MethodInfo? method, Action<ILCursor>? preSkipCallback = null) {
         if (method == null) {
             return;
         }
@@ -203,6 +211,8 @@ internal static class FastForwardOptimization {
 
             cursor.EmitCall(typeof(FastForwardOptimization).GetGetMethod(nameof(Active))!);
             cursor.EmitBrfalse(start);
+
+            preSkipCallback?.Invoke(cursor);
             cursor.EmitRet();
         });
     }
