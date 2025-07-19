@@ -3,6 +3,7 @@ using StudioCommunication;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using TAS.Input;
 using TAS.ModInterop;
 
@@ -115,10 +116,33 @@ internal static class SeededRandomness {
         }
     }
 
+    #region Mod Interop
+
+    public class AurorasHelperHandler : Handler {
+        public override string Name => "AurorasHelper_Shared";
+
+        private readonly MethodInfo? m_CmdSetSeed = ModUtils.GetMethod("AurorasHelper", "Celeste.Mod.AurorasHelper.AurorasHelperModule", "CmdSetSeed");
+
+        public override void PreUpdate() {
+            if (m_CmdSetSeed != null && NextSeed(out int seed)) {
+                m_CmdSetSeed.Invoke(null, [seed]);
+                AssertNoSeedsRemaining();
+            }
+        }
+    }
+
+    #endregion
+
     private static readonly List<Handler> handlers = [
         new SharedUpdateHandler(),
         new FrameCounterHandler()
     ];
+
+    private static void Initialize() {
+        if (ModUtils.IsInstalled("AurorasHelper")) {
+            handlers.Add(new AurorasHelperHandler());
+        }
+    }
 
     [Events.PreEngineUpdate]
     private static void PreEngineUpdate() {
