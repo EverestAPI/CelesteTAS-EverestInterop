@@ -5,7 +5,6 @@ using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
-using MonoMod.Utils;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
@@ -14,8 +13,6 @@ namespace TAS.EverestInterop;
 
 // ReSharper disable AssignNullToNotNullAttribute
 public static class DesyncFixer {
-    private const string pushedRandomFlag = "CelesteTAS_PushedRandom";
-
     // this random needs to be used all through aura entity's lifetime
     internal static Random AuraHelperSharedRandom = new Random(1234);
 
@@ -23,10 +20,6 @@ public static class DesyncFixer {
     private static void Initialize() {
         if (ModUtils.GetModule("DeadzoneConfig")?.GetType() is { } deadzoneConfigModuleType) {
             deadzoneConfigModuleType.GetMethodInfo("OnInputInitialize")!.SkipMethod(SkipDeadzoneConfig);
-        }
-
-        if (ModUtils.GetType("StrawberryJam2021", "Celeste.Mod.StrawberryJam2021.Entities.CustomAscendManager") is { } ascendManagerType) {
-            ascendManagerType.GetMethodInfo("Routine")?.GetStateMachineTarget()!.IlHook(MakeRngConsistent);
         }
 
         // https://discord.com/channels/403698615446536203/519281383164739594/1154486504475869236
@@ -46,7 +39,6 @@ public static class DesyncFixer {
         typeof(DreamMirror).GetMethodInfo("Added")!.HookAfter<DreamMirror>(FixDreamMirrorDesync);
         typeof(CS03_Memo.MemoPage).GetConstructors()[0].HookAfter<CS03_Memo.MemoPage>(FixMemoPageCrash);
         typeof(FinalBoss).GetMethodInfo("Added")!.HookAfter<FinalBoss>(FixFinalBossDesync);
-        typeof(AscendManager).GetMethodInfo("Routine")!.GetStateMachineTarget()!.IlHook(MakeRngConsistent);
 
         // System.IndexOutOfRangeException: Index was outside the bounds of the array.
         // https://discord.com/channels/403698615446536203/1148931167983251466/1148931167983251466
@@ -92,30 +84,6 @@ public static class DesyncFixer {
                 memoPage.BeforeRender();
             }
         }));
-    }
-
-    private static void MakeRngConsistent(ILCursor ilCursor, ILContext ilContent) {
-        if (ilCursor.TryGotoNext(MoveType.After, ins => ins.OpCode == OpCodes.Stfld && ins.Operand.ToString()!.Contains("::<from>"))) {
-            ILCursor cursor = ilCursor.Clone();
-            if (ilCursor.TryGotoNext(ins => ins.OpCode == OpCodes.Newobj && ins.Operand.ToString()!.Contains("Fader::.ctor"))) {
-                cursor.EmitDelegate(AscendManagerPushRandom);
-                ilCursor.EmitDelegate(AscendManagerPopRandom);
-            }
-        }
-    }
-
-    private static void AscendManagerPushRandom() {
-        if (Manager.Running && Engine.Scene.GetSession() is { } session && session.Area.GetLevelSet() != "Celeste") {
-            Calc.PushRandom(session.LevelData.LoadSeed);
-            session.SetFlag(pushedRandomFlag);
-        }
-    }
-
-    private static void AscendManagerPopRandom() {
-        if (Engine.Scene.GetSession() is { } session && session.GetFlag(pushedRandomFlag)) {
-            Calc.PopRandom();
-            session.SetFlag(pushedRandomFlag, false);
-        }
     }
 
     private static bool SkipDeadzoneConfig() {

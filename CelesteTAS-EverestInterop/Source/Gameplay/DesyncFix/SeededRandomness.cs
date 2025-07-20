@@ -72,6 +72,7 @@ internal static class SeededRandomness {
 
         // Vanilla
         new PrologueBridgeHandler(),
+        new SummitLaunchHandler(),
     ];
 
     [Initialize]
@@ -352,6 +353,26 @@ internal static class SeededRandomness {
         public override void PreUpdate() {
             if (NextSeed(out int seed)) {
                 bridgeRandom = new Random(seed);
+                AssertNoSeedsRemaining();
+            }
+        }
+    }
+    public class SummitLaunchHandler : Handler {
+        public override string Name => "Celeste_SummitLaunch";
+
+        private static Random? shakeRandom;
+
+        public override void Init() {
+            var randomField = typeof(SummitLaunchHandler).GetFieldInfo(nameof(shakeRandom))!;
+            SeedMethod(typeof(AscendManager).GetMethodInfo(nameof(AscendManager.Routine))!.GetStateMachineTarget(), randomField);
+            SeedMethod(ModUtils.GetMethod("StrawberryJam2021", "Celeste.Mod.StrawberryJam2021.Entities.CustomAscendManager", "Routine")?.GetStateMachineTarget(), randomField);
+        }
+        public override void Reset() {
+            shakeRandom = null;
+        }
+        public override void PreUpdate() {
+            if (NextSeed(out int seed)) {
+                shakeRandom = new Random(seed);
                 AssertNoSeedsRemaining();
             }
         }
