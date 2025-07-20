@@ -27,6 +27,7 @@ internal static class SeededRandomness {
         public int SeedIndex = 0;
 
         public virtual void Init() { }
+        public virtual void Reset() { }
         public virtual void PreUpdate() { }
         public virtual void PostUpdate() { }
 
@@ -44,6 +45,21 @@ internal static class SeededRandomness {
             if (SeedIndex < Seeds.Length) {
                 AbortTas($"Target '{Name}' was provided more seeds than expected: Expected {SeedIndex}, got {Seeds.Length}");
             }
+        }
+
+        protected void SeedMethod(MethodInfo targetMethod, FieldInfo randomField) {
+            targetMethod.IlHook((cursor, _) => {
+                cursor.EmitLdsfld(randomField);
+                cursor.EmitStaticDelegate("PushRandom", (Random? random) => {
+                    // Fall back to Calc.Random since we still need push something, to avoid additional checks with the pop
+                    Calc.PushRandom(random ?? Calc.Random);
+                });
+
+                while (cursor.TryGotoNext(MoveType.AfterLabel, instr => instr.MatchRet())) {
+                    cursor.EmitDelegate(Calc.PopRandom);
+                    cursor.Index += 1;
+                }
+            });
         }
     }
 
@@ -132,19 +148,7 @@ internal static class SeededRandomness {
         private static Random? debrisRandom;
         private static int debrisAmount = 0;
 
-        [EnableRun]
-        private static void EnableRun() {
-            debrisRandom = null;
-        }
-
         public override void Init() {
-            // Reset the random instance, to start every level with the legacy behaviour
-            Everest.Events.Level.OnLoadLevel += (_, _, isFromLoader) => {
-                if (isFromLoader) {
-                    debrisRandom = null;
-                }
-            };
-
             // Collect **everything** debris related
             var methods = new Dictionary<MethodInfo, int> {
                 {typeof(Debris).GetMethodInfo(nameof(Debris.orig_Init))!, 1},
@@ -208,6 +212,10 @@ internal static class SeededRandomness {
             }
         }
 
+        public override void Reset() {
+            debrisRandom = null;
+        }
+
         public override void PreUpdate() {
             if (NextSeed(out int seed)) {
                 debrisRandom = new Random(seed);
@@ -215,6 +223,25 @@ internal static class SeededRandomness {
             }
 
             debrisAmount = 0;
+        }
+    }
+
+    public class PrologueBridgeHandler : Handler {
+        public override string Name => "Celeste_PrologueBridge";
+
+        private static Random? bridgeRandom;
+
+        public override void Init() {
+            SeedMethod(typeof(Bridge).GetMethodInfo(nameof(Bridge.Update))!, typeof(PrologueBridgeHandler).GetFieldInfo(nameof(bridgeRandom))!);
+        }
+        public override void Reset() {
+            bridgeRandom = null;
+        }
+        public override void PreUpdate() {
+            if (NextSeed(out int seed)) {
+                bridgeRandom = new Random(seed);
+                AssertNoSeedsRemaining();
+            }
         }
     }
 
@@ -237,9 +264,13 @@ internal static class SeededRandomness {
     #endregion
 
     private static readonly List<Handler> handlers = [
+        // Common
         new SharedUpdateHandler(),
         new FrameCounterHandler(),
         new DebrisHandler(),
+
+        // Vanilla
+        new PrologueBridgeHandler(),
     ];
 
     [Initialize]
@@ -248,8 +279,24 @@ internal static class SeededRandomness {
             handlers.Add(new AurorasHelperHandler());
         }
 
+        // Reset the random instances, to start every level with the default behaviour
+        Everest.Events.Level.OnLoadLevel += (_, _, isFromLoader) => {
+            if (isFromLoader) {
+                foreach (var handler in handlers) {
+                    handler.Reset();
+                }
+            }
+        };
+
         foreach (var handler in handlers) {
             handler.Init();
+        }
+    }
+
+    [EnableRun]
+    private static void EnableRun() {
+        foreach (var handler in handlers) {
+            handler.Reset();
         }
     }
 
