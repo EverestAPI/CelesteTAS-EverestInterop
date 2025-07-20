@@ -345,6 +345,15 @@ internal static class SeededRandomness {
 
             debrisAmount = 0;
         }
+
+        [SaveState]
+        private static void SaveState(Dictionary<string, object?> data) {
+            data[$"{nameof(DebrisHandler)}_{nameof(debrisRandom)}"] = debrisRandom?.DeepClone();
+        }
+        [LoadState]
+        private static void LoadState(Dictionary<string, object?> data) {
+            debrisRandom = ((Random?) data[$"{nameof(DebrisHandler)}_{nameof(debrisRandom)}"])?.DeepClone();
+        }
     }
 
     #endregion
@@ -370,6 +379,15 @@ internal static class SeededRandomness {
                 AssertNoSeedsRemaining();
             }
         }
+
+        [SaveState]
+        private static void SaveState(Dictionary<string, object?> data) {
+            data[$"{nameof(PrologueBridgeHandler)}_{nameof(bridgeRandom)}"] = bridgeRandom?.DeepClone();
+        }
+        [LoadState]
+        private static void LoadState(Dictionary<string, object?> data) {
+            bridgeRandom = ((Random?) data[$"{nameof(PrologueBridgeHandler)}_{nameof(bridgeRandom)}"])?.DeepClone();
+        }
     }
     public class SummitLaunchHandler : Handler {
         public override string Name => "Celeste_SummitLaunch";
@@ -389,6 +407,15 @@ internal static class SeededRandomness {
                 shakeRandom = new Random(seed);
                 AssertNoSeedsRemaining();
             }
+        }
+
+        [SaveState]
+        private static void SaveState(Dictionary<string, object?> data) {
+            data[$"{nameof(SummitLaunchHandler)}_{nameof(shakeRandom)}"] = shakeRandom?.DeepClone();
+        }
+        [LoadState]
+        private static void LoadState(Dictionary<string, object?> data) {
+            shakeRandom = ((Random?) data[$"{nameof(SummitLaunchHandler)}_{nameof(shakeRandom)}"])?.DeepClone();
         }
     }
 
@@ -443,6 +470,17 @@ internal static class SeededRandomness {
                 AssertNoSeedsRemaining();
             }
         }
+
+        [SaveState]
+        private static void SaveState(Dictionary<string, object?> data) {
+            data[$"{nameof(AuraHelperLanternHandler)}_{nameof(SharedRandom)}"] = SharedRandom.DeepClone();
+            data[$"{nameof(AuraHelperLanternHandler)}_{nameof(lanternRandom)}"] = lanternRandom?.DeepClone();
+        }
+        [LoadState]
+        private static void LoadState(Dictionary<string, object?> data) {
+            SharedRandom = ((Random) data[$"{nameof(AuraHelperLanternHandler)}_{nameof(SharedRandom)}"]!).DeepClone();
+            lanternRandom = ((Random?) data[$"{nameof(AuraHelperLanternHandler)}_{nameof(lanternRandom)}"])?.DeepClone();
+        }
     }
     public class AuraHelperGeneratorHandler : Handler {
         public override string Name => "AuraHelper_Generator";
@@ -469,6 +507,15 @@ internal static class SeededRandomness {
                 generatorRandom = new Random(seed);
                 AssertNoSeedsRemaining();
             }
+        }
+
+        [SaveState]
+        private static void SaveState(Dictionary<string, object?> data) {
+            data[$"{nameof(AuraHelperGeneratorHandler)}_{nameof(generatorRandom)}"] = generatorRandom?.DeepClone();
+        }
+        [LoadState]
+        private static void LoadState(Dictionary<string, object?> data) {
+            generatorRandom = ((Random?) data[$"{nameof(AuraHelperGeneratorHandler)}_{nameof(generatorRandom)}"])?.DeepClone();
         }
     }
 
@@ -509,6 +556,15 @@ internal static class SeededRandomness {
                 AssertNoSeedsRemaining();
             }
         }
+
+        [SaveState]
+        private static void SaveState(Dictionary<string, object?> data) {
+            data[$"{nameof(PandorasBoxTileGlitcherHandler)}_{nameof(glitcherRandom)}"] = glitcherRandom?.DeepClone();
+        }
+        [LoadState]
+        private static void LoadState(Dictionary<string, object?> data) {
+            glitcherRandom = ((Random?) data[$"{nameof(PandorasBoxTileGlitcherHandler)}_{nameof(glitcherRandom)}"])?.DeepClone();
+        }
     }
 
     public class SpekioToolboxShooterHandler : Handler {
@@ -546,6 +602,15 @@ internal static class SeededRandomness {
                 switchRandom = new Random(seed);
                 AssertNoSeedsRemaining();
             }
+        }
+
+        [SaveState]
+        private static void SaveState(Dictionary<string, object?> data) {
+            data[$"{nameof(VortexHelperColorSwitchHandler)}_{nameof(switchRandom)}"] = switchRandom?.DeepClone();
+        }
+        [LoadState]
+        private static void LoadState(Dictionary<string, object?> data) {
+            switchRandom = ((Random?) data[$"{nameof(VortexHelperColorSwitchHandler)}_{nameof(switchRandom)}"])?.DeepClone();
         }
     }
 
