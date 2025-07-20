@@ -1,11 +1,18 @@
+using Celeste;
+using Celeste.Mod;
+using Microsoft.Xna.Framework;
 using Monocle;
+using MonoMod.Cil;
 using StudioCommunication;
+using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using TAS.Input;
 using TAS.ModInterop;
+using TAS.Module;
+using TAS.Utils;
 
 namespace TAS.Gameplay.DesyncFix;
 
@@ -19,6 +26,7 @@ internal static class SeededRandomness {
         public int[] Seeds = [];
         public int SeedIndex = 0;
 
+        public virtual void Init() { }
         public virtual void PreUpdate() { }
         public virtual void PostUpdate() { }
 
@@ -116,8 +124,103 @@ internal static class SeededRandomness {
         }
     }
 
+    /// Provides all debris-related a single shared random instance
+    /// Unless seeded, this will fall back to the original "RNG fix"
+    public class DebrisHandler : Handler {
+        public override string Name => "Debris";
+
+        private static Random? debrisRandom;
+        private static int debrisAmount = 0;
+
+        [EnableRun]
+        private static void EnableRun() {
+            debrisRandom = null;
+        }
+
+        public override void Init() {
+            // Reset the random instance, to start every level with the legacy behaviour
+            Everest.Events.Level.OnLoadLevel += (_, _, isFromLoader) => {
+                if (isFromLoader) {
+                    debrisRandom = null;
+                }
+            };
+
+            // Collect **everything** debris related
+            var methods = new Dictionary<MethodInfo, int> {
+                {typeof(Debris).GetMethodInfo(nameof(Debris.orig_Init))!, 1},
+                {typeof(Debris).GetMethodInfo(nameof(Debris.Init), [typeof(Vector2), typeof(char), typeof(bool)])!, 1},
+                {typeof(Debris).GetMethodInfo(nameof(Debris.BlastFrom))!, 1},
+            };
+
+            foreach (var type in ModUtils.GetTypes()) {
+                if (!type.Name.EndsWith("Debris")) {
+                    continue;
+                }
+
+                foreach (var method in type.GetAllMethodInfos()) {
+                    if (method.Name != "Init" || method.IsStatic) {
+                        continue;
+                    }
+                    if (method.GetParameters().IndexOf(p => p.ParameterType == typeof(Vector2)) is var positionParamIdx && positionParamIdx == -1) {
+                        continue;
+                    }
+
+                    methods[method] = positionParamIdx + 1;
+                }
+            }
+
+            foreach ((var method, int positionParamIdx) in methods) {
+                method.IlHook((cursor, _) => {
+                    cursor.EmitLdarg(positionParamIdx);
+                    cursor.EmitDelegate(PushRandom);
+
+                    while (cursor.TryGotoNext(MoveType.AfterLabel, instr => instr.MatchRet())) {
+                        cursor.EmitDelegate(PopRandom);
+                        cursor.Index += 1;
+                    }
+                });
+            }
+
+            static void PushRandom(Vector2 spawnPosition) {
+                if (!Manager.Running) {
+                    return;
+                }
+
+                if (debrisRandom != null) {
+                    Calc.PushRandom(debrisRandom);
+                    return;
+                }
+
+                // Legacy behaviour used for fixing debris randomness
+                // Kept to avoid existing TASes from desyncing
+                debrisAmount++;
+                int seed = debrisAmount + spawnPosition.GetHashCode();
+                if (Engine.Scene is Level level) {
+                    seed += level.Session.LevelData.LoadSeed;
+                }
+
+                Calc.PushRandom(seed);
+            }
+            static void PopRandom() {
+                if (Manager.Running) {
+                    Calc.PopRandom();
+                }
+            }
+        }
+
+        public override void PreUpdate() {
+            if (NextSeed(out int seed)) {
+                debrisRandom = new Random(seed);
+                AssertNoSeedsRemaining();
+            }
+
+            debrisAmount = 0;
+        }
+    }
+
     #region Mod Interop
 
+    /// Alias for the 'ah_set_seed' console command
     public class AurorasHelperHandler : Handler {
         public override string Name => "AurorasHelper_Shared";
 
@@ -135,12 +238,18 @@ internal static class SeededRandomness {
 
     private static readonly List<Handler> handlers = [
         new SharedUpdateHandler(),
-        new FrameCounterHandler()
+        new FrameCounterHandler(),
+        new DebrisHandler(),
     ];
 
+    [Initialize]
     private static void Initialize() {
         if (ModUtils.IsInstalled("AurorasHelper")) {
             handlers.Add(new AurorasHelperHandler());
+        }
+
+        foreach (var handler in handlers) {
+            handler.Init();
         }
     }
 

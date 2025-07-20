@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Reflection;
 using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework;
@@ -17,45 +15,12 @@ namespace TAS.EverestInterop;
 // ReSharper disable AssignNullToNotNullAttribute
 public static class DesyncFixer {
     private const string pushedRandomFlag = "CelesteTAS_PushedRandom";
-    private static int debrisAmount;
 
     // this random needs to be used all through aura entity's lifetime
     internal static Random AuraHelperSharedRandom = new Random(1234);
 
     [Initialize]
     private static void Initialize() {
-        Dictionary<MethodInfo, int> methods = new() {
-            {typeof(Debris).GetMethodInfo(nameof(Debris.orig_Init))!, 1},
-            {typeof(Debris).GetMethodInfo(nameof(Debris.Init), [typeof(Vector2), typeof(char), typeof(bool)])!, 1},
-            {typeof(Debris).GetMethodInfo(nameof(Debris.BlastFrom))!, 1},
-        };
-
-        foreach (var type in ModUtils.GetTypes()) {
-            if (!type.Name.EndsWith("Debris")) {
-                continue;
-            }
-
-            foreach (var method in type.GetAllMethodInfos()) {
-                if (method.Name != "Init" || method.IsStatic) {
-                    continue;
-                }
-
-                int index = 1;
-                foreach (var param in method.GetParameters()) {
-                    if (param.ParameterType == typeof(Vector2)) {
-                        methods[method] = index;
-                        break;
-                    }
-
-                    index++;
-                }
-            }
-        }
-
-        foreach (KeyValuePair<MethodInfo, int> pair in methods) {
-            pair.Key.IlHook(SeededRandom(pair.Value));
-        }
-
         if (ModUtils.GetModule("DeadzoneConfig")?.GetType() is { } deadzoneConfigModuleType) {
             deadzoneConfigModuleType.GetMethodInfo("OnInputInitialize")!.SkipMethod(SkipDeadzoneConfig);
         }
@@ -81,7 +46,6 @@ public static class DesyncFixer {
         typeof(DreamMirror).GetMethodInfo("Added")!.HookAfter<DreamMirror>(FixDreamMirrorDesync);
         typeof(CS03_Memo.MemoPage).GetConstructors()[0].HookAfter<CS03_Memo.MemoPage>(FixMemoPageCrash);
         typeof(FinalBoss).GetMethodInfo("Added")!.HookAfter<FinalBoss>(FixFinalBossDesync);
-        typeof(Entity).GetMethodInfo("Update")!.HookAfter(AfterEntityUpdate);
         typeof(AscendManager).GetMethodInfo("Routine")!.GetStateMachineTarget()!.IlHook(MakeRngConsistent);
 
         // System.IndexOutOfRangeException: Index was outside the bounds of the array.
@@ -130,10 +94,6 @@ public static class DesyncFixer {
         }));
     }
 
-    private static void AfterEntityUpdate() {
-        debrisAmount = 0;
-    }
-
     private static void MakeRngConsistent(ILCursor ilCursor, ILContext ilContent) {
         if (ilCursor.TryGotoNext(MoveType.After, ins => ins.OpCode == OpCodes.Stfld && ins.Operand.ToString()!.Contains("::<from>"))) {
             ILCursor cursor = ilCursor.Clone();
@@ -155,35 +115,6 @@ public static class DesyncFixer {
         if (Engine.Scene.GetSession() is { } session && session.GetFlag(pushedRandomFlag)) {
             Calc.PopRandom();
             session.SetFlag(pushedRandomFlag, false);
-        }
-    }
-
-    private static ILContext.Manipulator SeededRandom(int index) {
-        return context => {
-            ILCursor cursor = new(context);
-            cursor.Emit(OpCodes.Ldarg, index).EmitDelegate(PushRandom);
-            while (cursor.TryGotoNext(MoveType.AfterLabel, i => i.OpCode == OpCodes.Ret)) {
-                cursor.EmitDelegate(PopRandom);
-                cursor.Index++;
-            }
-        };
-    }
-
-    private static void PushRandom(Vector2 vector2) {
-        if (Manager.Running) {
-            debrisAmount++;
-            int seed = debrisAmount + vector2.GetHashCode();
-            if (Engine.Scene is Level level) {
-                seed += level.Session.LevelData.LoadSeed;
-            }
-
-            Calc.PushRandom(seed);
-        }
-    }
-
-    private static void PopRandom() {
-        if (Manager.Running) {
-            Calc.PopRandom();
         }
     }
 
