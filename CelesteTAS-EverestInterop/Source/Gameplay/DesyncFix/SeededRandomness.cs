@@ -83,6 +83,9 @@ internal static class SeededRandomness {
         if (ModUtils.IsInstalled("PandorasBox")) {
             handlers.Add(new PandorasBoxTileGlitcherHandler());
         }
+        if (ModUtils.IsInstalled("VortexHelper")) {
+            handlers.Add(new VortexHelperColorSwitchHandler());
+        }
 
         // Reset the random instances, to start every level with the default behaviour
         Everest.Events.Level.OnLoadLevel += (_, _, isFromLoader) => {
@@ -412,6 +415,28 @@ internal static class SeededRandomness {
         public override void PreUpdate() {
             if (NextSeed(out int seed)) {
                 glitcherRandom = new Random(seed);
+                AssertNoSeedsRemaining();
+            }
+        }
+    }
+
+    public class VortexHelperColorSwitchHandler : Handler {
+        public override string Name => "VortexHelper_ColorSwitch";
+
+        private static Random? switchRandom;
+
+        public override void Init() {
+            SeedMethod(
+                ModUtils.GetMethod("VortexHelper", "Celeste.Mod.VortexHelper.Entities.ColorSwitch", "Switch"),
+                typeof(VortexHelperColorSwitchHandler).GetFieldInfo(nameof(switchRandom))!
+            );
+        }
+        public override void Reset() {
+            switchRandom = null;
+        }
+        public override void PreUpdate() {
+            if (NextSeed(out int seed)) {
+                switchRandom = new Random(seed);
                 AssertNoSeedsRemaining();
             }
         }
