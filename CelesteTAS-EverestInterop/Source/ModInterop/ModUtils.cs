@@ -21,7 +21,7 @@ internal static class ModUtils {
 
         var type = asm.GetType(fullTypeName);
         if (type == null) {
-            $"Failed to find type '{fullTypeName}' in assembly '{asm}'".Log(LogLevel.Error);
+            $"Failed to find type '{fullTypeName}' in assembly '{asm}' of mod '{modName}'".Log(LogLevel.Error);
             return null;
         }
 
@@ -38,12 +38,34 @@ internal static class ModUtils {
         foreach (string fullTypeName in fullTypeNames) {
             var type = asm.GetType(fullTypeName);
             if (type == null) {
-                $"Failed to find type '{fullTypeName}' in assembly '{asm}'".Log(LogLevel.Error);
+                $"Failed to find type '{fullTypeName}' in assembly '{asm}' of mod '{modName}'".Log(LogLevel.Error);
                 continue;
             }
 
             yield return type;
         }
+    }
+
+    /// Returns the specified field from the given mod, if the mod is present
+    public static FieldInfo? GetField(string modName, string fullTypeName, string fieldName) {
+        var asm = GetAssembly(modName);
+        if (asm == null) {
+            return null;
+        }
+
+        var type = asm.GetType(fullTypeName);
+        if (type == null) {
+            $"Failed to find type '{fullTypeName}' in assembly '{asm}' of mod '{modName}'".Log(LogLevel.Error);
+            return null;
+        }
+
+        var field = type.GetFieldInfo(fieldName);
+        if (field == null) {
+            $"Failed to find field '{fieldName}' in type '{type}' of mod '{modName}'".Log(LogLevel.Error);
+            return null;
+        }
+
+        return field;
     }
 
     /// Returns the specified method from the given mod, if the mod is present
@@ -55,13 +77,13 @@ internal static class ModUtils {
 
         var type = asm.GetType(fullTypeName);
         if (type == null) {
-            $"Failed to find type '{fullTypeName}' in assembly '{asm}'".Log(LogLevel.Error);
+            $"Failed to find type '{fullTypeName}' in assembly '{asm}' of mod '{modName}'".Log(LogLevel.Error);
             return null;
         }
 
         var method = type.GetMethodInfo(methodName, parameterTypes);
         if (method == null) {
-            $"Failed to find method '{methodName}' in type '{type}'".Log(LogLevel.Error);
+            $"Failed to find method '{methodName}' in type '{type}' of mod '{modName}'".Log(LogLevel.Error);
             return null;
         }
 

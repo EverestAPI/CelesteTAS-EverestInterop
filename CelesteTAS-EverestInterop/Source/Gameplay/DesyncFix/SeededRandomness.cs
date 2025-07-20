@@ -83,6 +83,9 @@ internal static class SeededRandomness {
         if (ModUtils.IsInstalled("PandorasBox")) {
             handlers.Add(new PandorasBoxTileGlitcherHandler());
         }
+        if (ModUtils.IsInstalled("Spekio's Toolbox")) {
+            handlers.Add(new SpekioToolboxShooterHandler());
+        }
         if (ModUtils.IsInstalled("VortexHelper")) {
             handlers.Add(new VortexHelperColorSwitchHandler());
         }
@@ -422,6 +425,22 @@ internal static class SeededRandomness {
         public override void PreUpdate() {
             if (NextSeed(out int seed)) {
                 glitcherRandom = new Random(seed);
+                AssertNoSeedsRemaining();
+            }
+        }
+    }
+
+    public class SpekioToolboxShooterHandler : Handler {
+        public override string Name => "SpekioToolbox_Shooter";
+
+        private readonly FieldInfo? f_rnd = ModUtils.GetField("Spekio's Toolbox", "Celeste.Mod.SpekioToolbox.Shooter", "rnd");
+
+        public override void Reset() {
+            f_rnd?.SetValue(null, new Random(0));
+        }
+        public override void PreUpdate() {
+            if (f_rnd != null && NextSeed(out int seed)) {
+                f_rnd?.SetValue(null, new Random(seed));
                 AssertNoSeedsRemaining();
             }
         }
