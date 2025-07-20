@@ -220,6 +220,10 @@ internal static class SeededRandomness {
         public static ulong FrameCounter = 0;
         private static ulong? origFrameCounter;
 
+        public override void Reset() {
+            FrameCounter = 0;
+        }
+
         public override void PreUpdate() {
             if (NextSeed(out int seed)) {
                 AssertNoSeedsRemaining();
@@ -390,6 +394,9 @@ internal static class SeededRandomness {
 
         private readonly MethodInfo? m_CmdSetSeed = ModUtils.GetMethod("AurorasHelper", "Celeste.Mod.AurorasHelper.AurorasHelperModule", "CmdSetSeed");
 
+        public override void Reset() {
+            m_CmdSetSeed?.Invoke(null, [0]);
+        }
         public override void PreUpdate() {
             if (m_CmdSetSeed != null && NextSeed(out int seed)) {
                 m_CmdSetSeed.Invoke(null, [seed]);
