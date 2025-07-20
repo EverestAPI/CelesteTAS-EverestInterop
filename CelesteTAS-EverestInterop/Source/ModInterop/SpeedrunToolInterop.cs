@@ -149,7 +149,6 @@ internal static class SpeedrunToolInterop {
                     { nameof(MouseCommand.CurrentState), MouseCommand.CurrentState },
                     { nameof(HitboxSimplified.Followers), HitboxSimplified.Followers },
                     { nameof(SafeCommand.DisallowUnsafeInput), SafeCommand.DisallowUnsafeInput },
-                    { nameof(DesyncFixer.AuraHelperSharedRandom), DesyncFixer.AuraHelperSharedRandom },
                     { nameof(BetterInvincible), Manager.Running && BetterInvincible.Invincible },
                 };
                 AttributeUtils.Invoke<SaveStateAttribute>(saveData);
@@ -182,7 +181,6 @@ internal static class SpeedrunToolInterop {
                 MouseCommand.CurrentState = (MouseState) saveData[nameof(MouseCommand.CurrentState)]!;
                 HitboxSimplified.Followers = (Dictionary<Follower, bool>) saveData[nameof(HitboxSimplified.Followers)]!;
                 SafeCommand.DisallowUnsafeInput = (bool) saveData[nameof(SafeCommand.DisallowUnsafeInput)]!;
-                DesyncFixer.AuraHelperSharedRandom = (Random) saveData[nameof(DesyncFixer.AuraHelperSharedRandom)]!;
                 BetterInvincible.Invincible = Manager.Running && (bool) saveData[nameof(BetterInvincible)]!;
 
                 InfoWatchEntity.WatchedEntities = InfoWatchEntity.WatchedEntities_Save.DeepClone();

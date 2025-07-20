@@ -77,6 +77,10 @@ internal static class SeededRandomness {
 
     [Initialize]
     private static void Initialize() {
+        if (ModUtils.IsInstalled("AuraHelper")) {
+            handlers.Add(new AuraHelperLanternHandler());
+            handlers.Add(new AuraHelperGeneratorHandler());
+        }
         if (ModUtils.IsInstalled("AurorasHelper")) {
             handlers.Add(new AurorasHelperHandler());
         }
@@ -390,6 +394,83 @@ internal static class SeededRandomness {
 
     #endregion
     #region Mod Interop
+
+    public class AuraHelperLanternHandler : Handler {
+        public override string Name => "AuraHelper_Lantern";
+
+        /// AuraHelper entities use a legacy shared random instance if no specific seed is provided
+        /// This is required to avoid existing TASes from desyncing due to the changed behavior
+        public static Random SharedRandom = new(1234);
+
+        private static Random? lanternRandom;
+
+        public override void Init() {
+            if (ModUtils.GetType("AuraHelper", "AuraHelper.Lantern") is not { } auraLanternType) {
+                return;
+            }
+
+            auraLanternType.GetConstructor([typeof(Vector2), typeof(string), typeof(int)])?.IlHook((cursor, _) => {
+                cursor.EmitLdarg1();
+                cursor.EmitStaticDelegate("SetupSharedRandom", (Vector2 position) => {
+                    if (!Manager.Running) {
+                        return;
+                    }
+
+                    int seed = position.GetHashCode();
+                    if (Engine.Scene.GetLevel() is { } level) {
+                        seed += level.Session.LevelData.LoadSeed;
+                    }
+                    SharedRandom = new Random(seed);
+                });
+            });
+            auraLanternType.GetMethodInfo("Update")?.IlHook((cursor, _) => {
+                cursor.EmitStaticDelegate("PushRandom", () => {
+                    Calc.PushRandom(lanternRandom ?? SharedRandom);
+                });
+
+                while (cursor.TryGotoNext(MoveType.AfterLabel, instr => instr.MatchRet())) {
+                    cursor.EmitDelegate(Calc.PopRandom);
+                    cursor.Index += 1;
+                }
+            });
+        }
+        public override void Reset() {
+            lanternRandom = null;
+        }
+        public override void PreUpdate() {
+            if (NextSeed(out int seed)) {
+                lanternRandom = new Random(seed);
+                AssertNoSeedsRemaining();
+            }
+        }
+    }
+    public class AuraHelperGeneratorHandler : Handler {
+        public override string Name => "AuraHelper_Generator";
+
+        private static Random? generatorRandom;
+
+        public override void Init() {
+            ModUtils.GetMethod("AuraHelper", "AuraHelper.Generator", "Update")?.GetStateMachineTarget()?.IlHook((cursor, _) => {
+                cursor.EmitStaticDelegate("PushRandom", () => {
+                    Calc.PushRandom(generatorRandom ?? AuraHelperLanternHandler.SharedRandom);
+                });
+
+                while (cursor.TryGotoNext(MoveType.AfterLabel, instr => instr.MatchRet())) {
+                    cursor.EmitDelegate(Calc.PopRandom);
+                    cursor.Index += 1;
+                }
+            });
+        }
+        public override void Reset() {
+            generatorRandom = null;
+        }
+        public override void PreUpdate() {
+            if (NextSeed(out int seed)) {
+                generatorRandom = new Random(seed);
+                AssertNoSeedsRemaining();
+            }
+        }
+    }
 
     /// Alias for the 'ah_set_seed' console command
     public class AurorasHelperHandler : Handler {
