@@ -3,6 +3,7 @@ using Celeste.Mod;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Cil;
+using MonoMod.Utils;
 using StudioCommunication;
 using StudioCommunication.Util;
 using System;
@@ -47,8 +48,8 @@ internal static class SeededRandomness {
             }
         }
 
-        protected void SeedMethod(MethodInfo targetMethod, FieldInfo randomField) {
-            targetMethod.IlHook((cursor, _) => {
+        protected static void SeedMethod(MethodInfo? targetMethod, FieldInfo randomField) {
+            targetMethod?.IlHook((cursor, _) => {
                 cursor.EmitLdsfld(randomField);
                 cursor.EmitStaticDelegate("PushRandom", (Random? random) => {
                     // Fall back to Calc.Random since we still need push something, to avoid additional checks with the pop
@@ -62,6 +63,111 @@ internal static class SeededRandomness {
             });
         }
     }
+
+    private static readonly List<Handler> handlers = [
+        // Common
+        new SharedUpdateHandler(),
+        new FrameCounterHandler(),
+        new DebrisHandler(),
+
+        // Vanilla
+        new PrologueBridgeHandler(),
+    ];
+
+    [Initialize]
+    private static void Initialize() {
+        if (ModUtils.IsInstalled("AurorasHelper")) {
+            handlers.Add(new AurorasHelperHandler());
+        }
+        if (ModUtils.IsInstalled("PandorasBox")) {
+            handlers.Add(new PandorasBoxTileGlitcherHandler());
+        }
+
+        // Reset the random instances, to start every level with the default behaviour
+        Everest.Events.Level.OnLoadLevel += (_, _, isFromLoader) => {
+            if (isFromLoader) {
+                foreach (var handler in handlers) {
+                    handler.Reset();
+                }
+            }
+        };
+
+        foreach (var handler in handlers) {
+            handler.Init();
+        }
+    }
+
+    [EnableRun]
+    private static void EnableRun() {
+        foreach (var handler in handlers) {
+            handler.Reset();
+        }
+    }
+
+    [Events.PreEngineUpdate]
+    private static void PreEngineUpdate() {
+        foreach (var handler in handlers) {
+            handler.PreUpdate();
+        }
+    }
+    [Events.PostEngineUpdate]
+    private static void PostEngineUpdate() {
+        foreach (var handler in handlers) {
+            handler.PostUpdate();
+            handler.Seeds = [];
+            handler.SeedIndex = 0;
+        }
+    }
+
+    private class Meta : ITasCommandMeta {
+        public string Insert => $"SeedRandom{CommandInfo.Separator}[0;Target]{CommandInfo.Separator}[1;Seed]";
+        public bool HasArguments => true;
+
+        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
+            if (args.Length != 1) {
+                yield break;
+            }
+
+            foreach (var handler in handlers) {
+                yield return new CommandAutoCompleteEntry { Name = handler.Name, IsDone = true };
+            }
+        }
+    }
+
+    /// SeedRandom,Target,Seed(s)
+    [TasCommand("SeedRandom", CalcChecksum = true, MetaDataProvider = typeof(Meta))]
+    private static void SeedRandom(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        if (commandLine.Arguments.Length < 1) {
+            AbortTas("Missing target for SeedRandom");
+            return;
+        }
+        if (commandLine.Arguments.Length < 2) {
+            AbortTas("Missing seed(s) for SeedRandom");
+            return;
+        }
+
+        string[] args = commandLine.Arguments;
+        string target = args[0];
+        int[] seeds = new int[args.Length - 1];
+        for (int i = 0; i < seeds.Length; i++) {
+            if (int.TryParse(args[i + 1], out int seed)) {
+                seeds[i] = seed;
+            } else {
+                AbortTas($"Failed to parse '{args[i + 1]}' as a random seed");
+                return;
+            }
+        }
+
+        if (handlers.FirstOrDefault(h => h.Name == target) is not { } handler) {
+            AbortTas($"Unknown target '{target}' for SeedRandom");
+            return;
+        }
+
+        handler.Seeds = seeds;
+        handler.SeedIndex = 0;
+    }
+
+    #region Common
 
     /// 'Calc.Random' is shared between Update() and Render() code, however the latter is undeterministic,
     /// so this random instances is reserved to only be used during Update()
@@ -226,13 +332,19 @@ internal static class SeededRandomness {
         }
     }
 
+    #endregion
+    #region Vanilla
+
     public class PrologueBridgeHandler : Handler {
         public override string Name => "Celeste_PrologueBridge";
 
         private static Random? bridgeRandom;
 
         public override void Init() {
-            SeedMethod(typeof(Bridge).GetMethodInfo(nameof(Bridge.Update))!, typeof(PrologueBridgeHandler).GetFieldInfo(nameof(bridgeRandom))!);
+            SeedMethod(
+                typeof(Bridge).GetMethodInfo(nameof(Bridge.Update))!,
+                typeof(PrologueBridgeHandler).GetFieldInfo(nameof(bridgeRandom))!
+            );
         }
         public override void Reset() {
             bridgeRandom = null;
@@ -245,6 +357,7 @@ internal static class SeededRandomness {
         }
     }
 
+    #endregion
     #region Mod Interop
 
     /// Alias for the 'ah_set_seed' console command
@@ -261,106 +374,27 @@ internal static class SeededRandomness {
         }
     }
 
+    public class PandorasBoxTileGlitcherHandler : Handler {
+        public override string Name => "PandorasBox_TileGlitcher";
+
+        private static Random? glitcherRandom;
+
+        public override void Init() {
+            SeedMethod(
+                ModUtils.GetMethod("PandorasBox", "Celeste.Mod.PandorasBox.TileGlitcher", "tileGlitcher")?.GetStateMachineTarget(),
+                typeof(PandorasBoxTileGlitcherHandler).GetFieldInfo(nameof(glitcherRandom))!
+            );
+        }
+        public override void Reset() {
+            glitcherRandom = null;
+        }
+        public override void PreUpdate() {
+            if (NextSeed(out int seed)) {
+                glitcherRandom = new Random(seed);
+                AssertNoSeedsRemaining();
+            }
+        }
+    }
+
     #endregion
-
-    private static readonly List<Handler> handlers = [
-        // Common
-        new SharedUpdateHandler(),
-        new FrameCounterHandler(),
-        new DebrisHandler(),
-
-        // Vanilla
-        new PrologueBridgeHandler(),
-    ];
-
-    [Initialize]
-    private static void Initialize() {
-        if (ModUtils.IsInstalled("AurorasHelper")) {
-            handlers.Add(new AurorasHelperHandler());
-        }
-
-        // Reset the random instances, to start every level with the default behaviour
-        Everest.Events.Level.OnLoadLevel += (_, _, isFromLoader) => {
-            if (isFromLoader) {
-                foreach (var handler in handlers) {
-                    handler.Reset();
-                }
-            }
-        };
-
-        foreach (var handler in handlers) {
-            handler.Init();
-        }
-    }
-
-    [EnableRun]
-    private static void EnableRun() {
-        foreach (var handler in handlers) {
-            handler.Reset();
-        }
-    }
-
-    [Events.PreEngineUpdate]
-    private static void PreEngineUpdate() {
-        foreach (var handler in handlers) {
-            handler.PreUpdate();
-        }
-    }
-    [Events.PostEngineUpdate]
-    private static void PostEngineUpdate() {
-        foreach (var handler in handlers) {
-            handler.PostUpdate();
-            handler.Seeds = [];
-            handler.SeedIndex = 0;
-        }
-    }
-
-    private class Meta : ITasCommandMeta {
-        public string Insert => $"SeedRandom{CommandInfo.Separator}[0;Target]{CommandInfo.Separator}[1;Seed]";
-        public bool HasArguments => true;
-
-        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
-            if (args.Length != 1) {
-                yield break;
-            }
-
-            foreach (var handler in handlers) {
-                yield return new CommandAutoCompleteEntry { Name = handler.Name, IsDone = true };
-            }
-        }
-    }
-
-    [TasCommand("SeedRandom", CalcChecksum = true, MetaDataProvider = typeof(Meta))]
-    private static void SeedRandom(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
-        if (commandLine.Arguments.Length < 1) {
-            AbortTas("Missing target for SeedRandom");
-            return;
-        }
-        if (commandLine.Arguments.Length < 2) {
-            AbortTas("Missing seed(s) for SeedRandom");
-            return;
-        }
-
-        string[] args = commandLine.Arguments;
-        string target = args[0];
-        int[] seeds = new int[args.Length - 1];
-        for (int i = 0; i < seeds.Length; i++) {
-            if (int.TryParse(args[i + 1], out int seed)) {
-                seeds[i] = seed;
-            } else {
-                AbortTas($"Failed to parse '{args[i + 1]}' as a random seed");
-                return;
-            }
-        }
-
-        if (handlers.FirstOrDefault(h => h.Name == target) is not { } handler) {
-            AbortTas($"Unknown target '{target}' for SeedRandom");
-            return;
-        }
-
-        handler.Seeds = seeds;
-        handler.SeedIndex = 0;
-    }
-
-
 }
