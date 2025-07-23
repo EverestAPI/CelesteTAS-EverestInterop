@@ -1,3 +1,23 @@
+# CelesteTAS v3.46.0, Studio v3.9.5
+
+## Universal RNG Seeding
+
+Even though most things in Celeste are deterministic, some are not!  
+To solve this issue, CelesteTAS now changes all randomness to have deterministic behavior.
+
+Additionally, all (technically) undeterministic randomness can now be seeded with the `SeedRandom,[Target],[Seed]` command.  
+You can refer to [the wiki page](https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Randomness) to read about all supported cases and the ethics surrounding them.
+
+**Please report any remaining cases of undeterministic behaviour or randomness!**  
+That also includes deterministic behavior which breaks with seemingly unrelated changes.
+
+---
+
+- Feature: Consistent behaviour of randomness when running a TAS
+- Feature: Universal RNG seeding system with `SeedRandom` command
+- Fix: Maintain correct `Calc.Random` state while fast-forwarding
+- Fix: Dust sprites not being created while fast-forwarding
+
 # CelesteTAS v3.45.4, Studio v3.9.5
 
 - Feature: Allow force-enabling accessibility tools only after doing a casual playthrough
