@@ -19,7 +19,7 @@ internal static class RecordingCommand {
 
     internal static readonly Dictionary<int, RecordingTime> RecordingTimes = new();
 
-    /// "StartRecording"
+    /// "StartRecording, (File Path)"
     [TasCommand("StartRecording", ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime)]
     private static void StartRecording(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         if (ParsingCommand) {
@@ -57,7 +57,8 @@ internal static class RecordingCommand {
                 return;
             }
 
-            TASRecorderInterop.StartRecording();
+            string? fileName = commandLine.Arguments.Length > 1 ? commandLine.Arguments[0] : null;
+            TASRecorderInterop.StartRecording(fileName);
             if (RecordingTimes.TryGetValue(Manager.Controller.CurrentFrameInTas, out var time) && time.StartFrame != int.MaxValue && time.StopFrame != int.MaxValue) {
                 TASRecorderInterop.SetDurationEstimate(time.Duration);
             }
