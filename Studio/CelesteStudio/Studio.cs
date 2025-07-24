@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using CelesteStudio.Communication;
 using CelesteStudio.Dialog;
+using CelesteStudio.Dialog.Git;
 using CelesteStudio.Editing;
 using CelesteStudio.Migration;
 using CelesteStudio.Tool;
@@ -419,7 +420,7 @@ public sealed class Studio : Form {
         return true;
     }
 
-    private string GetFilePickerDirectory() {
+    public string GetCurrentBaseDirectory() {
         string fallbackDir = string.IsNullOrWhiteSpace(Settings.Instance.LastSaveDirectory)
             ? Path.Combine(CelesteDirectory ?? string.Empty, "TAS Files")
             : Settings.Instance.LastSaveDirectory;
@@ -480,6 +481,7 @@ public sealed class Studio : Form {
     private static readonly ActionBinding SaveFile = new("File_Save", "Save", Binding.Category.File, Hotkey.KeyCtrl(Keys.S), () => Instance.OnSaveFile());
     private static readonly ActionBinding SaveFileAs = new("File_SaveAs", "&Save As...", Binding.Category.File, Hotkey.KeyCtrl(Keys.Shift | Keys.S), () => Instance.OnSaveFileAs(openTargetFile: true));
     private static readonly ActionBinding ShowFile = new("File_Show", "Show in &File Explorer...", Binding.Category.File, Hotkey.None, () => Instance.OnShowFile());
+    private static readonly ActionBinding CloneRepo = new("File_CloneRepo", "&Clone Git Repository...", Binding.Category.File, Hotkey.None, CloneRepositoryDialog.Show);
     private static readonly ActionBinding RecordTAS = new("File_RecordTAS", "&Record TAS...", Binding.Category.File, Hotkey.None, () => Instance.OnRecordTAS());
     private static readonly ActionBinding Quit = new("File_Quit", "Quit", Binding.Category.File, Hotkey.None, () => Application.Instance.Quit());
 
@@ -500,7 +502,7 @@ public sealed class Studio : Form {
     private static readonly BoolBinding ShowFoldingIndicator = CreateSettingToggle("View_ShowFoldingIndicator", "Show Fold Indicators", Binding.Category.View, Hotkey.None, nameof(Settings.ShowFoldIndicators));
 
     public static readonly Binding[] AllBindings = [
-        NewFile, OpenFile, OpenPreviousFile, SaveFile, SaveFileAs, ShowFile, RecordTAS, Quit,
+        NewFile, OpenFile, OpenPreviousFile, SaveFile, SaveFileAs, ShowFile, CloneRepo, RecordTAS, Quit,
         SendInputs,
         ShowGameInfo, ShowSubpixelIndicator, AlwaysOnTop, WrapComments, ShowFoldingIndicator,
     ];
@@ -573,7 +575,7 @@ public sealed class Studio : Form {
         OpenFileInEditor(Document.ScratchFile);
     }
 
-    private void OnOpenFile() {
+    public void OnOpenFile(string? baseDirectory = null) {
         if (!ShouldDiscardChanges()) {
             return;
         }
@@ -581,7 +583,7 @@ public sealed class Studio : Form {
         var dialog = new OpenFileDialog {
             Filters = { new FileFilter("TAS", ".tas") },
             MultiSelect = false,
-            Directory = new Uri(GetFilePickerDirectory()),
+            Directory = new Uri(baseDirectory ?? GetCurrentBaseDirectory()),
         };
 
         if (dialog.ShowDialog(this) == DialogResult.Ok) {
@@ -612,7 +614,7 @@ public sealed class Studio : Form {
     private bool OnSaveFileAs(bool openTargetFile) {
         var dialog = new SaveFileDialog {
             Filters = { new FileFilter("TAS", ".tas") },
-            Directory = new Uri(GetFilePickerDirectory()),
+            Directory = new Uri(GetCurrentBaseDirectory()),
         };
 
         if (dialog.ShowDialog(this) != DialogResult.Ok) {
@@ -737,6 +739,8 @@ public sealed class Studio : Form {
                 new SeparatorMenuItem(),
                 SaveFile,
                 SaveFileAs,
+                new SeparatorMenuItem(),
+                CloneRepo,
                 new SeparatorMenuItem(),
                 MenuUtils.CreateAction("&Convert to LibTAS Movie..."),
                 new SeparatorMenuItem(),
@@ -930,7 +934,7 @@ public sealed class Studio : Form {
     private void OnIntegrateReadFiles() {
         var dialog = new SaveFileDialog {
             Filters = { new FileFilter("TAS", ".tas") },
-            Directory = new Uri(GetFilePickerDirectory()),
+            Directory = new Uri(GetCurrentBaseDirectory()),
             FileName = Path.GetDirectoryName(Editor.Document.FilePath) + "/" + Path.GetFileNameWithoutExtension(Editor.Document.FilePath) + "_Integrated.tas"
         };
         Console.WriteLine($"f {Editor.Document.FilePath} & {Path.GetDirectoryName(Editor.Document.FilePath) + Path.GetFileNameWithoutExtension(Editor.Document.FilePath) + "_Integrated.tas"}");
