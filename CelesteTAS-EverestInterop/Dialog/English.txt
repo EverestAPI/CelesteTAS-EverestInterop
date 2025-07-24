@@ -153,6 +153,11 @@ TAS_KEY_CLEAR_STATE=                        Clear State in TAS
 TAS_KEY_INFO_HUD=                           Info HUD
 TAS_KEY_FREE_CAMERA=                        Free Camera
 
+# ============================================== Toast Messages ==============================================
+TAS_AutoPauseToast=                         Auto-pause draft on end:
+                                            Insert any *Time command at the end or disable the setting
+                                            See 'Mod Options -> Celeste TAS -> More Options' for additional information
+
 # ============================================== Option Values ==============================================
 TAS_DEFAULT=                                Default
 TAS_HIDE=                                   Hide

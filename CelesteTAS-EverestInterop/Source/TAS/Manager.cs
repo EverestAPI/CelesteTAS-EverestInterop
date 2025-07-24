@@ -64,6 +64,7 @@ public static class Manager {
 
     private static PopupToast.Entry? frameStepEofToast = null;
     private static PopupToast.Entry? autoPauseDraft = null;
+    private static bool seenAutoPauseToast = false;
 
     // Allow accumulation of frames to step back, since the operation is time intensive
     internal static int FrameStepBackTargetFrame = -1;
@@ -198,14 +199,15 @@ public static class Manager {
             NextState = State.Paused;
 
             if (CurrState == State.Running && !FastForwarding) {
-                const string text = "Auto-pause draft on end:\nInsert any Time command or disable the setting to prevent the pausing";
-                const float duration = 2.0f;
+                float duration = seenAutoPauseToast ? 2.0f : 8.0f;
                 if (autoPauseDraft is not { Active: true }) {
-                    autoPauseDraft = PopupToast.Show(text, duration);
+                    autoPauseDraft = PopupToast.Show(Dialog.Clean("TAS_AutoPauseToast"), duration);
                 } else {
-                    autoPauseDraft.Text = text;
+                    autoPauseDraft.Text = Dialog.Clean("TAS_AutoPauseToast");
                     autoPauseDraft.Timeout = duration;
                 }
+
+                seenAutoPauseToast = true;
             }
         }
         // Pause the TAS if breakpoint is hit
