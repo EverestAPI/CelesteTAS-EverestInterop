@@ -14,6 +14,7 @@ using TAS.Input;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
+using Command = TAS.Input.Command;
 
 namespace TAS.Gameplay.DesyncFix;
 
@@ -26,6 +27,7 @@ internal static class SeededRandomness {
         /// List of seeds to be used for the current frame
         public int[] Seeds = [];
         public int SeedIndex = 0;
+        public SourceLocation SeedSource;
 
         public virtual void Init() { }
         public virtual void Reset() { }
@@ -44,7 +46,7 @@ internal static class SeededRandomness {
 
         protected void AssertNoSeedsRemaining() {
             if (SeedIndex < Seeds.Length) {
-                AbortTas($"Target '{Name}' was provided more seeds than expected: Expected {SeedIndex}, got {Seeds.Length}");
+                Manager.Controller.ReportError(SeedSource, $"Target '{Name}' was provided more seeds than expected: Expected {SeedIndex}, got {Seeds.Length}");
             }
         }
 
@@ -127,6 +129,7 @@ internal static class SeededRandomness {
             handler.PostUpdate();
             handler.Seeds = [];
             handler.SeedIndex = 0;
+            handler.SeedSource = default;
         }
     }
 
@@ -145,15 +148,18 @@ internal static class SeededRandomness {
         }
     }
 
-    /// SeedRandom,Target,Seed(s)
-    [TasCommand("SeedRandom", CalcChecksum = true, MetaDataProvider = typeof(Meta))]
+    /// SeedRandom, Target, Seed(s)
+    [TasCommand("SeedRandom", CalcChecksum = true, ExecuteTiming = ExecuteTiming.Parse | ExecuteTiming.Runtime, MetaDataProvider = typeof(Meta))]
     private static void SeedRandom(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        var controller = Manager.Controller;
+        var src = new SourceLocation(filePath, fileLine, studioLine);
+
         if (commandLine.Arguments.Length < 1) {
-            AbortTas("Missing target for SeedRandom");
+            controller.ReportError(src, "Missing target for SeedRandom");
             return;
         }
         if (commandLine.Arguments.Length < 2) {
-            AbortTas("Missing seed(s) for SeedRandom");
+            controller.ReportError(src, "Missing seed(s) for SeedRandom");
             return;
         }
 
@@ -164,18 +170,21 @@ internal static class SeededRandomness {
             if (int.TryParse(args[i + 1], out int seed)) {
                 seeds[i] = seed;
             } else {
-                AbortTas($"Failed to parse '{args[i + 1]}' as a random seed");
+                controller.ReportError(src, $"Failed to parse '{args[i + 1]}' as a random seed");
                 return;
             }
         }
 
         if (handlers.FirstOrDefault(h => h.Name == target) is not { } handler) {
-            AbortTas($"Unknown target '{target}' for SeedRandom");
+            controller.ReportError(src, $"Unknown target '{target}' for SeedRandom");
             return;
         }
 
-        handler.Seeds = seeds;
-        handler.SeedIndex = 0;
+        if (!Command.Parsing) {
+            handler.Seeds = seeds;
+            handler.SeedIndex = 0;
+            handler.SeedSource = src;
+        }
     }
 
     #region Common

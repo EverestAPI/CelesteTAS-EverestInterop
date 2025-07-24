@@ -10,6 +10,8 @@ public readonly record struct Comment {
     public readonly int FileLine;
     public readonly int StudioLine;
 
+    internal SourceLocation Source => new(FilePath, FileLine, StudioLine);
+
     public readonly string Text;
 
     public Comment(int frame, string filePath, int fileLine, int studioLine, string text) {

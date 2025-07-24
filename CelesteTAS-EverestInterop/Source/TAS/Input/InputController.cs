@@ -23,6 +23,8 @@ public class ParseFileEndAttribute : Attribute;
 [AttributeUsage(AttributeTargets.Method), MeansImplicitUse]
 public class TasFileChangedAttribute : Attribute;
 
+internal readonly record struct SourceLocation(string FilePath, int FileLine, int StudioLine);
+
 /// Manages inputs, commands, etc. for the current TAS file
 public class InputController {
     [Initialize]
@@ -188,15 +190,9 @@ public class InputController {
                     continue;
                 }
 
-                PopupToast.ShowAndLog($"""
-                                       {comment.FilePath} line {comment.FileLine}:
-                                       Room label 'lvl_{match.Groups[1].ValueSpan}' does not match actual name 'lvl_{session.Level}'
-                                       """, level: logLevel);
+                ReportMessage(comment.Source, $"Room label 'lvl_{match.Groups[1].ValueSpan}' does not match actual name 'lvl_{session.Level}'", level: logLevel);
             } else {
-                PopupToast.ShowAndLog($"""
-                                       {comment.FilePath} line {comment.FileLine}:
-                                       Found room label '#{comment.Text}' outside of level
-                                       """, level: logLevel);
+                ReportMessage(comment.Source, $"Found room label '#{comment.Text}' outside of level", level: logLevel);
             }
 
             if (SyncChecker.ValidateRoomLabels) {
@@ -361,6 +357,32 @@ public class InputController {
         NeedsReload = true;
 
         AttributeUtils.Invoke<ClearInputsAttribute>();
+    }
+
+    internal void ReportError(SourceLocation src, string message, bool log = true, float duration = PopupToast.DefaultDuration) {
+        ReportMessage(src, message, level: LogLevel.Error);
+        Manager.DisableRunLater();
+    }
+    internal void ReportWarning(SourceLocation src, string message, bool log = true, float duration = PopupToast.DefaultDuration) {
+        ReportMessage(src, message, level: LogLevel.Warn);
+    }
+    internal void ReportMessage(SourceLocation src, string message, LogLevel level, bool log = false, float duration = PopupToast.DefaultDuration) {
+#if DEBUG
+        // Always log in debug builds
+        log = true;
+#endif
+
+        if (log) {
+            string logText = $"'{src.FilePath}' line {src.FileLine}: {message}";
+            foreach (var line in logText.AsSpan().EnumerateLines()) {
+                line.ToString().Log(level);
+            }
+        }
+
+        PopupToast.Show($"""
+                         '{Path.GetFileName(src.FilePath)}' line {src.FileLine}:
+                         {message}
+                         """, duration);
     }
 
     /// Create file-system-watchers for all TAS-files used, to detect changes

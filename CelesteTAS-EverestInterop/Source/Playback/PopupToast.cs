@@ -41,7 +41,10 @@ internal static class PopupToast {
         return entry;
     }
     public static Entry ShowAndLog(string message, float timeout = DefaultDuration, LogLevel level = LogLevel.Warn) {
-        message.Log(level);
+        foreach (var line in message.AsSpan().EnumerateLines()) {
+            line.ToString().Log(level);
+        }
+
         return ShowWithColor(message, level switch {
             LogLevel.Verbose => Color.Purple,
             LogLevel.Debug => Color.Blue,
@@ -64,7 +67,7 @@ internal static class PopupToast {
             if ((Engine.Scene is GameLoader loader && !loader.loaded) || !GFX.Loaded || Dialog.Languages == null || !Dialog.Languages.ContainsKey(Settings.EnglishLanguage) || ActiveFont.Font == null) {
                 return;
             }
-            
+
             if (TASRecorderInterop.IsRecording) {
                 return; // Avoid showing popups while recording
             }
