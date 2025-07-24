@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Xml;
+using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 
@@ -79,6 +80,20 @@ internal static class SkinModFix {
         On.Monocle.Sprite.Play -= On_Sprite_Play;
         On.Monocle.Sprite.PlayOffset -= On_Sprite_PlayOffset;
         On.Monocle.Sprite.Reverse -= On_Sprite_Reverse;
+    }
+    [Initialize]
+    private static void Initialize() {
+        // The Avali Skinmod (non-SMH) has custom code to swap the sprites dynamically,
+        // which needs to reference the visual sprite, instead of gameplay one.
+        if (ModUtils.GetMethod("Avali-Skinmod", "Celeste.Mod.AvaliSkin.AvaliSkinModule", "trySpriteSwap") is { } m_AvaliSpriteSwap) {
+            m_AvaliSpriteSwap.OnHook((Action<object, PlayerSprite, bool> orig, object self, PlayerSprite sprite, bool enabled) => {
+                if (gameplayToVisualSprites.TryGetValue(sprite, out var visual)) {
+                    orig(self, visual, enabled);
+                } else {
+                    orig(self, sprite, enabled);
+                }
+            });
+        }
     }
 
     private static bool CheckMapRequiresSkin() {
