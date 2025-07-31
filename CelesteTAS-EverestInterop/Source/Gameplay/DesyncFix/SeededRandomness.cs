@@ -98,7 +98,7 @@ internal static class SeededRandomness {
 
         // Reset the random instances, to start every level with the default behaviour
         Everest.Events.Level.OnLoadLevel += (_, _, isFromLoader) => {
-            if (isFromLoader) {
+            if (Manager.Running && isFromLoader) {
                 foreach (var handler in handlers) {
                     handler.Reset();
                 }
