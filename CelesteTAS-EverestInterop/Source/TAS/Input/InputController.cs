@@ -79,6 +79,9 @@ public class InputController {
     /// Whether the TAS should be paused on this frame
     public bool Break => CurrentFastForward?.Frame == CurrentFrameInTas || FastForwards.Any(entry => entry.Key == CurrentFrameInTas && entry.Value.ForceStop);
 
+    // TODO: Convert into parameter while parsing
+    internal bool EnableBreakpointParsing = true;
+
     private static readonly string DefaultFilePath = Path.Combine(Everest.PathEverest, "Celeste.tas");
 
     private string filePath = string.Empty;
@@ -278,6 +281,10 @@ public class InputController {
                 return false;
             }
         } else if (FastForwardLine.TryParse(lineText, out var fastForwardLine)) {
+            if (!EnableBreakpointParsing) {
+                return true;
+            }
+
             var fastForward = new FastForward(CurrentParsingFrame, studioLine, path, fileLine, fastForwardLine);
             if (FastForwards.TryGetValue(CurrentParsingFrame, out var oldFastForward) && oldFastForward.SaveState && !fastForward.SaveState) {
                 // ignore

@@ -190,7 +190,9 @@ public static class ReadCommand {
         var origAnalogMode = AnalogHelper.AnalogMode;
 
         readCommandStack.Add(readCommandDetail);
+        Manager.Controller.EnableBreakpointParsing = false;
         Manager.Controller.ReadFile(path, startLine, endLine, studioLine);
+        Manager.Controller.EnableBreakpointParsing = true;
         if (readCommandStack.Count > 0) {
             readCommandStack.RemoveAt(readCommandStack.Count - 1);
         }
