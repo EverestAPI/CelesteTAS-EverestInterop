@@ -702,13 +702,35 @@ internal class ComponentQueryHandler : TargetQuery.Handler {
 internal class CollectionQueryHandler : TargetQuery.Handler {
     private record BoxedValueHolder(object BaseInstance, int Index, Stack<object> ValueStack);
 
+    /// Matches an index on a member
+    /// e.g. `BaseType[Room:ID]`
+    private static readonly Regex IndexRegex = new(@"^(.+)(?:\[(.+)\])$", RegexOptions.Compiled);
+
     private const string SpreadKey = "___SpreadCollection___";
+    private const string IndexKey = "___Index___";
 
     public override IEnumerable<string> ProcessQueryArguments(IEnumerable<string> queryArgs) {
         foreach (string arg in queryArgs) {
             if (arg.EndsWith('*')) {
-                yield return arg[..^1];
+                string newArg = arg[..^1];
+
+                if (IndexRegex.Match(newArg) is { Success: true} indexMatch) {
+                    yield return indexMatch.Groups[1].Value;
+                    yield return $"{IndexKey}{indexMatch.Groups[2].Value}";
+                } else {
+                    yield return newArg;
+                }
+
                 yield return SpreadKey;
+            } else if (IndexRegex.Match(arg) is { Success: true} indexMatch) {
+                if (indexMatch.Groups[1].Value.EndsWith('*')) {
+                    yield return indexMatch.Groups[1].Value[..^1];
+                    yield return SpreadKey;
+                } else {
+                    yield return indexMatch.Groups[1].Value;
+                }
+
+                yield return $"{IndexKey}{indexMatch.Groups[2].Value}";
             } else {
                 yield return arg;
             }
@@ -738,6 +760,115 @@ internal class CollectionQueryHandler : TargetQuery.Handler {
         targetObject = null!;
         targetType = null!;
         return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+    }
+
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveMember(object? instance, out object? value, Type type, int memberIdx, string[] memberArgs) {
+        if (!memberArgs[memberIdx].StartsWith(IndexKey)) {
+            value = null;
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+        }
+
+        var keyType = typeof(int); // Default to an integer index
+        if (type.IsAssignableTo(typeof(IDictionary))) {
+            keyType = type.GenericTypeArguments[0];
+        }
+
+        var keyResult = TargetQuery.ResolveValue([memberArgs[memberIdx][IndexKey.Length..]], [keyType]);
+        if (keyResult.CheckFailure(out var error)) {
+            value = null;
+            return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(type, memberIdx, error.ToString()));
+        }
+
+        object key = keyResult.Value[0]!;
+        switch (instance) {
+            case IList list: {
+                int index = (int) key;
+                if (index < 0 || index >= list.Count) {
+                    value = null;
+                    return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(type, memberIdx, $"Index '{index}' is out-of-range (Expected >= 0 and <= {list.Count - 1})"));
+                }
+
+                value = list[(int) key];
+                return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+            }
+
+            case IDictionary dict: {
+                if (!dict.Contains(key)) {
+                    value = null;
+                    return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(type, memberIdx, $"Cannot find key '{key}' in dictionary"));
+                }
+
+                value = dict[key];
+                return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+            }
+
+            default: {
+                if (type.IsArray) {
+                    int index = (int) key;
+                    var array = (Array) instance!;
+                    if (index < 0 || index >= array.Length) {
+                        value = null;
+                        return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(type, memberIdx, $"Index '{index}' is out-of-range (Expected >= 0 and <= {array.Length - 1})"));
+                    }
+
+                    value = array.GetValue(index);
+                    return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+                }
+                break;
+            }
+        }
+
+        value = null;
+        return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(type, memberIdx, $"Cannot index type '{type}'"));
+    }
+
+    public override Result<bool, TargetQuery.MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
+        if (!memberArgs[memberIdx].StartsWith(IndexKey)) {
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+        }
+
+        var keyType = typeof(int); // Default to an integer index
+        if (type.IsAssignableTo(typeof(IDictionary))) {
+            keyType = type.GenericTypeArguments[0];
+        }
+
+        var keyResult = TargetQuery.ResolveValue([memberArgs[memberIdx][IndexKey.Length..]], [keyType]);
+        if (keyResult.CheckFailure(out var error)) {
+            return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(type, memberIdx, error.ToString()));
+        }
+
+        object key = keyResult.Value[0]!;
+        switch (instance) {
+            case IList list: {
+                int index = (int) key;
+                if (index < 0 || index >= list.Count) {
+                    return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(type, memberIdx, $"Index '{index}' is out-of-range (Expected >= 0 and <= {list.Count - 1})"));
+                }
+
+                list[(int) key] = value;
+                return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+            }
+
+            case IDictionary dict: {
+                dict[key] = value;
+                return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+            }
+
+            default: {
+                if (type.IsArray) {
+                    int index = (int) key;
+                    var array = (Array) instance!;
+                    if (index < 0 || index >= array.Length) {
+                        return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(type, memberIdx, $"Index '{index}' is out-of-range (Expected >= 0 and <= {array.Length - 1})"));
+                    }
+                    array.SetValue(value, index);
+                    return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+                }
+                break;
+            }
+        }
+
+        return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(type, memberIdx, $"Cannot index type '{type}'"));
     }
 
     public override VoidResult<TargetQuery.MemberAccessError> PostProcessSetMember(object targetObject, object? value, string[] memberArgs, bool forceAllowCodeExecution) {
