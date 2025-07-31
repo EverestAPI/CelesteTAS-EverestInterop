@@ -147,13 +147,25 @@ public class Document : IDisposable {
 
     /// Reports insertions and deletions of the document
     public event Action<Document, Dictionary<int, string>, Dictionary<int, string>>? TextChanged;
-    private void OnTextChanged(Dictionary<int, string> insertions, Dictionary<int, string> deletions)
-        => TextChanged?.Invoke(this, insertions, deletions);
+    private void OnTextChanged(Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
+        // Avoid having a fully empty document
+        if (CurrentLines.Count == 0) {
+            CurrentLines.Add(string.Empty);
+        }
+
+        TextChanged?.Invoke(this, insertions, deletions);
+    }
 
     /// Allows the editor to fix invalid syntax in a patch-series before it is ever saved
     public event Func<Document, Dictionary<int, string>, Dictionary<int, string>, Patch?>? FixupPatch;
-    private Patch? OnFixupPatch(Dictionary<int, string> insertions, Dictionary<int, string> deletions)
-        => FixupPatch?.Invoke(this, insertions, deletions);
+    private Patch? OnFixupPatch(Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
+        // Avoid having a fully empty document
+        if (CurrentLines.Count == 0) {
+            CurrentLines.Add(string.Empty);
+        }
+
+        return FixupPatch?.Invoke(this, insertions, deletions);
+    }
 
     /// Formats lines of a file into a single string, using consistent formatting rules
     public static string FormatLinesToText(IEnumerable<string> lines) {
