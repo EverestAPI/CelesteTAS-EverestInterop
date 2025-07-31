@@ -12,7 +12,6 @@ using TAS.Module;
 using TAS.Utils;
 using StudioCommunication;
 using StudioCommunication.Util;
-using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -36,6 +35,9 @@ public static class TargetQuery {
         /// Only invoked if <see cref="CanResolveInstances"/> returned <c>true</c> for the type.
         public virtual object[] ResolveInstances(Type type) => [];
 
+        /// Can process the query arguments into invalid members, to allow for custom syntax
+        public virtual IEnumerable<string> ProcessQueryArguments(IEnumerable<string> queryArgs) => queryArgs;
+
         /// Resolve a set of base target-types for a query. <br/>
         /// <c>null</c> should be returned when no base-types could be resolved.
         public virtual (HashSet<Type> Types, string[] MemberArgs)? ResolveBaseTypes(string[] queryArgs) => null;
@@ -50,6 +52,20 @@ public static class TargetQuery {
         /// <c>true</c> should be returned when the handler could resolve the next member, otherwise <c>false</c>.
         public virtual Result<bool, MemberAccessError> ResolveMember(object? instance, out object? value, Type type, int memberIdx, string[] memberArgs) {
             value = null;
+            return Result<bool, MemberAccessError>.Ok(false);
+        }
+
+        /// Attempts to process the new value for the current instance slot. <br/>
+        /// <c>true</c> should be returned when the handler could process the value, otherwise <c>false</c>.
+        public virtual Result<bool, MemberAccessError> ProcessValue(ref object?[] values, int valueIdx, object? value, Type currentType, ref int memberIdx, string[] memberArgs, bool needsFlush) {
+            return Result<bool, MemberAccessError>.Ok(false);
+        }
+
+        /// Attempts to resolve an instance into an actual target object / type. <br/>
+        /// <c>true</c> should be returned when the handler could resolve the target, otherwise <c>false</c>.
+        public virtual Result<bool, MemberAccessError> ResolveTarget(object instance, out object targetObject, out Type targetType) {
+            targetObject = null!;
+            targetType = null!;
             return Result<bool, MemberAccessError>.Ok(false);
         }
 
@@ -70,6 +86,16 @@ public static class TargetQuery {
         /// <c>true</c> should be returned when the handler could invoke the next member, otherwise <c>false</c>.
         public virtual Result<bool, MemberAccessError> InvokeMember(object? instance, object?[] parameterValue, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
             return Result<bool, MemberAccessError>.Ok(false);
+        }
+
+        /// Allows for post-processing after the value has been set
+        public virtual VoidResult<MemberAccessError> PostProcessSetMember(object targetObject, object? value, string[] memberArgs, bool forceAllowCodeExecution) {
+            return VoidResult<MemberAccessError>.Ok;
+        }
+
+        /// Allows for post-processing after the method has been invoked
+        public virtual VoidResult<MemberAccessError> PostProcessInvokeMember(object targetObject, object?[] parameterValues, string[] memberArgs, bool forceAllowCodeExecution) {
+            return VoidResult<MemberAccessError>.Ok;
         }
 
         /// Attempts to resolve a value from a string for the target type. <br/>
@@ -106,7 +132,7 @@ public static class TargetQuery {
     internal static readonly Dictionary<string, HashSet<Type>> AllTypes = new();
     internal static readonly Dictionary<string, (HashSet<Type> Types, string[] MemberArgs)> BaseTypeCache = [];
 
-    private static readonly Handler[] Handlers = [
+    internal static readonly Handler[] Handlers = [
         new SettingsQueryHandler(),
         new SaveDataQueryHandler(),
         new AssistsQueryHandler(),
@@ -118,6 +144,7 @@ public static class TargetQuery {
         new SessionQueryHandler(),
         new EntityQueryHandler(),
         new ComponentQueryHandler(),
+        new CollectionQueryHandler(),
         new SpecialValueQueryHandler(),
         new DeterministicVariablesQueryHandler(),
         new ModInteropQueryHandler(),
@@ -777,6 +804,12 @@ public static class TargetQuery {
             return [];
         }
 
+        queryArgs = Handlers.Aggregate((IEnumerable<string>) queryArgs, (current, handler) => handler.ProcessQueryArguments(current)).ToArray();
+        if (queryArgs.Any(arg => arg == InvalidQueryArgument)) {
+            memberArgs = queryArgs;
+            return [];
+        }
+
         string fullQueryArgs = string.Join('.', queryArgs);
         if (BaseTypeCache.TryGetValue(fullQueryArgs, out var cache)) {
             memberArgs = cache.MemberArgs;
@@ -844,6 +877,8 @@ public static class TargetQuery {
 
     /// Value in the result array which is not valid, but was kept in the array to avoid allocations
     internal static readonly object InvalidValue = new();
+    /// Indicator used to abort query-argument post-processing from an IEnumerable
+    internal const string InvalidQueryArgument = "___INVALID___";
 
     internal record QueryError {
         public record NoBaseTypes(string Query) : QueryError {
@@ -994,6 +1029,23 @@ public static class TargetQuery {
         }
     }
 
+    private static VoidResult<MemberAccessError> ResolveTargetObject(object instance, out object targetObject, out Type targetType) {
+        foreach (var handler in Handlers) {
+            var result = handler.ResolveTarget(instance, out targetObject, out targetType);
+            if (result.Success && result.Value) {
+                return VoidResult<MemberAccessError>.Ok;
+            }
+            if (result.Failure) {
+                return VoidResult<MemberAccessError>.Fail(result.Error);
+            }
+        }
+
+        targetObject = instance;
+        targetType = instance as Type ?? instance.GetType();
+
+        return VoidResult<MemberAccessError>.Ok;
+    }
+
     /// Evaluates the member arguments on the base-instances and gets the specified value(s)
     internal static Result<object?[], QueryError> GetMemberValue(object instance, string[] memberArgs, bool forceAllowCodeExecution = false)
         => ResolveMemberValue(instance, memberArgs, forceAllowCodeExecution, needsFlush: false);
@@ -1002,8 +1054,6 @@ public static class TargetQuery {
     /// The values can then be modified with SetMemberValue
     internal static Result<object?[], QueryError> PrepareMemberValue(object instance, string[] memberArgs, bool forceAllowCodeExecution = false)
         => ResolveMemberValue(instance, memberArgs, forceAllowCodeExecution, needsFlush: true);
-
-    private record BoxedValueHolder(object BaseInstance, int Index, Stack<object> ValueStack);
 
     private static Result<object?[], QueryError> ResolveMemberValue(object instance, string[] memberArgs, bool forceAllowCodeExecution, bool needsFlush) {
         object?[] values = [instance];
@@ -1045,7 +1095,7 @@ public static class TargetQuery {
                     foreach (var handler in Handlers) {
                         var result = handler.ResolveMember(values[valueIdx], out object? value, currentType, memberIdx, memberArgs);
                         if (result.Success && result.Value) {
-                            ProcessValue(ref values, valueIdx, value, currentType, memberIdx, memberArgs, needsFlush);
+                            ProcessValue(ref values, valueIdx, value, currentType, ref memberIdx, memberArgs, needsFlush);
                             goto NextValue;
                         }
                         if (result.Failure) {
@@ -1056,12 +1106,12 @@ public static class TargetQuery {
 
                     if (currentType.GetFieldInfo(member, bindingFlags, logFailure: false) is { } field && IsFieldUsable(field, needsFlush ? Variant.Set : Variant.Get, isFinal)) {
                         if (field.IsStatic) {
-                            ProcessValue(ref values, valueIdx, field.GetValue(null), currentType, memberIdx, memberArgs, needsFlush);
+                            ProcessValue(ref values, valueIdx, field.GetValue(null), currentType, ref memberIdx, memberArgs, needsFlush);
 
                             // Invalidate all other instances of this type to avoid duplicates
                             InvalidateValues(ref values, valueIdx, currentType);
                         } else {
-                            ProcessValue(ref values, valueIdx, field.GetValue(values[valueIdx]), currentType, memberIdx, memberArgs, needsFlush);
+                            ProcessValue(ref values, valueIdx, field.GetValue(values[valueIdx]), currentType, ref memberIdx, memberArgs, needsFlush);
                         }
                         continue;
                     }
@@ -1076,12 +1126,12 @@ public static class TargetQuery {
                         }
 
                         if (property.IsStatic()) {
-                            ProcessValue(ref values, valueIdx, property.GetValue(null), currentType, memberIdx, memberArgs, needsFlush);
+                            ProcessValue(ref values, valueIdx, property.GetValue(null), currentType, ref memberIdx, memberArgs, needsFlush);
 
                             // Invalidate all other instances of this type to avoid duplicates
                             InvalidateValues(ref values, valueIdx, currentType);
                         } else {
-                            ProcessValue(ref values, valueIdx, property.GetValue(values[valueIdx]), currentType, memberIdx, memberArgs, needsFlush);
+                            ProcessValue(ref values, valueIdx, property.GetValue(values[valueIdx]), currentType, ref memberIdx, memberArgs, needsFlush);
                         }
                         continue;
                     }
@@ -1120,158 +1170,26 @@ public static class TargetQuery {
             }
         }
 
-        static void ProcessValue(ref object?[] values, int valueIdx, object? value, Type currentType, int memberIdx, string[] memberArgs, bool needsFlush) {
-            if (needsFlush) {
-                ProcessFlushableValue(ref values, valueIdx, value, currentType, memberIdx, memberArgs);
-            } else {
-                ProcessGetValue(ref values, valueIdx, value);
-            }
-        }
-        static void ProcessGetValue(ref object?[] values, int valueIdx, object? value) {
-            if (value is ICollection collection) {
-                switch (collection.Count) {
-                    case 0:
-                        values[valueIdx] = InvalidValue;
-                        break;
-
-                    case 1:
-                        collection.CopyTo(values, valueIdx);
-                        break;
-
-                    default:
-                        // Can only copy entire collection, so need to invalidate previous instance
-                        values[valueIdx] = InvalidValue;
-                        int startIdx = values.Length;
-                        Array.Resize(ref values, values.Length + collection.Count);
-                        collection.CopyTo(values, startIdx);
-                        break;
+        static void ProcessValue(ref object?[] values, int valueIdx, object? value, Type currentType, ref int memberIdx, string[] memberArgs, bool needsFlush) {
+            foreach (var handler in Handlers) {
+                var result = handler.ProcessValue(ref values, valueIdx, value, currentType, ref memberIdx, memberArgs, needsFlush);
+                if (result.Success && result.Value) {
+                    return;
                 }
-            } else {
-                values[valueIdx] = value;
+                if (result.Failure) {
+                    values[valueIdx] = result.Error;
+                    return;
+                }
             }
-        }
-        static void ProcessFlushableValue(ref object?[] values, int valueIdx, object? value, Type currentType, int memberIdx, string[] memberArgs) {
-            switch (value) {
-                case IList list:
-                    switch (list.Count) {
-                        case 0:
-                            values[valueIdx] = InvalidValue;
-                            break;
 
-                        case 1:
-                            // Value types need a writable collection
-                            if (list[0] != null && list[0]!.GetType().IsValueType) {
-                                if (list.IsReadOnly) {
-                                    values[valueIdx] = new MemberAccessError.ReadOnlyCollection(currentType, memberIdx, memberArgs);
-                                } else {
-                                    if (values[valueIdx] is BoxedValueHolder holder) {
-                                        holder.ValueStack.Push(list[0]!);
-                                    } else {
-                                        holder = new BoxedValueHolder(list, 0, new(capacity: 1));
-                                        holder.ValueStack.Push(list[0]!);
-                                        values[valueIdx] = holder;
-                                    }
-                                }
-                            } else {
-                                values[valueIdx] = list[0];
-                            }
-                            break;
-
-                        default:
-                            // Can only copy entire collection, so need to invalidate previous instance
-                            int startIdx = values.Length;
-                            Array.Resize(ref values, values.Length + list.Count - 1);
-
-                            // Value types need a writable collection
-                            if (list[0] != null && list[0]!.GetType().IsValueType) {
-                                if (list.IsReadOnly) {
-                                    values[valueIdx] = new MemberAccessError.ReadOnlyCollection(currentType, memberIdx, memberArgs);
-                                } else {
-                                    if (values[valueIdx] is BoxedValueHolder holder) {
-                                        holder.ValueStack.Push(list[0]!);
-                                    } else {
-                                        holder = new BoxedValueHolder(list, 0, new(capacity: 1));
-                                        holder.ValueStack.Push(list[0]!);
-                                        values[valueIdx] = holder;
-                                    }
-                                }
-                            } else {
-                                values[valueIdx] = list[0];
-                            }
-
-                            for (int i = 1; i < list.Count; i++) {
-                                if (list[i] != null && list[i]!.GetType().IsValueType) {
-                                    if (list.IsReadOnly) {
-                                        values[startIdx + i - 1] = new MemberAccessError.ReadOnlyCollection(currentType, memberIdx, memberArgs);
-                                    } else {
-                                        if (values[startIdx + i - 1] is BoxedValueHolder holder) {
-                                            holder.ValueStack.Push(list[i]!);
-                                        } else {
-                                            holder = new BoxedValueHolder(list, i, new(capacity: 1));
-                                            holder.ValueStack.Push(list[i]!);
-                                            values[startIdx + i - 1] = holder;
-                                        }
-                                    }
-                                } else {
-                                    values[startIdx + i - 1] = list[i];
-                                }
-                            }
-                            break;
-                    }
-                    break;
-
-                case ICollection collection:
-                    switch (collection.Count) {
-                        case 0:
-                            values[valueIdx] = InvalidValue;
-                            break;
-
-                        case 1:
-                            collection.CopyTo(values, valueIdx);
-
-                            // Value types need a writable collection
-                            if (values[valueIdx]?.GetType().IsValueType ?? false) {
-                                values[valueIdx] = new MemberAccessError.ReadOnlyCollection(currentType, memberIdx, memberArgs);
-                            }
-                            break;
-
-                        default:
-                            // Can only copy entire collection, so need to invalidate previous instance
-                            values[valueIdx] = InvalidValue;
-                            int startIdx = values.Length;
-                            Array.Resize(ref values, values.Length + collection.Count);
-                            collection.CopyTo(values, startIdx);
-
-                            // Value types need a writable collection
-                            for (int i = startIdx; i < values.Length; i++) {
-                                if (values[i]?.GetType().IsValueType ?? false) {
-                                    values[i] = new MemberAccessError.ReadOnlyCollection(currentType, memberIdx, memberArgs);
-                                }
-                            }
-                            break;
-                    }
-                    break;
-
-                default:
-                    if (value != null && value.GetType().IsValueType) {
-                        if (values[valueIdx] is BoxedValueHolder holder) {
-                            holder.ValueStack.Push(value);
-                        } else {
-                            holder = new BoxedValueHolder(values[valueIdx]!, -1, new(capacity: 1));
-                            holder.ValueStack.Push(value);
-                            values[valueIdx] = holder;
-                        }
-                    } else {
-                        values[valueIdx] = value;
-                    }
-                    break;
-            }
+            values[valueIdx] = value;
         }
     }
 
     internal static VoidResult<MemberAccessError> SetMember(object targetObject, object? value, string[] memberArgs, bool forceAllowCodeExecution = false) {
-        object target = (targetObject as BoxedValueHolder)?.ValueStack.Peek() ?? targetObject;
-        var targetType = target as Type ?? target.GetType();
+        if (ResolveTargetObject(targetObject, out object target, out var targetType).Error is { } err) {
+            return VoidResult<MemberAccessError>.Fail(err);
+        }
 
         try {
             string member = memberArgs[^1];
@@ -1285,7 +1203,7 @@ public static class TargetQuery {
             foreach (var handler in Handlers) {
                 var result = handler.SetMember(target, value, targetType, memberArgs.Length - 1, memberArgs, forceAllowCodeExecution);
                 if (result.Success && result.Value) {
-                    goto PropagateValueTypeStack;
+                    goto PostProcess;
                 }
                 if (result.Failure) {
                     return VoidResult<MemberAccessError>.Fail(result.Error);
@@ -1299,7 +1217,7 @@ public static class TargetQuery {
                     field.SetValue(target, value);
                 }
 
-                goto PropagateValueTypeStack;
+                goto PostProcess;
             } else if (targetType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property && IsPropertyUsable(property, Variant.Set, isFinal: true)) {
                 if (PreventCodeExecution && !forceAllowCodeExecution) {
                     return VoidResult<MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(targetType, memberArgs.Length - 1, memberArgs));
@@ -1311,7 +1229,7 @@ public static class TargetQuery {
                     property.SetValue(target, value);
                 }
 
-                goto PropagateValueTypeStack;
+                goto PostProcess;
             }
 
             return VoidResult<MemberAccessError>.Fail(new MemberAccessError.MemberNotFound(targetType, memberArgs.Length - 1, memberArgs, bindingFlags));
@@ -1319,101 +1237,11 @@ public static class TargetQuery {
             return VoidResult<MemberAccessError>.Fail(new MemberAccessError.UnknownException(targetType, memberArgs.Length - 1, memberArgs, ex));
         }
 
-        PropagateValueTypeStack:
-
-        // Propagate value-type stack
-        if (targetObject is BoxedValueHolder holder) {
-            object currentValue = holder.ValueStack.Pop();
-
-            int memberIdx = memberArgs.Length - 2;
-            while (holder.ValueStack.TryPop(out object? currentTarget)) {
-                var currentTargetType = currentTarget as Type ?? currentTarget.GetType();
-                string member = memberArgs[memberIdx];
-
-                try {
-                    foreach (var handler in Handlers) {
-                        var result = handler.SetMember(currentTarget, currentValue, currentTargetType, memberIdx, memberArgs, forceAllowCodeExecution);
-                        if (result.Success && result.Value) {
-                            goto NextValue;
-                        }
-                        if (result.Failure) {
-                            return VoidResult<MemberAccessError>.Fail(result.Error);
-                        }
-                    }
-
-                    if (currentTargetType.GetFieldInfo(member, ReflectionExtensions.InstanceAnyVisibility, logFailure: false) is { } field) {
-                        if (field.IsStatic) {
-                            field.SetValue(null, currentValue);
-                        } else {
-                            field.SetValue(currentTarget, currentValue);
-                        }
-                    } else if (currentTargetType.GetPropertyInfo(member, ReflectionExtensions.InstanceAnyVisibility, logFailure: false) is { } property) {
-                        if (PreventCodeExecution && !forceAllowCodeExecution) {
-                            return VoidResult<MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(currentTargetType, memberIdx, memberArgs));
-                        }
-
-                        if (property.IsStatic()) {
-                            property.SetValue(null, currentValue);
-                        } else {
-                            property.SetValue(currentTarget, currentValue);
-                        }
-                    }
-
-                    NextValue:;
-                } catch (Exception ex) {
-                    return VoidResult<MemberAccessError>.Fail(new MemberAccessError.UnknownException(currentTargetType, memberIdx, memberArgs, ex));
-                }
-
-                currentValue = currentTarget;
-                memberIdx--;
-            }
-
-            if (holder.Index < 0) {
-                // Regular base instance
-                var baseTargetType = holder.BaseInstance as Type ?? holder.BaseInstance.GetType();
-                string member = memberArgs[memberIdx];
-
-                var bindingFlags = memberIdx == 0
-                    ? holder.BaseInstance is Type
-                        ? ReflectionExtensions.StaticAnyVisibility
-                        : ReflectionExtensions.StaticInstanceAnyVisibility
-                    : ReflectionExtensions.InstanceAnyVisibility;
-
-                try {
-                    foreach (var handler in Handlers) {
-                        var result = handler.SetMember(holder.BaseInstance, currentValue, baseTargetType, memberIdx, memberArgs, forceAllowCodeExecution);
-                        if (result.Success && result.Value) {
-                            return VoidResult<MemberAccessError>.Ok;
-                        }
-                        if (result.Failure) {
-                            return VoidResult<MemberAccessError>.Fail(result.Error);
-                        }
-                    }
-
-                    if (baseTargetType.GetFieldInfo(member, bindingFlags, logFailure: false) is { } field) {
-                        if (field.IsStatic) {
-                            field.SetValue(null, currentValue);
-                        } else {
-                            field.SetValue(holder.BaseInstance, currentValue);
-                        }
-                    } else if (baseTargetType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property) {
-                        if (PreventCodeExecution && !forceAllowCodeExecution) {
-                            return VoidResult<MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(baseTargetType, memberIdx, memberArgs));
-                        }
-
-                        if (property.IsStatic()) {
-                            property.SetValue(null, currentValue);
-                        } else {
-                            property.SetValue(holder.BaseInstance, currentValue);
-                        }
-                    }
-                } catch (Exception ex) {
-                    return VoidResult<MemberAccessError>.Fail(new MemberAccessError.UnknownException(baseTargetType, memberIdx, memberArgs, ex));
-                }
-            } else {
-                // List base instance
-                var baseList = (IList) holder.BaseInstance;
-                baseList[holder.Index] = currentValue;
+        PostProcess:
+        foreach (var handler in Handlers) {
+            var result = handler.PostProcessSetMember(targetObject, value, memberArgs, forceAllowCodeExecution);
+            if (result.Failure) {
+                return result;
             }
         }
 
@@ -1421,8 +1249,9 @@ public static class TargetQuery {
     }
 
     internal static VoidResult<MemberAccessError> InvokeMember(object targetObject, object?[] parameterValues, string[] memberArgs, bool forceAllowCodeExecution = false) {
-        object target = (targetObject as BoxedValueHolder)?.ValueStack.Peek() ?? targetObject;
-        var targetType = target as Type ?? target.GetType();
+        if (ResolveTargetObject(targetObject, out object target, out var targetType).Error is { } err) {
+            return VoidResult<MemberAccessError>.Fail(err);
+        }
 
         if (PreventCodeExecution && !forceAllowCodeExecution) {
             return VoidResult<MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(targetType, memberArgs.Length - 1, memberArgs));
@@ -1440,7 +1269,7 @@ public static class TargetQuery {
             foreach (var handler in Handlers) {
                 var result = handler.InvokeMember(target, parameterValues, targetType, memberArgs.Length - 1, memberArgs, forceAllowCodeExecution);
                 if (result.Success && result.Value) {
-                    goto PropagateValueTypeStack;
+                    goto PostProcess;
                 }
                 if (result.Failure) {
                     return VoidResult<MemberAccessError>.Fail(result.Error);
@@ -1451,13 +1280,13 @@ public static class TargetQuery {
                 var del = (Delegate?) (field.IsStatic ? field.GetValue(null) : field.GetValue(target));
                 del?.DynamicInvoke(parameterValues);
 
-                goto PropagateValueTypeStack;
+                goto PostProcess;
             } else if (targetType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property &&
                        property.PropertyType.IsSameOrSubclassOf(typeof(Delegate))) {
                 var del = (Delegate?)(property.IsStatic() ? property.GetValue(null) : property.GetValue(target));
                 del?.DynamicInvoke(parameterValues);
 
-                goto PropagateValueTypeStack;
+                goto PostProcess;
             } else if (ResolveMethod(targetType, member, bindingFlags, parameterValues.Length) is { Success: true, Value: {} method }) {
                 if (method.IsStatic) {
                     method.Invoke(null, parameterValues);
@@ -1465,7 +1294,7 @@ public static class TargetQuery {
                     method.Invoke(target, parameterValues);
                 }
 
-                goto PropagateValueTypeStack;
+                goto PostProcess;
             }
 
             return VoidResult<MemberAccessError>.Fail(new MemberAccessError.MemberNotFound(targetType, memberArgs.Length - 1, memberArgs, bindingFlags));
@@ -1473,101 +1302,11 @@ public static class TargetQuery {
             return VoidResult<MemberAccessError>.Fail(new MemberAccessError.UnknownException(targetType, memberArgs.Length - 1, memberArgs, ex));
         }
 
-        PropagateValueTypeStack:
-
-        // Propagate value-type stack
-        if (targetObject is BoxedValueHolder holder) {
-            object currentValue = holder.ValueStack.Pop();
-
-            int memberIdx = memberArgs.Length - 2;
-            while (holder.ValueStack.TryPop(out object? currentTarget)) {
-                var currentTargetType = currentTarget as Type ?? currentTarget.GetType();
-                string member = memberArgs[memberIdx];
-
-                try {
-                    foreach (var handler in Handlers) {
-                        var result = handler.SetMember(currentTarget, currentValue, currentTargetType, memberIdx, memberArgs, forceAllowCodeExecution);
-                        if (result.Success && result.Value) {
-                            goto NextValue;
-                        }
-                        if (result.Failure) {
-                            return VoidResult<MemberAccessError>.Fail(result.Error);
-                        }
-                    }
-
-                    if (currentTargetType.GetFieldInfo(member, ReflectionExtensions.InstanceAnyVisibility, logFailure: false) is { } field) {
-                        if (field.IsStatic) {
-                            field.SetValue(null, currentValue);
-                        } else {
-                            field.SetValue(currentTarget, currentValue);
-                        }
-                    } else if (currentTargetType.GetPropertyInfo(member, ReflectionExtensions.InstanceAnyVisibility, logFailure: false) is { } property) {
-                        if (PreventCodeExecution && !forceAllowCodeExecution) {
-                            return VoidResult<MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(currentTargetType, memberIdx, memberArgs));
-                        }
-
-                        if (property.IsStatic()) {
-                            property.SetValue(null, currentValue);
-                        } else {
-                            property.SetValue(currentTarget, currentValue);
-                        }
-                    }
-
-                    NextValue:;
-                } catch (Exception ex) {
-                    return VoidResult<MemberAccessError>.Fail(new MemberAccessError.UnknownException(currentTargetType, memberIdx, memberArgs, ex));
-                }
-
-                currentValue = currentTarget;
-                memberIdx--;
-            }
-
-            if (holder.Index < 0) {
-                // Regular base instance
-                var baseTargetType = holder.BaseInstance as Type ?? holder.BaseInstance.GetType();
-                string member = memberArgs[memberIdx];
-
-                var bindingFlags = memberIdx == 0
-                    ? holder.BaseInstance is Type
-                        ? ReflectionExtensions.StaticAnyVisibility
-                        : ReflectionExtensions.StaticInstanceAnyVisibility
-                    : ReflectionExtensions.InstanceAnyVisibility;
-
-                try {
-                    foreach (var handler in Handlers) {
-                        var result = handler.SetMember(holder.BaseInstance, currentValue, baseTargetType, memberIdx, memberArgs, forceAllowCodeExecution);
-                        if (result.Success && result.Value) {
-                            return VoidResult<MemberAccessError>.Ok;
-                        }
-                        if (result.Failure) {
-                            return VoidResult<MemberAccessError>.Fail(result.Error);
-                        }
-                    }
-
-                    if (baseTargetType.GetFieldInfo(member, bindingFlags, logFailure: false) is { } field) {
-                        if (field.IsStatic) {
-                            field.SetValue(null, currentValue);
-                        } else {
-                            field.SetValue(holder.BaseInstance, currentValue);
-                        }
-                    } else if (baseTargetType.GetPropertyInfo(member, bindingFlags, logFailure: false) is { } property) {
-                        if (PreventCodeExecution && !forceAllowCodeExecution) {
-                            return VoidResult<MemberAccessError>.Fail(new MemberAccessError.CodeExecutionNotAllowed(baseTargetType, memberIdx, memberArgs));
-                        }
-
-                        if (property.IsStatic()) {
-                            property.SetValue(null, currentValue);
-                        } else {
-                            property.SetValue(holder.BaseInstance, currentValue);
-                        }
-                    }
-                } catch (Exception ex) {
-                    return VoidResult<MemberAccessError>.Fail(new MemberAccessError.UnknownException(baseTargetType, memberIdx, memberArgs, ex));
-                }
-            } else {
-                // List base instance
-                var baseList = (IList) holder.BaseInstance;
-                baseList[holder.Index] = currentValue;
+        PostProcess:
+        foreach (var handler in Handlers) {
+            var result = handler.PostProcessInvokeMember(targetObject, parameterValues, memberArgs, forceAllowCodeExecution);
+            if (result.Failure) {
+                return result;
             }
         }
 
@@ -1612,8 +1351,9 @@ public static class TargetQuery {
     }
 
     internal static Result<Type[], MemberAccessError> ResolveMemberTargetTypes(object instanceObject, int memberIdx, string[] memberArgs, Variant variant, int argumentCount, bool forceAllowCodeExecution = false) {
-        object instance = (instanceObject as BoxedValueHolder)?.ValueStack.Peek() ?? instanceObject;
-        var type = instance as Type ?? instance.GetType();
+        if (ResolveTargetObject(instanceObject, out object instance, out var type).Error is { } err) {
+            return Result<Type[], MemberAccessError>.Fail(err);
+        }
 
         string member = memberArgs[memberIdx];
         bool isFinal = memberIdx == memberArgs.Length - 1;
