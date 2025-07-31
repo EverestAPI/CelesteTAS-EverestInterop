@@ -532,14 +532,20 @@ internal static class SeededRandomness {
     public class AurorasHelperHandler : Handler {
         public override string Name => "AurorasHelper_Shared";
 
-        private readonly MethodInfo? m_CmdSetSeed = ModUtils.GetMethod("AurorasHelper", "Celeste.Mod.AurorasHelper.AurorasHelperModule", "CmdSetSeed");
+        private readonly FieldInfo? f_currentSeed = ModUtils.GetField("AurorasHelper", "Celeste.Mod.AurorasHelper.AurorasHelperModule", "currentSeed");
+        private readonly FieldInfo? f_random = ModUtils.GetField("AurorasHelper", "Celeste.Mod.AurorasHelper.AurorasHelperModule", "random");
 
         public override void Reset() {
-            m_CmdSetSeed?.Invoke(null, [0]);
+            if (ModUtils.GetModule("AurorasHelper") is { } ahModule && f_currentSeed != null && f_random != null) {
+                f_currentSeed.SetValue(null, 0);
+                f_random.SetValue(ahModule, new Random(0));
+            }
         }
         public override void PreUpdate() {
-            if (m_CmdSetSeed != null && NextSeed(out int seed)) {
-                m_CmdSetSeed.Invoke(null, [seed]);
+            if (ModUtils.GetModule("AurorasHelper") is { } ahModule && f_currentSeed != null && f_random != null && NextSeed(out int seed)) {
+                // Seed values are limited to positive integers https://github.com/AuroraKy/AuroraHelper/blob/4a5344bf2ae10d22471a8d402b5e2b466d062313/AurorasHelperModule.cs#L92-L93
+                f_currentSeed.SetValue(null, seed & 0x7FFFFFFF);
+                f_random.SetValue(ahModule, new Random(seed & 0x7FFFFFFF));
                 AssertNoSeedsRemaining();
             }
         }
