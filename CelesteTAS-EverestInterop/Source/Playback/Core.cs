@@ -5,6 +5,7 @@ using Mono.Cecil.Cil;
 using Monocle;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
+using StudioCommunication.Util;
 using TAS.Gameplay;
 using TAS.Module;
 using TAS.Tools;
@@ -47,7 +48,9 @@ internal static class Core {
 
     // Usually equal to Engine.RawDeltaTime, but some mods change that value
     public static readonly float PlaybackDeltaTime = (float) TimeSpan.FromTicks(166667L).TotalSeconds;
-    private static float elapsedTime = 0.0f;
+
+    private static float TargetFrames => Manager.PlaybackSpeed - playbackOverhead;
+    private static float playbackOverhead = 0.0f;
 
     private static void On_Celeste_Update(On.Celeste.Celeste.orig_Update orig, Celeste.Celeste self, GameTime gameTime) {
         if (!TasSettings.Enabled) {
@@ -72,12 +75,13 @@ internal static class Core {
             return;
         }
 
-        elapsedTime += Manager.PlaybackSpeed * PlaybackDeltaTime;
-
         Manager.UpdateMeta();
         var lastMetaUpdate = DateTime.UtcNow;
 
-        while (elapsedTime >= PlaybackDeltaTime) {
+        int frames = 0;
+        while (frames < (int) MathF.Ceiling(TargetFrames)) {
+            frames += 1;
+
             try {
                 orig(self, gameTime);
             } catch (Exception ex) {
@@ -90,8 +94,6 @@ internal static class Core {
                 return;
             }
 
-            elapsedTime -= PlaybackDeltaTime;
-
             // Call UpdateMeta every real-time frame
             var now = DateTime.UtcNow;
             if ((now - lastMetaUpdate).TotalSeconds > PlaybackDeltaTime) {
@@ -103,6 +105,7 @@ internal static class Core {
                 lastMetaUpdate = now;
             }
         }
+        playbackOverhead = (frames - TargetFrames).Mod(1.0f);
 
         if (!TasSettings.HideFreezeFrames) {
             return;

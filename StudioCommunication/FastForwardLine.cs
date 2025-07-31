@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 
 namespace StudioCommunication;
 
@@ -30,7 +31,7 @@ public record struct FastForwardLine(bool ForceStop, bool SaveState, string Spee
         }
 
         fastForwardLine.SpeedText = modifiers.ToString();
-        fastForwardLine.PlaybackSpeed = float.TryParse(fastForwardLine.SpeedText, out float x) ? x : null;
+        fastForwardLine.PlaybackSpeed = float.TryParse(fastForwardLine.SpeedText, NumberStyles.Float, CultureInfo.InvariantCulture,  out float x) ? x : null;
         return true;
     }
 
@@ -38,6 +39,6 @@ public record struct FastForwardLine(bool ForceStop, bool SaveState, string Spee
         return $"***{(ForceStop ? "!" : "")}{(SaveState ? "S" : "")}{SpeedText}";
     }
     public string Format() {
-        return $"***{(ForceStop ? "!" : "")}{(SaveState ? "S" : "")}{(PlaybackSpeed != null ? PlaybackSpeed.Value : "")}";
+        return $"***{(ForceStop ? "!" : "")}{(SaveState ? "S" : "")}{(PlaybackSpeed != null ? PlaybackSpeed.Value.ToString(CultureInfo.InvariantCulture) : "")}";
     }
 }

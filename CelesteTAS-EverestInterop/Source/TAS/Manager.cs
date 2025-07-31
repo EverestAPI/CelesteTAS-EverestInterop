@@ -178,8 +178,12 @@ public static class Manager {
             return;
         }
 
-        if (Controller.HasFastForward || FrameStepBackTargetFrame > 0) {
+        if (FrameStepBackTargetFrame > 0) {
             NextState = State.Running;
+            PlaybackSpeed = FastForward.DefaultSpeed;
+        } else if (Controller.CurrentFastForward is { } forward && forward.Frame > Controller.CurrentFrameInTas) {
+            NextState = State.Running;
+            PlaybackSpeed = forward.Speed;
         }
 
         Controller.AdvanceFrame(out bool couldPlayback);
