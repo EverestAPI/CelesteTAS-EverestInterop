@@ -118,7 +118,7 @@ def main():
     # Add description
     print("Adding description to file...", end="    ", flush=True)
     desc = f"CelesteTAS v{celestetas_version}, Studio v{studio_version}"
-    driver.execute_script(f"$(\"fieldset[id='Files'] ul[id$='_UploadedFiles'] li:first .DescriptionInput\")[0].value = '{desc}'")
+    driver.execute_script(f"$(\"fieldset[id='Files'] ul[id$='_UploadedFiles'] li:first .VersionInput\")[0].value = '{desc}'")
     print("Done.", flush=True)
     driver.implicitly_wait(1)
     time.sleep(1)
