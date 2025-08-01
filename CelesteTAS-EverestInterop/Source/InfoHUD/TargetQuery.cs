@@ -12,6 +12,7 @@ using TAS.Module;
 using TAS.Utils;
 using StudioCommunication;
 using StudioCommunication.Util;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -751,16 +752,22 @@ public static class TargetQuery {
         if (info.IsGenericMethod) {
             return false;
         }
-        // To be invokable, all parameters need to be settable or have a default value from a non-settable onwards
-        bool requireDefaults = false;
-        foreach (var param in info.GetParameters()) {
-            if (!requireDefaults && !IsSettableType(param.ParameterType)) {
-                requireDefaults = true;
-            }
 
-            if (requireDefaults && !param.HasDefaultValue) {
-                return false;
+        try {
+            // To be invokable, all parameters need to be settable or have a default value from a non-settable onwards
+            bool requireDefaults = false;
+            foreach (var param in info.GetParameters()) {
+                if (!requireDefaults && !IsSettableType(param.ParameterType)) {
+                    requireDefaults = true;
+                }
+
+                if (requireDefaults && !param.HasDefaultValue) {
+                    return false;
+                }
             }
+        } catch (FileNotFoundException) {
+            // Parameters depend on an unloaded optional dependency
+            return false;
         }
 
         return true;
