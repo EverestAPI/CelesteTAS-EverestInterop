@@ -132,9 +132,7 @@ internal static class FastForwardOptimization {
             typeof(HiresSnow).GetMethodInfo(nameof(HiresSnow.Update)),
             typeof(Snow3D).GetMethodInfo(nameof(Snow3D.Update)),
             typeof(AutoSplitterInfo).GetMethodInfo(nameof(AutoSplitterInfo.Update)),
-            typeof(SeekerBarrier).GetMethodInfo(nameof(SeekerBarrier.Update)),
-
-            ModUtils.GetMethod("IsaGrabBag", "Celeste.Mod.IsaGrabBag.DreamSpinnerBorder", nameof(Entity.Update))
+            typeof(SeekerBarrier).GetMethodInfo(nameof(SeekerBarrier.Update))
         );
         // The dust sprites being 'Estableshed' (yes, that's how it's spelled :p) is required for gameplay during stuns
         SkipMethod(typeof(DustGraphic).GetMethodInfo(nameof(DustGraphic.Update)), cursor => {
