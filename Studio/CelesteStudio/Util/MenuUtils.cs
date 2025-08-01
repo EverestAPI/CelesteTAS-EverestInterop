@@ -41,6 +41,8 @@ public static class MenuUtils {
             var newValue = NumberInputDialog<T>.Show(text, value, minValue, maxValue, step);
             field.SetValue(CommunicationWrapper.GameSettings, newValue);
 
+            // Numeric menu items don't update on their own
+            Studio.Instance.RefreshMenu();
             CommunicationWrapper.SyncSettings();
         };
 

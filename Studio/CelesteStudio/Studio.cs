@@ -162,13 +162,9 @@ public sealed class Studio : Form {
 
         // Needs to be registered before the editor is created
         Settings.Changed += ApplySettings;
-        Settings.KeyBindingsChanged += () => {
-            Menu = CreateMenu();
-        };
+        Settings.KeyBindingsChanged += RefreshMenu;
         // Reflect changed game-settings
-        CommunicationWrapper.SettingsChanged += _ => {
-            Menu = CreateMenu();
-        };
+        CommunicationWrapper.SettingsChanged += _ => RefreshMenu();
 
         // Setup editor
         {
@@ -222,7 +218,7 @@ public sealed class Studio : Form {
 
             // Only enable some settings while connected
             CommunicationWrapper.ConnectionChanged += () => Application.Instance.Invoke(() => {
-                Menu = CreateMenu();
+                RefreshMenu();
             });
         }
 
@@ -357,7 +353,7 @@ public sealed class Studio : Form {
 
     private void ApplySettings() {
         Topmost = Settings.Instance.AlwaysOnTop;
-        Menu = CreateMenu(); // Recreate menu to reflect changes
+        RefreshMenu(); // Recreate menu to reflect changes
     }
 
     protected override void OnClosing(CancelEventArgs e) {
@@ -541,7 +537,7 @@ public sealed class Studio : Form {
         }
 
         Title = TitleBarText;
-        Menu = CreateMenu(); // Recreate menu to reflect changed "Recent Files"
+        RefreshMenu(); // Recreate menu to reflect changed "Recent Files"
 
         CommunicationWrapper.SendPath(Editor.Document.FilePath);
 
@@ -660,6 +656,9 @@ public sealed class Studio : Form {
     #endregion
     #region Menu
 
+    public void RefreshMenu() {
+        Menu = CreateMenu();
+    }
     private MenuBar CreateMenu() {
         const int minDecimals = 2;
         const int maxDecimals = 12;
