@@ -99,6 +99,13 @@ def main():
         driver.implicitly_wait(1)
         time.sleep(1)
 
+    # Archive old files
+    print("Archiving old files...", end="    ", flush=True)
+    driver.execute_script("$(\"fieldset[id='Files'] ul[id$='_UploadedFiles'] li .ArchivedInput\").each((_, e) => e.checked = true)")
+    print("Done.", flush=True)
+    driver.implicitly_wait(1)
+    time.sleep(1)
+
     # Upload file
     print("Uploading new file...", end="    ", flush=True)
     driver.find_element(By.CSS_SELECTOR, "fieldset#Files input[id$='_FileInput']").send_keys(os.path.join(os.getcwd(), file_path))
