@@ -1,3 +1,18 @@
+# CelesteTAS v3.46.1, Studio v3.9.6
+
+- Feature: Ignore breakpoints inside files accessed with `Read` commands
+- Feature: Add `*` spread operator to target-queries, to flatten out collections (e.g. `Set,Player.ChaserStates*.TimeStamp,0`)
+- Feature: Add `[]` index operator to access individual elements of collect (e.g. `Get,Player.Sprite.animations[idle].Delay`)
+- Feature: Allow specifying custom file name for `StartRecording,FileName`
+- Tweak: Adjust wording / duration of auto-pause toast message
+- Fix: Avali SkinMod not working with "Prevent Skin-Mod Gameplay Changes" option
+- Fix: Changes in breakpoint playback speed not immediately being respected
+- Fix: RNG seeding being applied outside of TAS
+- Fix: Not being able to set statemachine states with names (e.g. `Set,Player.StateMachine.State,Player.StNormal`)
+- Fix: Auto-complete with `Invoke` commands not being avaiable when mods have unloaded optional dependencies
+- Fix: "Game Settings" menu in Studio not reflecting changes to numeric inputs
+- Fix: Apply correct theme for changelog popup dialog
+
 # CelesteTAS v3.46.0, Studio v3.9.5
 
 ## Universal RNG Seeding
