@@ -1,4 +1,4 @@
-﻿using StudioCommunication;
+using StudioCommunication;
 
 namespace CelesteStudio.Editing.ContextActions;
 

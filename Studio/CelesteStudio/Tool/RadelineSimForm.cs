@@ -1,4 +1,4 @@
-﻿using CelesteStudio.Communication;
+using CelesteStudio.Communication;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;

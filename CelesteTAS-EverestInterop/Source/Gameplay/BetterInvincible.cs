@@ -1,4 +1,4 @@
-﻿using MonoMod.Cil;
+using MonoMod.Cil;
 using Celeste;
 using Celeste.Mod;
 using TAS.Module;

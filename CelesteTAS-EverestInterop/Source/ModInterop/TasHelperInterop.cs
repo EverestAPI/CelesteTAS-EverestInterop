@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using MonoMod.ModInterop;
 using TAS.Module;
 

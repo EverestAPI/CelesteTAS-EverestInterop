@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Celeste;
 using Celeste.Mod;
 using FMOD.Studio;

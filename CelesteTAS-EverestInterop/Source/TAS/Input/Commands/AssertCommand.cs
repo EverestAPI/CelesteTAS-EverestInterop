@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using StudioCommunication;
 using System.Collections.Generic;
 using System.IO;

@@ -1,4 +1,4 @@
-﻿using Celeste;
+using Celeste;
 using Celeste.Mod;
 using System;
 using System.Collections.Generic;

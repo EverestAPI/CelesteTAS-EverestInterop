@@ -1,4 +1,4 @@
-﻿using CelesteStudio.Util;
+using CelesteStudio.Util;
 using StudioCommunication;
 
 namespace CelesteStudio.Editing.ContextActions;

@@ -1,4 +1,4 @@
-﻿using TAS.Module;
+using TAS.Module;
 
 namespace TAS.EverestInterop;
 

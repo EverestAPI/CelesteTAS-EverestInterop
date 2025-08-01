@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Celeste.Mod;
 using MonoMod.Utils;
 using TAS.Utils;

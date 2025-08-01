@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 
 namespace FramePFX.Themes.Attached {
     public static class CornerHelper {

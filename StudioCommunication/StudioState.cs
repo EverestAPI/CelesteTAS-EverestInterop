@@ -1,4 +1,4 @@
-﻿using MemoryPack;
+using MemoryPack;
 
 namespace StudioCommunication;
 

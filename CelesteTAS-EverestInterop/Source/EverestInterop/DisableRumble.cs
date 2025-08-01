@@ -1,4 +1,4 @@
-﻿using Monocle;
+using Monocle;
 using TAS.Module;
 using TAS.Utils;
 

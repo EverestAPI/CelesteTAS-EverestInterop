@@ -1,4 +1,4 @@
-﻿// ReSharper disable HeuristicUnreachableCode
+// ReSharper disable HeuristicUnreachableCode
 #pragma warning disable CS0162 // Unreachable code detected
 
 using System;
