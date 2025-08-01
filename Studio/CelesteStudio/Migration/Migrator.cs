@@ -135,6 +135,14 @@ public static class Migrator {
                 }
             }
         }
+    }
+
+    public static void ApplyPostLoadMigrations() {
+        foreach (var (version, _, postLoad) in migrations) {
+            if (version > oldStudioVersion && version <= newStudioVersion) {
+                postLoad?.Invoke();
+            }
+        }
 
         // Show changelog
         if (oldCelesteTasVersion < newCelesteTasVersion && oldCelesteTasVersion != InvalidVersion) {
@@ -144,14 +152,6 @@ public static class Migrator {
 
                 Console.WriteLine($"Showing changelog from v{oldCelesteTasVersion.ToString(3)} to v{newCelesteTasVersion.ToString(3)}...");
                 ChangelogDialog.Show(fs, oldCelesteTasVersion, newCelesteTasVersion, forceShow: true);
-            }
-        }
-    }
-
-    public static void ApplyPostLoadMigrations() {
-        foreach (var (version, _, postLoad) in migrations) {
-            if (version > oldStudioVersion && version <= newStudioVersion) {
-                postLoad?.Invoke();
             }
         }
     }
