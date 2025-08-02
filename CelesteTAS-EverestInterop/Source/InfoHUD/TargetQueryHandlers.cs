@@ -748,6 +748,29 @@ internal class CollectionQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.MemberAccessError>.Ok(success);
     }
 
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
+        if (!memberArgs[memberIdx].StartsWith(IndexKey)) {
+            targetTypes = null!;
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+        }
+
+        if (type.IsArray) {
+            targetTypes = [type.GetElementType()!];
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+        }
+        if (type.IsAssignableTo(typeof(IList))) {
+            targetTypes = [type.GetElementType() ?? type.GenericTypeArguments[0]];
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+        }
+        if (type.IsAssignableTo(typeof(IDictionary))) {
+            targetTypes = [type.GenericTypeArguments[1]];
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+        }
+
+        targetTypes = null!;
+        return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+    }
+
     public override Result<bool, TargetQuery.MemberAccessError> ResolveMember(object? instance, out object? value, Type type, int memberIdx, string[] memberArgs) {
         if (!memberArgs[memberIdx].StartsWith(IndexKey)) {
             value = null;
