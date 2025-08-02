@@ -189,11 +189,13 @@ public class InputController {
             }
 
             if (Engine.Scene.GetSession() is { } session) {
-                if (match.Groups[1].ValueSpan.SequenceEqual(session.Level)) {
+                var labelSpan = match.Groups[1].ValueSpan.Trim();
+                var levelSpan = session.Level.AsSpan().Trim();
+                if (labelSpan.SequenceEqual(levelSpan)) {
                     continue;
                 }
 
-                ReportMessage(comment.Source, $"Room label 'lvl_{match.Groups[1].ValueSpan}' does not match actual name 'lvl_{session.Level}'", level: logLevel);
+                ReportMessage(comment.Source, $"Room label 'lvl_{labelSpan}' does not match actual name 'lvl_{levelSpan}'", level: logLevel);
             } else {
                 ReportMessage(comment.Source, $"Found room label '#{comment.Text}' outside of level", level: logLevel);
             }

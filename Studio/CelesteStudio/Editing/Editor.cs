@@ -178,7 +178,7 @@ public sealed class Editor : SkiaDrawable {
     private static readonly ActionBinding ToggleCommentInputs = CreateAction("Editor_CommentUncommentInputs", "Comment / Uncomment Inputs", Hotkey.KeyCtrl(Keys.K), editor => editor.OnToggleCommentInputs());
     private static readonly ActionBinding ToggleCommentText = CreateAction("Editor_CommentUncommentText", "Comment / Uncomment Text", Hotkey.KeyCtrl(Keys.K | Keys.Shift), editor => editor.OnToggleCommentText());
 
-    private static readonly ActionBinding InsertRoomName = CreateAction("Editor_InsertRoomName", "Insert current Room Name", Hotkey.KeyCtrl(Keys.R), editor => editor.InsertLine($"#lvl_{CommunicationWrapper.LevelName}"));
+    private static readonly ActionBinding InsertRoomName = CreateAction("Editor_InsertRoomName", "Insert current Room Name", Hotkey.KeyCtrl(Keys.R), editor => editor.InsertLine($"#lvl_{CommunicationWrapper.LevelName.Trim()}"));
     private static readonly ActionBinding InsertChapterTime = CreateAction("Editor_InsertCurrentChapterTime", "Insert current ChapterTime", Hotkey.KeyCtrl(Keys.T), editor => editor.InsertLine($"#{CommunicationWrapper.ChapterTime}"));
     private static readonly ActionBinding RemoveAllTimestamps = CreateAction("Editor_RemoveAllTimestamps", "Remove All Timestamps", Hotkey.KeyCtrl(Keys.T | Keys.Shift), editor => editor.RemoveLinesMatching(TimestampRegex));
 
