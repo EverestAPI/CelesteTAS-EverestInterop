@@ -179,11 +179,11 @@ public static class Hotkeys {
             }
 
             if (Engine.Scene?.Tracker is { } tracker) {
-                if (!tracker.IsEntityTracked<KeyboardConfigUI>()) {
-                    Tracker.AddTypeToTracker(typeof(KeyboardConfigUI), trackedAs: null, subtypes: typeof(ModuleSettingsKeyboardConfigUI));
+                if (!tracker.IsEntityTracked<ModuleSettingsKeyboardConfigUI>()) {
+                    Tracker.AddTypeToTracker(typeof(ModuleSettingsKeyboardConfigUI), trackedAs: typeof(KeyboardConfigUI));
                 }
-                if (!tracker.IsEntityTracked<ButtonConfigUI>()) {
-                    Tracker.AddTypeToTracker(typeof(ButtonConfigUI), trackedAs: null, subtypes: typeof(ModuleSettingsButtonConfigUI));
+                if (!tracker.IsEntityTracked<ModuleSettingsButtonConfigUI>()) {
+                    Tracker.AddTypeToTracker(typeof(ModuleSettingsButtonConfigUI), trackedAs: typeof(ButtonConfigUI));
                 }
 
                 if (tracker.GetEntity<KeyboardConfigUI>() != null) {
