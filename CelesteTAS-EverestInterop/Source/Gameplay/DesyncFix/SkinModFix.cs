@@ -85,6 +85,7 @@ internal static class SkinModFix {
     }
     [Initialize]
     private static void Initialize() {
+        // Add color grade, hair and death particle support for SMH+
         ModUtils.GetType("SkinModHelperPlus", "Celeste.Mod.SkinModHelper.PlayerSkinSystem")
             ?.GetAllMethodInfos()
             .ForEach(method => method.IlHook((cursor, _) => FixPlayerHairSprite(cursor)));
@@ -92,14 +93,30 @@ internal static class SkinModFix {
             ?.GetAllMethodInfos()
             .ForEach(method => method.IlHook((cursor, _) => FixPlayerHairSprite(cursor)));
 
-        ModUtils.GetMethod("SkinModHelperPlus", "Celeste.Mod.SkinModHelper.SkinsSystem", "SyncColorGrade")?.IlHook((cursor, _) => {
-            FixSpriteParameter(cursor, index: 0);
-            FixSpriteParameter(cursor, index: 1);
-        });
+        ModUtils.GetMethod("SkinModHelperPlus", "Celeste.Mod.SkinModHelper.SkinsSystem", "SyncColorGrade")
+            ?.IlHook((cursor, _) => {
+                FixSpriteParameter(cursor, index: 0);
+                FixSpriteParameter(cursor, index: 1);
+            });
         ModUtils.GetMethod("SkinModHelperPlus", "Celeste.Mod.SkinModHelper.PlayerSkinSystem", "SpriteRenderHook_ColorGrade")
             ?.IlHook((cursor, _) => FixSpriteParameter(cursor, index: 1));
         ModUtils.GetMethod("SkinModHelperPlus", "Celeste.Mod.SkinModHelper.CharacterConfig", "For")
             ?.IlHook((cursor, _) => FixSpriteParameter(cursor, index: 0));
+
+        ModUtils.GetMethod("SkinModHelperPlus", "Celeste.Mod.SkinModHelper.SomePatches", "DeathEffectDrawHook")
+            ?.IlHook((cursor, il) => {
+                int spriteIdx = il.Body.Variables.IndexOf(var => var.VariableType.ResolveReflection() == typeof(Sprite));
+
+                cursor.GotoNext(MoveType.AfterLabel, instr => instr.MatchStloc(spriteIdx));
+                cursor.EmitDelegate(CorrectVisualSprite);
+            });
+        ModUtils.GetMethod("SkinModHelperPlus", "Celeste.Mod.SkinModHelper.SomePatches", "DeathEffectRenderHook")
+            ?.IlHook((cursor, il) => {
+                int spriteIdx = il.Body.Variables.IndexOf(var => var.VariableType.ResolveReflection() == typeof(Sprite));
+
+                cursor.GotoNext(MoveType.AfterLabel, instr => instr.MatchStloc(spriteIdx));
+                cursor.EmitDelegate(CorrectVisualSprite);
+            });
 
         // The Avali Skinmod (non-SMH) has custom code to swap the sprites dynamically,
         // which needs to reference the visual sprite, instead of gameplay one.

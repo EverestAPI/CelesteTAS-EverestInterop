@@ -258,6 +258,17 @@ public static class CollectionExtensions {
 
         return -1;
     }
+
+    /// Find the index of the first matching element. Otherwise -1
+    public static int IndexOf<T>(this IList<T> list, Func<T, bool> predicate) {
+        for (int i = 0; i < list.Count; i++) {
+            if (predicate(list[i])) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
 }
 
 public static class DictionaryExtensions {
