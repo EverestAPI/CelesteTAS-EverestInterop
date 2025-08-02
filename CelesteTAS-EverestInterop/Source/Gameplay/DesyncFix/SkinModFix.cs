@@ -9,7 +9,9 @@ using StudioCommunication;
 using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Xml;
 using TAS.ModInterop;
@@ -83,17 +85,54 @@ internal static class SkinModFix {
     }
     [Initialize]
     private static void Initialize() {
+        ModUtils.GetMethod("SkinModHelperPlus", "Celeste.Mod.SkinModHelper.PlayerSkinSystem", "PlayerHairRenderHook_ColorGrade")?.IlHook((cursor, _) => {
+            while (cursor.TryGotoNext(MoveType.After, instr => instr.MatchLdfld<PlayerHair>(nameof(PlayerHair.Sprite)))) {
+                cursor.EmitDelegate(CorrectVisualSprite);
+            }
+        });
+        ModUtils.GetMethod("SkinModHelperPlus", "Celeste.Mod.SkinModHelper.SkinsSystem", "SyncColorGrade")?.IlHook((cursor, _) => {
+            const int toParamIdx = 0;
+            const int fromParamIdx = 1;
+
+            cursor.EmitLdarg(toParamIdx);
+            cursor.EmitDelegate(CorrectVisualSprite);
+            cursor.EmitStarg(toParamIdx);
+
+            cursor.EmitLdarg(fromParamIdx);
+            cursor.EmitDelegate(CorrectVisualSprite);
+            cursor.EmitStarg(fromParamIdx);
+        });
+        FixSpriteParameter(ModUtils.GetMethod("SkinModHelperPlus", "Celeste.Mod.SkinModHelper.PlayerSkinSystem", "SpriteRenderHook_ColorGrade"), paramIndex: 1);
+
         // The Avali Skinmod (non-SMH) has custom code to swap the sprites dynamically,
         // which needs to reference the visual sprite, instead of gameplay one.
-        if (ModUtils.GetMethod("Avali-Skinmod", "Celeste.Mod.AvaliSkin.AvaliSkinModule", "trySpriteSwap") is { } m_AvaliSpriteSwap) {
-            m_AvaliSpriteSwap.OnHook((Action<object, PlayerSprite, bool> orig, object self, PlayerSprite sprite, bool enabled) => {
-                if (gameplayToVisualSprites.TryGetValue(sprite, out var visual)) {
-                    orig(self, visual, enabled);
-                } else {
-                    orig(self, sprite, enabled);
-                }
-            });
+        FixSpriteParameter(ModUtils.GetMethod("Avali-Skinmod", "Celeste.Mod.AvaliSkin.AvaliSkinModule", "trySpriteSwap"), paramIndex: 1);
+    }
+
+    private static void FixSpriteParameter(MethodBase? method, int paramIndex) {
+        if (method == null) {
+            return;
         }
+        if (!method.IsStatic) {
+            paramIndex += 1;
+        }
+
+#if DEBUG
+        Debug.Assert(typeof(PlayerSprite).IsAssignableTo(method.GetParameters()[paramIndex].ParameterType));
+#endif
+
+        method.IlHook((cursor, _) => {
+            cursor.EmitLdarg(paramIndex);
+            cursor.EmitDelegate(CorrectVisualSprite);
+            cursor.EmitStarg(paramIndex);
+        });
+    }
+    private static Sprite CorrectVisualSprite(Sprite sprite) {
+        if (sprite is PlayerSprite playerSprite && gameplayToVisualSprites.TryGetValue(playerSprite, out var visualSprite)) {
+            return visualSprite;
+        }
+
+        return sprite;
     }
 
     private static bool CheckMapRequiresSkin() {
