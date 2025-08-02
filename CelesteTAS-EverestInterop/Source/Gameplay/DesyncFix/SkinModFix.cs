@@ -5,13 +5,13 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
+using MonoMod.Utils;
 using StudioCommunication;
 using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Xml;
 using TAS.ModInterop;
@@ -85,54 +85,51 @@ internal static class SkinModFix {
     }
     [Initialize]
     private static void Initialize() {
-        ModUtils.GetMethod("SkinModHelperPlus", "Celeste.Mod.SkinModHelper.PlayerSkinSystem", "PlayerHairRenderHook_ColorGrade")?.IlHook((cursor, _) => {
-            while (cursor.TryGotoNext(MoveType.After, instr => instr.MatchLdfld<PlayerHair>(nameof(PlayerHair.Sprite)))) {
-                cursor.EmitDelegate(CorrectVisualSprite);
-            }
-        });
+        ModUtils.GetType("SkinModHelperPlus", "Celeste.Mod.SkinModHelper.PlayerSkinSystem")
+            ?.GetAllMethodInfos()
+            .ForEach(method => method.IlHook((cursor, _) => FixPlayerHairSprite(cursor)));
+        ModUtils.GetType("SkinModHelperPlus", "Celeste.Mod.SkinModHelper.HairConfig")
+            ?.GetAllMethodInfos()
+            .ForEach(method => method.IlHook((cursor, _) => FixPlayerHairSprite(cursor)));
+
         ModUtils.GetMethod("SkinModHelperPlus", "Celeste.Mod.SkinModHelper.SkinsSystem", "SyncColorGrade")?.IlHook((cursor, _) => {
-            const int toParamIdx = 0;
-            const int fromParamIdx = 1;
-
-            cursor.EmitLdarg(toParamIdx);
-            cursor.EmitDelegate(CorrectVisualSprite);
-            cursor.EmitStarg(toParamIdx);
-
-            cursor.EmitLdarg(fromParamIdx);
-            cursor.EmitDelegate(CorrectVisualSprite);
-            cursor.EmitStarg(fromParamIdx);
+            FixSpriteParameter(cursor, index: 0);
+            FixSpriteParameter(cursor, index: 1);
         });
-        FixSpriteParameter(ModUtils.GetMethod("SkinModHelperPlus", "Celeste.Mod.SkinModHelper.PlayerSkinSystem", "SpriteRenderHook_ColorGrade"), paramIndex: 1);
+        ModUtils.GetMethod("SkinModHelperPlus", "Celeste.Mod.SkinModHelper.PlayerSkinSystem", "SpriteRenderHook_ColorGrade")
+            ?.IlHook((cursor, _) => FixSpriteParameter(cursor, index: 1));
+        ModUtils.GetMethod("SkinModHelperPlus", "Celeste.Mod.SkinModHelper.CharacterConfig", "For")
+            ?.IlHook((cursor, _) => FixSpriteParameter(cursor, index: 0));
 
         // The Avali Skinmod (non-SMH) has custom code to swap the sprites dynamically,
         // which needs to reference the visual sprite, instead of gameplay one.
-        FixSpriteParameter(ModUtils.GetMethod("Avali-Skinmod", "Celeste.Mod.AvaliSkin.AvaliSkinModule", "trySpriteSwap"), paramIndex: 1);
-    }
+        ModUtils.GetMethod("Avali-Skinmod", "Celeste.Mod.AvaliSkin.AvaliSkinModule", "trySpriteSwap")
+            ?.IlHook((cursor, _) => FixSpriteParameter(cursor, index: 1));
 
-    private static void FixSpriteParameter(MethodBase? method, int paramIndex) {
-        if (method == null) {
-            return;
-        }
-        if (!method.IsStatic) {
-            paramIndex += 1;
+        return;
+
+        static Sprite CorrectVisualSprite(Sprite sprite) {
+            if (sprite is PlayerSprite playerSprite && gameplayToVisualSprites.TryGetValue(playerSprite, out var visualSprite)) {
+                return visualSprite;
+            }
+
+            return sprite;
         }
 
+        static void FixSpriteParameter(ILCursor cursor, int index) {
 #if DEBUG
-        Debug.Assert(typeof(PlayerSprite).IsAssignableTo(method.GetParameters()[paramIndex].ParameterType));
+            Debug.Assert(typeof(PlayerSprite).IsAssignableTo(cursor.Method.Parameters[index].ParameterType.ResolveReflection()));
 #endif
 
-        method.IlHook((cursor, _) => {
-            cursor.EmitLdarg(paramIndex);
+            cursor.EmitLdarg(index);
             cursor.EmitDelegate(CorrectVisualSprite);
-            cursor.EmitStarg(paramIndex);
-        });
-    }
-    private static Sprite CorrectVisualSprite(Sprite sprite) {
-        if (sprite is PlayerSprite playerSprite && gameplayToVisualSprites.TryGetValue(playerSprite, out var visualSprite)) {
-            return visualSprite;
+            cursor.EmitStarg(index);
         }
-
-        return sprite;
+        static void FixPlayerHairSprite(ILCursor cursor) {
+            while (cursor.TryGotoNext(MoveType.After, instr => instr.MatchLdfld<PlayerHair>(nameof(PlayerHair.Sprite)))) {
+                cursor.EmitDelegate(CorrectVisualSprite);
+            }
+        }
     }
 
     private static bool CheckMapRequiresSkin() {
