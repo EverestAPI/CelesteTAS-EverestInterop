@@ -370,12 +370,11 @@ public static class InfoWatchEntity {
         FieldInfo[] fields;
         PropertyInfo[] properties;
         if (declaredOnly) {
-            var bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
-            fields = type.GetFields(bindingFlags);
-            properties = type.GetProperties(bindingFlags);
+            fields = type.GetFields(ReflectionExtensions.InstanceAnyVisibilityDeclaredOnly);
+            properties = type.GetProperties(ReflectionExtensions.InstanceAnyVisibilityDeclaredOnly);
         } else {
-            fields = type.GetAllFieldInfos().ToArray();
-            properties = type.GetAllPropertyInfos().ToArray();
+            fields = type.GetAllFieldInfos(ReflectionExtensions.InstanceAnyVisibility).ToArray();
+            properties = type.GetAllPropertyInfos(ReflectionExtensions.InstanceAnyVisibility).ToArray();
         }
 
         List<MemberInfo> memberInfos = [];

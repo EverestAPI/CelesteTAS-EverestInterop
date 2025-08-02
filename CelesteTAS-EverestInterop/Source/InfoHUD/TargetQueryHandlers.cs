@@ -24,7 +24,7 @@ internal class SettingsQueryHandler : TargetQuery.Handler {
 
     public override (HashSet<Type> Types, string[] MemberArgs)? ResolveBaseTypes(string[] queryArgs) {
         // Vanilla settings don't need a prefix
-        if (typeof(Settings).GetAllFieldInfos().FirstOrDefault(f => f.Name == queryArgs[0]) != null) {
+        if (typeof(Settings).GetAllFieldInfos(ReflectionExtensions.InstanceAnyVisibility).FirstOrDefault(f => f.Name == queryArgs[0]) != null) {
             return ([typeof(Settings)], queryArgs);
         }
         return null;
@@ -83,7 +83,7 @@ internal class SaveDataQueryHandler : TargetQuery.Handler {
 
     public override (HashSet<Type> Types, string[] MemberArgs)? ResolveBaseTypes(string[] queryArgs) {
         // Vanilla settings don't need a prefix
-        if (typeof(SaveData).GetAllFieldInfos().FirstOrDefault(f => f.Name == queryArgs[0]) != null) {
+        if (typeof(SaveData).GetAllFieldInfos(ReflectionExtensions.InstanceAnyVisibility).FirstOrDefault(f => f.Name == queryArgs[0]) != null) {
             return ([typeof(SaveData)], queryArgs);
         }
         return null;
@@ -173,7 +173,7 @@ internal class AssistsQueryHandler : TargetQuery.Handler {
             yield break;
         }
 
-        foreach (var f in typeof(Assists).GetAllFieldInfos()) {
+        foreach (var f in typeof(Assists).GetAllFieldInfos(ReflectionExtensions.InstanceAnyVisibility)) {
             if (targetTypeFilter == null || targetTypeFilter.Any(type => f.FieldType.CanCoerceTo(type))) {
                 yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Assists)", IsDone = true };
             }

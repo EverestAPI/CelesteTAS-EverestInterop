@@ -358,7 +358,7 @@ internal static class ReflectionExtensions {
     }
 
     /// Resolves all fields of the type, caching the result
-    public static IEnumerable<FieldInfo> GetAllFieldInfos(this Type type, BindingFlags bindingFlags = InstanceAnyVisibility) {
+    public static IEnumerable<FieldInfo> GetAllFieldInfos(this Type type, BindingFlags bindingFlags = StaticInstanceAnyVisibility) {
         bindingFlags |= BindingFlags.DeclaredOnly;
 
         var key = new AllMemberKey(type, bindingFlags);
@@ -379,7 +379,7 @@ internal static class ReflectionExtensions {
     }
 
     /// Resolves all properties of the type, caching the result
-    public static IEnumerable<PropertyInfo> GetAllPropertyInfos(this Type type, BindingFlags bindingFlags = InstanceAnyVisibility) {
+    public static IEnumerable<PropertyInfo> GetAllPropertyInfos(this Type type, BindingFlags bindingFlags = StaticInstanceAnyVisibility) {
         bindingFlags |= BindingFlags.DeclaredOnly;
 
         var key = new AllMemberKey(type, bindingFlags);
@@ -400,7 +400,7 @@ internal static class ReflectionExtensions {
     }
 
     /// Resolves all methods of the type, caching the result
-    public static IEnumerable<MethodInfo> GetAllMethodInfos(this Type type, BindingFlags bindingFlags = InstanceAnyVisibility) {
+    public static IEnumerable<MethodInfo> GetAllMethodInfos(this Type type, BindingFlags bindingFlags = StaticInstanceAnyVisibility) {
         bindingFlags |= BindingFlags.DeclaredOnly;
 
         var key = new AllMemberKey(type, bindingFlags);
@@ -1021,7 +1021,7 @@ internal static class CloneUtil {
             throw new ArgumentException("object to and from must be the same type");
         }
 
-        foreach (FieldInfo fieldInfo in to.GetType().GetAllFieldInfos()) {
+        foreach (FieldInfo fieldInfo in to.GetType().GetAllFieldInfos(ReflectionExtensions.InstanceAnyVisibility)) {
             object? fromValue = fieldInfo.GetValue(from);
             if (onlyDifferent && fromValue == fieldInfo.GetValue(to)) {
                 continue;
@@ -1036,7 +1036,7 @@ internal static class CloneUtil {
             throw new ArgumentException("object to and from must be the same type");
         }
 
-        foreach (PropertyInfo propertyInfo in to.GetType().GetAllPropertyInfos()) {
+        foreach (PropertyInfo propertyInfo in to.GetType().GetAllPropertyInfos(ReflectionExtensions.InstanceAnyVisibility)) {
             if (propertyInfo.GetGetMethod(true) == null || propertyInfo.GetSetMethod(true) == null) {
                 continue;
             }
