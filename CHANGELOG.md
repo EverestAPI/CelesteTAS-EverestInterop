@@ -1,8 +1,26 @@
+# CelesteTAS v3.46.2, Studio v3.9.7
+
+## Repository Cloning
+
+You can now easily clone Git repositories directly from Studio!
+Simply goto `File -> Clone Git Repository...` and enter the appropriate URL and target directory.
+
+This has the advantage of always cloning the respective submodules as well, unlike GitHub's "Download .zip" option.
+
+--- 
+
+- Feature: Utility to clone Git repositories from Studio
+- Fix: Commands like `Set,Player.Speed.X,300` not working (any `Set` command referencing value types in value types)
+- Fix: Exception when setting element of collection with `[]` indexing syntax
+- Fix: Disable hotkey inputs in modded binding GUIs
+- Fix: Trim room labels before validating
+- Fix: Incorrectly rendering various SkinModHelper+ features on skin
+
 # CelesteTAS v3.46.1, Studio v3.9.6
 
 - Feature: Ignore breakpoints inside files accessed with `Read` commands
 - Feature: Add `*` spread operator to target-queries, to flatten out collections (e.g. `Set,Player.ChaserStates*.TimeStamp,0`)
-- Feature: Add `[]` index operator to access individual elements of collect (e.g. `Get,Player.Sprite.animations[idle].Delay`)
+- Feature: Add `[]` index operator to access individual elements of collections (e.g. `Get,Player.Sprite.animations[idle].Delay`)
 - Feature: Allow specifying custom file name for `StartRecording,FileName`
 - Tweak: Adjust wording / duration of auto-pause toast message
 - Fix: Avali SkinMod not working with "Prevent Skin-Mod Gameplay Changes" option
