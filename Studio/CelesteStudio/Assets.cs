@@ -5,7 +5,7 @@ namespace CelesteStudio;
 
 public static class Assets {
 
-    public static Icon AppIcon = Icon.FromResource("Icon.ico");
+    public static Icon AppIcon = Icon.FromResource("Icon.png");
 
     public static readonly SKPath CollapseOpenPath = CreateVectorPath(new(0.0f, 0.0f), new(1.0f, 0.0f), new(0.5f, 1.0f));
     public static readonly SKPath CollapseClosedPath = CreateVectorPath(new(0.0f, 0.0f), new(1.0f, 0.5f), new(0.0f, 1.0f));
