@@ -37,6 +37,7 @@
 
     <ItemGroup>
         <EmbeddedResource Include="Assets\Icon.ico" LogicalName="Icon.ico"/>
+        <EmbeddedResource Include="..\..\Assets\icon.png" LogicalName="Icon.png"/>
     </ItemGroup>
 
     <!-- Windows requires .otf, macOS requires .ttf and GTK doesn't seem to care -->
