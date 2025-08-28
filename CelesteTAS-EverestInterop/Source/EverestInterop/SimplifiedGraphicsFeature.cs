@@ -203,7 +203,8 @@ public static class SimplifiedGraphicsFeature {
             typeof(Cobweb).GetMethodInfo(nameof(Cobweb.Render)),
             typeof(HangingLamp).GetMethodInfo(nameof(HangingLamp.Render)),
             typeof(DustGraphic.Eyeballs).GetMethodInfo(nameof(DustGraphic.Eyeballs.Render)),
-            ModUtils.GetType("BrokemiaHelper", "BrokemiaHelper.PixelRendered.PixelComponent")?.GetMethodInfo("Render")
+            ModUtils.GetType("BrokemiaHelper", "BrokemiaHelper.PixelRendered.PixelComponent")?.GetMethodInfo("Render"),
+            ModUtils.GetMethod("JungleHelper", "Celeste.Mod.JungleHelper.Entities.Firefly", "Render")
         );
 
         typeof(SinkingPlatform).GetMethodInfo(nameof(SinkingPlatform.Render))!.IlHook((cursor, _) => {
