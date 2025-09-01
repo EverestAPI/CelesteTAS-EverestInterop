@@ -14,8 +14,7 @@ internal static class MelvinHitbox {
 
     [Initialize]
     private static void Initialize() {
-        var t_Melvin = ModUtils.GetType("CommunalHelper", "Celeste.Mod.CommunalHelper.Entities.Melvin");
-        if (t_Melvin == null) {
+        if (ModUtils.GetType("CommunalHelper", "Celeste.Mod.CommunalHelper.Entities.Melvin") is not { } t_Melvin) {
             return;
         }
 
@@ -33,7 +32,7 @@ internal static class MelvinHitbox {
 
             // Highlight player center
             if (any) {
-                Draw.Point(player.Center.Ceiling(), Color.Pink);
+                Draw.Point(player.Center.Floor(), Color.Red);
             }
         };
     }
@@ -46,9 +45,6 @@ internal static class MelvinHitbox {
         int top = (int) melvin.Top;
         int bottom = (int) melvin.Bottom;
 
-        float halfWidth = player.Width / 2.0f;
-        float halfHeight = player.Height / 2.0f;
-
         var hitboxColor = melvin.GetFieldValue<bool>("triggered")
             ? Color.Orchid * HitboxColor.UnCollidableAlpha
             : Color.Orchid;
@@ -56,7 +52,19 @@ internal static class MelvinHitbox {
         Span<int> verticalDists = stackalloc int[bottom - top];
         Span<int> horizontalDists = stackalloc int[right - left];
 
-        // NOTE: Small offsets are sometimes applied for.. reason, sorry
+        // The check is X > Left, which means if X == Left it's not yet triggered
+        // ReSharper disable CompareOfFloatsByEqualityOperator
+        int playerCenterXOffset = player.CenterX == (int) player.CenterX ? 1 : 0;
+        int playerCenterYOffset = player.CenterY == (int) player.CenterY ? 1 : 0;
+        // ReSharper restore CompareOfFloatsByEqualityOperator
+
+        // Pixel distances from the floored center position
+        float halfWidth = player.Width / 2.0f;
+        float halfHeight = player.Height / 2.0f;
+        int centerToLeft = (int) -Math.Floor(halfWidth);
+        int centerToRight = (int) Math.Ceiling(halfWidth);
+        int centerToTop = (int) -Math.Floor(halfHeight);
+        int centerToBottom = (int) Math.Ceiling(halfHeight);
 
         // Left
         int leftStop = levelBounds.Left;
@@ -65,27 +73,38 @@ internal static class MelvinHitbox {
         }
 
         int prevX = left;
-        int prevY = top;
-        for (int currY = top; currY < bottom; currY++) {
+        int prevY = top + playerCenterYOffset;
+        int prevLineY = prevY;
+        bool prevLineRight = false;
+        for (int currY = prevY; currY <= bottom; currY++) {
             int maxLeft = left;
-            if (currY != bottom - 1) {
-                int checkTop = Math.Max(0, (int) (currY - halfHeight) - top);
-                int checkBottom = Math.Min(verticalDists.Length, (int) (currY + halfHeight) - top);
+            if (currY != bottom) {
+                int currIdx = currY - top;
+                int checkTop = Math.Max(0, currIdx + centerToTop);
+                int checkBottom = Math.Min(verticalDists.Length, currIdx + centerToBottom);
                 for (int i = checkTop; i < checkBottom; i++) {
-                    maxLeft = Math.Min(maxLeft, verticalDists[i] - (int) halfWidth + 2);
+                    maxLeft = Math.Min(maxLeft, verticalDists[i] + centerToLeft + 1);
                 }
             }
 
             if (maxLeft != prevX) {
+                // If the distance is now closer to the Melvin, the edge was on the previous pixel
+                int currLineY = prevX < maxLeft ? currY - 1 : currY;
+                Draw.Line(Math.Min(prevX, maxLeft), currLineY, Math.Max(prevX, maxLeft), currLineY, hitboxColor);
+
+                bool currLineRight = prevX < maxLeft;
                 if (currY != prevY) {
-                    Draw.Line(prevX, prevY, prevX, currY, hitboxColor);
+                    // Need to shift up/down depending on, if the other line is going left/right
+                    Draw.Line(prevX, currLineY + (currLineRight ? 0 : 1), prevX, prevLineY + (prevLineRight ? 0 : 1), hitboxColor);
                 }
-                Draw.Line(maxLeft, currY, prevX, currY, hitboxColor);
 
                 prevX = maxLeft;
                 prevY = currY;
+                prevLineY = currLineY;
+                prevLineRight = currLineRight;
             }
         }
+        Draw.Line(left - 1, bottom, left - 1, top + playerCenterYOffset, hitboxColor);
 
         // Right
         int rightStop = levelBounds.Right;
@@ -93,28 +112,39 @@ internal static class MelvinHitbox {
             verticalDists[i] = CollideBisectRight(melvin.Scene, right, rightStop, top + i);
         }
 
-        prevX = right;
-        prevY = top;
-        for (int currY = top; currY < bottom; currY++) {
-            int maxRight = right;
-            if (currY != bottom - 1) {
-                int checkTop = Math.Max(0, (int) (currY - halfHeight) - top);
-                int checkBottom = Math.Min(verticalDists.Length, (int) (currY + halfHeight) - top);
+        prevX = right + playerCenterXOffset;
+        prevY = top + playerCenterYOffset;
+        prevLineY = prevY;
+        prevLineRight = false;
+        for (int currY = prevY; currY <= bottom; currY++) {
+            int maxRight = right + playerCenterXOffset;
+            if (currY != bottom) {
+                int currIdx = currY - top;
+                int checkTop = Math.Max(0, currIdx + centerToTop);
+                int checkBottom = Math.Min(verticalDists.Length, currIdx + centerToBottom);
                 for (int i = checkTop; i < checkBottom; i++) {
-                    maxRight = Math.Max(maxRight, verticalDists[i] + (int) halfWidth - 1);
+                    maxRight = Math.Max(maxRight, verticalDists[i] + centerToRight - 1);
                 }
             }
 
             if (maxRight != prevX) {
+                // If the distance is now closer to the Melvin, the edge was on the previous pixel
+                int currLineY = prevX > maxRight ? currY - 1 : currY;
+                Draw.Line(Math.Min(prevX, maxRight), currLineY, Math.Max(prevX, maxRight), currLineY, hitboxColor);
+
+                bool currLineRight = prevX < maxRight;
                 if (currY != prevY) {
-                    Draw.Line(prevX, currY, prevX, prevY, hitboxColor);
+                    // Need to shift up/down depending on, if the other line is going left/right
+                    Draw.Line(prevX, currLineY + (currLineRight ? 0 : 1), prevX, prevLineY + (prevLineRight ? 0 : 1), hitboxColor);
                 }
-                Draw.Line(prevX, currY, maxRight, currY, hitboxColor);
 
                 prevX = maxRight;
                 prevY = currY;
+                prevLineY = currLineY;
+                prevLineRight = currLineRight;
             }
         }
+        Draw.Line(right + playerCenterXOffset, bottom, right + playerCenterXOffset, top + playerCenterYOffset, hitboxColor);
 
         // Top
         int topStop = levelBounds.Top;
@@ -122,28 +152,39 @@ internal static class MelvinHitbox {
             horizontalDists[i] = CollideBisectTop(melvin.Scene, left + i, topStop, top);
         }
 
-        prevX = left + 1;
+        prevX = left + playerCenterXOffset;
         prevY = top;
-        for (int currX = left + 1; currX <= right; currX++) {
+        int prevLineX = prevX;
+        bool prevLineUp = false;
+        for (int currX = prevX; currX <= right; currX++) {
             int maxTop = top;
             if (currX != right) {
-                int checkLeft = Math.Max(0, (int) (currX - halfWidth) - left);
-                int checkRight = Math.Min(horizontalDists.Length, (int) (currX + halfWidth) - left);
+                int currIdx = currX - left;
+                int checkLeft = Math.Max(0, currIdx + centerToLeft);
+                int checkRight = Math.Min(horizontalDists.Length, currIdx + centerToRight);
                 for (int i = checkLeft; i < checkRight; i++) {
-                    maxTop = Math.Min(maxTop, horizontalDists[i] - (int) halfHeight + 2);
+                    maxTop = Math.Min(maxTop, horizontalDists[i] + centerToTop + 1);
                 }
             }
 
             if (maxTop != prevY) {
+                // If the distance is now closer to the Melvin, the edge was on the previous pixel
+                int currLineX = prevY < maxTop ? currX - 1 : currX;
+                Draw.Line(currLineX, Math.Max(prevY, maxTop), currLineX, Math.Min(prevY, maxTop), hitboxColor);
+
+                bool currLineUp = prevY > maxTop;
                 if (currX != prevX) {
-                    Draw.Line(currX, prevY, prevX, prevY, hitboxColor);
+                    // Need to shift left/right depending on, if the other line is going up/down
+                    Draw.Line(currLineX + (currLineUp ? 0 : 1), prevY, prevLineX + (prevLineUp ? 0 : 1), prevY, hitboxColor);
                 }
-                Draw.Line(currX, prevY, currX, maxTop, hitboxColor);
 
                 prevX = currX;
                 prevY = maxTop;
+                prevLineX = currLineX;
+                prevLineUp = currLineUp;
             }
         }
+        Draw.Line(left + playerCenterXOffset, top - 1, right, top - 1, hitboxColor);
 
         // Bottom
         int bottomStop = levelBounds.Bottom;
@@ -151,28 +192,39 @@ internal static class MelvinHitbox {
             horizontalDists[i] = CollideBisectBottom(melvin.Scene, left + i, bottom, bottomStop);
         }
 
-        prevX = left + 1;
-        prevY = bottom;
-        for (int currX = left + 1; currX <= right; currX++) {
-            int maxBottom = bottom;
+        prevX = left + playerCenterXOffset;
+        prevY = bottom + playerCenterYOffset;
+        prevLineX = prevX;
+        prevLineUp = false;
+        for (int currX = prevX; currX <= right; currX++) {
+            int maxBottom = bottom + playerCenterYOffset;
             if (currX != right) {
-                int checkLeft = Math.Max(0, (int) (currX - halfWidth) - left);
-                int checkRight = Math.Min(horizontalDists.Length, (int) (currX + halfWidth) - left);
+                int currIdx = currX - left;
+                int checkLeft = Math.Max(0, currIdx + centerToLeft);
+                int checkRight = Math.Min(horizontalDists.Length, currIdx + centerToRight);
                 for (int i = checkLeft; i < checkRight; i++) {
-                    maxBottom = Math.Max(maxBottom, horizontalDists[i] + (int) Math.Ceiling(halfHeight));
+                    maxBottom = Math.Max(maxBottom, horizontalDists[i] + centerToBottom - 1);
                 }
             }
 
             if (maxBottom != prevY) {
+                // If the distance is now closer to the Melvin, the edge was on the previous pixel
+                int currLineX = prevY > maxBottom ? currX - 1 : currX;
+                Draw.Line(currLineX, Math.Max(prevY, maxBottom), currLineX, Math.Min(prevY, maxBottom), hitboxColor);
+
+                bool currLineUp = prevY > maxBottom;
                 if (currX != prevX) {
-                    Draw.Line(currX, prevY, prevX, prevY, hitboxColor);
+                    // Need to shift left/right depending on, if the other line is going up/down
+                    Draw.Line(currLineX + (currLineUp ? 0 : 1), prevY, prevLineX + (prevLineUp ? 0 : 1), prevY, hitboxColor);
                 }
-                Draw.Line(currX, maxBottom, currX, prevY, hitboxColor);
 
                 prevX = currX;
                 prevY = maxBottom;
+                prevLineX = currLineX;
+                prevLineUp = currLineUp;
             }
         }
+        Draw.Line(left + playerCenterXOffset, bottom + playerCenterYOffset, right, bottom + playerCenterYOffset, hitboxColor);
     }
 
     private static int CollideBisectLeft(Scene scene, int x1, int x2, int y) {
