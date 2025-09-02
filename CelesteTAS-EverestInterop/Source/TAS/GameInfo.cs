@@ -544,10 +544,18 @@ public static class GameInfo {
     }
 
     internal static int ToCeilingFrames(this float timer) {
+        if (timer <= 0.0f) {
+            return 0;
+        }
+
         float frames = MathF.Ceiling(timer / Engine.DeltaTime);
         return float.IsInfinity(frames) || float.IsNaN(frames) ? int.MaxValue : (int) frames;
     }
     public static int ToFloorFrames(this float timer) {
+        if (timer <= 0.0f) {
+            return 0;
+        }
+
         float frames = MathF.Floor(timer / Engine.DeltaTime);
         return float.IsInfinity(frames) || float.IsNaN(frames) ? int.MaxValue : (int) frames;
     }
