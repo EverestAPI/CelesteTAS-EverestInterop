@@ -4,13 +4,12 @@ using System;
 
 namespace StudioCommunication.Util;
 
-public static class ProcessHelper
-{
+public static class ProcessHelper {
     public static Process? OpenInDefaultApp(string path) {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
             return Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-            return Process.Start("xdg-open", path);
+            return Process.Start("xdg-open", $"'{path}'");
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
             return Process.Start("open", path);
         } else {
@@ -22,7 +21,7 @@ public static class ProcessHelper
     public static void Terminate(this Process process) {
         // Unix
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-            Process.Start("kill", $"-s SIGINT ${process.Id.ToString()}");
+            Process.Start("kill", $"-s SIGINT {process.Id.ToString()}");
             return;
         }
 
