@@ -11,7 +11,7 @@ public static class ProcessHelper {
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
             return Process.Start("xdg-open", $"'{path}'");
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-            return Process.Start("open", path);
+            return Process.Start("open", $"'{path}'");
         } else {
             throw new NotImplementedException($"Unsupported platform: {RuntimeInformation.OSDescription} with {RuntimeInformation.OSArchitecture}");
         }
