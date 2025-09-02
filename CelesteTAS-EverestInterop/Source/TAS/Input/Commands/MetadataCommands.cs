@@ -6,7 +6,10 @@ using Celeste.Mod;
 using Monocle;
 using StudioCommunication;
 using TAS.Communication;
+using TAS.Gameplay;
+using TAS.ModInterop;
 using TAS.Module;
+using TAS.Playback;
 using TAS.Tools;
 using TAS.Utils;
 
@@ -31,22 +34,7 @@ internal static class MetadataCommands {
             .GetMethodInfo(nameof(Level.UpdateTime))!
             .HookAfter(StartFileTime);
 
-        typeof(Celeste.Celeste)
-            .GetMethodInfo(nameof(Celeste.Celeste.Update))!
-            .HookBefore(() => {
-                if (!Manager.Running || SaveData.Instance is not { } saveData) {
-                    return;
-                }
-
-                // Advance real-time
-                if (RealTimeInfo != null && (Manager.CurrState != Manager.State.Paused || Manager.IsLoading()) && !Manager.IsActuallyLoading()) {
-                    RealTimeInfo = RealTimeInfo.Value with { FrameCount = RealTimeInfo.Value.FrameCount + 1 };
-                }
-
-                if (RealTimeInfo == null || RealTimeInfo.Value.FileSlot != saveData.FileSlot) {
-                    RealTimeInfo = (0, saveData.FileSlot);
-                }
-            });
+        return;
 
         static void StartFileTime() {
             if (!Manager.Running || SaveData.Instance is not { } saveData) {
@@ -64,8 +52,12 @@ internal static class MetadataCommands {
         Everest.Events.Level.OnComplete -= UpdateChapterTime;
     }
 
-    [EnableRun]
-    private static void ResetRealTime() {
+    internal const int EnableRunPriority = SavestateManager.EnableRunPriority - 1;
+
+    [EnableRun(EnableRunPriority)]
+    private static void ResetTimes() {
+        // Reset values, but make sure savestates overwrite with the correct value
+        TasStartInfo = null;
         RealTimeInfo = null;
     }
 
@@ -80,6 +72,32 @@ internal static class MetadataCommands {
 
         TasStartInfo = null;
         RealTimeInfo = null;
+    }
+
+    [SaveState]
+    private static void SaveState(SavestateData data) {
+        data[nameof(TasStartInfo)] = TasStartInfo;
+        data[nameof(RealTimeInfo)] = RealTimeInfo;
+    }
+    [LoadState]
+    private static void LoadState(SavestateData data) {
+        TasStartInfo = ((long FileTimeTicks, int FileSlot)?) data[nameof(TasStartInfo)];
+        RealTimeInfo = ((int FrameCount, int FileSlot)?) data[nameof(RealTimeInfo)];
+    }
+
+    [Events.PreEngineUpdate]
+    private static void AdvanceRealTime() {
+        if (!Manager.Running || SaveData.Instance is not { } saveData) {
+            return;
+        }
+
+        if (RealTimeInfo != null && !Manager.IsActuallyLoading()) {
+            RealTimeInfo = RealTimeInfo.Value with { FrameCount = RealTimeInfo.Value.FrameCount + 1 };
+        }
+
+        if (RealTimeInfo == null || RealTimeInfo.Value.FileSlot != saveData.FileSlot) {
+            RealTimeInfo = (0, saveData.FileSlot);
+        }
     }
 
     private static void UpdateChapterTime(Level level) {

@@ -1,3 +1,5 @@
+global using SavestateData = System.Collections.Generic.Dictionary<string, object?>;
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -5,12 +7,10 @@ using Celeste;
 using Celeste.Mod;
 using JetBrains.Annotations;
 using Microsoft.Xna.Framework.Input;
-using Monocle;
 using MonoMod.ModInterop;
 using StudioCommunication.Util;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.Gameplay;
 using TAS.InfoHUD;
@@ -131,7 +131,7 @@ internal static class SpeedrunToolInterop {
 
         saveLoadHandle = SpeedrunToolSaveLoadImport.RegisterSaveLoadAction!(
             (savedValues, _) => {
-                var saveData = new Dictionary<string, object?> {
+                var saveData = new SavestateData {
                     { nameof(GameInfo.LastPos), GameInfo.LastPos },
                     { nameof(GameInfo.LastDiff), GameInfo.LastDiff },
                     { nameof(GameInfo.LastPlayerSeekerPos), GameInfo.LastPlayerSeekerPos },
@@ -145,7 +145,6 @@ internal static class SpeedrunToolInterop {
                     { nameof(StunPauseCommand.LocalMode), StunPauseCommand.LocalMode },
                     { nameof(StunPauseCommand.GlobalModeRuntime), StunPauseCommand.GlobalModeRuntime },
                     { nameof(PressCommand.PressKeys), PressCommand.PressKeys },
-                    { nameof(MetadataCommands.TasStartInfo), MetadataCommands.TasStartInfo },
                     { nameof(MouseCommand.CurrentState), MouseCommand.CurrentState },
                     { nameof(HitboxSimplified.Followers), HitboxSimplified.Followers },
                     { nameof(SafeCommand.DisallowUnsafeInput), SafeCommand.DisallowUnsafeInput },
@@ -177,7 +176,6 @@ internal static class SpeedrunToolInterop {
                 PressCommand.PressKeys.Clear();
                 PressCommand.PressKeys.AddRange((HashSet<Keys>) saveData[nameof(PressCommand.PressKeys)]!);
 
-                MetadataCommands.TasStartInfo = ((long FileTimeTicks, int FileSlot)?) saveData[nameof(MetadataCommands.TasStartInfo)];
                 MouseCommand.CurrentState = (MouseState) saveData[nameof(MouseCommand.CurrentState)]!;
                 HitboxSimplified.Followers = (Dictionary<Follower, bool>) saveData[nameof(HitboxSimplified.Followers)]!;
                 SafeCommand.DisallowUnsafeInput = (bool) saveData[nameof(SafeCommand.DisallowUnsafeInput)]!;
