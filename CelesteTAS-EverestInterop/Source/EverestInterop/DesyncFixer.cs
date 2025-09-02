@@ -30,6 +30,9 @@ public static class DesyncFixer {
         typeof(CS03_Memo.MemoPage).GetConstructors()[0].HookAfter<CS03_Memo.MemoPage>(FixMemoPageCrash);
         typeof(FinalBoss).GetMethodInfo("Added")!.HookAfter<FinalBoss>(FixFinalBossDesync);
 
+        // Avoid advancing time while loading
+        typeof(Level).GetMethodInfo(nameof(Level.UpdateTime))!.SkipMethod(Manager.IsLoading);
+
         // System.IndexOutOfRangeException: Index was outside the bounds of the array.
         // https://discord.com/channels/403698615446536203/1148931167983251466/1148931167983251466
         On.Celeste.LightingRenderer.SetOccluder += IgnoreSetOccluderCrash;

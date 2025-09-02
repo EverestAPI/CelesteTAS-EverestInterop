@@ -418,7 +418,8 @@ public static class Manager {
     /// TAS-execution is paused during loading screens
     public static bool IsLoading() {
         return Engine.Scene switch {
-            Level level => level.IsAutoSaving() && level.Session.Level == "end-cinematic",
+            Level level => level.IsAutoSaving() && level.Session.Level == "end-cinematic" ||
+                           level.Paused && UserIO.Saving, // Saving after closing a menu yields until it's done
             SummitVignette summit => !summit.ready,
             Overworld overworld => overworld.Current is OuiFileSelect { SlotIndex: >= 0 } slot && slot.Slots[slot.SlotIndex].StartingGame ||
                                    overworld.Next is OuiChapterSelect && UserIO.Saving ||
@@ -436,7 +437,8 @@ public static class Manager {
         }
 
         return Engine.Scene switch {
-            Level level => level.IsAutoSaving(),
+            Level level => level.IsAutoSaving() ||
+                           level.Paused && UserIO.Saving,
             SummitVignette summit => !summit.ready,
             Overworld overworld => overworld.Next is OuiChapterSelect && UserIO.Saving ||
                                    overworld.Next is OuiMainMenu && (UserIO.Saving || Everest._SavingSettings),
