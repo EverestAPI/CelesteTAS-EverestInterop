@@ -419,7 +419,8 @@ public static class Manager {
     public static bool IsLoading() {
         return Engine.Scene switch {
             Level level => level.IsAutoSaving() && level.Session.Level == "end-cinematic" ||
-                           level.Paused && UserIO.Saving, // Saving after closing a menu yields until it's done
+                           // Saving after closing a menu yields until it's done, however need to avoid catching auto-save
+                           level.Paused && UserIO.Saving && !level.IsAutoSaving(),
             SummitVignette summit => !summit.ready,
             Overworld overworld => overworld.Current is OuiFileSelect { SlotIndex: >= 0 } slot && slot.Slots[slot.SlotIndex].StartingGame ||
                                    overworld.Next is OuiChapterSelect && UserIO.Saving ||
@@ -437,8 +438,8 @@ public static class Manager {
         }
 
         return Engine.Scene switch {
-            Level level => level.IsAutoSaving() ||
-                           level.Paused && UserIO.Saving,
+            Level level => level.IsAutoSaving() && level.Session.Level == "end-cinematic" ||
+                           level.Paused && UserIO.Saving && !level.IsAutoSaving(),
             SummitVignette summit => !summit.ready,
             Overworld overworld => overworld.Next is OuiChapterSelect && UserIO.Saving ||
                                    overworld.Next is OuiMainMenu && (UserIO.Saving || Everest._SavingSettings),
