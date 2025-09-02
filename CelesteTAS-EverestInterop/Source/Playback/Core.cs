@@ -112,7 +112,7 @@ internal static class Core {
         }
 
         // Advance through freeze frames
-        while (Engine.FreezeTimer > 0.0f && !Manager.Controller.Break) {
+        while (Engine.FreezeTimer > 0.0f && Manager.Running && Manager.CurrState != Manager.State.Paused) {
             try {
                 orig(self, gameTime);
             } catch (Exception ex) {
