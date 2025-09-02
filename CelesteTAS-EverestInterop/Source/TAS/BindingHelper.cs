@@ -172,4 +172,15 @@ public static class BindingHelper {
         origCrouchDashMode = null;
         origGrabMode = null;
     }
+
+    [SaveState]
+    private static void SaveState(SavestateData data) {
+        data[nameof(Settings.CrouchDashMode)] = Settings.Instance.CrouchDashMode;
+        data[nameof(Settings.GrabMode)] = Settings.Instance.GrabMode;
+    }
+    [LoadState]
+    private static void LoadState(SavestateData data) {
+        Settings.Instance.CrouchDashMode = (CrouchDashModes) data[nameof(Settings.CrouchDashMode)]!;
+        Settings.Instance.GrabMode = (GrabModes) data[nameof(Settings.GrabMode)]!;
+    }
 }
