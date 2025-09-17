@@ -188,6 +188,9 @@ internal static class SavestateManager {
         // If the file was changed, there might be leftover breakpoints
         ClearDeletedSavestates();
 
+        // Collect savestates which are stored but no longer working
+        var staleSavestates = new HashSet<Savestate>();
+
         // Load ideal savestate to start playing from for frame step back
         if (Manager.FrameStepBackTargetFrame > 0) {
             foreach (var state in AllSavestates.Reverse()) {
@@ -196,16 +199,17 @@ internal static class SavestateManager {
                 }
 
                 if (!state.Load()) {
+                    staleSavestates.Add(state);
                     continue;
                 }
                 if (state.Frame == Manager.FrameStepBackTargetFrame) {
                     Manager.CurrState = Manager.NextState = Manager.State.Paused;
                 }
-                return;
+                goto CleanupStates;
             }
 
             // No viable state found
-            return;
+            goto CleanupStates;
         }
 
         foreach (var state in AllSavestates.Reverse()) {
@@ -216,6 +220,7 @@ internal static class SavestateManager {
             }
 
             if (!state.Load()) {
+                staleSavestates.Add(state);
                 continue;
             }
 
@@ -225,7 +230,19 @@ internal static class SavestateManager {
             } else {
                 Manager.CurrState = Manager.NextState = Manager.State.Running;
             }
-            return;
+            goto CleanupStates;
+        }
+
+        CleanupStates:
+        foreach (var state in staleSavestates) {
+            state.Clear();
+
+            if (state.SavedByBreakpoint) {
+                BreakpointSavestates.Remove(state);
+            } else {
+                ManualSavestate?.Clear();
+                ManualSavestate = null;
+            }
         }
     }
 
