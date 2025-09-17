@@ -419,6 +419,10 @@ public sealed class Editor : SkiaDrawable {
             }
 
             if (Settings.Instance.SyncCaretWithPlayback && state.CurrentLine != -1) {
+                if (Document.Caret.Row != state.CurrentLine) {
+                    ActivePopupMenu = null;
+                }
+
                 Document.Caret.Row = state.CurrentLine;
                 Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
                 Document.Caret = ClampCaret(Document.Caret);
