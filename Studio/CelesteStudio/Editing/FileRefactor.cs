@@ -1,5 +1,6 @@
 using CelesteStudio.Communication;
 using StudioCommunication;
+using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -401,7 +402,7 @@ public static class FileRefactor {
                     try {
                         for (int i = 1; i <= numberOfRetries; i++) {
                             try {
-                                await File.WriteAllTextAsync(filePath, Document.FormatLinesToText(FileCache[filePath]));
+                                await File.WriteAllTextAsync(filePath, FileCache[filePath].FormatTasLinesToText());
                                 Console.WriteLine($"Successfully flushed file '{filePath}'");
                             } catch (IOException ex) when (ex.HResult == ERROR_SHARING_VIOLATION || ex is FileNotFoundException) {
                                 await Task.Delay(delayOnRetry);

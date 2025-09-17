@@ -1,5 +1,6 @@
 using CelesteStudio.Editing;
 using StudioCommunication;
+using StudioCommunication.Util;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -47,6 +48,6 @@ public static class IntegrateReadFiles {
         integratedLines.Insert(1, $"TotalRecordCount: {totalRecordCount}");
         integratedLines.Insert(2, string.Empty);
 
-        File.WriteAllText(targetFile, Document.FormatLinesToText(integratedLines));
+        File.WriteAllText(targetFile, integratedLines.FormatTasLinesToText());
     }
 }

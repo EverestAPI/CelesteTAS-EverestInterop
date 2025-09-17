@@ -76,7 +76,7 @@ public class Anchor {
 
 public class Document : IDisposable {
     // Unify all TASes to use a single line separator
-    public const char NewLine = '\n';
+    public const char NewLine = FormattingExtensions.NewLine;
 
     // Used while the document isn't saved yet
     public static string ScratchFile => Path.Combine(Settings.BaseConfigPath, ".temp.tas");
@@ -120,7 +120,7 @@ public class Document : IDisposable {
     private Dictionary<int, List<Anchor>> CurrentAnchors = [];
     public IEnumerable<Anchor> Anchors => CurrentAnchors.SelectMany(pair => pair.Value);
 
-    public string Text => FormatLinesToText(CurrentLines);
+    public string Text => CurrentLines.FormatTasLinesToText();
 
     /// Whether the document is still waiting on the text being saved to disk
     public bool PendingSave => Dirty || saveWaitTimeOut != null;
@@ -165,23 +165,6 @@ public class Document : IDisposable {
         }
 
         return FixupPatch?.Invoke(this, insertions, deletions);
-    }
-
-    /// Formats lines of a file into a single string, using consistent formatting rules
-    public static string FormatLinesToText(IEnumerable<string> lines) {
-        return string.Join("", lines
-            // Trim leading empty lines
-            .SkipWhile(string.IsNullOrWhiteSpace)
-            // Trim trailing empty lines
-            .Reverse().SkipWhile(string.IsNullOrWhiteSpace).Reverse()
-            .Select(line => {
-                if (ActionLine.TryParse(line, out var actionLine)) {
-                    return $"{actionLine}{NewLine}";
-                }
-
-                // Trim whitespace and remove invalid characters
-                return new string(line.Trim().Where(c => !char.IsControl(c) && c != char.MaxValue).ToArray()) + $"{NewLine}";
-            }));
     }
 
     private Document(string? filePath) {
