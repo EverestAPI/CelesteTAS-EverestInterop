@@ -1,13 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
+using AsmResolver.PE.DotNet.Metadata;
 using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.Helpers;
 using Microsoft.Xna.Framework;
 using Monocle;
 using StudioCommunication;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using TAS.Input.Commands;
 using TAS.Module;
 using TAS.Utils;
@@ -68,6 +69,11 @@ public static class GameData {
         }
 
         string modInfo = "";
+
+        if (mapMeta != null) {
+            modInfo += DependencyToString(mapMeta);
+            modInfo += "\n\n";
+        }
 
         EverestModuleMetadata celesteMeta = metas.First(metadata => metadata.Name == "Celeste");
         EverestModuleMetadata everestMeta = metas.First(metadata => metadata.Name == "Everest");
@@ -374,4 +380,21 @@ public static class GameData {
                 .ToArray(),
         };
     }
+
+    public static string GetRequireDependency() {
+        // basically same as the code in GetModInfo()
+        if (Engine.Scene is Level level
+            && Everest.Content.TryGet<AssetTypeMap>("Maps/" + AreaData.Get(level).SID, out ModAsset mapModAsset)
+            && mapModAsset.Source != null
+            && Everest.Modules.Select(module => module.Metadata).FirstOrDefault(meta => meta.Name == mapModAsset.Source.Name) is { } mapMeta) {
+            return DependencyToString(mapMeta);
+        }
+
+        return string.Empty;
+    }
+
+    public static string DependencyToString(EverestModuleMetadata metadata) {
+        return $"{RequireDependencyCommand.CommandName}, {metadata.Name}, {metadata.VersionString}";
+    }
+
 }

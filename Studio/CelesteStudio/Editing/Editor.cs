@@ -197,6 +197,11 @@ public sealed class Editor : SkiaDrawable {
             editor.InsertLine(modInfo);
         }
     });
+    private static readonly ActionBinding InsertRequireDependency = CreateAction("Editor_InsertRequireDependency", "Insert Require Dependency", Hotkey.None, editor => {
+        if (CommunicationWrapper.GetRequireDependency() is var requireDependencyInfo && !string.IsNullOrWhiteSpace(requireDependencyInfo)) {
+            editor.InsertLine(requireDependencyInfo);
+        }
+    });
     private static readonly ActionBinding InsertConsoleLoadCommand = CreateAction("Editor_InsertConsoleLoadCommand", "Insert Exact \"console load\" Command", Hotkey.KeyCtrl(Keys.R | Keys.Shift), editor => {
         if (CommunicationWrapper.GetConsoleCommand(simple: false) is var command && !string.IsNullOrWhiteSpace(command)) {
             editor.InsertLine(command);
@@ -231,7 +236,7 @@ public sealed class Editor : SkiaDrawable {
         DeleteSelectedLines, SetFrameCountToStepAmount,
         InsertRemoveBreakpoint, InsertRemoveSavestateBreakpoint, RemoveAllUncommentedBreakpoints, RemoveAllBreakpoints, ToggleCommentBreakpoints, ToggleCommentInputs, ToggleCommentText,
         InsertRoomName, InsertChapterTime, RemoveAllTimestamps,
-        InsertPlayerPosition, InsertPlayerSpeed, InsertModInfo, InsertConsoleLoadCommand, InsertSimpleConsoleLoadCommand,
+        InsertPlayerPosition, InsertPlayerSpeed, InsertModInfo, InsertRequireDependency, InsertConsoleLoadCommand, InsertSimpleConsoleLoadCommand,
         OpenAutoCompleteMenu, OpenContextActionsMenu,
         FrameOperationAdd, FrameOperationSub, FrameOperationMul, FrameOperationDiv, FrameOperationSet,
     ];
@@ -523,6 +528,7 @@ public sealed class Editor : SkiaDrawable {
                 InsertPlayerPosition,
                 InsertPlayerSpeed,
                 InsertModInfo,
+                InsertRequireDependency,
                 InsertConsoleLoadCommand,
                 InsertSimpleConsoleLoadCommand,
                 commandsMenu,
