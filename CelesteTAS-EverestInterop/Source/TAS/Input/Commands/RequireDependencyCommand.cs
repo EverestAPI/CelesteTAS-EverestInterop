@@ -1,11 +1,14 @@
-﻿using System;
-using System.Linq;
-using System.Threading;
-using Monocle;
-using Celeste;
+﻿using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.UI;
+using Microsoft.Xna.Framework;
+using Monocle;
 using StudioCommunication;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using TAS.Module;
 
 namespace TAS.Input.Commands;
 
@@ -47,28 +50,80 @@ internal static class RequireDependencyCommand {
             }
         }
 
-        dummyCount++;
-        // Everest will not load it if its name already exists
-        EverestModuleMetadata dummy = new() {
-            Name = $"{dummyName}({dummyCount})",
-            Dependencies = [dependency],
-            VersionString = "1.0.0"
-        };
-        Everest.Loader.LoadModDelayed(dummy, null);
-        Engine.Scene.OnEndOfFrame += GotoOuiModOptions;
+        string dependencyNameWithVersion = args.Length > 1 ? $"{dependency.Name} {args[1]}" : dependency.Name;
+        InstallDependencyUI.Create(dependency, dependencyNameWithVersion);
 
-        AbortTas($"{dependency.Name} {(args.Length > 1 ? args[1] + " " : "")}is not loaded.", true);
+        AbortTas($"{dependencyNameWithVersion} is not loaded.", true);
     }
 
-    private const string dummyName = "CelesteTAS - DependencyRequestor";
+    internal static class InstallDependencyUI {
 
-    private static int dummyCount = 0;
+        // there will be some issue when RequireDependency wants to install and Console load command succeeds in same frame
+        // luckily this only happens when their parameters are not the same map
 
-    public static void GotoOuiModOptions() {
-        Engine.Scene = OverworldLoaderExt.FastGoto<OuiModOptions>();
+        private const string dummyName = "CelesteTAS - DependencyRequestor";
+
+        private static int dummyCount = 0;
+        internal static void Create(EverestModuleMetadata dependency, string modName) {
+            if (Engine.Scene is not Level level) {
+                GotoInstall(dependency);
+                return;
+            }
+
+            level.wasPaused = true;
+            if (!level.Paused) {
+                level.StartPauseEffects();
+            }
+            else if (level.Entities.FindFirst<TextMenu>() is TextMenu textMenu) {
+                textMenu.Close();
+            }
+            level.Paused = true;
+            level.PauseMainMenuOpen = false;
+            TextMenu menu = new TextMenu {
+                Justify = new Vector2(0.5f, 0.8f)
+            };
+            menu.OnESC = menu.OnCancel = menu.OnPause = () => {
+                menu.RemoveSelf();
+                level.Paused = false;
+                Audio.Play("event:/ui/game/unpause");
+                level.unpauseTimer = 0.15f;
+            };
+            menu.Add(new TextMenu.Header("Install Dependency".ToDialogText()));
+            menu.Add(new TextMenu.SubHeader(modName, false));
+            menu.Add(new TextMenuExt.SubHeaderExt("") { HeightExtra = 30f });
+            menu.Add(new TextMenu.Button(Dialog.Clean("menu_return_continue")).Pressed(() => {
+                GotoInstall(dependency);
+            }));
+            menu.Add(new TextMenu.Button(Dialog.Clean("menu_return_cancel")).Pressed(menu.OnCancel));
+            level.Add(menu);
+        }
+
+        internal static void GotoInstall(EverestModuleMetadata metadata) {
+            if (ToInstalledMods.TryGetValue(metadata.Name, out Version version) && metadata.Version <= version) {
+                Engine.Scene.OnEndOfFrame += GotoOuiModOptions;
+                return;
+            }
+
+            ToInstalledMods[metadata.Name] = metadata.Version;
+
+            // Everest will not load it if its name already exists, so we make sure its name is unique
+            dummyCount++;
+            EverestModuleMetadata dummy = new() {
+                Name = $"{dummyName}({dummyCount})",
+                Dependencies = [metadata],
+                VersionString = "1.0.0"
+            };
+            Everest.Loader.LoadModDelayed(dummy, null);
+            Engine.Scene.OnEndOfFrame += GotoOuiModOptions;
+        }
+
+        internal static void GotoOuiModOptions() {
+            Engine.Scene = OverworldLoaderExt.FastGoto<OuiModOptions>();
+        }
+
+        private static readonly Dictionary<string, Version> ToInstalledMods = new();
     }
 }
-
 
 internal class OverworldLoaderExt : OverworldLoader {
 
