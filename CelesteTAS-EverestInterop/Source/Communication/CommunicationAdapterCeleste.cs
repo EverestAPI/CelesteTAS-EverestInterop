@@ -135,6 +135,9 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                     StartingRoom = GameData.GetStartingRoom(),
                                 };
                                 break;
+                            case GameDataType.RequireDependency:
+                                gameData = GameData.GetRequireDependency();
+                                break;
 
                             default:
                                 gameData = null;
@@ -151,6 +154,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                 case GameDataType.SettingValue:
                                 case GameDataType.CompleteInfoCommand:
                                 case GameDataType.ModUrl:
+                                case GameDataType.RequireDependency:
                                 case GameDataType.CustomInfoTemplate:
                                     writer.Write((string?)gameData ?? string.Empty);
                                     break;

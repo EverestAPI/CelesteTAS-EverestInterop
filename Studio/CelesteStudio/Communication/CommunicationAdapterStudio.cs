@@ -95,6 +95,7 @@ public sealed class CommunicationAdapterStudio(
                     case GameDataType.SettingValue:
                     case GameDataType.CompleteInfoCommand:
                     case GameDataType.ModUrl:
+                    case GameDataType.RequireDependency:
                     case GameDataType.CustomInfoTemplate:
                         gameData[gameDataType] = reader.ReadString();
                         break;

@@ -98,6 +98,9 @@ TAS_SLOW_FORWARD_SPEED=                     慢进速度
 TAS_HOTKEYS=                                快捷键
 TAS_HOTKEYS_DESCRIPTION=                    绑定多个按键表示组合键，需要同时按下才能触发相应操作
 
+# ============================================== Command ==============================================
+TAS_INSTALL_DEPENDENCY=                     安装依赖
+
 # ============================================== More Options Submenu ==============================================
 TAS_CENTER_CAMERA=                          镜头居中
 TAS_CENTER_CAMERA_HORIZONTALLY_ONLY=        镜头只水平居中

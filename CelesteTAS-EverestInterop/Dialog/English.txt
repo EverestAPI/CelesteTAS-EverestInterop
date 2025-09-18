@@ -98,6 +98,9 @@ TAS_SLOW_FORWARD_SPEED=                     Slow Forward Speed
 TAS_HOTKEYS=                                Hotkeys
 TAS_HOTKEYS_DESCRIPTION=                    Binding multiple keys to a control will cause those keys to act as a key-combo
 
+# ============================================== Command ==============================================
+TAS_INSTALL_DEPENDENCY=                     Install Dependency
+
 # ============================================== More Options Submenu ==============================================
 TAS_CENTER_CAMERA=                          Center Camera
 TAS_CENTER_CAMERA_HORIZONTALLY_ONLY=        Center Camera only Horizontally
