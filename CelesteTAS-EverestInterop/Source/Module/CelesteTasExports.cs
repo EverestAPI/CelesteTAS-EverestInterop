@@ -5,6 +5,7 @@ using Monocle;
 using MonoMod.ModInterop;
 using System;
 using System.Linq;
+using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.ModInterop;
@@ -149,4 +150,6 @@ internal static class CelesteTasExports {
     }
 
     public static void DrawAccurateLine(Vector2 from, Vector2 to, Color color) => HitboxFixer.DrawExactLine(from, to, color);
+
+    public static void PopupMessageToStudio(string title, string text) => CommunicationWrapper.SendThirdParty(title, text);
 }

@@ -132,6 +132,14 @@ public sealed class CommunicationAdapterStudio(
                 commandAutoCompleteResponse(hash, entries, done);
                 break;
 
+            case MessageID.ThirdParty:
+                string title = reader.ReadString();
+                string text = reader.ReadString();
+                LogVerbose($"Received message ThirdParty: {title} {text}");
+
+                Tool.ExternalDialog.Show(title, text);
+                break;
+
             case MessageID.GameSettings:
                 var settings = reader.ReadObject<GameSettings>();
                 LogVerbose("Received message GameSettings");

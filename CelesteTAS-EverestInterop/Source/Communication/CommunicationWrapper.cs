@@ -109,5 +109,13 @@ public static class CommunicationWrapper {
         comm.WriteCommandList(Command.GetCommandList());
     }
 
+    public static void SendThirdParty(string title, string text) {
+        if (!Connected) {
+            return;
+        }
+
+        comm.WriteThirdParty(title, text);
+    }
+
     #endregion
 }
