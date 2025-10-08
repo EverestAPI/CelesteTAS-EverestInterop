@@ -41,7 +41,7 @@ public static class PlayCommand {
     private static void Play(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         string[] args = commandLine.Arguments;
         string[] lines = File.ReadAllLines(filePath);
-        if (!ReadCommand.TryGetLine(args[0], lines, out int startLine)) {
+        if (!Parsing.TryGetLineTarget(args[0], lines, out int startLine, out _)) {
             AbortTas($"\"Play, {string.Join(", ", args)}\" failed\n{args[0]} is invalid", true);
             return;
         }

@@ -352,44 +352,56 @@ public static class FileRefactor {
 
                 // Follow Read-command
                 if (Path.GetDirectoryName(path) is not { } documentDir) {
-                    yield return ($"{ErrorCommentPrefix}Couldn't find directory of current file '{path}'", row, path, targetCommand);
+                    yield return ($"{ErrorCommentPrefix}Couldn't find directory of current file '{path}'", row, path, commandLine);
+                    continue;
+                }
+
+                if (Parsing.FindReadTargetFile(documentDir, commandLine.Arguments[0], out string errorMessage) is not { } targetPath) {
+                    yield return ($"{ErrorCommentPrefix}{errorMessage}", row, path, commandLine);
+                    continue;
+                }
+
+                if (Path.GetFullPath(path) == Path.GetFullPath(targetPath)) {
+                    yield return ($"{ErrorCommentPrefix}File is not allowed to read itself", row, path, commandLine);
                     continue;
                 }
 
                 string fullPath = Path.Combine(documentDir, $"{commandLine.Arguments[0]}.tas");
                 if (!File.Exists(fullPath)) {
-                    yield return ($"{ErrorCommentPrefix}Couldn't find target file '{fullPath}'", row, path, targetCommand);
+                    yield return ($"{ErrorCommentPrefix}Couldn't find target file '{fullPath}'", row, path, commandLine);
                     continue;
                 }
 
-                var readLines = ReadLines(fullPath)
-                    .Select((readLine, i) => (line: readLine, i))
-                    .ToArray();
+                string[] readLines = ReadLines(fullPath);
 
                 int readStartRow = 0;
                 if (commandLine.Arguments.Length > 1) {
-                    if (!int.TryParse(commandLine.Arguments[1], out readStartRow)) {
-                        (string label, int targetRow) = readLines.FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[1]}");
-                        if (label == null) {
-                            yield return ($"{ErrorCommentPrefix}Start label '{commandLine.Arguments[1]}' not found in file '{fullPath}'", row, path, targetCommand);
-                            continue;
-                        }
+                    if (!Parsing.TryGetLineTarget(commandLine.Arguments[1], readLines, out readStartRow, out bool isLabel)) {
+                        yield return ($"{ErrorCommentPrefix}Start label '{commandLine.Arguments[1]}' not found in file '{fullPath}'", row, path, commandLine);
+                        continue;
+                    }
+                    readStartRow--; // Convert to 0-indexed
 
-                        readStartRow = targetRow + 1; // Skip over label
+                    if (isLabel) {
+                        readStartRow++; // Skip over label
                     }
                 }
                 int readEndRow = readLines.Length - 1;
                 if (commandLine.Arguments.Length > 2) {
-                    if (!int.TryParse(commandLine.Arguments[2], out readStartRow)) {
-                        (string label, int targetRow) = readLines.FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[2]}");
-                        if (label == null) {
-                            yield return ($"{ErrorCommentPrefix}End label '{commandLine.Arguments[2]}' not found in file '{fullPath}'", row, path, targetCommand);
-                            continue;
-                        }
+                    if (!Parsing.TryGetLineTarget(commandLine.Arguments[2], readLines, out readEndRow, out bool isLabel)) {
+                        yield return ($"{ErrorCommentPrefix}End label '{commandLine.Arguments[2]}' not found in file '{fullPath}'", row, path, commandLine);
+                        continue;
+                    }
+                    readEndRow--; // Convert to 0-indexed
 
-                        readEndRow = targetRow - 1; // Skip over label
+                    if (isLabel) {
+                        readEndRow--; // Skip over label
                     }
                 }
+
+                // Clamp values
+                readStartRow = Math.Max(0, readStartRow);
+                readEndRow = Math.Min(readLines.Length - 1, readEndRow);
 
                 fileStack.Push((path, row + 1, endRow, targetCommand)); // Store current state
                 fileStack.Push((fullPath, readStartRow, readEndRow, commandLine)); // Setup next state (skip start / end labels)

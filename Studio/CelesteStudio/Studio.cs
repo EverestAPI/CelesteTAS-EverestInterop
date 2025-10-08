@@ -518,7 +518,6 @@ public sealed class Studio : Form {
         }
 
         FileRefactor.RefactorSemaphore.Wait();
-
         try {
             var document = Document.Load(filePath);
             if (document == null) {
@@ -528,6 +527,16 @@ public sealed class Studio : Form {
 
             if (Editor.Document is { } doc) {
                 doc.Dispose();
+            }
+
+            // Detect errors
+            var errors = document.Lines
+                .Select((line, row) => (Row: row, Line: line))
+                .Where(entry => entry.Line.StartsWith(FileRefactor.ErrorCommentPrefix))
+                .Select(entry => (Row: entry.Row, Error: entry.Line[FileRefactor.ErrorCommentPrefix.Length..]))
+                .ToArray();
+            if (errors.Length != 0) {
+                FileErrorForm.Show(errors);
             }
 
             Editor.Document = document;
@@ -545,16 +554,6 @@ public sealed class Studio : Form {
 
         if (filePath != Document.ScratchFile) {
             Settings.Instance.LastSaveDirectory = Path.GetDirectoryName(filePath)!;
-        }
-
-        // Detect errors
-        var errors = Editor.Document.Lines
-            .Select((line, row) => (Row: row, Line: line))
-            .Where(entry => entry.Line.StartsWith(FileRefactor.ErrorCommentPrefix))
-            .Select(entry => (Row: entry.Row, Error: entry.Line[FileRefactor.ErrorCommentPrefix.Length..]))
-            .ToArray();
-        if (errors.Length != 0) {
-            FileErrorForm.Show(errors);
         }
     }
 
