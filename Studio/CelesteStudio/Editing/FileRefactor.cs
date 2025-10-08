@@ -352,11 +352,13 @@ public static class FileRefactor {
 
                 // Follow Read-command
                 if (Path.GetDirectoryName(path) is not { } documentDir) {
+                    yield return ($"{ErrorCommentPrefix}Couldn't find directory of current file '{path}'", row, path, targetCommand);
                     continue;
                 }
 
                 string fullPath = Path.Combine(documentDir, $"{commandLine.Arguments[0]}.tas");
                 if (!File.Exists(fullPath)) {
+                    yield return ($"{ErrorCommentPrefix}Couldn't find target file '{fullPath}'", row, path, targetCommand);
                     continue;
                 }
 
