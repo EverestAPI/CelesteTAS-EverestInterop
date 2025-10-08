@@ -318,6 +318,8 @@ public static class FileRefactor {
         }
     }
 
+    public const string ErrorCommentPrefix = "# ERROR: ";
+
     /// Iterates over all lines of the document, optionally following Read-commands
     public static IEnumerable<(string Line, int Row, string File, CommandLine? TargetCommand)> IterateLines(string filePath, bool followReadCommands) {
         string[] fileLines = ReadLines(filePath);
@@ -362,28 +364,33 @@ public static class FileRefactor {
                     .Select((readLine, i) => (line: readLine, i))
                     .ToArray();
 
-                int? startLabelRow = null;
+                int readStartRow = 0;
                 if (commandLine.Arguments.Length > 1) {
-                    (string label, startLabelRow) = readLines
-                        .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[1]}");
-                    if (label == null) {
-                        continue;
-                    }
-                }
-                int? endLabelRow = null;
-                if (commandLine.Arguments.Length > 2) {
-                    (string label, endLabelRow) = readLines
-                        .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[2]}");
-                    if (label == null) {
-                        continue;
-                    }
-                }
+                    if (!int.TryParse(commandLine.Arguments[1], out readStartRow)) {
+                        (string label, int targetRow) = readLines.FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[1]}");
+                        if (label == null) {
+                            yield return ($"{ErrorCommentPrefix}Start label '{commandLine.Arguments[1]}' not found in file '{fullPath}'", row, path, targetCommand);
+                            continue;
+                        }
 
-                startLabelRow ??= 0;
-                endLabelRow ??= readLines.Length - 1;
+                        readStartRow = targetRow + 1; // Skip over label
+                    }
+                }
+                int readEndRow = readLines.Length - 1;
+                if (commandLine.Arguments.Length > 2) {
+                    if (!int.TryParse(commandLine.Arguments[2], out readStartRow)) {
+                        (string label, int targetRow) = readLines.FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[2]}");
+                        if (label == null) {
+                            yield return ($"{ErrorCommentPrefix}End label '{commandLine.Arguments[2]}' not found in file '{fullPath}'", row, path, targetCommand);
+                            continue;
+                        }
+
+                        readEndRow = targetRow - 1; // Skip over label
+                    }
+                }
 
                 fileStack.Push((path, row + 1, endRow, targetCommand)); // Store current state
-                fileStack.Push((fullPath, startLabelRow.Value + 1, endLabelRow.Value - 1, commandLine)); // Setup next state (skip start / end labels)
+                fileStack.Push((fullPath, readStartRow, readEndRow, commandLine)); // Setup next state (skip start / end labels)
                 break;
             }
         }
