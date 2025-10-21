@@ -163,6 +163,17 @@ internal static class MetadataCommands {
             command => Manager.Controller.CurrentCommands.Contains(command));
     }
 
+    [TasCommand("ActiveWarps", Aliases = ["ActiveWarps:", "ActiveWarps："], CalcChecksum = false)]
+    private static void ActiveWarpsCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        if (!Manager.Running || Engine.Scene is not Level level) {
+            return;
+        }
+
+        LobbyWarpHelper.TryGetActiveWarps(level, out string[] warps);
+        string res = '[' + string.Join(", ", warps) + ']';
+        UpdateAllMetadata("ActiveWarps", _ => res);
+    }
+
     [TasCommand("MidwayRealTime", Aliases = ["MidwayRealTime:", "MidwayRealTime："], CalcChecksum = false)]
     private static void MidwayRealTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         if (RealTimeInfo == null) {
