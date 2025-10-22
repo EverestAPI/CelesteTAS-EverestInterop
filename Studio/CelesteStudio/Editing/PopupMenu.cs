@@ -2,7 +2,6 @@ using CelesteStudio.Controls;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
 using SkiaSharp;
@@ -10,7 +9,7 @@ using StudioCommunication.Util;
 
 namespace CelesteStudio.Editing;
 
-public sealed class PopupMenu : Scrollable {
+public class PopupMenu : Scrollable {
     public record Entry {
         /// The text which will be used for filtering results.
         public required string SearchText;
@@ -106,6 +105,8 @@ public sealed class PopupMenu : Scrollable {
                     menu.SelectedEntry = mouseRow;
                     lastMouseSelection = Mouse.Position;
                 }
+
+                e.Handled = true;
             } else {
                 Cursor = null;
             }
