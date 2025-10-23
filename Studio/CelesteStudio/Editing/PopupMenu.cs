@@ -9,7 +9,7 @@ using StudioCommunication.Util;
 
 namespace CelesteStudio.Editing;
 
-public class PopupMenu : Scrollable {
+public abstract class PopupMenu : Scrollable {
     public record Entry {
         /// The text which will be used for filtering results.
         public required string SearchText;
@@ -256,6 +256,7 @@ public class PopupMenu : Scrollable {
         }
 
         contentWidth = (int)(font.CharWidth() * (maxDisplayLen + maxExtraLen) + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding * 2.0f + Settings.Instance.Theme.PopupMenuBorderPadding * 2);
+        Console.WriteLine($"WIDTH: {contentWidth} || {maxDisplayLen}");
 
         drawable.Size = new(ContentWidth, ContentHeight);
         drawable.Invalidate();
@@ -293,7 +294,8 @@ public class PopupMenu : Scrollable {
         ScrollIntoView();
     }
 
-    public bool HandleKeyDown(KeyEventArgs e, bool useTabComplete) {
+    public abstract bool HandleKeyDown(KeyEventArgs e);
+    protected bool HandleKeyDown(KeyEventArgs e, bool useTabComplete) {
         if (!Visible) {
             return false;
         }

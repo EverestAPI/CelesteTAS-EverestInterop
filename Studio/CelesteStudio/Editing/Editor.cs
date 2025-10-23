@@ -733,7 +733,6 @@ public sealed class Editor : SkiaDrawable {
         // Clear invalid foldings
         Document.RemoveAnchorsIf(anchor => anchor.UserData is CollapseAnchorData && foldings.All(fold => fold.MinRow != anchor.Row));
 
-
         // Calculate line numbers width
         const float foldButtonPadding = 5.0f;
         bool hasFoldings = Settings.Instance.ShowFoldIndicators && foldings.Count != 0;
@@ -757,62 +756,67 @@ public sealed class Editor : SkiaDrawable {
             Size = new((int)(width + textOffsetX + paddingRight), (int)(height + paddingBottom));
         }
 
+        RecalcPopupMenu();
+
+        Invalidate();
+    }
+    public void RecalcPopupMenu() {
         // Update popup-menu position
-        if (ActivePopupMenu is { } menu) {
-            const int menuXOffset = 8;
-            const int menuYOffset = 7;
-            const int menuLPadding = 7;
-            const int menuRPadding = 20;
-
-            float carX = Font.CharWidth() * Document.Caret.Col;
-            float carY = Font.LineHeight() * (actualToVisualRows[Document.Caret.Row] + 1);
-
-            int menuX, menuY;
-
-            void UpdateMenuH() {
-                menuX = (int)(carX + scrollablePosition.X + textOffsetX + menuXOffset);
-                int menuMaxRight = scrollablePosition.X + scrollableSize.Width - menuRPadding - (menu.VScrollBarVisible ? Studio.ScrollBarSize : 0);
-                int menuMaxW = menuMaxRight - menuX;
-
-                // Try moving the menu to the left when there isn't enough space, before having to shrink it
-                if (menuMaxW < menu.ContentWidth) {
-                    menuX = (int)Math.Max(menuMaxRight - menu.ContentWidth, scrollablePosition.X + textOffsetX + menuLPadding);
-                    menuMaxW = menuMaxRight - menuX;
-                }
-
-                menu.ContentWidth = Math.Min(menu.ContentWidth, menuMaxW);
-            }
-            void UpdateMenuV() {
-                int menuYBelow = (int)(carY + menuYOffset);
-                int menuYAbove = (int)Math.Max(carY - Font.LineHeight() - menuYOffset - menu.ContentHeight, scrollablePosition.Y + menuYOffset);
-
-                int menuMaxHBelow = (int)(scrollablePosition.Y + scrollableSize.Height - Font.LineHeight() - menuYBelow) - (menu.HScrollBarVisible ? Studio.ScrollBarSize : 0);
-                int menuMaxHAbove = (int)(scrollablePosition.Y + carY - Font.LineHeight() - menuYOffset - menuYAbove);
-
-                // Chose above / below caret depending on which provides more height. Default to below
-                int menuMaxH;
-                if (Math.Min(menu.ContentHeight, menuMaxHBelow) >= Math.Min(menu.ContentHeight, menuMaxHAbove)) {
-                    menuY = menuYBelow;
-                    menuMaxH = menuMaxHBelow;
-                } else {
-                    menuY = menuYAbove;
-                    menuMaxH = menuMaxHAbove;
-                }
-
-                menu.ContentHeight = Math.Min(menu.ContentHeight, menuMaxH);
-            }
-
-            // Both depend on each-other, so one needs to be updated twice
-            UpdateMenuH();
-            UpdateMenuV();
-            UpdateMenuH();
-
-            menu.Recalc();
-            // TODO: This mostly works, but sometimes the popup is sized very small?
-            var menuSize = menu.GetPreferredSize();
-            activePopupPanel.Size = new Size((int) menuSize.Width, (int) menuSize.Height);
-            pixelLayout.Move(activePopupPanel, menuX, menuY);
+        if (ActivePopupMenu is not { } menu) {
+            return;
         }
+
+        const int menuXOffset = 8;
+        const int menuYOffset = 7;
+        const int menuLPadding = 7;
+        const int menuRPadding = 20;
+
+        float carX = Font.CharWidth() * Document.Caret.Col;
+        float carY = Font.LineHeight() * (actualToVisualRows[Document.Caret.Row] + 1);
+
+        int menuX, menuY;
+
+        void UpdateMenuH() {
+            menuX = (int)(carX + scrollablePosition.X + textOffsetX + menuXOffset);
+            int menuMaxRight = scrollablePosition.X + scrollableSize.Width - menuRPadding - (menu.VScrollBarVisible ? Studio.ScrollBarSize : 0);
+            int menuMaxW = menuMaxRight - menuX;
+
+            // Try moving the menu to the left when there isn't enough space, before having to shrink it
+            if (menuMaxW < menu.ContentWidth) {
+                menuX = (int)Math.Max(menuMaxRight - menu.ContentWidth, scrollablePosition.X + textOffsetX + menuLPadding);
+                menuMaxW = menuMaxRight - menuX;
+            }
+
+            menu.ContentWidth = Math.Min(menu.ContentWidth, menuMaxW);
+        }
+        void UpdateMenuV() {
+            int menuYBelow = (int)(carY + menuYOffset);
+            int menuYAbove = (int)Math.Max(carY - Font.LineHeight() - menuYOffset - menu.ContentHeight, scrollablePosition.Y + menuYOffset);
+
+            int menuMaxHBelow = (int)(scrollablePosition.Y + scrollableSize.Height - Font.LineHeight() - menuYBelow) - (menu.HScrollBarVisible ? Studio.ScrollBarSize : 0);
+            int menuMaxHAbove = (int)(scrollablePosition.Y + carY - Font.LineHeight() - menuYOffset - menuYAbove);
+
+            // Chose above / below caret depending on which provides more height. Default to below
+            int menuMaxH;
+            if (Math.Min(menu.ContentHeight, menuMaxHBelow) >= Math.Min(menu.ContentHeight, menuMaxHAbove)) {
+                menuY = menuYBelow;
+                menuMaxH = menuMaxHBelow;
+            } else {
+                menuY = menuYAbove;
+                menuMaxH = menuMaxHAbove;
+            }
+
+            menu.ContentHeight = Math.Min(menu.ContentHeight, menuMaxH);
+        }
+
+        // Calculate required content size
+        menu.Recalc();
+        // Both depend on each-other, so one needs to be updated twice
+        UpdateMenuH();
+        UpdateMenuV();
+        UpdateMenuH();
+
+        pixelLayout.Move(activePopupPanel, menuX, menuY);
 
         Invalidate();
     }
@@ -1028,15 +1032,10 @@ public sealed class Editor : SkiaDrawable {
             return;
         }
 
-        if (ActivePopupMenu is PopupMenu menu) {
-            // While there are quick-edits available, Tab will cycle through them
-            // Using tab doesn't feel "right" for the context actions menu
-            // TODO
-            if (menu.HandleKeyDown(e, useTabComplete: true/*ActivePopupMenu == autoCompleteMenu && !GetQuickEdits().Any()) ?? false*/)) {
-                e.Handled = true;
-                Recalc();
-                return;
-            }
+        if (ActivePopupMenu is { } menu && menu.HandleKeyDown(e)) {
+            e.Handled = true;
+            Recalc();
+            return;
         }
 
         if (GetQuickEdits().Any()) {

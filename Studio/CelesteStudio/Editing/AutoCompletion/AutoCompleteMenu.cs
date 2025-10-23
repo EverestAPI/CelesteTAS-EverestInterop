@@ -132,8 +132,7 @@ public class AutoCompleteMenu : PopupMenu {
                 if (lastAutoCompleteArgumentIndex != commandLine.Value.Arguments.Length) {
                     Entries.Clear();
                     Entries.Add(loadingEntry);
-                    Recalc();
-                    Recalc();
+                    editor.RecalcPopupMenu();
                 }
                 lastAutoCompleteArgumentIndex = commandLine.Value.Arguments.Length;
 
@@ -147,8 +146,7 @@ public class AutoCompleteMenu : PopupMenu {
                             await Application.Instance.InvokeAsync(() => {
                                 Entries.Clear();
                                 Entries.Add(loadingEntry);
-                                Recalc();
-                                Recalc();
+                                editor.RecalcPopupMenu();
                             }).ConfigureAwait(false);
 
                             break;
@@ -239,8 +237,7 @@ public class AutoCompleteMenu : PopupMenu {
                                 Entries.Add(loadingEntry);
                             }
 
-                            Recalc();
-                            Recalc();
+                            editor.RecalcPopupMenu();
                         }).ConfigureAwait(false);
 
                         if (done) {
@@ -254,8 +251,7 @@ public class AutoCompleteMenu : PopupMenu {
                 }, token);
             } else {
                 Entries.Clear();
-                Recalc();
-                Recalc();
+                editor.RecalcPopupMenu();
             }
 
             if (editor.GetSelectedQuickEdit() is { } quickEdit && commandLine.Value.Arguments[^1] == quickEdit.DefaultText) {
@@ -266,4 +262,7 @@ public class AutoCompleteMenu : PopupMenu {
             }
         }
     }
+
+    // While there are quick-edits available, Tab will cycle through them
+    public override bool HandleKeyDown(KeyEventArgs e) => HandleKeyDown(e, useTabComplete: !editor.GetQuickEdits().Any());
 }

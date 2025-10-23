@@ -53,4 +53,7 @@ public class ContextActionsMenu : PopupMenu {
             editor.OpenPopupMenu(this);
         }
     }
+
+    // Using tab doesn't feel "right" for the context actions menu
+    public override bool HandleKeyDown(KeyEventArgs e) => HandleKeyDown(e, useTabComplete: false);
 }
