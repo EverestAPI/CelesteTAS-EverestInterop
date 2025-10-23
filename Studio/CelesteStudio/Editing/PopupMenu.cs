@@ -6,10 +6,25 @@ using Eto.Drawing;
 using Eto.Forms;
 using SkiaSharp;
 using StudioCommunication.Util;
+using System.IO;
+using System.Runtime.InteropServices;
+using Tomlet;
+using Tomlet.Exceptions;
+using Tomlet.Models;
 
 namespace CelesteStudio.Editing;
 
 public abstract class PopupMenu : Scrollable {
+    public enum Category {
+        /// Manually saved as a favorite, by the user
+        Favourite,
+        /// Frequently used, based on personal usage statistics
+        FrequentlyUsed,
+        /// Suggested by the game, depending on the current situation
+        Suggested,
+        /// Regular entry with no special meaning
+        Regular
+    }
     public record Entry {
         /// The text which will be used for filtering results.
         public required string SearchText;
@@ -17,6 +32,10 @@ public abstract class PopupMenu : Scrollable {
         public required string DisplayText;
         /// The extra text which will be displayed to the right of the main text.
         public required string ExtraText;
+
+        /// Whether this entry should be suggested as "probably relevant"
+        public bool Suggestion = false;
+
         /// Callback for when this entry is selected.
         public required Action OnUse;
         /// Whether the entry can be selected.
@@ -105,12 +124,11 @@ public abstract class PopupMenu : Scrollable {
                     menu.SelectedEntry = mouseRow;
                     lastMouseSelection = Mouse.Position;
                 }
-
-                e.Handled = true;
             } else {
                 Cursor = null;
             }
 
+            e.Handled = true;
             Invalidate();
             base.OnMouseMove(e);
         }
@@ -120,8 +138,14 @@ public abstract class PopupMenu : Scrollable {
 
             if (e.Buttons.HasFlag(MouseButtons.Primary)) {
                 int mouseRow = (int)(e.Location.Y / menu.EntryHeight);
-                if (mouseRow >= 0 && mouseRow < menu.shownEntries.Length && !menu.shownEntries[mouseRow].Disabled) {
-                    menu.shownEntries[mouseRow].OnUse();
+                if (mouseRow >= 0 && mouseRow < menu.shownEntries.Length && menu.shownEntries[mouseRow] is var currEntry && !currEntry.Disabled) {
+                    if (menu.Data is { } data) {
+                        ref uint amount = ref CollectionsMarshal.GetValueRefOrAddDefault(data.Usages, currEntry.SearchText, out bool _);
+                        amount++;
+                        SaveStorage();
+                    }
+
+                    currEntry.OnUse();
                 }
             }
 
@@ -156,12 +180,110 @@ public abstract class PopupMenu : Scrollable {
         }
     }
 
+    #region Storage
+
+    private record StorageData(HashSet<string> Favourites, Dictionary<string, uint> Usages);
+    private static readonly Dictionary<string, StorageData> popupDataStorage = new();
+
+    /// Unique identifier, used for storing favourites and usage statistics
+    public string? StorageKey;
+
+    /// Active data slot, used for storing persistant data
+    private StorageData? Data {
+        get {
+            if (string.IsNullOrEmpty(StorageKey)) {
+                return null; // Data collection is disabled for this popup
+            }
+
+            ref var data = ref CollectionsMarshal.GetValueRefOrAddDefault(popupDataStorage, StorageKey, out bool exists);
+            if (!exists) {
+                return data = new StorageData(Favourites: new(), Usages: new());
+            }
+
+            return data!;
+        }
+    }
+
+    public static void LoadStorage() {
+        popupDataStorage.Clear();
+
+        if (!File.Exists(Settings.PopupStoragePath)) {
+            return;
+        }
+
+        var toml = TomlParser.ParseFile(Settings.PopupStoragePath);
+
+        foreach ((string key, var tomlValue) in toml.Entries) {
+            if (tomlValue is not TomlTable table) {
+                throw new TomlTypeMismatchException(typeof(TomlTable), tomlValue.GetType(), typeof(StorageData));
+            }
+
+            popupDataStorage[key] = new StorageData(
+                table.GetArray(nameof(StorageData.Favourites)).ArrayValues
+                    .Select(value => value.StringValue)
+                    .ToHashSet(),
+                table.GetArray(nameof(StorageData.Usages)).ArrayValues
+                    .Select(e => {
+                        if (e is not TomlTable entry) {
+                            throw new TomlTypeMismatchException(typeof(TomlTable), e.GetType(), typeof((string, uint)));
+                        }
+                        if (entry.GetValue("Name") is not TomlString name) {
+                            throw new TomlTypeMismatchException(typeof(TomlString), table.GetValue("Name").GetType(), typeof(string));
+                        }
+                        if (entry.GetValue("Amount") is not TomlLong amount || amount.Value < 0) {
+                            throw new TomlTypeMismatchException(typeof(TomlLong), table.GetValue("Amount").GetType(), typeof(uint));
+                        }
+
+                        return (Name: name.StringValue, Amount: (uint) amount.Value);
+                    })
+                    .ToDictionary(e => e.Name, e => e.Amount)
+            );
+        }
+    }
+    public static void SaveStorage() {
+        var toml = TomlDocument.CreateEmpty();
+
+        foreach ((string key, var data) in popupDataStorage) {
+            var table = new TomlTable();
+
+            var favourites = new TomlArray();
+            foreach (string favourite in data.Favourites) {
+                favourites.ArrayValues.Add(new TomlString(favourite));
+            }
+            var usages = new TomlArray();
+            foreach ((string name, uint amount) in data.Usages) {
+                var entry = new TomlTable();
+                entry.Put("Name", name);
+                entry.Put("Amount", amount);
+                usages.ArrayValues.Add(entry);
+            }
+
+            table.Put(nameof(data.Favourites), favourites);
+            table.Put(nameof(data.Usages), usages);
+
+            // table.Put(nameof(data.Favourites), data.Favourites, quote: true);
+            // table.Put(nameof(data.Usages), data.Usages.Select(e => (e.Key, Amount: e.Value)), quote: true);
+
+
+
+            toml.PutValue(key, table);
+        }
+
+        // Write to another file and then move that over, to avoid getting interrupted while writing and corrupting the settings
+        string tmpFile = Settings.PopupStoragePath + ".tmp";
+        File.WriteAllText(tmpFile, toml.SerializedValue);
+        File.Move(tmpFile, Settings.PopupStoragePath, overwrite: true);
+    }
+
+    #endregion
+
     public override bool Visible {
         get => base.Visible;
         set {
             base.Visible = value;
             filter = string.Empty;
             selectedEntry = 0;
+            StorageKey = null;
         }
     }
 
@@ -216,6 +338,8 @@ public abstract class PopupMenu : Scrollable {
     private readonly ContentDrawable drawable;
 
     public PopupMenu() {
+        LoadStorage();
+
         drawable = new ContentDrawable(this);
         Content = drawable;
         Border = BorderType.None;
@@ -256,7 +380,6 @@ public abstract class PopupMenu : Scrollable {
         }
 
         contentWidth = (int)(font.CharWidth() * (maxDisplayLen + maxExtraLen) + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding * 2.0f + Settings.Instance.Theme.PopupMenuBorderPadding * 2);
-        Console.WriteLine($"WIDTH: {contentWidth} || {maxDisplayLen}");
 
         drawable.Size = new(ContentWidth, ContentHeight);
         drawable.Invalidate();
@@ -319,8 +442,15 @@ public abstract class PopupMenu : Scrollable {
             return true;
         }
         if (e.Key == Keys.Enter || useTabComplete && e.Key == Keys.Tab) {
-            if (!shownEntries[SelectedEntry].Disabled) {
-                shownEntries[SelectedEntry].OnUse();
+            var currEntry = shownEntries[SelectedEntry];
+            if (!currEntry.Disabled) {
+                if (Data is { } data) {
+                    ref uint amount = ref CollectionsMarshal.GetValueRefOrAddDefault(data.Usages, currEntry.SearchText, out bool _);
+                    amount++;
+                    SaveStorage();
+                }
+
+                currEntry.OnUse();
             }
             return true;
         }

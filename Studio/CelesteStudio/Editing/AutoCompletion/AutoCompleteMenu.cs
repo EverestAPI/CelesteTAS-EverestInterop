@@ -99,6 +99,10 @@ public class AutoCompleteMenu : PopupMenu {
             return;
         }
 
+        const string storageKeySeparator = "__";
+        const string rootStorageKey = $"AutoComplete{storageKeySeparator}Root";
+        const string baseStorageKey = $"AutoComplete{storageKeySeparator}Command";
+
         // Use auto-complete entries for current command
         var commandLine = CommandLine.Parse(line);
         var fullCommandLine = CommandLine.Parse(fullLine);
@@ -109,6 +113,8 @@ public class AutoCompleteMenu : PopupMenu {
             Entries.Clear();
             Entries.AddRange(baseAutoCompleteEntries);
             Filter = line;
+            StorageKey = rootStorageKey;
+
             lastAutoCompleteArgumentIndex = -1;
         } else {
             var command = CommunicationWrapper.Commands.FirstOrDefault(cmd => string.Equals(cmd.Name, commandLine.Value.Command, StringComparison.OrdinalIgnoreCase));
@@ -127,6 +133,9 @@ public class AutoCompleteMenu : PopupMenu {
                 commandAutoCompleteTokenSource?.Cancel();
                 commandAutoCompleteTokenSource?.Dispose();
                 commandAutoCompleteTokenSource = new CancellationTokenSource();
+
+                StorageKey = $"{baseStorageKey}{storageKeySeparator}{command.Name}{string.Join("", commandLine.Value.Arguments[..^1].Select(arg => $"{storageKeySeparator}{arg}"))}";
+                Console.WriteLine($"CMD: {commandLine} => '{StorageKey}");
 
                 // Don't clear on same argument to prevent flashing "Loading..."
                 if (lastAutoCompleteArgumentIndex != commandLine.Value.Arguments.Length) {

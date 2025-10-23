@@ -3334,15 +3334,15 @@ public sealed class Editor : SkiaDrawable {
             Cursor = Cursors.Pointer;
         } else {
             // Prevent overriding cursor of popup menu
-            // if (ActivePopupMenu != null) {
-            //     var pos = ActivePopupMenu.PointFromScreen(Mouse.Position);
-            //     if (pos.X >= 0.0f & pos.X <= ActivePopupMenu.Width &&
-            //         pos.Y >= 0.0f & pos.Y <= ActivePopupMenu.Height)
-            //     {
-            //         Cursor = null;
-            //         return;
-            //     }
-            // }
+            if (ActivePopupMenu != null) {
+                var pos = ActivePopupMenu.PointFromScreen(Mouse.Position);
+                if (pos.X >= 0.0f & pos.X <= ActivePopupMenu.Width &&
+                    pos.Y >= 0.0f & pos.Y <= ActivePopupMenu.Height)
+                {
+                    Cursor = null;
+                    return;
+                }
+            }
 
             Cursor = Cursors.IBeam;
         }
