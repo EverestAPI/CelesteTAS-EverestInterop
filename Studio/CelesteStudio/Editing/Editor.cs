@@ -340,6 +340,8 @@ public sealed class Editor : SkiaDrawable {
             if (lastVisibleLineNumberDigits != newVisibleDigits) {
                 lastVisibleLineNumberDigits = newVisibleDigits;
                 Recalc();
+            } else {
+                RecalcPopupMenu();
             }
 
             Invalidate();
@@ -794,7 +796,7 @@ public sealed class Editor : SkiaDrawable {
             int menuYAbove = (int)Math.Max(carY - Font.LineHeight() - menuYOffset - menu.ContentHeight, scrollablePosition.Y + menuYOffset);
 
             int menuMaxHBelow = (int)(scrollablePosition.Y + scrollableSize.Height - Font.LineHeight() - menuYBelow) - (menu.HScrollBarVisible ? Studio.ScrollBarSize : 0);
-            int menuMaxHAbove = (int)(scrollablePosition.Y + carY - Font.LineHeight() - menuYOffset - menuYAbove);
+            int menuMaxHAbove = (int)(Math.Min(scrollablePosition.Y + scrollableSize.Height, carY) - Font.LineHeight() - menuYOffset - menuYAbove) - (menu.HScrollBarVisible ? Studio.ScrollBarSize : 0);
 
             // Chose above / below caret depending on which provides more height. Default to below
             int menuMaxH;
