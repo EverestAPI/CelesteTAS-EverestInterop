@@ -20,9 +20,9 @@ public static class SetCommand {
         public bool HasArguments => true;
 
         public int GetHash(string[] args, string filePath, int fileLine) {
-            var hash = new HashCode();
-            hash.Add(GetQueryArgs(args, 0).Aggregate(new HashCode(), (argHash, arg) => argHash.Append(arg.GetStableHashCode())).ToHashCode());
-            hash.Add(GetQueryArgs(args, 1).Aggregate(new HashCode(), (argHash, arg) => argHash.Append(arg.GetStableHashCode())).ToHashCode());
+            var hash = new StableHashCode();
+            hash.Add(GetQueryArgs(args, 0).Aggregate(new StableHashCode(), (argHash, arg) => argHash.Append(arg)).ToHashCode());
+            hash.Add(GetQueryArgs(args, 1).Aggregate(new StableHashCode(), (argHash, arg) => argHash.Append(arg)).ToHashCode());
             hash.Add(args.Length);
             return hash.ToHashCode();
         }

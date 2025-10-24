@@ -134,9 +134,6 @@ public class AutoCompleteMenu : PopupMenu {
                 commandAutoCompleteTokenSource?.Dispose();
                 commandAutoCompleteTokenSource = new CancellationTokenSource();
 
-                StorageKey = $"{baseStorageKey}{storageKeySeparator}{command.Name}{string.Join("", commandLine.Value.Arguments[..^1].Select(arg => $"{storageKeySeparator}{arg}"))}";
-                Console.WriteLine($"CMD: {commandLine} => '{StorageKey}");
-
                 // Don't clear on same argument to prevent flashing "Loading..."
                 if (lastAutoCompleteArgumentIndex != commandLine.Value.Arguments.Length) {
                     Entries.Clear();
@@ -164,7 +161,9 @@ public class AutoCompleteMenu : PopupMenu {
                         loadingDots = (loadingDots + 1).Mod(4);
                         loadingEntry.DisplayText = $"Loading{new string('.', loadingDots)}{new string(' ', 3 - loadingDots)}";
 
-                        (var commandEntries, bool done) = await CommunicationWrapper.RequestAutoCompleteEntries(command.Name, commandLine.Value.Arguments, Document.FilePath, Document.Caret.Row).ConfigureAwait(false);
+                        (var commandEntries, bool done, int hash) = await CommunicationWrapper.RequestAutoCompleteEntries(command.Name, commandLine.Value.Arguments, Document.FilePath, Document.Caret.Row).ConfigureAwait(false);
+                        StorageKey = $"{baseStorageKey}{storageKeySeparator}{unchecked((uint) hash)}";
+                        Console.WriteLine($"CMD: {commandLine} => '{StorageKey}");
 
                         var menuEntries = commandEntries.Select(entry => new Entry {
                             SearchText = entry.FullName,

@@ -7,6 +7,7 @@ using Eto.Drawing;
 using Eto.Forms;
 using SkiaSharp;
 using StudioCommunication.Util;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using Tomlet;
@@ -31,6 +32,8 @@ public abstract class PopupMenu : Scrollable {
         public required Action OnUse;
         /// Whether the entry can be selected.
         public bool Disabled = false;
+
+        public string StorageName => SearchText.Replace('.', '#');
     }
 
     /// Spacing between the longest DisplayText and ExtraText of entries in characters
@@ -91,10 +94,11 @@ public abstract class PopupMenu : Scrollable {
                         var mousePos = PointFromScreen(lastMouseSelection);
                         int mouseRow = (int)((mousePos.Y - Settings.Instance.Theme.PopupMenuBorderPadding) / height);
 
-                        if (mouseRow == row && mousePos.X > 0.0f && mousePos.X < width) {
+                        bool isFavourite = data.Favourites.Contains(entry.StorageName);
+
+                        if (isFavourite || mouseRow == row && mousePos.X > 0.0f && mousePos.X < width) {
                             // Show favourite icon
                             bool isHoveringIcon = mousePos.X > Settings.Instance.Theme.PopupMenuBorderPadding && mousePos.X < Settings.Instance.Theme.PopupMenuBorderPadding + iconWidth;
-                            bool isFavourite = data.Favourites.Contains(entry.SearchText);
 
                             var favouritePaint = isHoveringIcon
                                 ? Settings.Instance.Theme.SubpixelIndicatorDotPaint
@@ -169,8 +173,8 @@ public abstract class PopupMenu : Scrollable {
                 if (mouseRow >= 0 && mouseRow < menu.shownEntries.Length && menu.shownEntries[mouseRow] is var currEntry && !currEntry.Disabled) {
                     if (e.Location.X < menu.IconWidth) {
                         if (menu.Data is { } data) {
-                            if (!data.Favourites.Remove(currEntry.SearchText)) {
-                                data.Favourites.Add(currEntry.SearchText);
+                            if (!data.Favourites.Remove(currEntry.StorageName)) {
+                                data.Favourites.Add(currEntry.StorageName);
                             }
 
                             SaveStorage();
@@ -188,7 +192,7 @@ public abstract class PopupMenu : Scrollable {
                         Console.WriteLine($"FAVOURITE {mouseRow}");
                     } else {
                         if (menu.Data is { } data) {
-                            ref uint amount = ref CollectionsMarshal.GetValueRefOrAddDefault(data.Usages, currEntry.SearchText, out bool _);
+                            ref uint amount = ref CollectionsMarshal.GetValueRefOrAddDefault(data.Usages, currEntry.StorageName, out bool _);
                             amount++;
                             SaveStorage();
                         }
@@ -237,7 +241,15 @@ public abstract class PopupMenu : Scrollable {
     private static readonly Dictionary<string, StorageData> popupDataStorage = new();
 
     /// Unique identifier, used for storing favourites and usage statistics
-    public string? StorageKey;
+    private string? storageKey;
+    public string? StorageKey {
+        get => storageKey;
+        set {
+            Debug.Assert(!(value?.Contains('.') ?? false));
+
+            storageKey = value;
+        }
+    }
 
     /// Active data slot, used for storing persistant data
     private StorageData? Data {
@@ -411,14 +423,18 @@ public abstract class PopupMenu : Scrollable {
         const int suggestionIndex = 2;
         const int regularIndex = 3;
 
+        bool hasFavourites, hasFrequentlyUsed, hasSuggestions;
+
         shownEntries = entries
             .Where(entry => string.IsNullOrEmpty(entry.SearchText) || entry.SearchText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase))
             .OrderBy(entry => {
                 if (data != null && data.Favourites.Contains(entry.SearchText)) {
+                    hasFavourites = true;
                     return favouriteIndex;
                 }
                 // TODO: Frequently used
                 if (entry.Suggestion) {
+                    hasSuggestions = true;
                     return suggestionIndex;
                 }
 
@@ -514,7 +530,7 @@ public abstract class PopupMenu : Scrollable {
             var currEntry = shownEntries[SelectedEntry];
             if (!currEntry.Disabled) {
                 if (Data is { } data) {
-                    ref uint amount = ref CollectionsMarshal.GetValueRefOrAddDefault(data.Usages, currEntry.SearchText, out bool _);
+                    ref uint amount = ref CollectionsMarshal.GetValueRefOrAddDefault(data.Usages, currEntry.StorageName, out bool _);
                     amount++;
                     SaveStorage();
                 }

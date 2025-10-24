@@ -20,10 +20,10 @@ public static class InvokeCommand {
         public bool HasArguments => true;
 
         public int GetHash(string[] args, string filePath, int fileLine) {
-            var hash = new HashCode();
-            hash.Add(SetCommand.SetMeta.GetQueryArgs(args, 0).Aggregate(new HashCode(), (argHash, arg) => argHash.Append(arg.GetStableHashCode())).ToHashCode());
+            var hash = new StableHashCode();
+            hash.Add(SetCommand.SetMeta.GetQueryArgs(args, 0).Aggregate(new StableHashCode(), (argHash, arg) => argHash.Append(arg.GetStableHashCode())).ToHashCode());
             for (int i = 1; i < args.Length; i++) {
-                hash.Add(SetCommand.SetMeta.GetQueryArgs(args, i).Aggregate(new HashCode(), (argHash, arg) => argHash.Append(arg.GetStableHashCode())).ToHashCode());
+                hash.Add(SetCommand.SetMeta.GetQueryArgs(args, i).Aggregate(new StableHashCode(), (argHash, arg) => argHash.Append(arg.GetStableHashCode())).ToHashCode());
             }
             hash.Add(args.Length);
             return hash.ToHashCode();

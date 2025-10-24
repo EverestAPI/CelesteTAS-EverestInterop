@@ -1,5 +1,8 @@
 using System.Text;
 using Celeste.Mod;
+using JetBrains.Annotations;
+using StudioCommunication.Util;
+using System.Security.Cryptography;
 
 namespace TAS.Utils;
 

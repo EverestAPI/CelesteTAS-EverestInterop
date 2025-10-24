@@ -52,15 +52,32 @@ public static class NumberExtensions {
 }
 #endif
 
-public static class StringExtensions {
-    /// Replaces the specified range inside the string and returns the result
-    public static string ReplaceRange(this string self, int startIndex, int count, string replacement) {
-        return self.Remove(startIndex, count).Insert(startIndex, replacement);
+public interface IStableHash {
+    /// Computes a stable hash-code for the current object state
+    public int GetStableHashCode();
+}
+
+public static class HashExtensions {
+    public static int GetStableHashCode<T>(this T value) {
+        if (typeof(T).IsPrimitive) {
+            return value!.GetHashCode(); // Primitives return their bit-representation as hashcode
+        }
+        if (value is null) {
+            return 0;
+        }
+
+        if (typeof(T) == typeof(string)) {
+            return ((string)(object) value).GetStableHashCode();
+        }
+        if (typeof(T).IsSubclassOf(typeof(IStableHash))) {
+            return ((IStableHash) value).GetStableHashCode();
+        }
+
+        throw new NotImplementedException($"Cannot create stable hash of type '{typeof(T)}'");
     }
 
     /// A stable (consistent) hash code for a specific string
-    public static int GetStableHashCode(this string str)
-    {
+    public static int GetStableHashCode(this string str) {
         // Taken from https://stackoverflow.com/a/36845864
         unchecked {
             int hash1 = 5381;
@@ -76,6 +93,13 @@ public static class StringExtensions {
 
             return hash1 + (hash2*1566083941);
         }
+    }
+}
+
+public static class StringExtensions {
+    /// Replaces the specified range inside the string and returns the result
+    public static string ReplaceRange(this string self, int startIndex, int count, string replacement) {
+        return self.Remove(startIndex, count).Insert(startIndex, replacement);
     }
 
     /// Counts the amount of lines, accounting for LF, CRLF and CR line endings
