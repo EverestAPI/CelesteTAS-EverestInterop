@@ -167,6 +167,7 @@ public class AutoCompleteMenu : PopupMenu {
                             SearchText = entry.FullName,
                             DisplayText = entry.Name,
                             ExtraText = entry.Extra,
+                            Suggestion = entry.Suggestion,
                             StorageKey = entry.StorageKey == null ? null : $"{BaseStorageKey}{StorageKeySeparator}{entry.StorageKey}",
                             StorageName = entry.StorageName,
                             OnUse = () => {

@@ -90,6 +90,15 @@ public static class TargetQuery {
             return Result<bool, QueryError>.Ok(false);
         }
 
+        /// Should mark the type as a "suggested option" if applicable in the current context
+        public virtual bool IsTypeSuggested(Type type) {
+            return false;
+        }
+        /// Should mark the member as a "suggested option" if applicable in the current context
+        public virtual bool IsMemberSuggested(MemberInfo member) {
+            return false;
+        }
+
         /// Provide a list of auto-complete entries which should be listed along base-types.
         [MustDisposeResource]
         public virtual IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, Variant variant, Type[]? targetTypeFilter) {
@@ -530,11 +539,11 @@ public static class TargetQuery {
                 }
 
                 if (targetType == typeof(bool)) {
-                    yield return new CommandAutoCompleteEntry { Name = "true", Extra = targetType.CSharpName(), IsDone = true, StorageKey = "Get_bool" };
-                    yield return new CommandAutoCompleteEntry { Name = "false", Extra = targetType.CSharpName(), IsDone = true, StorageKey = "Get_bool" };
+                    yield return new CommandAutoCompleteEntry { Name = "true", Extra = targetType.CSharpName(), IsDone = true, StorageKey = "Get_bool", Suggestion = true };
+                    yield return new CommandAutoCompleteEntry { Name = "false", Extra = targetType.CSharpName(), IsDone = true, StorageKey = "Get_bool", Suggestion = true };
                 } else if (targetType.IsEnum) {
                     foreach (object value in Enum.GetValues(targetType)) {
-                        yield return new CommandAutoCompleteEntry { Name = value.ToString()!, Extra = targetType.CSharpName(), IsDone = true, StorageKey = targetType.FullName == null ? null : $"Get_{targetType.FullName}" };
+                        yield return new CommandAutoCompleteEntry { Name = value.ToString()!, Extra = targetType.CSharpName(), IsDone = true, StorageKey = targetType.FullName == null ? null : $"Get_{targetType.FullName}", Suggestion = true };
                     }
                 }
 
@@ -582,6 +591,7 @@ public static class TargetQuery {
                         Name = isFinal ? field.Name : field.Name + ".",
                         Extra = field.FieldType.CSharpName(),
                         Prefix = queryPrefix,
+                        Suggestion = Handlers.Any(handler => handler.IsMemberSuggested(field)),
                         IsDone = isFinal,
                         StorageKey = currentType.FullName == null ? null : $"{variant}_{currentType.FullName}",
                         StorageName = field.Name,
@@ -593,6 +603,7 @@ public static class TargetQuery {
                         Name = isFinal ? property.Name : property.Name + ".",
                         Extra = property.PropertyType.CSharpName(),
                         Prefix = queryPrefix,
+                        Suggestion = Handlers.Any(handler => handler.IsMemberSuggested(property)),
                         IsDone = isFinal,
                         StorageKey = currentType.FullName == null ? null : $"{variant}_{currentType.FullName}",
                         StorageName = property.Name,
@@ -603,6 +614,7 @@ public static class TargetQuery {
                         Name = method.Name,
                         Extra = $"({string.Join(", ", method.GetParameters().Select(p => p.HasDefaultValue ? $"[{p.ParameterType.CSharpName()}]" : p.ParameterType.CSharpName()))})",
                         Prefix = queryPrefix,
+                        Suggestion = Handlers.Any(handler => handler.IsMemberSuggested(method)),
                         IsDone = true,
                         StorageKey = currentType.FullName == null ? null : $"{variant}_{currentType.FullName}",
                         StorageName = method.Name,
@@ -693,12 +705,15 @@ public static class TargetQuery {
                 : 0;
             string shortName = fullName[namespaceLen..];
 
+            bool suggestion = Handlers.Any(handler => handler.IsTypeSuggested(type));
+
             // Use short name if possible, otherwise specify mod name / assembly name
             if (AllTypes[shortName].Count == 1) {
                 yield return new CommandAutoCompleteEntry {
                     Name = $"{shortName}.",
                     Extra = type.Namespace ?? string.Empty,
                     Prefix = queryPrefix,
+                    Suggestion = suggestion,
                     IsDone = false,
                     StorageKey = $"{variant}_{type.Namespace ?? string.Empty}",
                     StorageName = type.FullName,
@@ -708,6 +723,7 @@ public static class TargetQuery {
                     Name = $"{shortName}@{modName}.",
                     Extra = type.Namespace ?? string.Empty,
                     Prefix = queryPrefix,
+                    Suggestion = suggestion,
                     IsDone = false,
                     StorageKey = $"{variant}_{type.Namespace ?? string.Empty}",
                     StorageName = type.FullName,
@@ -717,6 +733,7 @@ public static class TargetQuery {
                     Name = $"{shortName}@{assemblyName}.",
                     Extra = type.Namespace ?? string.Empty,
                     Prefix = queryPrefix,
+                    Suggestion = suggestion,
                     IsDone = false,
                     StorageKey = $"{variant}_{type.Namespace ?? string.Empty}",
                     StorageName = type.FullName,

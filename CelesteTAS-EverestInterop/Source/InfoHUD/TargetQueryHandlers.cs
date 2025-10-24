@@ -10,6 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using TAS.Gameplay;
 using TAS.Gameplay.DesyncFix;
@@ -670,6 +671,14 @@ internal class EntityQueryHandler : TargetQuery.Handler {
 
         value = null;
         return Result<bool, TargetQuery.QueryError>.Ok(false);
+    }
+
+    public override bool IsTypeSuggested(Type type) {
+        return type == typeof(CrushBlock);
+    }
+    public override bool IsMemberSuggested(MemberInfo member) {
+        return (member.DeclaringType?.IsSameOrSubclassOf(typeof(Entity)) ?? false)
+               && member.Name is nameof(Entity.Center);
     }
 
     public override IEnumerator<CommandAutoCompleteEntry> EnumerateMemberEntries(Type type, TargetQuery.Variant variant) {

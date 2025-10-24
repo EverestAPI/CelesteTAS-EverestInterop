@@ -11,6 +11,9 @@ public partial struct CommandAutoCompleteEntry() {
     /// Additional text displayed for the entry
     public string Extra = string.Empty;
 
+    /// Suggestions are ranked higher in the auto-complete menu, due to more likely being relevant
+    public bool Suggestion = false;
+
     /// Full entry name, used for filtering entries based on the entire command argument
     public string FullName => Prefix + Name;
 
