@@ -19,5 +19,10 @@ public partial struct CommandAutoCompleteEntry() {
     /// Dynamically determine if the command has further arguments
     public bool? HasNext = null;
 
+    /// Unique and stable key for the current completion category
+    public string? StorageKey = null;
+    /// Unique and stable key inside the current category
+    public string? StorageName = null;
+
     public static implicit operator CommandAutoCompleteEntry(string entry) => new() { Name = entry, Extra = string.Empty, IsDone = true };
 }

@@ -33,7 +33,6 @@ public static class InvokeCommand {
             // Target
             string[] targetQueryArgs = SetCommand.SetMeta.GetQueryArgs(args, 0).ToArray();
             if (args.Length <= 1) {
-
                 using var enumerator = TargetQuery.ResolveAutoCompleteEntries(targetQueryArgs, TargetQuery.Variant.Invoke);
                 while (enumerator.MoveNext()) {
                     yield return enumerator.Current with { HasNext = true };

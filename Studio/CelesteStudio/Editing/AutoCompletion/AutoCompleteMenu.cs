@@ -32,6 +32,10 @@ public class AutoCompleteMenu : PopupMenu {
         GenerateBaseAutoCompleteEntries();
     }
 
+    private const string StorageKeySeparator = "__";
+    private const string RootStorageKey = $"AutoComplete{StorageKeySeparator}Root";
+    private const string BaseStorageKey = $"AutoComplete{StorageKeySeparator}Command";
+
     private void GenerateBaseAutoCompleteEntries() {
         baseAutoCompleteEntries.Clear();
 
@@ -72,6 +76,7 @@ public class AutoCompleteMenu : PopupMenu {
                 DisplayText = name,
                 ExtraText = extra,
                 OnUse = action,
+                StorageKey = RootStorageKey,
             };
         }
     }
@@ -99,10 +104,6 @@ public class AutoCompleteMenu : PopupMenu {
             return;
         }
 
-        const string storageKeySeparator = "__";
-        const string rootStorageKey = $"AutoComplete{storageKeySeparator}Root";
-        const string baseStorageKey = $"AutoComplete{storageKeySeparator}Command";
-
         // Use auto-complete entries for current command
         var commandLine = CommandLine.Parse(line);
         var fullCommandLine = CommandLine.Parse(fullLine);
@@ -113,7 +114,6 @@ public class AutoCompleteMenu : PopupMenu {
             Entries.Clear();
             Entries.AddRange(baseAutoCompleteEntries);
             Filter = line;
-            StorageKey = rootStorageKey;
 
             lastAutoCompleteArgumentIndex = -1;
         } else {
@@ -161,14 +161,14 @@ public class AutoCompleteMenu : PopupMenu {
                         loadingDots = (loadingDots + 1).Mod(4);
                         loadingEntry.DisplayText = $"Loading{new string('.', loadingDots)}{new string(' ', 3 - loadingDots)}";
 
-                        (var commandEntries, bool done, int hash) = await CommunicationWrapper.RequestAutoCompleteEntries(command.Name, commandLine.Value.Arguments, Document.FilePath, Document.Caret.Row).ConfigureAwait(false);
-                        StorageKey = $"{baseStorageKey}{storageKeySeparator}{unchecked((uint) hash)}";
-                        Console.WriteLine($"CMD: {commandLine} => '{StorageKey}");
+                        (var commandEntries, bool done) = await CommunicationWrapper.RequestAutoCompleteEntries(command.Name, commandLine.Value.Arguments, Document.FilePath, Document.Caret.Row).ConfigureAwait(false);
 
                         var menuEntries = commandEntries.Select(entry => new Entry {
                             SearchText = entry.FullName,
                             DisplayText = entry.Name,
                             ExtraText = entry.Extra,
+                            StorageKey = entry.StorageKey == null ? null : $"{BaseStorageKey}{StorageKeySeparator}{entry.StorageKey}",
+                            StorageName = entry.StorageName,
                             OnUse = () => {
                                 using var __ = Document.Update();
 

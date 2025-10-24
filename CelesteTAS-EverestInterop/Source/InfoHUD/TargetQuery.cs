@@ -530,11 +530,11 @@ public static class TargetQuery {
                 }
 
                 if (targetType == typeof(bool)) {
-                    yield return new CommandAutoCompleteEntry { Name = "true", Extra = targetType.CSharpName(), IsDone = true };
-                    yield return new CommandAutoCompleteEntry { Name = "false", Extra = targetType.CSharpName(), IsDone = true };
+                    yield return new CommandAutoCompleteEntry { Name = "true", Extra = targetType.CSharpName(), IsDone = true, StorageKey = "Get_bool" };
+                    yield return new CommandAutoCompleteEntry { Name = "false", Extra = targetType.CSharpName(), IsDone = true, StorageKey = "Get_bool" };
                 } else if (targetType.IsEnum) {
                     foreach (object value in Enum.GetValues(targetType)) {
-                        yield return new CommandAutoCompleteEntry { Name = value.ToString()!, Extra = targetType.CSharpName(), IsDone = true };
+                        yield return new CommandAutoCompleteEntry { Name = value.ToString()!, Extra = targetType.CSharpName(), IsDone = true, StorageKey = targetType.FullName == null ? null : $"Get_{targetType.FullName}" };
                     }
                 }
 
@@ -583,6 +583,8 @@ public static class TargetQuery {
                         Extra = field.FieldType.CSharpName(),
                         Prefix = queryPrefix,
                         IsDone = isFinal,
+                        StorageKey = currentType.FullName == null ? null : $"{variant}_{currentType.FullName}",
+                        StorageName = field.Name,
                     };
                 }
                 foreach (var property in EnumerateViableProperties(currentType, variant, bindingFlags, targetTypeFilter, maxDepth: MaxTypeViabilityRecursion).OrderBy(p => p.Name)) {
@@ -592,6 +594,8 @@ public static class TargetQuery {
                         Extra = property.PropertyType.CSharpName(),
                         Prefix = queryPrefix,
                         IsDone = isFinal,
+                        StorageKey = currentType.FullName == null ? null : $"{variant}_{currentType.FullName}",
+                        StorageName = property.Name,
                     };
                 }
                 foreach (var method in EnumerateViableMethods(currentType, variant, bindingFlags, targetTypeFilter, maxDepth: MaxTypeViabilityRecursion).OrderBy(m => m.Name)) {
@@ -600,6 +604,8 @@ public static class TargetQuery {
                         Extra = $"({string.Join(", ", method.GetParameters().Select(p => p.HasDefaultValue ? $"[{p.ParameterType.CSharpName()}]" : p.ParameterType.CSharpName()))})",
                         Prefix = queryPrefix,
                         IsDone = true,
+                        StorageKey = currentType.FullName == null ? null : $"{variant}_{currentType.FullName}",
+                        StorageName = method.Name,
                     };
                 }
             }
@@ -659,7 +665,14 @@ public static class TargetQuery {
                 continue;
             }
 
-            yield return new CommandAutoCompleteEntry { Name = $"{string.Join('.', ns[queryArgs.Length..])}.", Extra = "Namespace", Prefix = queryPrefix, IsDone = false };
+            yield return new CommandAutoCompleteEntry {
+                Name = $"{string.Join('.', ns[queryArgs.Length..])}.",
+                Extra = "Namespace",
+                Prefix = queryPrefix,
+                IsDone = false,
+                StorageKey = $"{variant}",
+                StorageName = string.Join('.', ns[queryArgs.Length..]),
+            };
         }
 
         foreach (var type in types) {
@@ -682,11 +695,32 @@ public static class TargetQuery {
 
             // Use short name if possible, otherwise specify mod name / assembly name
             if (AllTypes[shortName].Count == 1) {
-                yield return new CommandAutoCompleteEntry { Name = $"{shortName}.", Extra = type.Namespace ?? string.Empty, Prefix = queryPrefix, IsDone = false };
+                yield return new CommandAutoCompleteEntry {
+                    Name = $"{shortName}.",
+                    Extra = type.Namespace ?? string.Empty,
+                    Prefix = queryPrefix,
+                    IsDone = false,
+                    StorageKey = $"{variant}_{type.Namespace ?? string.Empty}",
+                    StorageName = type.FullName,
+                };
             } else if (AllTypes[$"{shortName}@{modName}"].Count == 1) {
-                yield return new CommandAutoCompleteEntry { Name = $"{shortName}@{modName}.", Extra = type.Namespace ?? string.Empty, Prefix = queryPrefix, IsDone = false };
+                yield return new CommandAutoCompleteEntry {
+                    Name = $"{shortName}@{modName}.",
+                    Extra = type.Namespace ?? string.Empty,
+                    Prefix = queryPrefix,
+                    IsDone = false,
+                    StorageKey = $"{variant}_{type.Namespace ?? string.Empty}",
+                    StorageName = type.FullName,
+                };
             } else if (AllTypes[$"{shortName}@{assemblyName}"].Count == 1) {
-                yield return new CommandAutoCompleteEntry { Name = $"{shortName}@{assemblyName}.", Extra = type.Namespace ?? string.Empty, Prefix = queryPrefix, IsDone = false };
+                yield return new CommandAutoCompleteEntry {
+                    Name = $"{shortName}@{assemblyName}.",
+                    Extra = type.Namespace ?? string.Empty,
+                    Prefix = queryPrefix,
+                    IsDone = false,
+                    StorageKey = $"{variant}_{type.Namespace ?? string.Empty}",
+                    StorageName = type.FullName,
+                };
             }
         }
     }

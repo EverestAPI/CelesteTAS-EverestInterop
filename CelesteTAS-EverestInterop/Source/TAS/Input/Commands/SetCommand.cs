@@ -31,7 +31,6 @@ public static class SetCommand {
             // Target
             string[] targetQueryArgs = GetQueryArgs(args, 0).ToArray();
             if (args.Length <= 1) {
-
                 using var enumerator = TargetQuery.ResolveAutoCompleteEntries(targetQueryArgs, TargetQuery.Variant.Set);
                 while (enumerator.MoveNext()) {
                     yield return enumerator.Current with { HasNext = true };
