@@ -6,6 +6,7 @@ using CelesteStudio.Util;
 using Eto.Forms;
 using StudioCommunication;
 using StudioCommunication.Util;
+using System.Runtime.InteropServices;
 
 namespace CelesteStudio.Communication;
 
@@ -77,7 +78,8 @@ public static class CommunicationWrapper {
     }
 
     private static void OnConnectionChanged() {
-        autoCompleteEntryCache.Clear();
+        autoCompleteEntryCacheDone.Clear();
+        autoCompleteEntryCachePending.Clear();
 
         Application.Instance.AsyncInvoke(() => ConnectionChanged?.Invoke());
     }
@@ -100,7 +102,8 @@ public static class CommunicationWrapper {
         Application.Instance.AsyncInvoke(() => SettingsChanged?.Invoke(newSettings));
     }
     private static void OnCommandsChanged(CommandInfo[] newCommands) {
-        autoCompleteEntryCache.Clear();
+        autoCompleteEntryCacheDone.Clear();
+        autoCompleteEntryCachePending.Clear();
 
         commands = newCommands;
         foreach (var command in newCommands) {
@@ -238,8 +241,10 @@ public static class CommunicationWrapper {
     }
 
     // The hashcode is stored instead of the actual key, since it is used as an identifier in responses from Celeste
-    private static readonly Dictionary<int, (List<CommandAutoCompleteEntry> Entries, bool Done)> autoCompleteEntryCache = [];
-    public static async Task<(List<CommandAutoCompleteEntry> Entries, bool Done)> RequestAutoCompleteEntries(string commandName, string[] commandArgs, string filePath, int fileLine) {
+    private static readonly Dictionary<int, List<CommandAutoCompleteEntry>> autoCompleteEntryCacheDone = [];
+    private static readonly Dictionary<int, List<CommandAutoCompleteEntry>> autoCompleteEntryCachePending = [];
+
+    public static async Task<(List<CommandAutoCompleteEntry> Entries, bool Done)> RequestAutoCompleteEntries(string commandName, string[] commandArgs, string filePath, int fileLine, bool refresh = false) {
         if (!Connected) {
             return (Entries: [], Done: true);
         }
@@ -252,20 +257,41 @@ public static class CommunicationWrapper {
         int hash = 31 * commandName.GetStableHashCode() +
                    17 * (int)argsHash;
 
-        if (autoCompleteEntryCache.TryGetValue(hash, out var hit)) {
-            return hit;
-        }
-        var result = autoCompleteEntryCache[hash] = (Entries: [], Done: false);
+        // Prefer completed entries
+        if (autoCompleteEntryCacheDone.TryGetValue(hash, out var doneEntries)) {
+            if (refresh) {
+                ref var pendingEntries = ref CollectionsMarshal.GetValueRefOrAddDefault(autoCompleteEntryCachePending, hash, out bool exists);
+                pendingEntries ??= [];
 
-        comm.WriteCommandAutoCompleteRequest(hash, commandName, commandArgs, filePath, fileLine);
-        return result;
+                if (!exists) {
+                    comm.WriteCommandAutoCompleteRequest(hash, commandName, commandArgs, filePath, fileLine);
+                }
+            }
+
+            return (doneEntries, Done: !autoCompleteEntryCachePending.ContainsKey(hash));
+        }
+
+        // Fall back to pending entries
+        {
+            ref var pendingEntries = ref CollectionsMarshal.GetValueRefOrAddDefault(autoCompleteEntryCachePending, hash, out bool exists);
+            pendingEntries ??= [];
+
+            if (!exists) {
+                comm.WriteCommandAutoCompleteRequest(hash, commandName, commandArgs, filePath, fileLine);
+            }
+
+            return (pendingEntries, Done: false);
+        }
     }
 
-    private static void OnCommandAutoCompleteResponse(int hash, CommandAutoCompleteEntry[] entries, bool done) {
-        var result = autoCompleteEntryCache[hash];
-        result.Entries.AddRange(entries);
-        result.Done = result.Done || done;
-        autoCompleteEntryCache[hash] = result;
+    private static void OnCommandAutoCompleteResponse(int hash, CommandAutoCompleteEntry[] newEntries, bool done) {
+        var currEntries = autoCompleteEntryCachePending[hash];
+        currEntries.AddRange(newEntries);
+
+        if (done) {
+            autoCompleteEntryCachePending.Remove(hash);
+            autoCompleteEntryCacheDone[hash] = currEntries;
+        }
     }
 
     public static async Task<GameState?> GetGameState() {

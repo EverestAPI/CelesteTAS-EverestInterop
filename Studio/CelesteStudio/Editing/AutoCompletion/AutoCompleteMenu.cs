@@ -16,12 +16,12 @@ public class AutoCompleteMenu : PopupMenu {
     private Document Document => editor.Document;
 
     /// Auto-complete entries for commands and snippets
-    private readonly List<Entry> baseAutoCompleteEntries = [];
+    private readonly List<Entry> baseEntries = [];
 
     /// Cancellation token for fetching command-argument auto-complete entries
-    private CancellationTokenSource? commandAutoCompleteTokenSource;
+    private CancellationTokenSource? tokenSource;
     /// Index of the currently fetched entries, to prevent flashing "Loading..." while typing
-    private int lastAutoCompleteArgumentIndex = -1;
+    private int currArgumentIndex = -1;
 
     public AutoCompleteMenu(Editor editor) {
         this.editor = editor;
@@ -30,6 +30,12 @@ public class AutoCompleteMenu : PopupMenu {
         CommunicationWrapper.CommandsChanged += _ => GenerateBaseAutoCompleteEntries();
         Settings.Changed += GenerateBaseAutoCompleteEntries;
         GenerateBaseAutoCompleteEntries();
+
+        Shown += (_, _) => {
+            // Reset state
+            Entries.Clear();
+            currArgumentIndex = -1;
+        };
     }
 
     private const string StorageKeySeparator = "__";
@@ -37,14 +43,14 @@ public class AutoCompleteMenu : PopupMenu {
     private const string BaseStorageKey = $"AutoComplete{StorageKeySeparator}Command";
 
     private void GenerateBaseAutoCompleteEntries() {
-        baseAutoCompleteEntries.Clear();
+        baseEntries.Clear();
 
         // Snippets
         foreach (var snippet in Settings.Instance.Snippets) {
             if (!string.IsNullOrWhiteSpace(snippet.Shortcut) && snippet.Enabled &&
                 CreateEntry(snippet.Shortcut, snippet.Insert, "Snippet", hasArguments: false) is { } entry)
             {
-                baseAutoCompleteEntries.Add(entry);
+                baseEntries.Add(entry);
             }
         }
 
@@ -53,14 +59,14 @@ public class AutoCompleteMenu : PopupMenu {
             if (commandName != null && CommunicationWrapper.Commands.FirstOrDefault(cmd => cmd.Name == commandName) is var command && !string.IsNullOrEmpty(command.Name) &&
                 CreateEntry(command.Name, command.Insert.Replace(CommandInfo.Separator, Settings.Instance.CommandSeparatorText), "Command", command.HasArguments) is { } entry)
             {
-                baseAutoCompleteEntries.Add(entry);
+                baseEntries.Add(entry);
             }
         }
         foreach (var command in CommunicationWrapper.Commands) {
             if (!CommandInfo.CommandOrder.Contains(command.Name) && !CommandInfo.HiddenCommands.Contains(command.Name) &&
                 CreateEntry(command.Name, command.Insert.Replace(CommandInfo.Separator, Settings.Instance.CommandSeparatorText), "Command", command.HasArguments) is { } entry)
             {
-                baseAutoCompleteEntries.Add(entry);
+                baseEntries.Add(entry);
             }
         }
 
@@ -98,11 +104,6 @@ public class AutoCompleteMenu : PopupMenu {
         if (open) {
             editor.OpenPopupMenu(this);
         }
-        // TODO: Better alternative
-        if (editor.ActivePopupMenu == null) {
-            lastAutoCompleteArgumentIndex = -1;
-            return;
-        }
 
         // Use auto-complete entries for current command
         var commandLine = CommandLine.Parse(line);
@@ -112,10 +113,10 @@ public class AutoCompleteMenu : PopupMenu {
             fullCommandLine == null || fullCommandLine.Value.Arguments.Length == 0)
         {
             Entries.Clear();
-            Entries.AddRange(baseAutoCompleteEntries);
+            Entries.AddRange(baseEntries);
             Filter = line;
 
-            lastAutoCompleteArgumentIndex = -1;
+            currArgumentIndex = -1;
         } else {
             var command = CommunicationWrapper.Commands.FirstOrDefault(cmd => string.Equals(cmd.Name, commandLine.Value.Command, StringComparison.OrdinalIgnoreCase));
 
@@ -130,19 +131,20 @@ public class AutoCompleteMenu : PopupMenu {
             if (!string.IsNullOrEmpty(command.Name) && command.HasArguments) {
                 var lastArgRegion = commandLine.Value.Regions[^1];
 
-                commandAutoCompleteTokenSource?.Cancel();
-                commandAutoCompleteTokenSource?.Dispose();
-                commandAutoCompleteTokenSource = new CancellationTokenSource();
+                tokenSource?.Cancel();
+                tokenSource?.Dispose();
+                tokenSource = new CancellationTokenSource();
 
                 // Don't clear on same argument to prevent flashing "Loading..."
-                if (lastAutoCompleteArgumentIndex != commandLine.Value.Arguments.Length) {
+                bool isNewArgumentIndex = currArgumentIndex != commandLine.Value.Arguments.Length;
+                if (isNewArgumentIndex) {
                     Entries.Clear();
                     Entries.Add(loadingEntry);
                     editor.RecalcPopupMenu();
                 }
-                lastAutoCompleteArgumentIndex = commandLine.Value.Arguments.Length;
+                currArgumentIndex = commandLine.Value.Arguments.Length;
 
-                var token = commandAutoCompleteTokenSource.Token;
+                var token = tokenSource.Token;
                 Task.Run(async () => {
                     int loadingDots = 0;
 
@@ -161,7 +163,8 @@ public class AutoCompleteMenu : PopupMenu {
                         loadingDots = (loadingDots + 1).Mod(4);
                         loadingEntry.DisplayText = $"Loading{new string('.', loadingDots)}{new string(' ', 3 - loadingDots)}";
 
-                        (var commandEntries, bool done) = await CommunicationWrapper.RequestAutoCompleteEntries(command.Name, commandLine.Value.Arguments, Document.FilePath, Document.Caret.Row).ConfigureAwait(false);
+                        (var commandEntries, bool done) = await CommunicationWrapper.RequestAutoCompleteEntries(command.Name, commandLine.Value.Arguments, Document.FilePath, Document.Caret.Row, refresh: isNewArgumentIndex).ConfigureAwait(false);
+                        isNewArgumentIndex = false; // Clear flag to avoid re-requesting every loop iterator
 
                         var menuEntries = commandEntries.Select(entry => new Entry {
                             SearchText = entry.FullName,
@@ -250,8 +253,8 @@ public class AutoCompleteMenu : PopupMenu {
                         }).ConfigureAwait(false);
 
                         if (done) {
-                            commandAutoCompleteTokenSource?.Dispose();
-                            commandAutoCompleteTokenSource = null;
+                            tokenSource?.Dispose();
+                            tokenSource = null;
                             break;
                         }
 
