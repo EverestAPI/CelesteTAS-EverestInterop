@@ -110,6 +110,8 @@ public abstract class PopupMenu : Scrollable {
         /// Whether the entry can be selected.
         public bool Disabled = false;
 
+        /// Index used to determine "usage frequency" of entry
+        public int FrequentlyUsedIndex = -1;
 
         /// Unique identifier for the category of the entry
         private string? storageKey;
@@ -145,6 +147,9 @@ public abstract class PopupMenu : Scrollable {
 
     /// Spacing between the longest DisplayText and ExtraText of entries in characters
     private const int DisplayExtraPadding = 2;
+
+    /// Maximum amount of entries in the "Frequently Used" category
+    private const int FrequentlyUsedCategorySize = 5;
 
     private sealed class ContentDrawable : SkiaDrawable {
         private readonly PopupMenu menu;
@@ -193,43 +198,59 @@ public abstract class PopupMenu : Scrollable {
             for (int row = minRow; row <= maxRow; row++) {
                 var entry = menu.shownEntries[row];
 
+                if (entry.Data is { } data && iconWidth > 0) {
+                    var mousePos = PointFromScreen(lastMouseSelection);
+                    int mouseRow = (int)((mousePos.Y - Settings.Instance.Theme.PopupMenuBorderPadding) / height);
+
+                    bool isFavourite = data.Favourites.Contains(entry.StorageName);
+                    bool isFrequentlyUsed = entry.FrequentlyUsedIndex is >= 0 and < FrequentlyUsedCategorySize;
+                    bool isSuggestion = entry.Suggestion;
+
+                    if (isFavourite || mouseRow == row && mousePos.X > 0.0f && mousePos.X < width) {
+                        // Show favourite icon
+                        bool isHoveringIcon = mouseRow == row && mousePos.X > Settings.Instance.Theme.PopupMenuBorderPadding && mousePos.X < Settings.Instance.Theme.PopupMenuBorderPadding + iconWidth;
+
+                        var favouritePaint = isHoveringIcon
+                            ? Settings.Instance.Theme.SubpixelIndicatorDotPaint
+                            : isFavourite
+                                ? Settings.Instance.Theme.StatusFgPaint
+                                : Settings.Instance.Theme.CommentBoxPaint;
+
+                        // TODO: Display filled / outline of heart icon
+                        if (isFavourite) {
+                            canvas.DrawRect(
+                                x: Settings.Instance.Theme.PopupMenuBorderPadding,
+                                y: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f,
+                                w: iconWidth,
+                                h: height - Settings.Instance.Theme.PopupMenuEntrySpacing,
+                                favouritePaint);
+                        } else {
+                            canvas.DrawRect(
+                                x: Settings.Instance.Theme.PopupMenuBorderPadding,
+                                y: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f,
+                                w: iconWidth,
+                                h: height - Settings.Instance.Theme.PopupMenuEntrySpacing,
+                                favouritePaint);
+                        }
+                    } else if (isFrequentlyUsed) {
+                        canvas.DrawRect(
+                            x: Settings.Instance.Theme.PopupMenuBorderPadding,
+                            y: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f,
+                            w: iconWidth,
+                            h: height - Settings.Instance.Theme.PopupMenuEntrySpacing,
+                            Settings.Instance.Theme.AnglePaint.ForegroundColor);
+                    } else if (isSuggestion) {
+                        canvas.DrawRect(
+                            x: Settings.Instance.Theme.PopupMenuBorderPadding,
+                            y: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f,
+                            w: iconWidth,
+                            h: height - Settings.Instance.Theme.PopupMenuEntrySpacing,
+                            Settings.Instance.Theme.CommandPaint.ForegroundColor);
+                    }
+                }
+
                 // Highlight selected entry
                 if (row == menu.SelectedEntry && !entry.Disabled) {
-                    if (entry.Data is { } data && iconWidth > 0) {
-                        var mousePos = PointFromScreen(lastMouseSelection);
-                        int mouseRow = (int)((mousePos.Y - Settings.Instance.Theme.PopupMenuBorderPadding) / height);
-
-                        bool isFavourite = data.Favourites.Contains(entry.StorageName);
-
-                        if (isFavourite || mouseRow == row && mousePos.X > 0.0f && mousePos.X < width) {
-                            // Show favourite icon
-                            bool isHoveringIcon = mousePos.X > Settings.Instance.Theme.PopupMenuBorderPadding && mousePos.X < Settings.Instance.Theme.PopupMenuBorderPadding + iconWidth;
-
-                            var favouritePaint = isHoveringIcon
-                                ? Settings.Instance.Theme.SubpixelIndicatorDotPaint
-                                : isFavourite
-                                    ? Settings.Instance.Theme.StatusFgPaint
-                                    : Settings.Instance.Theme.CommentBoxPaint;
-
-                            // TODO: Display filled / outline of heart icon
-                            if (isFavourite) {
-                                canvas.DrawRect(
-                                    x: Settings.Instance.Theme.PopupMenuBorderPadding,
-                                    y: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f,
-                                    w: iconWidth,
-                                    h: height - Settings.Instance.Theme.PopupMenuEntrySpacing,
-                                    favouritePaint);
-                            } else {
-                                canvas.DrawRect(
-                                    x: Settings.Instance.Theme.PopupMenuBorderPadding,
-                                    y: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f,
-                                    w: iconWidth,
-                                    h: height - Settings.Instance.Theme.PopupMenuEntrySpacing,
-                                    favouritePaint);
-                            }
-                        }
-                    }
-
                     canvas.DrawRoundRect(
                         x: Settings.Instance.Theme.PopupMenuBorderPadding + iconWidth,
                         y: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f,
@@ -415,10 +436,21 @@ public abstract class PopupMenu : Scrollable {
         }
 
         // Order for the categories
+        const int frequentlyUsedThreshold = 5;
+
         const int favouriteIndex = 0;
-        const int frequentlyUsedIndex = 1;
-        const int suggestionIndex = 2;
-        const int regularIndex = 3;
+        const int frequentlyUsedIndex = favouriteIndex + 1;
+        const int suggestionIndex = frequentlyUsedIndex + FrequentlyUsedCategorySize;
+        const int regularIndex = suggestionIndex + 1;
+
+        var frequentlyUsed = entries
+            .Where(entry => (string.IsNullOrEmpty(entry.SearchText) || entry.SearchText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase))
+                         && entry.Data is { } data && data.Usages.TryGetValue(entry.StorageName, out uint amount) && amount >= frequentlyUsedThreshold)
+            .OrderBy(entry => entry.Data!.Usages[entry.StorageName]);
+        int i = 0;
+        foreach (var entry in frequentlyUsed) {
+            entry.FrequentlyUsedIndex = i++;
+        }
 
         shownEntries = entries
             .Where(entry => string.IsNullOrEmpty(entry.SearchText) || entry.SearchText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase))
@@ -426,7 +458,9 @@ public abstract class PopupMenu : Scrollable {
                 if (entry.Data is { } data && data.Favourites.Contains(entry.StorageName)) {
                     return favouriteIndex;
                 }
-                // TODO: Frequently used
+                if (entry.FrequentlyUsedIndex is >= 0 and < FrequentlyUsedCategorySize) {
+                    return frequentlyUsedIndex + entry.FrequentlyUsedIndex;
+                }
                 if (entry.Suggestion) {
                     return suggestionIndex;
                 }
