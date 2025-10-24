@@ -673,12 +673,30 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.QueryError>.Ok(false);
     }
 
-    public override bool IsTypeSuggested(Type type) {
-        return type == typeof(CrushBlock);
+    public override bool IsTypeSuggested(Type type, TargetQuery.Variant variant) {
+        if (Engine.Scene is not Level level) {
+            // Could support any scene, but usually only Level is relevant
+            return false;
+        }
+
+        return level.Entities.Any(e => e.GetType() == type);
     }
-    public override bool IsMemberSuggested(MemberInfo member) {
-        return (member.DeclaringType?.IsSameOrSubclassOf(typeof(Entity)) ?? false)
-               && member.Name is nameof(Entity.Center);
+    public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant) {
+        if (!(member.DeclaringType?.IsSameOrSubclassOf(typeof(Entity)) ?? false)) {
+            return false;
+        }
+
+        if (member.DeclaringType.IsSameOrSubclassOf(typeof(Actor)) && member.Name is nameof(Actor.MoveH) or nameof(Actor.MoveV)) {
+            return true;
+        }
+        if (member.DeclaringType == typeof(Player) && member.Name is nameof(Player.Speed)) {
+            return true;
+        }
+
+        return member.Name
+            is nameof(Entity.Position)
+            or nameof(Entity.X)
+            or nameof(Entity.Y);
     }
 
     public override IEnumerator<CommandAutoCompleteEntry> EnumerateMemberEntries(Type type, TargetQuery.Variant variant) {

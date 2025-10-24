@@ -91,11 +91,11 @@ public static class TargetQuery {
         }
 
         /// Should mark the type as a "suggested option" if applicable in the current context
-        public virtual bool IsTypeSuggested(Type type) {
+        public virtual bool IsTypeSuggested(Type type, Variant variant) {
             return false;
         }
         /// Should mark the member as a "suggested option" if applicable in the current context
-        public virtual bool IsMemberSuggested(MemberInfo member) {
+        public virtual bool IsMemberSuggested(MemberInfo member, Variant variant) {
             return false;
         }
 
@@ -591,7 +591,7 @@ public static class TargetQuery {
                         Name = isFinal ? field.Name : field.Name + ".",
                         Extra = field.FieldType.CSharpName(),
                         Prefix = queryPrefix,
-                        Suggestion = Handlers.Any(handler => handler.IsMemberSuggested(field)),
+                        Suggestion = Handlers.Any(handler => handler.IsMemberSuggested(field, variant)),
                         IsDone = isFinal,
                         StorageKey = currentType.FullName == null ? null : $"{variant}_{currentType.FullName}",
                         StorageName = field.Name,
@@ -603,7 +603,7 @@ public static class TargetQuery {
                         Name = isFinal ? property.Name : property.Name + ".",
                         Extra = property.PropertyType.CSharpName(),
                         Prefix = queryPrefix,
-                        Suggestion = Handlers.Any(handler => handler.IsMemberSuggested(property)),
+                        Suggestion = Handlers.Any(handler => handler.IsMemberSuggested(property, variant)),
                         IsDone = isFinal,
                         StorageKey = currentType.FullName == null ? null : $"{variant}_{currentType.FullName}",
                         StorageName = property.Name,
@@ -614,7 +614,7 @@ public static class TargetQuery {
                         Name = method.Name,
                         Extra = $"({string.Join(", ", method.GetParameters().Select(p => p.HasDefaultValue ? $"[{p.ParameterType.CSharpName()}]" : p.ParameterType.CSharpName()))})",
                         Prefix = queryPrefix,
-                        Suggestion = Handlers.Any(handler => handler.IsMemberSuggested(method)),
+                        Suggestion = Handlers.Any(handler => handler.IsMemberSuggested(method, variant)),
                         IsDone = true,
                         StorageKey = currentType.FullName == null ? null : $"{variant}_{currentType.FullName}",
                         StorageName = method.Name,
@@ -705,7 +705,7 @@ public static class TargetQuery {
                 : 0;
             string shortName = fullName[namespaceLen..];
 
-            bool suggestion = Handlers.Any(handler => handler.IsTypeSuggested(type));
+            bool suggestion = Handlers.Any(handler => handler.IsTypeSuggested(type, variant));
 
             // Use short name if possible, otherwise specify mod name / assembly name
             if (AllTypes[shortName].Count == 1) {
