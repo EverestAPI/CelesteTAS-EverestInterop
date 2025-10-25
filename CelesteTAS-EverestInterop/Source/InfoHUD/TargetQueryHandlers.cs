@@ -246,7 +246,7 @@ internal class ExtendedVariantsQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
     }
 
-    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, ref int memberIdx, string[] memberArgs) {
         if (!IsExtVars(type, out var module)) {
             targetTypes = [];
             return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
@@ -562,7 +562,7 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
     }
 
-    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, ref int memberIdx, string[] memberArgs) {
         if (type.IsSameOrSubclassOf(typeof(Actor)) || type.IsSameOrSubclassOf(typeof(Platform))) {
             switch (memberArgs[memberIdx]) {
                 case nameof(Entity.X):
@@ -580,8 +580,7 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
     }
 
-    public override Result<bool, TargetQuery.MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx,
-        string[] memberArgs, bool forceAllowCodeExecution) {
+    public override Result<bool, TargetQuery.MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
         switch (instance) {
             case Actor actor:
                 switch (memberArgs[memberIdx]) {
@@ -673,7 +672,7 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.QueryError>.Ok(false);
     }
 
-    public override bool IsTypeSuggested(Type type, TargetQuery.Variant variant) {
+    public override bool IsTypeSuggested(Type type, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
         if (Engine.Scene is not Level level) {
             // Could support any scene, but usually only Level is relevant
             return false;
@@ -682,10 +681,12 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         return level.Entities.Any(e =>
             e.GetType() == type &&
             // Require a collider to avoid controller entities
-            e.Collider != null
+            e.Collider != null &&
+            // Only recommend when setting / invoking something or getting a Vector2
+            (variant != TargetQuery.Variant.Get || (targetTypeFilter?.Contains(typeof(Vector2)) ?? false) || (targetTypeFilter?.Contains(typeof(SubpixelPosition)) ?? false))
         );
     }
-    public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant) {
+    public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
         if (!(member.DeclaringType?.IsSameOrSubclassOf(typeof(Entity)) ?? false)) {
             return false;
         }
@@ -694,6 +695,9 @@ internal class EntityQueryHandler : TargetQuery.Handler {
             return true;
         }
         if (member.DeclaringType == typeof(Player) && member.Name is nameof(Player.Speed) or nameof(Player.StateMachine)) {
+            return true;
+        }
+        if (member.DeclaringType == typeof(Seeker) && member.Name is nameof(Seeker.State) or nameof(Player.StateMachine)) {
             return true;
         }
 
@@ -727,6 +731,128 @@ internal class ComponentQueryHandler : TargetQuery.Handler {
         return componentInstances
             .Select(object (c) => c)
             .ToArray();
+    }
+
+    // Marker types for StateMachine instances
+    private struct PlayerState;
+    private struct SeekerState;
+    private struct OshiroState;
+
+    private static readonly string[] playerStates = [
+        nameof(Player.StNormal),
+        nameof(Player.StClimb),
+        nameof(Player.StDash),
+        nameof(Player.StSwim),
+        nameof(Player.StBoost),
+        nameof(Player.StRedDash),
+        nameof(Player.StHitSquash),
+        nameof(Player.StLaunch),
+        nameof(Player.StPickup),
+        nameof(Player.StDreamDash),
+        nameof(Player.StSummitLaunch),
+        nameof(Player.StDummy),
+        nameof(Player.StIntroWalk),
+        nameof(Player.StIntroJump),
+        nameof(Player.StIntroRespawn),
+        nameof(Player.StIntroWakeUp),
+        nameof(Player.StBirdDashTutorial),
+        nameof(Player.StFrozen),
+        nameof(Player.StReflectionFall),
+        nameof(Player.StStarFly),
+        nameof(Player.StTempleFall),
+        nameof(Player.StCassetteFly),
+        nameof(Player.StAttract),
+        nameof(Player.StIntroMoonJump),
+        nameof(Player.StFlingBird),
+        nameof(Player.StIntroThinkForABit),
+    ];
+    private static readonly string[] seekerStates = [
+        nameof(Seeker.StIdle),
+        nameof(Seeker.StPatrol),
+        nameof(Seeker.StSpotted),
+        nameof(Seeker.StAttack),
+        nameof(Seeker.StStunned),
+        nameof(Seeker.StSkidding),
+        nameof(Seeker.StRegenerate),
+        nameof(Seeker.StReturned),
+    ];
+    private static readonly string[] oshiroStates = [
+        nameof(AngryOshiro.StChase),
+        nameof(AngryOshiro.StChargeUp),
+        nameof(AngryOshiro.StAttack),
+        nameof(AngryOshiro.StDummy),
+        nameof(AngryOshiro.StWaiting),
+        nameof(AngryOshiro.StHurt),
+    ];
+
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, ref int memberIdx, string[] memberArgs) {
+        if (memberIdx + 1 < memberArgs.Length && type.IsSameOrSubclassOf(typeof(Player)) && memberArgs[memberIdx] == nameof(Player.StateMachine) && memberArgs[memberIdx + 1] == nameof(StateMachine.State)) {
+            memberIdx += 1; // Skip over StateMachine member
+            targetTypes = [typeof(PlayerState)];
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+        }
+        if (memberIdx + 1 < memberArgs.Length && type.IsSameOrSubclassOf(typeof(Seeker)) && memberArgs[memberIdx] == nameof(Seeker.State) && memberArgs[memberIdx + 1] == nameof(StateMachine.State)) {
+            memberIdx += 1; // Skip over StateMachine member
+            targetTypes = [typeof(SeekerState)];
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+        }
+        if (memberIdx + 1 < memberArgs.Length && type.IsSameOrSubclassOf(typeof(AngryOshiro)) && memberArgs[memberIdx] == nameof(AngryOshiro.state) && memberArgs[memberIdx + 1] == nameof(StateMachine.State)) {
+            memberIdx += 1; // Skip over StateMachine member
+            targetTypes = [typeof(OshiroState)];
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+        }
+
+        targetTypes = null!;
+        return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+    }
+    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+        if (variant == TargetQuery.Variant.Get && targetTypeFilter != null) {
+            if (targetTypeFilter.Contains(typeof(PlayerState))) {
+                foreach (string state in playerStates) {
+                    yield return new CommandAutoCompleteEntry {
+                        Name = state,
+                        Extra = "State",
+                        Prefix = $"{queryPrefix}{nameof(Player)}.",
+                        Suggestion = true,
+                        IsDone = true,
+                        StorageKey = $"{variant}_{typeof(Player).FullName}",
+                        StorageName = state,
+                    };
+                }
+            } else if (targetTypeFilter.Contains(typeof(SeekerState))) {
+                foreach (string state in seekerStates) {
+                    yield return new CommandAutoCompleteEntry {
+                        Name = state,
+                        Extra = "State",
+                        Prefix = $"{queryPrefix}{nameof(Seeker)}.",
+                        Suggestion = true,
+                        IsDone = true,
+                        StorageKey = $"{variant}_{typeof(Seeker).FullName}",
+                        StorageName = state,
+                    };
+                }
+            } else if (targetTypeFilter.Contains(typeof(OshiroState))) {
+                foreach (string state in oshiroStates) {
+                    yield return new CommandAutoCompleteEntry {
+                        Name = state,
+                        Extra = "State",
+                        Prefix = $"{queryPrefix}{nameof(AngryOshiro)}.",
+                        Suggestion = true,
+                        IsDone = true,
+                        StorageKey = $"{variant}_{typeof(AngryOshiro).FullName}",
+                        StorageName = state,
+                    };
+                }
+            }
+        }
+    }
+
+    public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+        if (member.DeclaringType == typeof(StateMachine) && member.Name is nameof(StateMachine.State)) {
+            return true;
+        }
+
+        return false;
     }
 }
 
@@ -779,7 +905,7 @@ internal class CollectionQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.MemberAccessError>.Ok(success);
     }
 
-    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, ref int memberIdx, string[] memberArgs) {
         if (!memberArgs[memberIdx].StartsWith(IndexKey)) {
             targetTypes = null!;
             return Result<bool, TargetQuery.MemberAccessError>.Ok(false);

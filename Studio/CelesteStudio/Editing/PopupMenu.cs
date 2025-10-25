@@ -413,8 +413,13 @@ public abstract class PopupMenu : Scrollable {
     // Choose sensible middle-ground with width to avoid wasting space for a handful long entries
     public int RecommendedWidth {
         get {
-            int visibleEntryCount = (int) MathF.Ceiling(ClientSize.Height / EntryHeight) + 1;
+            if (shownEntries.Length == 0) {
+                return 0;
+            }
+
+            int visibleEntryCount = Math.Min(shownEntries.Length, (int) MathF.Ceiling(ClientSize.Height / EntryHeight) + 1);
             int medianGroupLen = shownEntries
+                .Where((_, idx) => idx + visibleEntryCount <= shownEntries.Length)
                 .Select((_, idx) => {
                     var visible = shownEntries.Skip(idx).Take(visibleEntryCount).ToArray();
 

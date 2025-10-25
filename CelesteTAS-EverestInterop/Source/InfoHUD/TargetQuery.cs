@@ -65,7 +65,7 @@ public static class TargetQuery {
 
         /// Attempts to resolve the target types of the parameters for the next member. <br/>
         /// <c>true</c> should be returned when the handler could resolve the target types, otherwise <c>false</c>.
-        public virtual Result<bool, MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
+        public virtual Result<bool, MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, ref int memberIdx, string[] memberArgs) {
             targetTypes = [];
             return Result<bool, MemberAccessError>.Ok(false);
         }
@@ -91,11 +91,11 @@ public static class TargetQuery {
         }
 
         /// Should mark the type as a "suggested option" if applicable in the current context
-        public virtual bool IsTypeSuggested(Type type, Variant variant) {
+        public virtual bool IsTypeSuggested(Type type, Variant variant, Type[]? targetTypeFilter) {
             return false;
         }
         /// Should mark the member as a "suggested option" if applicable in the current context
-        public virtual bool IsMemberSuggested(MemberInfo member, Variant variant) {
+        public virtual bool IsMemberSuggested(MemberInfo member, Variant variant, Type[]? targetTypeFilter) {
             return false;
         }
 
@@ -610,7 +610,7 @@ public static class TargetQuery {
                         Name = isFinal ? field.Name : field.Name + ".",
                         Extra = field.FieldType.CSharpName(),
                         Prefix = queryPrefix,
-                        Suggestion = Handlers.Any(handler => handler.IsMemberSuggested(field, variant)),
+                        Suggestion = Handlers.Any(handler => handler.IsMemberSuggested(field, variant, targetTypeFilter)),
                         IsDone = isFinal,
                         StorageKey = currentType.FullName == null ? null : $"{variant}_{currentType.FullName}",
                         StorageName = field.Name,
@@ -622,7 +622,7 @@ public static class TargetQuery {
                         Name = isFinal ? property.Name : property.Name + ".",
                         Extra = property.PropertyType.CSharpName(),
                         Prefix = queryPrefix,
-                        Suggestion = Handlers.Any(handler => handler.IsMemberSuggested(property, variant)),
+                        Suggestion = Handlers.Any(handler => handler.IsMemberSuggested(property, variant, targetTypeFilter)),
                         IsDone = isFinal,
                         StorageKey = currentType.FullName == null ? null : $"{variant}_{currentType.FullName}",
                         StorageName = property.Name,
@@ -633,7 +633,7 @@ public static class TargetQuery {
                         Name = method.Name,
                         Extra = $"({string.Join(", ", method.GetParameters().Select(p => p.HasDefaultValue ? $"[{p.ParameterType.CSharpName()}]" : p.ParameterType.CSharpName()))})",
                         Prefix = queryPrefix,
-                        Suggestion = Handlers.Any(handler => handler.IsMemberSuggested(method, variant)),
+                        Suggestion = Handlers.Any(handler => handler.IsMemberSuggested(method, variant, targetTypeFilter)),
                         IsDone = true,
                         StorageKey = currentType.FullName == null ? null : $"{variant}_{currentType.FullName}",
                         StorageName = method.Name,
@@ -724,7 +724,7 @@ public static class TargetQuery {
                 : 0;
             string shortName = fullName[namespaceLen..];
 
-            bool suggestion = Handlers.Any(handler => handler.IsTypeSuggested(type, variant));
+            bool suggestion = Handlers.Any(handler => handler.IsTypeSuggested(type, variant, targetTypeFilter));
 
             // Use short name if possible, otherwise specify mod name / assembly name
             if (AllTypes[shortName].Count == 1) {
@@ -765,7 +765,7 @@ public static class TargetQuery {
         var currentType = baseType;
         for (int memberIdx = 0; memberIdx < memberArgs.Length; memberIdx++) {
             foreach (var handler in Handlers) {
-                var result = handler.ResolveTargetTypes(out var targetTypes, currentType, memberIdx, memberArgs);
+                var result = handler.ResolveTargetTypes(out var targetTypes, currentType, ref memberIdx, memberArgs);
                 if (result.Success && result.Value) {
                     currentType = targetTypes[0]; // Ignore others
                     goto NextMember;
@@ -1513,7 +1513,7 @@ public static class TargetQuery {
 
         try {
             foreach (var handler in Handlers) {
-                var result = handler.ResolveTargetTypes(out var targetTypes, type, memberIdx, memberArgs);
+                var result = handler.ResolveTargetTypes(out var targetTypes, type, ref memberIdx, memberArgs);
                 if (result.Success && result.Value) {
                     return Result<Type[], MemberAccessError>.Ok(targetTypes);
                 }
