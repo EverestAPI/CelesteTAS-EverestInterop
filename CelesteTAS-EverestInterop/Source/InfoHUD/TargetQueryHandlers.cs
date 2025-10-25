@@ -679,7 +679,11 @@ internal class EntityQueryHandler : TargetQuery.Handler {
             return false;
         }
 
-        return level.Entities.Any(e => e.GetType() == type);
+        return level.Entities.Any(e =>
+            e.GetType() == type &&
+            // Require a collider to avoid controller entities
+            e.Collider != null
+        );
     }
     public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant) {
         if (!(member.DeclaringType?.IsSameOrSubclassOf(typeof(Entity)) ?? false)) {
@@ -689,7 +693,7 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         if (member.DeclaringType.IsSameOrSubclassOf(typeof(Actor)) && member.Name is nameof(Actor.MoveH) or nameof(Actor.MoveV)) {
             return true;
         }
-        if (member.DeclaringType == typeof(Player) && member.Name is nameof(Player.Speed)) {
+        if (member.DeclaringType == typeof(Player) && member.Name is nameof(Player.Speed) or nameof(Player.StateMachine)) {
             return true;
         }
 

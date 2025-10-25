@@ -415,7 +415,26 @@ public static class TargetQuery {
         }
     }
 
-    internal static readonly string[] ignoredNamespaces = ["System", "StudioCommunication", "TAS", "SimplexNoise", "FMOD", "MonoMod", "Snowberry"];
+    internal static readonly string[] ignoredNamespaces = [
+        // C# Standard library
+        "System",
+        // Celeste libraries
+        "SimplexNoise", "FMOD",
+        // Everest libraries
+        "MonoMod",
+        // Non-gameplay-relevant utilities
+        "Celeste.Editor", "Celeste.Mod.Helpers", "Celeste.Mod.Meta", "Celeste.Mod.UI",
+        // Non-gameplay-relevant mods
+        "TAS", "StudioCommunication",
+        "Celeste.Mod.TASHelper",
+        "Celeste.Mod.SpeedrunTool", "Force.DeepCloner",
+        "Celeste.Mod.TASRecorder", "FFmpeg",
+        "Celeste.Mod.DebugConsole",
+        "Celeste.Mod.ImGuiHelper",
+        "Celeste.Mod.MappingUtils",
+        "Celeste.Mod.CelesteRepl",
+        "Snowberry"
+    ];
 
     private const int MaxTypeViabilityRecursion = 3;
 
