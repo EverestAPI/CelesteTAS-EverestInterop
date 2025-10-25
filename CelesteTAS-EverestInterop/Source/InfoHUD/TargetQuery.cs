@@ -30,15 +30,18 @@ public static class TargetQuery {
     internal abstract class Handler {
         public virtual bool CanResolveInstances(Type type) => false;
         public virtual bool CanResolveValue(Type type) => false;
-        public virtual bool CanEnumerateMemberEntries(Type type, Variant variant) => false;
-        public virtual bool CanEnumerateTypeEntries(Type type, Variant variant) => false;
+        public virtual (bool CanEnumerate, bool ShouldOverride) CanEnumerateMemberEntries(Type type, Variant variant, string queryPrefix, int memberIdx, string[] memberArgs)
+            => (CanEnumerate: false, ShouldOverride: false);
+        public virtual bool CanEnumerateTypeEntries(Type type) => false;
 
         /// Provide currently active instances for the specified type. <br/>
         /// Only invoked if <see cref="CanResolveInstances"/> returned <c>true</c> for the type.
         public virtual object[] ResolveInstances(Type type) => [];
 
-        /// Can process the query arguments into invalid members, to allow for custom syntax
+        /// Can process the query arguments into special members, to allow for custom syntax
         public virtual IEnumerable<string> ProcessQueryArguments(IEnumerable<string> queryArgs) => queryArgs;
+        /// Should format the query arguments back into their original custom syntax form
+        public virtual IEnumerable<string> FormatQueryArguments(IEnumerable<string> queryArgs) => queryArgs;
 
         /// Resolve a set of base target-types for a query. <br/>
         /// <c>null</c> should be returned when no base-types could be resolved.
@@ -108,13 +111,13 @@ public static class TargetQuery {
         /// Overwrite the list of auto-complete entries which are provided for the members of the type
         /// Only invoked if <see cref="CanEnumerateMemberEntries"/> returned <c>true</c> for the type. <br/>
         [MustDisposeResource]
-        public virtual IEnumerator<CommandAutoCompleteEntry> EnumerateMemberEntries(Type type, Variant variant) {
+        public virtual IEnumerator<CommandAutoCompleteEntry> EnumerateMemberEntries(Type type, Variant variant, string queryPrefix, int memberIdx, string[] memberArgs) {
             yield break;
         }
         /// Overwrite the list of auto-complete entries which are provided for the values of the type
         /// Only invoked if <see cref="CanEnumerateTypeEntries"/> returned <c>true</c> for the type. <br/>
         [MustDisposeResource]
-        public virtual IEnumerator<CommandAutoCompleteEntry> EnumerateTypeEntries(Type type, Variant variant) {
+        public virtual IEnumerator<CommandAutoCompleteEntry> EnumerateTypeEntries(Type type) {
             yield break;
         }
     }
@@ -135,8 +138,8 @@ public static class TargetQuery {
         new EverestModuleSaveDataQueryHandler(),
         new SceneQueryHandler(),
         new SessionQueryHandler(),
+        new ComponentQueryHandler(), // Needs to be before EntityQueryHandler, so that it will handle 'Type:StateMachine.State' before the general handler
         new EntityQueryHandler(),
-        new ComponentQueryHandler(),
         new CollectionQueryHandler(),
         new SpecialValueQueryHandler(),
         new DeterministicVariablesQueryHandler(),
@@ -545,12 +548,19 @@ public static class TargetQuery {
     }
 
     internal static IEnumerator<CommandAutoCompleteEntry> ResolveAutoCompleteEntries(string[] queryArgs, Variant variant, Type[]? targetTypeFilter = null) {
-        string queryPrefix = queryArgs.Length != 0 ? $"{string.Join('.', queryArgs)}." : "";
+        Console.WriteLine($"Original Arguments: '{string.Join('.', queryArgs)}'");
+        // Process query arguments
+        queryArgs = Handlers.Aggregate((IEnumerable<string>) queryArgs, (current, handler) => handler.ProcessQueryArguments(current)).ToArray();
+        Console.WriteLine($"Processed Arguments: '{string.Join('.', queryArgs)}'");
+        // Drop last argument for prefix
+        string queryPrefix = queryArgs.Length <= 1 ? string.Empty : string.Join('.', Handlers.Aggregate((IEnumerable<string>) queryArgs[..^1], (current, handler) => handler.FormatQueryArguments(current)));
+        string memberQueryPrefix = queryArgs.Length <= 1 ? queryPrefix : $"{queryPrefix}.";
+        Console.WriteLine($"Prefix: '{queryPrefix}' // '{memberQueryPrefix}'");
 
         if (variant == Variant.Get && targetTypeFilter != null) {
             foreach (var targetType in targetTypeFilter) {
-                foreach (var handler in Handlers.Where(handler => handler.CanEnumerateTypeEntries(targetType, variant))) {
-                    using var enumerator = handler.EnumerateTypeEntries(targetType, variant);
+                foreach (var handler in Handlers.Where(handler => handler.CanEnumerateTypeEntries(targetType))) {
+                    using var enumerator = handler.EnumerateTypeEntries(targetType);
                     while (enumerator.MoveNext()) {
                         yield return enumerator.Current;
                     }
@@ -570,35 +580,50 @@ public static class TargetQuery {
             }
         }
 
-        {
-            using var enumerator = ResolveBaseTypeAutoCompleteEntries(queryArgs, queryPrefix, variant, targetTypeFilter);
+        // Global entries
+        foreach (var handler in Handlers) {
+            using var enumerator = handler.ProvideGlobalEntries(queryArgs, queryPrefix, variant, targetTypeFilter);
             while (enumerator.MoveNext()) {
                 yield return enumerator.Current;
             }
         }
 
-        var baseTypes = ResolveBaseTypes(queryArgs, out string[] memberArgs);
+        {
+            using var enumerator = ResolveBaseTypeAutoCompleteEntries(queryArgs, memberQueryPrefix, variant, targetTypeFilter);
+            while (enumerator.MoveNext()) {
+                yield return enumerator.Current;
+            }
+        }
+
+        var baseTypes = ResolveBaseTypes(queryArgs, out string[] memberArgs, processArgs: false);
+        if (memberArgs.Length == 0) {
+            yield break;
+        }
+
+        Console.WriteLine($"Query: '{string.Join('.', queryArgs)}' => Types: [{string.Join(',', baseTypes)}] // Members: '{string.Join('.', memberArgs)}'");
         foreach (var baseType in baseTypes) {
             // Recurse type
-            var currentType = RecurseMemberType(baseType, memberArgs, variant);
+            var currentType = RecurseMemberType(baseType, memberArgs[..^1], variant);
             if (currentType == null) {
                 yield break;
             }
 
-            foreach (var handler in Handlers.Where(handler => handler.CanEnumerateMemberEntries(currentType, variant))) {
-                using var enumerator = handler.EnumerateMemberEntries(currentType, variant);
+            foreach (var handler in Handlers.Where(handler => handler.CanEnumerateMemberEntries(currentType, variant, queryPrefix, memberArgs.Length - 1, memberArgs).CanEnumerate)) {
+                using var enumerator = handler.EnumerateMemberEntries(currentType, variant, queryPrefix, memberArgs.Length - 1, memberArgs);
                 while (enumerator.MoveNext()) {
-                    yield return enumerator.Current with {
-                        Name = enumerator.Current.IsDone ? enumerator.Current.Name : enumerator.Current.Name + ".",
-                        Prefix = queryPrefix,
-                    };
+                    yield return enumerator.Current;
                 }
-                goto NextType;
+
+                if (handler.CanEnumerateMemberEntries(currentType, variant, queryPrefix, memberArgs.Length - 1, memberArgs).ShouldOverride) {
+                    goto NextType;
+                }
+
+                break;
             }
 
             // Generic handler
             {
-                var bindingFlags = memberArgs.Length == 0
+                var bindingFlags = memberArgs.Length <= 1
                     ? Handlers.Any(handler => handler.CanResolveInstances(currentType))
                         ? ReflectionExtensions.StaticInstanceAnyVisibility
                         : ReflectionExtensions.StaticAnyVisibility
@@ -609,7 +634,7 @@ public static class TargetQuery {
                     yield return new CommandAutoCompleteEntry {
                         Name = isFinal ? field.Name : field.Name + ".",
                         Extra = field.FieldType.CSharpName(),
-                        Prefix = queryPrefix,
+                        Prefix = memberQueryPrefix,
                         Suggestion = Handlers.Any(handler => handler.IsMemberSuggested(field, variant, targetTypeFilter)),
                         IsDone = isFinal,
                         StorageKey = currentType.FullName == null ? null : $"{variant}_{currentType.FullName}",
@@ -621,7 +646,7 @@ public static class TargetQuery {
                     yield return new CommandAutoCompleteEntry {
                         Name = isFinal ? property.Name : property.Name + ".",
                         Extra = property.PropertyType.CSharpName(),
-                        Prefix = queryPrefix,
+                        Prefix = memberQueryPrefix,
                         Suggestion = Handlers.Any(handler => handler.IsMemberSuggested(property, variant, targetTypeFilter)),
                         IsDone = isFinal,
                         StorageKey = currentType.FullName == null ? null : $"{variant}_{currentType.FullName}",
@@ -632,7 +657,7 @@ public static class TargetQuery {
                     yield return new CommandAutoCompleteEntry {
                         Name = method.Name,
                         Extra = $"({string.Join(", ", method.GetParameters().Select(p => p.HasDefaultValue ? $"[{p.ParameterType.CSharpName()}]" : p.ParameterType.CSharpName()))})",
-                        Prefix = queryPrefix,
+                        Prefix = memberQueryPrefix,
                         Suggestion = Handlers.Any(handler => handler.IsMemberSuggested(method, variant, targetTypeFilter)),
                         IsDone = true,
                         StorageKey = currentType.FullName == null ? null : $"{variant}_{currentType.FullName}",
@@ -644,16 +669,10 @@ public static class TargetQuery {
             NextType:;
         }
     }
-    private static IEnumerator<CommandAutoCompleteEntry> ResolveBaseTypeAutoCompleteEntries(string[] queryArgs, string queryPrefix, Variant variant, Type[]? targetTypeFilter) {
-        foreach (var handler in Handlers) {
-            using var enumerator = handler.ProvideGlobalEntries(queryArgs, queryPrefix, variant, targetTypeFilter);
-            while (enumerator.MoveNext()) {
-                yield return enumerator.Current;
-            }
-        }
-
+    internal static IEnumerator<CommandAutoCompleteEntry> ResolveBaseTypeAutoCompleteEntries(string[] queryArgs, string queryPrefix, Variant variant, Type[]? targetTypeFilter, Predicate<Type>? typeFilterPredicate = null, Predicate<Type>? typeSuggestionPredicate = null) {
         var types = ModUtils.GetTypes()
             .Where(type =>
+                (typeFilterPredicate?.Invoke(type) ?? true) &&
                 IsTypeViable(type, variant, isRoot: true, targetTypeFilter, maxDepth: MaxTypeViabilityRecursion) &&
                 // Require query-arguments to match namespace
                 type.FullName!.StartsWith(queryPrefix))
@@ -665,12 +684,12 @@ public static class TargetQuery {
             .OfType<string>()
             .Distinct()
             .Select(ns => ns.Split('.'))
-            .Where(ns => ns.Length > queryArgs.Length)
+            .Where(ns => ns.Length > queryArgs.Length - 1)
             .ToArray();
 
         // Merge the lowest common namespaces (we love triple nested loops!)
         for (int nsIdxA = 0; nsIdxA < namespaces.Length; nsIdxA++) {
-            for (int compLen = namespaces[nsIdxA].Length; compLen > queryArgs.Length; compLen--) {
+            for (int compLen = namespaces[nsIdxA].Length; compLen > queryArgs.Length - 1; compLen--) {
                 string[] subSeq = namespaces[nsIdxA][..compLen];
                 bool foundAny = false;
 
@@ -692,17 +711,17 @@ public static class TargetQuery {
         }
 
         foreach (string[] ns in namespaces) {
-            if (ns.Length <= queryArgs.Length) {
+            if (ns.Length < queryArgs.Length) {
                 continue;
             }
 
             yield return new CommandAutoCompleteEntry {
-                Name = $"{string.Join('.', ns[queryArgs.Length..])}.",
+                Name = $"{string.Join('.', ns[(queryArgs.Length - 1)..])}.",
                 Extra = "Namespace",
                 Prefix = queryPrefix,
                 IsDone = false,
                 StorageKey = $"{variant}",
-                StorageName = string.Join('.', ns[queryArgs.Length..]),
+                StorageName = string.Join('.', ns[(queryArgs.Length - 1)..]),
             };
         }
 
@@ -724,7 +743,7 @@ public static class TargetQuery {
                 : 0;
             string shortName = fullName[namespaceLen..];
 
-            bool suggestion = Handlers.Any(handler => handler.IsTypeSuggested(type, variant, targetTypeFilter));
+            bool suggestion = typeSuggestionPredicate?.Invoke(type) ?? Handlers.Any(handler => handler.IsTypeSuggested(type, variant, targetTypeFilter));
 
             // Use short name if possible, otherwise specify mod name / assembly name
             if (AllTypes[shortName].Count == 1) {
@@ -855,16 +874,30 @@ public static class TargetQuery {
         };
     }
 
+    internal static IEnumerable<string> GetQueryArgs(string[] args, int index) {
+        if (args.Length <= index) {
+            return [];
+        }
+
+        return Handlers
+            .Aggregate((IEnumerable<string>) args[index].Split('.'), (current, handler) => handler.ProcessQueryArguments(current))
+            // Only skip last part if we're currently editing that
+            .SkipLast(args.Length == index + 1 ? 1 : 0);
+    }
+
     #endregion
 
     /// Parses the first part of a query into types and an optional EntityID
-    public static HashSet<Type> ResolveBaseTypes(string[] queryArgs, out string[] memberArgs) {
+    public static HashSet<Type> ResolveBaseTypes(string[] queryArgs, out string[] memberArgs, bool processArgs = true) {
         if (queryArgs.Length == 0) {
             memberArgs = queryArgs;
             return [];
         }
 
-        queryArgs = Handlers.Aggregate((IEnumerable<string>) queryArgs, (current, handler) => handler.ProcessQueryArguments(current)).ToArray();
+        if (processArgs) {
+            queryArgs = Handlers.Aggregate((IEnumerable<string>) queryArgs, (current, handler) => handler.ProcessQueryArguments(current)).ToArray();
+        }
+
         if (queryArgs.Any(arg => arg == InvalidQueryArgument)) {
             memberArgs = queryArgs;
             return [];

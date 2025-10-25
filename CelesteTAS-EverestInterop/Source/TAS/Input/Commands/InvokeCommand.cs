@@ -21,9 +21,9 @@ public static class InvokeCommand {
 
         public int GetHash(string[] args, string filePath, int fileLine) {
             var hash = new StableHashCode();
-            hash.Add(SetCommand.SetMeta.GetQueryArgs(args, 0).Aggregate(new StableHashCode(), (argHash, arg) => argHash.Append(arg.GetStableHashCode())).ToHashCode());
+            hash.Add(TargetQuery.GetQueryArgs(args, 0).Aggregate(new StableHashCode(), (argHash, arg) => argHash.Append(arg.GetStableHashCode())).ToHashCode());
             for (int i = 1; i < args.Length; i++) {
-                hash.Add(SetCommand.SetMeta.GetQueryArgs(args, i).Aggregate(new StableHashCode(), (argHash, arg) => argHash.Append(arg.GetStableHashCode())).ToHashCode());
+                hash.Add(TargetQuery.GetQueryArgs(args, i).Aggregate(new StableHashCode(), (argHash, arg) => argHash.Append(arg.GetStableHashCode())).ToHashCode());
             }
             hash.Add(args.Length);
             return hash.ToHashCode();
@@ -31,7 +31,7 @@ public static class InvokeCommand {
 
         public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
             // Target
-            string[] targetQueryArgs = SetCommand.SetMeta.GetQueryArgs(args, 0).ToArray();
+            string[] targetQueryArgs = args.Length > 0 ? args[0].Split('.') : [];
             if (args.Length <= 1) {
                 using var enumerator = TargetQuery.ResolveAutoCompleteEntries(targetQueryArgs, TargetQuery.Variant.Invoke);
                 while (enumerator.MoveNext()) {
@@ -41,7 +41,6 @@ public static class InvokeCommand {
             }
 
             // Parameters
-            string[] paramQueryArgs = SetCommand.SetMeta.GetQueryArgs(args, 1).ToArray();
             var baseTypes = TargetQuery.ResolveBaseTypes(targetQueryArgs, out string[] memberArgs);
             var targetTypes = baseTypes
                 .Select(type => TargetQuery.RecurseMemberType(type, memberArgs, TargetQuery.Variant.Invoke))
@@ -49,6 +48,7 @@ public static class InvokeCommand {
                 .ToArray();
 
             for (int i = 1; i < Math.Min(args.Length, targetTypes.Length + 1); i++) {
+                string[] paramQueryArgs = args[i].Split('.');
                 using var enumerator = TargetQuery.ResolveAutoCompleteEntries(paramQueryArgs, TargetQuery.Variant.Get, [targetTypes[i - 1]!]);
                 while (enumerator.MoveNext()) {
                     yield return enumerator.Current with { HasNext = i < targetTypes.Length };

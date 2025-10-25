@@ -21,15 +21,15 @@ public static class SetCommand {
 
         public int GetHash(string[] args, string filePath, int fileLine) {
             var hash = new StableHashCode();
-            hash.Add(GetQueryArgs(args, 0).Aggregate(new StableHashCode(), (argHash, arg) => argHash.Append(arg)).ToHashCode());
-            hash.Add(GetQueryArgs(args, 1).Aggregate(new StableHashCode(), (argHash, arg) => argHash.Append(arg)).ToHashCode());
+            hash.Add(TargetQuery.GetQueryArgs(args, 0).Aggregate(new StableHashCode(), (argHash, arg) => argHash.Append(arg)).ToHashCode());
+            hash.Add(TargetQuery.GetQueryArgs(args, 1).Aggregate(new StableHashCode(), (argHash, arg) => argHash.Append(arg)).ToHashCode());
             hash.Add(args.Length);
             return hash.ToHashCode();
         }
 
         public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
             // Target
-            string[] targetQueryArgs = GetQueryArgs(args, 0).ToArray();
+            string[] targetQueryArgs = args.Length > 0 ? args[0].Split('.') : [];
             if (args.Length <= 1) {
                 using var enumerator = TargetQuery.ResolveAutoCompleteEntries(targetQueryArgs, TargetQuery.Variant.Set);
                 while (enumerator.MoveNext()) {
@@ -40,7 +40,7 @@ public static class SetCommand {
 
             // Parameter
             {
-                string[] paramQueryArgs = GetQueryArgs(args, 1).ToArray();
+                string[] paramQueryArgs = args.Length > 1 ? args[1].Split('.') : [];
                 var baseTypes = TargetQuery.ResolveBaseTypes(targetQueryArgs, out string[] memberArgs);
                 var targetTypes = baseTypes
                     .Select(type => TargetQuery.RecurseMemberType(type, memberArgs, TargetQuery.Variant.Set))
@@ -52,17 +52,6 @@ public static class SetCommand {
                     yield return enumerator.Current;
                 }
             }
-        }
-
-        internal static IEnumerable<string> GetQueryArgs(string[] args, int index) {
-            if (args.Length <= index) {
-                return [];
-            }
-
-            return args[index]
-                .Split('.')
-                // Only skip last part if we're currently editing that
-                .SkipLast(args.Length == index + 1 ? 1 : 0);
         }
     }
 

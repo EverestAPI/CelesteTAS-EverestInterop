@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace StudioCommunication.Util;
@@ -371,5 +372,34 @@ public static class StackExtensions {
                 break;
             }
         }
+    }
+
+    /// Allow peeking below the surface
+    public static T Peek<T>(this Stack<T> stack, uint distance = 1) {
+        if (distance == 1) {
+            return stack.Peek();
+        }
+
+        var f_Stack_array = typeof(Stack<T>).GetField("_array", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        var array = (T[]) f_Stack_array.GetValue(stack)!;
+
+        return array[stack.Count - distance];
+    }
+}
+
+public static class QueueExtensions {
+    /// Allow peeking behind the front
+    public static T Peek<T>(this Queue<T> queue, uint distance = 0) {
+        if (distance == 0) {
+            return queue.Peek();
+        }
+
+        var f_Queue_array = typeof(Queue<T>).GetField("_array", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        var array = (T[]) f_Queue_array.GetValue(queue)!;
+
+        var f_Queue_head = typeof(Queue<T>).GetField("_head", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        int head = (int) f_Queue_head.GetValue(queue)!;
+
+        return array[(head + distance) % array.Length];
     }
 }
