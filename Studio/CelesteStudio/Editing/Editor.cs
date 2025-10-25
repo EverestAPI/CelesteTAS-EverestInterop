@@ -784,12 +784,13 @@ public sealed class Editor : SkiaDrawable {
             int menuMaxW = menuMaxRight - menuX;
 
             // Try moving the menu to the left when there isn't enough space, before having to shrink it
-            if (menuMaxW < menu.ContentWidth) {
-                menuX = (int)Math.Max(menuMaxRight - menu.ContentWidth, scrollablePosition.X + textOffsetX + menuLPadding);
+            int recommendedWidth = menu.RecommendedWidth;
+            if (menuMaxW < recommendedWidth) {
+                menuX = (int)Math.Max(menuMaxRight - recommendedWidth, scrollablePosition.X + textOffsetX + menuLPadding);
                 menuMaxW = menuMaxRight - menuX;
             }
 
-            menu.ContentWidth = Math.Min(menu.ContentWidth, menuMaxW);
+            menu.ContentWidth = Math.Min(recommendedWidth, menuMaxW);
         }
         void UpdateMenuV() {
             int menuYBelow = (int)(carY + menuYOffset);

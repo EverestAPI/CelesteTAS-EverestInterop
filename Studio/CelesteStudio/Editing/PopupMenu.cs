@@ -185,7 +185,7 @@ public abstract class PopupMenu : Scrollable {
             canvas.DrawRect(backgroundRect, Settings.Instance.Theme.PopupMenuBgPaint);
 
             var font = FontManager.SKPopupFont;
-            int maxDisplayLen = menu.shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
+            int maxDisplayLen = menu.VisibleEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
 
             float width = menu.ContentWidth - Settings.Instance.Theme.PopupMenuBorderPadding * 2.0f;
             float height = menu.EntryHeight;
@@ -199,14 +199,14 @@ public abstract class PopupMenu : Scrollable {
                 var entry = menu.shownEntries[row];
 
                 if (entry.Data is { } data && iconWidth > 0) {
-                    var mousePos = PointFromScreen(lastMouseSelection);
+                    var mousePos = PointFromScreen(Mouse.Position);
                     int mouseRow = (int)((mousePos.Y - Settings.Instance.Theme.PopupMenuBorderPadding) / height);
 
                     bool isFavourite = data.Favourites.Contains(entry.StorageName);
                     bool isFrequentlyUsed = entry.FrequentlyUsedIndex is >= 0 and < FrequentlyUsedCategorySize;
                     bool isSuggestion = entry.Suggestion;
 
-                    if (isFavourite || mouseRow == row && mousePos.X > 0.0f && mousePos.X < width) {
+                    if (isFavourite || mouseRow == row && mousePos.X > 0.0f && mousePos.X < menu.ClientSize.Width - (menu.VScrollBarVisible ? Studio.ScrollBarSize : 0)) {
                         // Show favourite icon
                         bool isHoveringIcon = mouseRow == row && mousePos.X > Settings.Instance.Theme.PopupMenuBorderPadding && mousePos.X < Settings.Instance.Theme.PopupMenuBorderPadding + iconWidth;
 
@@ -410,11 +410,39 @@ public abstract class PopupMenu : Scrollable {
         get => contentHeight;
     }
 
+    // Choose sensible middle-ground with width to avoid wasting space for a handful long entries
+    public int RecommendedWidth {
+        get {
+            int visibleEntryCount = (int) MathF.Ceiling(ClientSize.Height / EntryHeight) + 1;
+            int medianGroupLen = shownEntries
+                .Select((_, idx) => {
+                    var visible = shownEntries.Skip(idx).Take(visibleEntryCount).ToArray();
+
+                    int displayMax = visible.Select(e => e.DisplayText.Length).Aggregate(Math.Max);
+                    int extraMax = visible.Select(e => e.ExtraText.Length).Aggregate(Math.Max);
+
+                    if (extraMax == 0) {
+                        return displayMax;
+                    } else {
+                        return displayMax + DisplayExtraPadding + extraMax;
+                    }
+                })
+                .Median();
+
+            var font = FontManager.SKPopupFont;
+            return (int)(IconWidth + font.CharWidth() * medianGroupLen + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding * 2.0f + Settings.Instance.Theme.PopupMenuBorderPadding * 2);
+        }
+    }
+
     public int EntryHeight => (int)(FontManager.SKPopupFont.LineHeight() + Settings.Instance.Theme.PopupMenuEntryVerticalPadding * 2.0f + Settings.Instance.Theme.PopupMenuEntrySpacing);
     public int IconWidth => shownEntries.Any(e => e.Suggestion || e.StorageKey != null) ? EntryHeight : 0; // Enforce square icon size
 
     private Entry[] shownEntries = [];
     private readonly ContentDrawable drawable;
+
+    private int TopVisibleEntry => (int) MathF.Floor(ScrollPosition.Y / EntryHeight);
+    private int BottomVisibleEntry => (int) MathF.Ceiling((ScrollPosition.Y + ClientSize.Height) / EntryHeight);
+    private IEnumerable<Entry> VisibleEntries => shownEntries.Skip(TopVisibleEntry).Take(BottomVisibleEntry - TopVisibleEntry);
 
     public PopupMenu() {
         LoadStorage();
