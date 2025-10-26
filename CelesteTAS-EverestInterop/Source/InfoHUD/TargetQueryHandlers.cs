@@ -1,5 +1,6 @@
 using Celeste;
 using Celeste.Mod;
+using Celeste.Mod.Core;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
@@ -17,6 +18,7 @@ using TAS.Gameplay.DesyncFix;
 using TAS.Input.Commands;
 using TAS.ModInterop;
 using TAS.Utils;
+using Assists = Celeste.Assists;
 
 namespace TAS.InfoHUD;
 
@@ -73,7 +75,12 @@ internal class SettingsQueryHandler : TargetQuery.Handler {
         var vanillaSettings = ((string[])["DisableFlashes", "ScreenShake", "GrabMode", "CrouchDashMode", "SpeedrunClock", "Pico8OnMainMenu", "VariantsUnlocked"]).Select(e => typeof(Settings).GetFieldInfo(e)!);
         foreach (var f in vanillaSettings) {
             if (targetTypeFilter == null || targetTypeFilter.Any(type => f.FieldType.CanCoerceTo(type))) {
-                yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Settings)", IsDone = true };
+                yield return new CommandAutoCompleteEntry {
+                    Name = f.Name,
+                    Extra = $"{f.FieldType.CSharpName()} (Settings)",
+                    IsDone = true,
+                    StorageKey = $"{variant}_{typeof(Settings).FullName}"
+                };
             }
         }
     }
@@ -129,7 +136,12 @@ internal class SaveDataQueryHandler : TargetQuery.Handler {
         var vanillaSaveData = ((string[])["CheatMode", "AssistMode", "VariantMode", "UnlockedAreas", "RevealedChapter9", "DebugMode"]).Select(e => typeof(SaveData).GetFieldInfo(e)!);
         foreach (var f in vanillaSaveData) {
             if (targetTypeFilter == null || targetTypeFilter.Any(type => f.FieldType.CanCoerceTo(type))) {
-                yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Save Data)", IsDone = true };
+                yield return new CommandAutoCompleteEntry {
+                    Name = f.Name,
+                    Extra = $"{f.FieldType.CSharpName()} (Save Data)",
+                    IsDone = true,
+                    StorageKey = $"{variant}_{typeof(SaveData).FullName}"
+                };
             }
         }
     }
@@ -174,7 +186,13 @@ internal class AssistsQueryHandler : TargetQuery.Handler {
 
         foreach (var f in typeof(Assists).GetAllFieldInfos(ReflectionExtensions.InstanceAnyVisibility)) {
             if (targetTypeFilter == null || targetTypeFilter.Any(type => f.FieldType.CanCoerceTo(type))) {
-                yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Assists)", IsDone = true };
+                yield return new CommandAutoCompleteEntry {
+                    Name = f.Name,
+                    Extra = $"{f.FieldType.CSharpName()} (Assists)",
+                    Suggestion = f.Name is nameof(Assists.Invincible),
+                    IsDone = true,
+                    StorageKey = $"{variant}_{typeof(Assists).FullName}"
+                };
             }
         }
     }
@@ -293,6 +311,7 @@ internal class ExtendedVariantsQueryHandler : TargetQuery.Handler {
                     Extra = typeName,
                     Prefix = $"{queryPrefix}.",
                     IsDone = true,
+                    StorageKey = $"{variant}_{type.FullName ?? string.Empty}",
                 };
             }
         }
@@ -320,9 +339,20 @@ internal class EverestModuleSettingsQueryHandler : TargetQuery.Handler {
 
         foreach (var mod in Everest.Modules) {
             if (mod.SettingsType != null && TargetQuery.IsTypeViable(mod.SettingsType, variant, isRoot: true, targetTypeFilter, maxDepth: 3)) {
-                yield return new CommandAutoCompleteEntry { Name = $"{mod.Metadata.Name}.", Extra = "Mod Setting", IsDone = false };
+                yield return new CommandAutoCompleteEntry {
+                    Name = $"{mod.Metadata.Name}.",
+                    Extra = "Mod Setting",
+                    IsDone = false,
+                    Suggestion = mod.Metadata.Name == "ExtendedVariantMode",
+                    StorageKey = $"{variant}_{mod.SettingsType.Namespace ?? string.Empty}",
+                    StorageName = mod.SettingsType.FullName,
+                };
             }
         }
+    }
+
+    public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+        return variant == TargetQuery.Variant.Get && member.DeclaringType == typeof(CoreModuleSettings) && member.Name == nameof(CoreModuleSettings.ShowModOptionsInGame);
     }
 }
 
@@ -354,6 +384,10 @@ internal class SceneQueryHandler : TargetQuery.Handler {
         }
 
         return [];
+    }
+
+    public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+        return variant == TargetQuery.Variant.Set && (member.DeclaringType?.IsSameOrSubclassOf(typeof(Scene)) ?? false) && member.Name == nameof(Scene.TimeActive);
     }
 }
 
@@ -813,7 +847,11 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         if (member.DeclaringType.IsSameOrSubclassOf(typeof(Actor)) && member.Name is nameof(Actor.MoveH) or nameof(Actor.MoveV)) {
             return true;
         }
-        if (member.DeclaringType == typeof(Player) && member.Name is nameof(Player.Speed) or nameof(Player.StateMachine)) {
+        if (member.DeclaringType == typeof(Player) &&
+            member.Name is nameof(Player.Speed) or nameof(Player.StateMachine) or nameof(Player.Stamina)
+                        or nameof(Player.Dashes) or nameof(Player.Ducking) or nameof(Player.LiftBoost)
+                        or nameof(Player.jumpGraceTimer) or nameof(Player.varJumpTimer) or nameof(Player.varJumpSpeed)
+        ) {
             return true;
         }
         if (member.DeclaringType == typeof(Seeker) && member.Name is nameof(Seeker.State) or nameof(Player.StateMachine)) {
@@ -881,7 +919,8 @@ internal class EntityQueryHandler : TargetQuery.Handler {
 
             while (enumerator.MoveNext()) {
                 yield return enumerator.Current with {
-                    Prefix = componentQuery.Length <= 1 ? queryPrefix : $"{queryPrefix}."
+                    Prefix = componentQuery.Length <= 1 ? queryPrefix : $"{queryPrefix}.",
+                    StorageKey = $"{variant}_{type.FullName ?? string.Empty}__{enumerator.Current.StorageKey}",
                 };
             }
         }
@@ -1484,14 +1523,24 @@ internal class SpecialValueQueryHandler : TargetQuery.Handler {
     public override IEnumerator<CommandAutoCompleteEntry> EnumerateTypeEntries(Type type) {
         if (type == typeof(ButtonBinding)) {
             foreach (var button in Enum.GetValues<MButtons>()) {
-                yield return new CommandAutoCompleteEntry { Name = button.ToString(), Extra = "Mouse", IsDone = true };
+                yield return new CommandAutoCompleteEntry {
+                    Name = button.ToString(),
+                    Extra = "Mouse",
+                    IsDone = true,
+                    StorageKey = $"{nameof(TargetQuery.Variant.Get)}_{typeof(MButtons).FullName}",
+                };
             }
             foreach (var key in Enum.GetValues<Keys>()) {
                 if (key is Keys.Left or Keys.Right) {
                     // These keys can't be used, since the mouse buttons already use that name
                     continue;
                 }
-                yield return new CommandAutoCompleteEntry { Name = key.ToString(), Extra = "Key", IsDone = true };
+                yield return new CommandAutoCompleteEntry {
+                    Name = key.ToString(),
+                    Extra = "Key",
+                    IsDone = true,
+                    StorageKey = $"{nameof(TargetQuery.Variant.Get)}_{typeof(Keys).FullName}",
+                };
             }
         }
     }

@@ -247,6 +247,13 @@ public abstract class PopupMenu : Scrollable {
                             h: height - Settings.Instance.Theme.PopupMenuEntrySpacing,
                             Settings.Instance.Theme.CommandPaint.ForegroundColor);
                     }
+                } else if (entry.Suggestion) {
+                    canvas.DrawRect(
+                        x: Settings.Instance.Theme.PopupMenuBorderPadding,
+                        y: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f,
+                        w: iconWidth,
+                        h: height - Settings.Instance.Theme.PopupMenuEntrySpacing,
+                        Settings.Instance.Theme.CommandPaint.ForegroundColor);
                 }
 
                 // Highlight selected entry

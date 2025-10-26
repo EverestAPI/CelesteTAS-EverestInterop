@@ -548,14 +548,11 @@ public static class TargetQuery {
     }
 
     internal static IEnumerator<CommandAutoCompleteEntry> ResolveAutoCompleteEntries(string[] queryArgs, Variant variant, Type[]? targetTypeFilter = null) {
-        Console.WriteLine($"Original Arguments: '{string.Join('.', queryArgs)}'");
         // Process query arguments
         queryArgs = Handlers.Aggregate((IEnumerable<string>) queryArgs, (current, handler) => handler.ProcessQueryArguments(current)).ToArray();
-        Console.WriteLine($"Processed Arguments: '{string.Join('.', queryArgs)}'");
         // Drop last argument for prefix
         string queryPrefix = queryArgs.Length <= 1 ? string.Empty : string.Join('.', Handlers.Aggregate((IEnumerable<string>) queryArgs[..^1], (current, handler) => handler.FormatQueryArguments(current)));
         string memberQueryPrefix = queryArgs.Length <= 1 ? queryPrefix : $"{queryPrefix}.";
-        Console.WriteLine($"Prefix: '{queryPrefix}' // '{memberQueryPrefix}'");
 
         if (variant == Variant.Get && targetTypeFilter != null) {
             foreach (var targetType in targetTypeFilter) {
@@ -600,7 +597,6 @@ public static class TargetQuery {
             yield break;
         }
 
-        Console.WriteLine($"Query: '{string.Join('.', queryArgs)}' => Types: [{string.Join(',', baseTypes)}] // Members: '{string.Join('.', memberArgs)}'");
         foreach (var baseType in baseTypes) {
             // Recurse type
             var currentType = RecurseMemberType(baseType, memberArgs[..^1], variant);
