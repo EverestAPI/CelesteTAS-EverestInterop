@@ -10,6 +10,7 @@ namespace StudioCommunication.Util;
 public class PeekEnumerator<T>(IEnumerable<T> enumerable) : IEnumerator, IDisposable {
     private readonly IEnumerator<T> enumerator = enumerable.GetEnumerator();
     private Queue<T>? queue;
+    private bool finished;
 
     ~PeekEnumerator() => Dispose();
 
@@ -30,10 +31,15 @@ public class PeekEnumerator<T>(IEnumerable<T> enumerable) : IEnumerator, IDispos
     public bool MoveNext() {
         if (queue != null && queue.Count > 0) {
             queue.Dequeue();
+            return !finished || queue.Count > 0;
+        }
+
+        if (enumerator.MoveNext()) {
             return true;
         }
 
-        return enumerator.MoveNext();
+        finished = true;
+        return false;
     }
 
     public void Reset() {
@@ -71,14 +77,17 @@ public class PeekEnumerator<T>(IEnumerable<T> enumerable) : IEnumerator, IDispos
         queue.EnsureCapacity((int)(distance - queue.Count + 1));
 #endif
         do {
+            queue.Enqueue(enumerator.Current);
+
             if (!enumerator.MoveNext()) {
+                finished = true;
+
                 value = default;
                 return false;
             }
-
-            queue.Enqueue(value = enumerator.Current);
         } while (queue.Count <= distance);
 
+        value = enumerator.Current;
         return true;
     }
 }

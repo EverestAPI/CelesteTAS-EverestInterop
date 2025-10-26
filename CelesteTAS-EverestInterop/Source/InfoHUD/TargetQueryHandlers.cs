@@ -408,19 +408,28 @@ internal class EntityQueryHandler : TargetQuery.Handler {
     /// Matches an EntityID specification on the base type
     /// e.g. `BaseType[Room:ID]`
     private static readonly Regex EntityIDRegex = new(@"^(.+)(?:\[(.+):(\d+)\])(.*)$", RegexOptions.Compiled);
+    private static readonly Regex IncompleteEntityIDRegex = new(@"^([\w@]*)\[(.*)$", RegexOptions.Compiled);
 
     /// Matches a component specification on the base type / members
     /// e.g. `BaseTypeOrMember:Component@Assembly`
     private static readonly Regex ComponentRegex = new(@"^([\w@]*):([\w@]*)$", RegexOptions.Compiled);
 
-    private const string SpecialSeparator = "___";
-    private const string EntityIDKey = "EntityIDFilter";
+    private const string EntityIDKey = "___EntityIDFilter___";
+    private const string IncompleteEntityIDKey = "___IncompleteEntityIDFilter___";
     public const string ComponentKey = "___ComponentAccess___";
 
     public override bool CanResolveInstances(Type type) => type.IsSameOrSubclassOf(typeof(Entity));
     public override bool CanResolveValue(Type type) => type == typeof(SubpixelComponent) || type == typeof(SubpixelPosition);
     public override (bool CanEnumerate, bool ShouldOverride) CanEnumerateMemberEntries(Type type, TargetQuery.Variant variant, string queryPrefix, int memberIdx, string[] memberArgs) {
-        if (type == typeof(SubpixelPosition) || (memberIdx > 0 && type.IsSameOrSubclassOf(typeof(Entity)))) {
+        if (type == typeof(SubpixelPosition)) {
+            return (CanEnumerate: true, ShouldOverride: true);
+        }
+        if ((memberIdx > 0 && type.IsSameOrSubclassOf(typeof(Entity)))) {
+            // Check for EntityID filter
+            if (memberArgs[memberIdx - 1] == IncompleteEntityIDKey) {
+                return (CanEnumerate: true, ShouldOverride: true);
+            }
+
             // Search for last component access
             for (int i = memberIdx - 1; i >= 0; i--) {
                 if (memberArgs[i] != ComponentKey) {
@@ -439,12 +448,16 @@ internal class EntityQueryHandler : TargetQuery.Handler {
     }
 
     public override IEnumerable<string> ProcessQueryArguments(IEnumerable<string> queryArgs) {
-        foreach (string arg in queryArgs) {
+        using var enumerator = queryArgs.GetEnumerator();
+        while (enumerator.MoveNext()) {
+            string arg = enumerator.Current;
+
             if (EntityIDRegex.Match(arg) is { Success: true } entityMatch && int.TryParse(entityMatch.Groups[3].Value, out int id)) {
                 yield return entityMatch.Groups[1].Value;
-                yield return $"{EntityIDKey}{SpecialSeparator}{entityMatch.Groups[2].Value}{SpecialSeparator}{id}";
+                yield return EntityIDKey;
+                yield return $"{entityMatch.Groups[2].Value}:{id}";
 
-                if (ComponentRegex.Match(entityMatch.Groups[4].Value) is { Success: true} componentMatch) {
+                if (ComponentRegex.Match(entityMatch.Groups[4].Value) is { Success: true } componentMatch) {
                     if (!string.IsNullOrWhiteSpace(componentMatch.Groups[1].Value)) {
                         yield return TargetQuery.InvalidQueryArgument;
                         yield break;
@@ -454,6 +467,15 @@ internal class EntityQueryHandler : TargetQuery.Handler {
                 } else if (!string.IsNullOrWhiteSpace(entityMatch.Groups[4].Value)) {
                     yield return TargetQuery.InvalidQueryArgument;
                     yield break;
+                }
+            } else if (IncompleteEntityIDRegex.Match(arg) is { Success: true} entityIncompleteMatch) {
+                yield return entityIncompleteMatch.Groups[1].Value;
+                yield return IncompleteEntityIDKey;
+                yield return entityIncompleteMatch.Groups[2].Value;
+
+                if (enumerator.MoveNext()) {
+                    // Only exists for auto-complete, so disallow arguments following this
+                    yield return TargetQuery.InvalidQueryArgument;
                 }
             } else if (ComponentRegex.Match(arg) is { Success: true} componentMatch) {
                 yield return componentMatch.Groups[1].Value;
@@ -467,17 +489,50 @@ internal class EntityQueryHandler : TargetQuery.Handler {
     public override IEnumerable<string> FormatQueryArguments(IEnumerable<string> queryArgs) {
         using var enumerator = new PeekEnumerator<string>(queryArgs);
         foreach (string arg in enumerator) {
-            if (enumerator.TryPeek(out string? next) && next == ComponentKey) {
-                enumerator.MoveNext(); // Drop 'ComponentKey' arg
-                if (enumerator.MoveNext()) {
-                    yield return $"{arg}:{enumerator.Current}";
-                } else {
-                    yield return $"{arg}:";
-                }
-                continue;
+            if (!enumerator.TryPeek(out string? key)) {
+                yield return arg;
+                yield break;
             }
 
-            yield return arg;
+            switch (key) {
+                case ComponentKey:
+                    enumerator.MoveNext(); // Drop 'ComponentKey' arg
+                    if (enumerator.MoveNext()) {
+                        yield return $"{arg}:{enumerator.Current}";
+                    } else {
+                        yield return $"{arg}:";
+                    }
+                    continue;
+
+                case EntityIDKey:
+                    enumerator.MoveNext(); // Drop 'EntityIDKey' arg
+                    enumerator.MoveNext();
+                    if (enumerator.TryPeek(out string? next) && next == ComponentKey) {
+                        string id = enumerator.Current;
+                        enumerator.MoveNext(); // Drop 'ComponentKey' arg
+                        if (enumerator.MoveNext()) {
+                            yield return $"{arg}[{id}]:{enumerator.Current}";
+                        } else {
+                            yield return $"{arg}[{id}]:";
+                        }
+                    } else {
+                        yield return $"{arg}[{enumerator.Current}]";
+                    }
+                    continue;
+
+                case IncompleteEntityIDKey:
+                    enumerator.MoveNext(); // Drop 'IncompleteEntityIDKey' arg
+                    if (enumerator.MoveNext()) {
+                        yield return $"{arg}[{enumerator.Current}";
+                    } else {
+                        yield return $"{arg}[";
+                    }
+                    continue;
+
+                default:
+                    yield return arg;
+                    continue;
+            }
         }
     }
 
@@ -539,22 +594,16 @@ internal class EntityQueryHandler : TargetQuery.Handler {
 
                 return Result<bool, TargetQuery.QueryError>.Ok(true);
             }
-        }
 
-        string[] parts = memberArgs[memberIdx].Split(SpecialSeparator);
-        if (parts.Length == 0) {
-            return Result<bool, TargetQuery.QueryError>.Ok(false);
-        }
-
-        switch (parts[0]) {
-            case EntityIDKey when parts.Length == 3:
-                string key = $"{parts[1]}:{parts[2]}";
+            case EntityIDKey when memberIdx + 1 < memberArgs.Length: {
+                string key = memberArgs[(memberIdx + 1)];
                 for (int valueIdx = 0; valueIdx < values.Length; valueIdx++) {
                     if (values[valueIdx] is not Entity entity || entity.SourceId.Key != key) {
                         values[valueIdx] = TargetQuery.InvalidValue;
                     }
                 }
                 return Result<bool, TargetQuery.QueryError>.Ok(true);
+            }
         }
 
         return Result<bool, TargetQuery.QueryError>.Ok(false);
@@ -637,18 +686,13 @@ internal class EntityQueryHandler : TargetQuery.Handler {
                 targetTypes = [type];
                 return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
             }
-        }
 
-        string[] parts = memberArgs[memberIdx].Split(SpecialSeparator);
-        if (parts.Length == 0) {
-            targetTypes = null!;
-            return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
-        }
+            case EntityIDKey or IncompleteEntityIDKey: {
+                memberIdx += 1; // Skip over special key
 
-        switch (parts[0]) {
-            case EntityIDKey when parts.Length == 3:
                 targetTypes = [type]; // Type stays the same
                 return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+            }
         }
 
         targetTypes = null!;
@@ -789,6 +833,31 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         }
 
         if (type.IsSameOrSubclassOf(typeof(Entity))) {
+            IEnumerable<Entity> entityInstances;
+            if (Engine.Scene.Tracker.Entities.TryGetValue(type, out var entities)) {
+                entityInstances = entities;
+            } else {
+                entityInstances = Engine.Scene.Entities.Where(e => e.GetType().IsSameOrSubclassOf(type));
+            }
+
+            // Check for EntityID filter
+            if (memberArgs[memberIdx - 1] == IncompleteEntityIDKey) {
+                foreach (var entity in entityInstances) {
+                    if (string.IsNullOrEmpty(entity.SourceId.Level)) {
+                        continue;
+                    }
+
+                    yield return new CommandAutoCompleteEntry {
+                        Name = entity.SourceId.Key,
+                        Extra = $"{entity.GetType().CSharpName()}  ({entity.Position.ToSimpleString(decimals: 0)})",
+                        Prefix = queryPrefix,
+                        Suffix = "].",
+                        IsDone = false,
+                    };
+                }
+                yield break;
+            }
+
             // Search for key index (must exist since we validated it in CanEnumerateMemberEntries)
             int componentKeyIndex = memberIdx - 1;
             for (; componentKeyIndex >= 0; componentKeyIndex--) {
@@ -797,12 +866,6 @@ internal class EntityQueryHandler : TargetQuery.Handler {
                 }
             }
 
-            IEnumerable<Entity> entityInstances;
-            if (Engine.Scene.Tracker.Entities.TryGetValue(type, out var entities)) {
-                entityInstances = entities;
-            } else {
-                entityInstances = Engine.Scene.Entities.Where(e => e.GetType().IsSameOrSubclassOf(type));
-            }
             var activeComponents = entityInstances
                 .SelectMany(entity => entity.Components)
                 .Select(component => component.GetType())
