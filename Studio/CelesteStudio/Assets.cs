@@ -80,8 +80,8 @@ public static class Assets {
         const float viewWidth = 32.0f;
         const float viewHeight = 32.0f;
 
-        const float innerRadius = 5.0f;
-        const float outerRadius = 10.0f;
+        const float innerRadius = 7.0f;
+        const float outerRadius = 13.0f;
 
         path.MoveTo(viewWidth / 2.0f, viewHeight / 2.0f - outerRadius);
         for (int i = 1; i < 10; i ++) {
