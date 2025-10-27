@@ -461,7 +461,14 @@ public abstract class PopupMenu : Scrollable {
 
     private int TopVisibleEntry => (int) MathF.Floor(ScrollPosition.Y / EntryHeight);
     private int BottomVisibleEntry => (int) MathF.Ceiling((ScrollPosition.Y + ClientSize.Height) / EntryHeight);
-    private IEnumerable<Entry> VisibleEntries => shownEntries.Skip(TopVisibleEntry).Take(BottomVisibleEntry - TopVisibleEntry);
+    private IEnumerable<Entry> VisibleEntries {
+        get {
+            int top = TopVisibleEntry;
+            int bottom = BottomVisibleEntry;
+
+            return shownEntries.Skip(top).Take(Math.Min(bottom - top + 1, shownEntries.Length - top));
+        }
+    }
 
     public PopupMenu() {
         LoadStorage();
