@@ -176,7 +176,7 @@ public abstract class PopupMenu : Scrollable {
         public override void Draw(SKSurface surface) {
             var canvas = surface.Canvas;
 
-            if (menu.shownEntries.Length == 0) {
+            if (menu.shownEntries.Length == 0 || menu.BottomVisibleEntry <= menu.TopVisibleEntry) {
                 return;
             }
 

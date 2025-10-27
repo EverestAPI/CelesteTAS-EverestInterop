@@ -773,6 +773,9 @@ public sealed class Editor : SkiaDrawable {
         const int menuLPadding = 7;
         const int menuRPadding = 20;
 
+        const float menuMaxHeightFactor = 0.5f;
+        const int menuMinMaxHeight = 250;
+
         float carX = Font.CharWidth() * Document.Caret.Col;
         float carY = Font.LineHeight() * (actualToVisualRows[Document.Caret.Row] + 1);
 
@@ -793,15 +796,18 @@ public sealed class Editor : SkiaDrawable {
             menu.ContentWidth = Math.Min(recommendedWidth, menuMaxW);
         }
         void UpdateMenuV() {
+            int menuMaxHeight = Math.Max(menuMinMaxHeight, (int)(scrollableSize.Height * menuMaxHeightFactor));
+            int menuHeight = Math.Min(menuMaxHeight, menu.ContentHeight);
+
             int menuYBelow = (int)(carY + menuYOffset);
-            int menuYAbove = (int)Math.Max(carY - Font.LineHeight() - menuYOffset - menu.ContentHeight, scrollablePosition.Y + menuYOffset);
+            int menuYAbove = (int)Math.Max(carY - Font.LineHeight() - menuYOffset - menuHeight, scrollablePosition.Y + menuYOffset);
 
             int menuMaxHBelow = (int)(scrollablePosition.Y + scrollableSize.Height - Font.LineHeight() - menuYBelow) - (menu.HScrollBarVisible ? Studio.ScrollBarSize : 0);
             int menuMaxHAbove = (int)(Math.Min(scrollablePosition.Y + scrollableSize.Height, carY) - Font.LineHeight() - menuYOffset - menuYAbove) - (menu.HScrollBarVisible ? Studio.ScrollBarSize : 0);
 
             // Chose above / below caret depending on which provides more height. Default to below
             int menuMaxH;
-            if (Math.Min(menu.ContentHeight, menuMaxHBelow) >= Math.Min(menu.ContentHeight, menuMaxHAbove)) {
+            if (Math.Min(menuHeight, menuMaxHBelow) >= Math.Min(menuHeight, menuMaxHAbove)) {
                 menuY = menuYBelow;
                 menuMaxH = menuMaxHBelow;
             } else {
@@ -809,7 +815,7 @@ public sealed class Editor : SkiaDrawable {
                 menuMaxH = menuMaxHAbove;
             }
 
-            menu.ContentHeight = Math.Min(menu.ContentHeight, menuMaxH);
+            menu.ContentHeight = Math.Min(menuHeight, menuMaxH);
         }
 
         // Calculate required content size
