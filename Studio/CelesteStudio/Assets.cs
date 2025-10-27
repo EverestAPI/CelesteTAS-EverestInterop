@@ -80,6 +80,29 @@ public static class Assets {
         const float viewWidth = 32.0f;
         const float viewHeight = 32.0f;
 
+        const float innerRadius = 5.0f;
+        const float outerRadius = 10.0f;
+
+        path.MoveTo(viewWidth / 2.0f, viewHeight / 2.0f - outerRadius);
+        for (int i = 1; i < 10; i ++) {
+            (float currRadius, float nextRadius) = i % 2 == 0 ? (outerRadius, innerRadius) : (innerRadius, outerRadius);
+            float angle = MathF.Tau / 10.0f * i - MathF.PI / 2.0f;
+
+            (float sin, float cos) = MathF.SinCos(angle);
+            path.LineTo(viewWidth / 2.0f + cos * currRadius, viewHeight / 2.0f + sin * currRadius);
+        }
+        path.Close();
+
+        path.Transform(SKMatrix.CreateScale(1.0f / viewWidth, 1.0f / viewHeight));
+
+        return path;
+    }
+    private static SKPath CreateSuggestionPath() {
+        var path = new SKPath();
+
+        const float viewWidth = 32.0f;
+        const float viewHeight = 32.0f;
+
         const float centerX = viewWidth / 2.0f;
         const float bottomY = viewHeight - 4.0f;
 
@@ -125,29 +148,6 @@ public static class Assets {
         path.RLineTo(-wireCos * wireLength, -wireSin * wireLength);
         path.RMoveTo(wireCos * wireLength * 2.0f, 0.0f);
         path.RLineTo(-wireCos * wireLength, wireSin * wireLength);
-
-        path.Transform(SKMatrix.CreateScale(1.0f / viewWidth, 1.0f / viewHeight));
-
-        return path;
-    }
-    private static SKPath CreateSuggestionPath() {
-        var path = new SKPath();
-
-        const float viewWidth = 32.0f;
-        const float viewHeight = 32.0f;
-
-        const float innerRadius = 5.0f;
-        const float outerRadius = 10.0f;
-
-        path.MoveTo(viewWidth / 2.0f, viewHeight / 2.0f - outerRadius);
-        for (int i = 1; i < 10; i ++) {
-            (float currRadius, float nextRadius) = i % 2 == 0 ? (outerRadius, innerRadius) : (innerRadius, outerRadius);
-            float angle = MathF.Tau / 10.0f * i - MathF.PI / 2.0f;
-
-            (float sin, float cos) = MathF.SinCos(angle);
-            path.LineTo(viewWidth / 2.0f + cos * currRadius, viewHeight / 2.0f + sin * currRadius);
-        }
-        path.Close();
 
         path.Transform(SKMatrix.CreateScale(1.0f / viewWidth, 1.0f / viewHeight));
 

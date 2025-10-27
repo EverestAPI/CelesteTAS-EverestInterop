@@ -198,6 +198,8 @@ public abstract class PopupMenu : Scrollable {
             for (int row = minRow; row <= maxRow; row++) {
                 var entry = menu.shownEntries[row];
 
+                const float normalIconScale = 0.75f;
+                const float hoverIconScale = 0.9f;
                 if (entry.Data is { } data && iconWidth > 0) {
                     var mousePos = PointFromScreen(Mouse.Position);
                     int mouseRow = (int)((mousePos.Y - Settings.Instance.Theme.PopupMenuBorderPadding) / height);
@@ -211,49 +213,54 @@ public abstract class PopupMenu : Scrollable {
                         bool isHoveringIcon = mouseRow == row && mousePos.X > Settings.Instance.Theme.PopupMenuBorderPadding && mousePos.X < Settings.Instance.Theme.PopupMenuBorderPadding + iconWidth;
 
                         var favouritePaint = isHoveringIcon
-                            ? Settings.Instance.Theme.SubpixelIndicatorDotPaint
-                            : isFavourite
-                                ? Settings.Instance.Theme.StatusFgPaint
-                                : Settings.Instance.Theme.CommentBoxPaint;
+                            ? Settings.Instance.Theme.PopupMenuFavouriteHoverPaint
+                            : Settings.Instance.Theme.PopupMenuFavouritePaint;
+                        favouritePaint.Style = isFavourite
+                            ? SKPaintStyle.StrokeAndFill
+                            : SKPaintStyle.Stroke;
 
-                        // TODO: Display filled / outline of heart icon
-                        if (isFavourite) {
-                            canvas.DrawRect(
-                                x: Settings.Instance.Theme.PopupMenuBorderPadding,
-                                y: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f,
-                                w: iconWidth,
-                                h: height - Settings.Instance.Theme.PopupMenuEntrySpacing,
-                                favouritePaint);
-                        } else {
-                            canvas.DrawRect(
-                                x: Settings.Instance.Theme.PopupMenuBorderPadding,
-                                y: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f,
-                                w: iconWidth,
-                                h: height - Settings.Instance.Theme.PopupMenuEntrySpacing,
-                                favouritePaint);
-                        }
+                        float iconScale = isHoveringIcon ? hoverIconScale : normalIconScale;
+
+                        canvas.Save();
+                        canvas.Translate(
+                            dx: Settings.Instance.Theme.PopupMenuBorderPadding + ((1.0f - iconScale) / 2.0f) * menu.IconWidth,
+                            dy: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f + ((1.0f - iconScale) / 2.0f) * menu.IconWidth);
+                        canvas.Scale(menu.IconWidth * iconScale);
+
+                        canvas.DrawPath(Assets.FavouritePath, favouritePaint);
+
+                        canvas.Restore();
                     } else if (isFrequentlyUsed) {
-                        canvas.DrawRect(
-                            x: Settings.Instance.Theme.PopupMenuBorderPadding,
-                            y: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f,
-                            w: iconWidth,
-                            h: height - Settings.Instance.Theme.PopupMenuEntrySpacing,
-                            Settings.Instance.Theme.AnglePaint.ForegroundColor);
+                        canvas.Save();
+                        canvas.Translate(
+                            dx: Settings.Instance.Theme.PopupMenuBorderPadding + ((1.0f - normalIconScale) / 2.0f) * menu.IconWidth,
+                            dy: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f + ((1.0f - normalIconScale) / 2.0f) * menu.IconWidth);
+                        canvas.Scale(menu.IconWidth * normalIconScale);
+
+                        canvas.DrawPath(Assets.FrequentlyUsedPath, Settings.Instance.Theme.PopupMenuFrequentlyUsedPaint);
+
+                        canvas.Restore();
                     } else if (isSuggestion) {
-                        canvas.DrawRect(
-                            x: Settings.Instance.Theme.PopupMenuBorderPadding,
-                            y: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f,
-                            w: iconWidth,
-                            h: height - Settings.Instance.Theme.PopupMenuEntrySpacing,
-                            Settings.Instance.Theme.CommandPaint.ForegroundColor);
+                        canvas.Save();
+                        canvas.Translate(
+                            dx: Settings.Instance.Theme.PopupMenuBorderPadding + ((1.0f - normalIconScale) / 2.0f) * menu.IconWidth,
+                            dy: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f + ((1.0f - normalIconScale) / 2.0f) * menu.IconWidth);
+                        canvas.Scale(menu.IconWidth * normalIconScale);
+
+                        canvas.DrawPath(Assets.SuggestionPath, Settings.Instance.Theme.PopupMenuSuggestionPaint);
+
+                        canvas.Restore();
                     }
                 } else if (entry.Suggestion) {
-                    canvas.DrawRect(
-                        x: Settings.Instance.Theme.PopupMenuBorderPadding,
-                        y: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f,
-                        w: iconWidth,
-                        h: height - Settings.Instance.Theme.PopupMenuEntrySpacing,
-                        Settings.Instance.Theme.CommandPaint.ForegroundColor);
+                    canvas.Save();
+                    canvas.Translate(
+                        dx: Settings.Instance.Theme.PopupMenuBorderPadding + ((1.0f - normalIconScale) / 2.0f) * menu.IconWidth,
+                        dy: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f + ((1.0f - normalIconScale) / 2.0f) * menu.IconWidth);
+                    canvas.Scale(menu.IconWidth * normalIconScale);
+
+                    canvas.DrawPath(Assets.SuggestionPath, Settings.Instance.Theme.PopupMenuSuggestionPaint);
+
+                    canvas.Restore();
                 }
 
                 // Highlight selected entry
