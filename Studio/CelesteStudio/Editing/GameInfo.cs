@@ -149,8 +149,10 @@ public sealed class GameInfo : Panel {
 
     // Re-use builder to avoid allocations
     private readonly StringBuilder frameInfoBuilder = new();
+    /// Current total frame count (including commands if connected to Celeste)
+    private int totalFrameCount = 0;
 
-    public GameInfo() {
+    public GameInfo(Editor editor) {
         Padding = 0;
 
         frameInfo = new InfoLabel(() => frameInfoBuilder.ToString());
@@ -201,8 +203,32 @@ public sealed class GameInfo : Panel {
         };
 
         // Update displayed data
-        Studio.Instance.Editor.TextChanged += (_, _, _) => {
+        editor.TextChanged += (_, insertions, deletions) => {
+            // Adjust total frame count
+            foreach (string deletion in deletions.Values) {
+                if (!ActionLine.TryParse(deletion, out var actionLine)) {
+                    continue;
+                }
+                totalFrameCount -= actionLine.FrameCount;
+            }
+            foreach (string insertion in insertions.Values) {
+                if (!ActionLine.TryParse(insertion, out var actionLine)) {
+                    continue;
+                }
+                totalFrameCount += actionLine.FrameCount;
+            }
+
             RecalcFrameInfo();
+        };
+        editor.PostDocumentChanged += newDocument => {
+            // Calculate total frame count
+            totalFrameCount = 0;
+            foreach (string line in newDocument.Lines) {
+                if (!ActionLine.TryParse(line, out var actionLine)) {
+                    continue;
+                }
+                totalFrameCount += actionLine.FrameCount;
+            }
         };
         CommunicationWrapper.ConnectionChanged += () => {
             RecalcFrameInfo();
@@ -210,7 +236,11 @@ public sealed class GameInfo : Panel {
             subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
             subpixelIndicator.Invalidate();
         };
-        CommunicationWrapper.StateUpdated += (_, _) => {
+        CommunicationWrapper.StateUpdated += (_, state) => {
+            if (!state.FileNeedsReload) {
+                totalFrameCount = state.TotalFrames;
+            }
+
             RecalcFrameInfo();
             gameStatus.Invalidate();
             subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
@@ -296,7 +326,7 @@ public sealed class GameInfo : Panel {
             frameInfoBuilder.Append(CommunicationWrapper.CurrentFrameInTas);
             frameInfoBuilder.Append('/');
         }
-        frameInfoBuilder.Append(Studio.Instance.Editor.TotalFrameCount);
+        frameInfoBuilder.Append(totalFrameCount);
 
         if (!document.Selection.Empty) {
             int minRow = document.Selection.Min.Row;

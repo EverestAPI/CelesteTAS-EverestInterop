@@ -22,12 +22,12 @@ public struct StyleConfig() {
     public AutoRoomIndexing? RoomLabelIndexing { get; set; } = null;
 
     public static void Initialize(Editor editor) {
-        editor.DocumentChanged += (_, document) => {
-            if (string.IsNullOrEmpty(document.FilePath)) {
+        editor.PostDocumentChanged += newDocument => {
+            if (string.IsNullOrEmpty(newDocument.FilePath)) {
                 return;
             }
 
-            Current = Load(Path.Combine(FileRefactor.FindProjectRoot(document.FilePath, returnSubmodules: true), ConfigFile));
+            Current = Load(Path.Combine(FileRefactor.FindProjectRoot(newDocument.FilePath, returnSubmodules: true), ConfigFile));
         };
     }
     public static StyleConfig Load(string configPath) {

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using CelesteStudio.Communication;
+using CelesteStudio.Controls;
 using CelesteStudio.Dialog;
 using CelesteStudio.Dialog.Git;
 using CelesteStudio.Editing;
@@ -194,7 +195,7 @@ public sealed class Studio : Form {
             }
 
             // Needs to be done after the Editor is set up
-            GameInfo = new GameInfo();
+            GameInfo = new GameInfo(Editor);
             gameInfoPanel = new GameInfoPanel();
 
             Content = new StackLayout {
@@ -443,6 +444,7 @@ public sealed class Studio : Form {
     /// Provides all `Bindings` which exist in Studio
     public static IEnumerable<Binding> GetAllStudioBindings() {
         return AllBindings
+            .Concat(TextViewer.AllBindings)
             .Concat(Editor.AllBindings)
             .Concat(ContextActionsMenu.ContextActions.Select(contextAction => contextAction.ToBinding()))
             .Concat(GameInfo.AllBindings)

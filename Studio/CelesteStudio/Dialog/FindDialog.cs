@@ -1,13 +1,13 @@
+using CelesteStudio.Controls;
 using System;
 using System.Collections.Generic;
 using CelesteStudio.Editing;
-using Eto.Drawing;
 using Eto.Forms;
 
 namespace CelesteStudio.Dialog;
 
 public class FindDialog : Eto.Forms.Dialog {
-    private readonly Editor editor;
+    private readonly TextViewer viewer;
 
     private bool needsSearch = true;
     private readonly List<CaretPosition> matches = [];
@@ -15,8 +15,8 @@ public class FindDialog : Eto.Forms.Dialog {
     private readonly TextBox searchQuery;
     private readonly CheckBox matchCase;
 
-    private FindDialog(Editor editor, string initialText) {
-        this.editor = editor;
+    private FindDialog(TextViewer viewer, string initialText) {
+        this.viewer = viewer;
 
         searchQuery = new TextBox { Text = initialText, PlaceholderText = "Search", Width = 200 };
         matchCase = new CheckBox { Text = "Match Case", Checked = Settings.Instance.FindMatchCase };
@@ -77,7 +77,7 @@ public class FindDialog : Eto.Forms.Dialog {
 
         // Check against start of selection
         foreach (var match in matches) {
-            if (match > editor.Document.Caret) {
+            if (match > viewer.Document.Caret) {
                 SelectMatch(match);
                 return;
             }
@@ -98,7 +98,7 @@ public class FindDialog : Eto.Forms.Dialog {
             var match = matches[i];
             var end = new CaretPosition(match.Row, match.Col + searchQuery.Text.Length);
 
-            if (end < editor.Document.Caret) {
+            if (end < viewer.Document.Caret) {
                 SelectMatch(match);
                 return;
             }
@@ -108,11 +108,11 @@ public class FindDialog : Eto.Forms.Dialog {
     }
 
     private void SelectMatch(CaretPosition match) {
-        editor.Document.Caret = match;
-        editor.Document.Selection.Start = match;
-        editor.Document.Selection.End = match with { Col = match.Col + searchQuery.Text.Length };
-        editor.ScrollCaretIntoView(center: true);
-        editor.Invalidate();
+        viewer.Document.Caret = match;
+        viewer.Document.Selection.Start = match;
+        viewer.Document.Selection.End = match with { Col = match.Col + searchQuery.Text.Length };
+        viewer.ScrollCaretIntoView(center: true);
+        viewer.Invalidate();
     }
 
     private void UpdateMatches() {
@@ -125,8 +125,8 @@ public class FindDialog : Eto.Forms.Dialog {
             return;
         }
 
-        for (int row = 0; row < editor.Document.Lines.Count; row++) {
-            string line = editor.Document.Lines[row];
+        for (int row = 0; row < viewer.Document.Lines.Count; row++) {
+            string line = viewer.Document.Lines[row];
             int col = 0;
 
             while (true) {
@@ -145,8 +145,8 @@ public class FindDialog : Eto.Forms.Dialog {
         }
     }
 
-    public static void Show(Editor editor, ref string searchQuery, ref bool matchCase) {
-        var dialog = new FindDialog(editor, searchQuery);
+    public static void Show(TextViewer viewer, ref string searchQuery, ref bool matchCase) {
+        var dialog = new FindDialog(viewer, searchQuery);
         dialog.ShowModal();
 
         searchQuery = dialog.searchQuery.Text;
