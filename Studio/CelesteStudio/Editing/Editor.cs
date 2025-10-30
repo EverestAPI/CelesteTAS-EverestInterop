@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using CelesteStudio.Communication;
 using CelesteStudio.Controls;
 using CelesteStudio.Dialog;
-using CelesteStudio.Editing.AutoCompletion;
 using CelesteStudio.Editing.ContextActions;
 using CelesteStudio.Util;
 using Eto.Drawing;
@@ -19,7 +18,7 @@ using StudioCommunication.Util;
 
 namespace CelesteStudio.Editing;
 
-public sealed class Editor : TextViewer {
+public sealed class Editor : TextEditor {
     private static readonly Regex UncommentedBreakpointRegex = new(@"^\s*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex CommentedBreakpointRegex = new(@"^\s*#\s*\*\*\*", RegexOptions.Compiled);
     private static readonly Regex AllBreakpointRegex = new(@"^\s*#?\s*\*\*\*", RegexOptions.Compiled);
@@ -32,13 +31,6 @@ public sealed class Editor : TextViewer {
     private static InstanceActionBinding<Editor> CreateAction(string identifier, string displayName, Hotkey defaultHotkey, Action<Editor> action)
         => new(identifier, displayName, Binding.Category.Editor, defaultHotkey, action);
 
-    private static readonly InstanceBinding Cut = CreateAction("Editor_Cut", "Cut", Hotkey.KeyCtrl(Keys.X), editor => editor.OnCut());
-    private static readonly InstanceBinding Paste = CreateAction("Editor_Paste", "Paste", Hotkey.KeyCtrl(Keys.V), editor => editor.OnPaste());
-
-    private static readonly InstanceBinding Undo = CreateAction("Editor_Undo", "Undo", Hotkey.KeyCtrl(Keys.Z), editor => editor.OnUndo());
-    private static readonly InstanceBinding Redo = CreateAction("Editor_Redo", "Redo", Hotkey.KeyCtrl(Keys.Z | Keys.Shift), editor => editor.OnRedo());
-
-    private static readonly InstanceBinding DeleteSelectedLines = CreateAction("Editor_DeleteSelectedLines", "Delete Selected Lines", Hotkey.KeyCtrl(Keys.Y), editor => editor.OnDeleteSelectedLines());
     private static readonly InstanceBinding SetFrameCountToStepAmount = CreateAction("Editor_SetFrameCountToStepAmount", "Set Frame Count to current Step Amount", Hotkey.None, editor => editor.OnSetFrameCountToStepAmount());
 
     private static readonly InstanceBinding InsertRemoveBreakpoint = CreateAction("Editor_InsertRemoveBreakpoint", "Insert / Remove Breakpoint", Hotkey.KeyCtrl(Keys.Period), editor => editor.InsertOrRemoveText(UncommentedBreakpointRegex, "***"));
@@ -109,7 +101,6 @@ public sealed class Editor : TextViewer {
 
     #endregion
 
-    private readonly AutoCompleteMenu autoCompleteMenu;
     private readonly ContextActionsMenu contextActionsMenu;
 
     private SyntaxHighlighter highlighter;
@@ -156,6 +147,11 @@ public sealed class Editor : TextViewer {
         FixupText += (_, insertions, _) => {
             FormatLines(insertions.Keys);
             FixInvalidInputs();
+        };
+        CaretMoved += (_, oldCaret, newCaret) => {
+            if (oldCaret.Row != newCaret.Row) {
+                FixInvalidInput(newCaret.Row);
+            }
         };
 
         StyleConfig.Initialize(this);
@@ -452,7 +448,7 @@ public sealed class Editor : TextViewer {
 
     #endregion
 
-    protected override void OnKeyDown(KeyEventArgs e) {
+    protected override void HandleKeyDown(KeyEventArgs e, bool forwardToText) {
         string lineTrimmed = Document.Lines[Document.Caret.Row].TrimStart();
 
         // Send inputs to Celeste if applicable
@@ -505,57 +501,8 @@ public sealed class Editor : TextViewer {
             return;
         }
 
-        if (ActivePopupMenu is { } menu && menu.HandleKeyDown(e)) {
-            e.Handled = true;
-            Recalc();
-            return;
-        }
-
-        if (GetQuickEdits().Any()) {
-            // Cycle
-            if (e.Key == Keys.Tab) {
-                if (e.Shift) {
-                    SelectPrevQuickEdit();
-                } else {
-                    SelectNextQuickEdit();
-                }
-
-                // Don't start a new base auto-complete. Only arguments
-                if (!string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
-                    autoCompleteMenu.Refresh();
-                } else {
-                    ClosePopupMenu();
-                }
-
-                e.Handled = true;
-                Recalc();
-                return;
-            }
-            // Cancel
-            if (e.Key == Keys.Escape) {
-                ClearQuickEdits();
-                Document.Selection.Clear();
-
-                e.Handled = true;
-                Recalc();
-                return;
-            }
-            // Finish + Go to end
-            if (e.Key == Keys.Enter) {
-                SelectQuickEditIndex(GetQuickEdits().Count() - 1);
-                ClearQuickEdits();
-                Document.Caret = Document.Selection.Max;
-                Document.Selection.Clear();
-
-                e.Handled = true;
-                Recalc();
-                return;
-            }
-        }
-
-        // Forward hotkeys from menu entries / snippets
-        if (e.Key != Keys.None && CheckHotkey(Hotkey.FromEvent(e))) {
-            e.Handled = true;
+        base.HandleKeyDown(e, forwardToText: false);
+        if (e.Handled) {
             return;
         }
 
@@ -566,21 +513,8 @@ public sealed class Editor : TextViewer {
         }
 
         switch (e.Key) {
-            case Keys.Backspace:
-                OnDelete(e.HasCommonModifier() ? CaretMovementType.WordLeft : CaretMovementType.CharLeft);
-                e.Handled = true;
-                break;
-            case Keys.Delete:
-                OnDelete(e.HasCommonModifier() ? CaretMovementType.WordRight : CaretMovementType.CharRight);
-                e.Handled = true;
-                break;
-            case Keys.Enter:
-                OnEnter(e.HasCommonModifier(), up: e.Shift);
-                e.Handled = true;
-                break;
-
+            // Adjust frame count
             case Keys.Up when e.HasCommonModifier() && e.Shift:
-                // Adjust frame count
                 if (Document.Selection.Empty) {
                     AdjustNumericValues(Document.Caret.Row, Document.Caret.Row, 1);
                 } else {
@@ -589,28 +523,7 @@ public sealed class Editor : TextViewer {
 
                 e.Handled = true;
                 break;
-            case Keys.Up when e.HasAlternateModifier(): {
-                // Move lines
-                using var __ = Document.Update();
-                if (Document.Caret.Row > 0 && Document.Selection is { Empty: false, Min.Row: > 0 }) {
-                    var line = Document.Lines[Document.Selection.Min.Row - 1];
-                    Document.RemoveLine(Document.Selection.Min.Row - 1);
-                    Document.InsertLine(Document.Selection.Max.Row, line);
-
-                    Document.Selection.Start.Row--;
-                    Document.Selection.End.Row--;
-                    Document.Caret.Row--;
-                } else if (Document.Caret.Row > 0 && Document.Selection.Empty) {
-                    Document.SwapLines(Document.Caret.Row, Document.Caret.Row - 1);
-                    Document.Caret.Row--;
-                }
-
-                e.Handled = true;
-                break;
-            }
-
             case Keys.Down when e.HasCommonModifier() && e.Shift:
-                // Adjust frame count
                 if (Document.Selection.Empty) {
                     AdjustNumericValues(Document.Caret.Row, Document.Caret.Row, -1);
                 } else {
@@ -619,24 +532,6 @@ public sealed class Editor : TextViewer {
 
                 e.Handled = true;
                 break;
-            case Keys.Down when e.HasAlternateModifier(): {
-                // Move lines
-                using var __ = Document.Update();
-                if (Document.Caret.Row < Document.Lines.Count - 1 && !Document.Selection.Empty && Document.Selection.Max.Row < Document.Lines.Count - 1) {
-                    var line = Document.Lines[Document.Selection.Max.Row + 1];
-                    Document.RemoveLine(Document.Selection.Max.Row + 1);
-                    Document.InsertLine(Document.Selection.Min.Row, line);
-
-                    Document.Selection.Start.Row++;
-                    Document.Selection.End.Row++;
-                } else if (Document.Caret.Row < Document.Lines.Count - 1 && Document.Selection.Empty) {
-                    Document.SwapLines(Document.Caret.Row, Document.Caret.Row + 1);
-                    Document.Caret.Row++;
-                }
-
-                e.Handled = true;
-                break;
-            }
 
             // Allow zoom in/out
             case Keys.Equal when e.HasCommonModifier():
@@ -679,22 +574,18 @@ public sealed class Editor : TextViewer {
                 break;
             }
             default:
-                base.OnKeyDown(e);
-                if (e.Handled) {
-                    break;
-                }
-
-                // macOS will make a beep sounds when the event isn't handled
-                // ..that also means OnTextInput won't be called..
-                if (Eto.Platform.Instance.IsMac) {
-                    e.Handled = true;
-                    if (e.KeyChar != char.MaxValue) {
-                        OnTextInput(new TextInputEventArgs(e.KeyChar.ToString()));
+                if (forwardToText) {
+                    // macOS will make a beep sounds when the event isn't handled
+                    // ..that also means OnTextInput won't be called..
+                    if (Eto.Platform.Instance.IsMac) {
+                        e.Handled = true;
+                        if (e.KeyChar != char.MaxValue) {
+                            OnTextInput(new TextInputEventArgs(e.KeyChar.ToString()));
+                        }
+                    } else {
+                        BaseOnKeyDown(e);
                     }
-                } else {
-                    base.OnKeyDown(e);
                 }
-
                 break;
         }
 
@@ -704,10 +595,12 @@ public sealed class Editor : TextViewer {
             return;
         }
 
-        Recalc();
+        if (e.Handled) {
+            Recalc();
+        }
     }
 
-    private bool CheckHotkey(Hotkey hotkey) {
+    protected override bool CheckHotkey(Hotkey hotkey) {
         // Handle global bindings
         foreach (var binding in Studio.GetAllStudioBindings()) {
             foreach (var entry in binding.Entries) {
@@ -920,220 +813,6 @@ public sealed class Editor : TextViewer {
                 }).ToString());
                 break;
             }
-        }
-    }
-
-    #endregion
-
-    #region Quick Edit
-
-    /*
-     * Quick-edits are anchors to switch through with tab and edit
-     * They are used by auto-complete snippets
-     */
-
-    public record struct QuickEditAnchorData {
-        public required int Index;
-        public required string DefaultText;
-    }
-
-    /// Creates an action, which will insert the quick edit when invoked
-    public Action? CreateQuickEditAction(string insert, bool hasArguments) {
-        var quickEdit = QuickEdit.Parse(insert);
-        if (quickEdit == null) {
-            return null;
-        }
-
-        return () => {
-            var oldCaret = Document.Caret;
-
-            using var __ = Document.Update();
-            Document.ReplaceLine(oldCaret.Row, quickEdit.Value.ActualText);
-
-            ClearQuickEdits();
-
-            if (quickEdit.Value.Selections.Length > 0) {
-                for (int i = 0; i < quickEdit.Value.Selections.Length; i++) {
-                    var selection = quickEdit.Value.Selections[i];
-                    var defaultText = quickEdit.Value.ActualText.SplitDocumentLines()[selection.Min.Row][selection.Min.Col..selection.Max.Col];
-
-                    // Quick-edit selections are relative, not absolute
-                    Document.AddAnchor(new Anchor {
-                        Row = selection.Min.Row + oldCaret.Row,
-                        MinCol = selection.Min.Col, MaxCol = selection.Max.Col,
-                        UserData = new QuickEditAnchorData { Index = i, DefaultText = defaultText },
-                        OnRemoved = ClearQuickEdits,
-                    });
-                }
-                SelectQuickEditIndex(0);
-            } else {
-                DesiredVisualCol = Document.Caret.Col = Document.Lines[Document.Caret.Row].Length;
-            }
-
-            // Keep open for arguments (but not a new base auto-complete)
-            if (hasArguments && !string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
-                autoCompleteMenu.Refresh();
-            } else {
-                ClosePopupMenu();
-            }
-        };
-    }
-
-    public void SelectNextQuickEdit() {
-        var quickEdits = GetQuickEdits().ToArray();
-        // Sort linearly inside the document
-        Array.Sort(quickEdits, (a, b) => a.Row == b.Row
-            ? a.MinCol - b.MinCol
-            : a.Row - b.Row);
-
-        // Try to goto the next index
-        if (GetSelectedQuickEdit() is { } currQuickEdit) {
-            SelectQuickEditIndex((currQuickEdit.Index + 1).Mod(quickEdits.Length));
-            return;
-        }
-
-        // We aren't inside a quick-edit and don't have enough info to goto the next index
-        // Therefore just go to the next selection linearly, ignoring the index
-        var quickEdit = quickEdits
-            .FirstOrDefault(anchor => anchor.Row == Document.Caret.Row && anchor.MinCol > Document.Caret.Col ||
-                                      anchor.Row > Document.Caret.Row);
-
-        if (quickEdit == null) {
-            // Wrap to first one
-            SelectQuickEditIndex(0);
-            return;
-        }
-
-        if (Document.Caret.Row != quickEdit.Row) {
-            FixInvalidInput(Document.Caret.Row);
-        }
-
-        Document.Caret.Row = quickEdit.Row;
-        Document.Caret.Col = DesiredVisualCol = quickEdit.MinCol;
-        Document.Selection = new Selection {
-            Start = new CaretPosition(quickEdit.Row, quickEdit.MinCol),
-            End = new CaretPosition(quickEdit.Row, quickEdit.MaxCol),
-        };
-    }
-
-    private void SelectPrevQuickEdit() {
-        var quickEdits = GetQuickEdits().ToArray();
-        // Sort linearly inside the document
-        Array.Sort(quickEdits, (a, b) => a.Row == b.Row
-            ? a.MinCol - b.MinCol
-            : a.Row - b.Row);
-
-        // Try to goto the prev index
-        if (GetSelectedQuickEdit() is { } currQuickEdit) {
-            SelectQuickEditIndex((currQuickEdit.Index - 1).Mod(quickEdits.Length));
-            return;
-        }
-
-        // We aren't inside a quick-edit and don't have enough info to goto the prev index
-        // Therefore just go to the prev selection linearly, ignoring the index
-        var quickEdit = quickEdits
-            .Reverse()
-            .FirstOrDefault(anchor => anchor.Row == Document.Caret.Row && anchor.MinCol < Document.Caret.Col ||
-                                      anchor.Row < Document.Caret.Row);
-
-        if (quickEdit == null) {
-            // Wrap to last one
-            SelectQuickEditIndex(quickEdits.Length - 1);
-            return;
-        }
-
-        if (Document.Caret.Row != quickEdit.Row) {
-            FixInvalidInput(Document.Caret.Row);
-        }
-
-        Document.Caret.Row = quickEdit.Row;
-        Document.Caret.Col = DesiredVisualCol = quickEdit.MinCol;
-        Document.Selection = new Selection {
-            Start = new CaretPosition(quickEdit.Row, quickEdit.MinCol),
-            End = new CaretPosition(quickEdit.Row, quickEdit.MaxCol),
-        };
-    }
-
-    private void SelectQuickEditIndex(int index) {
-        var quickEdit = Document.FindFirstAnchor(anchor => anchor.UserData is QuickEditAnchorData idx && idx.Index == index);
-        if (quickEdit == null) {
-            ClearQuickEdits();
-            return;
-        }
-
-        SelectQuickEdit(quickEdit);
-    }
-    private void SelectQuickEdit(Anchor quickEdit) {
-        if (Document.Caret.Row != quickEdit.Row) {
-            FixInvalidInput(Document.Caret.Row);
-        }
-
-        Document.Caret.Row = quickEdit.Row;
-        Document.Caret.Col = DesiredVisualCol = quickEdit.MinCol;
-        Document.Selection = new Selection {
-            Start = new CaretPosition(quickEdit.Row, quickEdit.MinCol),
-            End = new CaretPosition(quickEdit.Row, quickEdit.MaxCol),
-        };
-    }
-
-    /// Returns the quick-edit which is currently under the caret
-    public QuickEditAnchorData? GetSelectedQuickEdit() =>
-        GetQuickEdits().FirstOrDefault(anchor => anchor.IsPositionInside(Document.Caret))?.UserData as QuickEditAnchorData?;
-
-    public IEnumerable<Anchor> GetQuickEdits() => Document.FindAnchors(anchor => anchor.UserData is QuickEditAnchorData);
-    public void ClearQuickEdits() => Document.RemoveAnchorsIf(anchor => anchor.UserData is QuickEditAnchorData);
-
-    /// Inserts a new quick-edit text at the current row
-    private void InsertQuickEdit(string insert) {
-        if (QuickEdit.Parse(insert) is not { } quickEdit) {
-            return;
-        }
-
-        using var __ = Document.Update();
-
-        var oldCaret = Document.Caret;
-
-        if (!string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
-            // Create a new empty line for the quick-edit to use
-            CollapseSelection();
-
-            if (Settings.Instance.InsertDirection == InsertDirection.Above) {
-                Document.InsertLineAbove(string.Empty);
-                Document.Caret.Row--;
-                oldCaret.Row++;
-            } else if (Settings.Instance.InsertDirection == InsertDirection.Below) {
-                Document.InsertLineBelow(string.Empty);
-                Document.Caret.Row++;
-            }
-        }
-
-        int row = Document.Caret.Row;
-        Document.ReplaceLine(row, quickEdit.ActualText);
-
-        if (oldCaret.Row != Document.Caret.Row) {
-            FixInvalidInput(oldCaret.Row);
-        }
-
-        if (quickEdit.Selections.Length > 0) {
-            for (int i = 0; i < quickEdit.Selections.Length; i++) {
-                var selection = quickEdit.Selections[i];
-                var defaultText = quickEdit.ActualText.SplitDocumentLines()[selection.Min.Row][selection.Min.Col..selection.Max.Col];
-
-                // Quick-edit selections are relative, not absolute
-                Document.AddAnchor(new Anchor {
-                    Row = selection.Min.Row + row,
-                    MinCol = selection.Min.Col, MaxCol = selection.Max.Col,
-                    UserData = new QuickEditAnchorData { Index = i, DefaultText = defaultText },
-                    OnRemoved = ClearQuickEdits,
-                });
-            }
-            SelectQuickEditIndex(0);
-        } else if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.AfterInsert) {
-            int newLines = quickEdit.ActualText.Count(c => c == Document.NewLine);
-            Document.Caret.Row = row + newLines;
-            Document.Caret.Col = DesiredVisualCol = Document.Lines[Document.Caret.Row].Length;
-        } else {
-            Document.Caret = oldCaret;
         }
     }
 
@@ -1513,7 +1192,7 @@ public sealed class Editor : TextViewer {
         autoCompleteMenu.Refresh();
     }
 
-    private void OnDelete(CaretMovementType direction) {
+    protected override void OnDelete(CaretMovementType direction) {
         using var __ = Document.Update();
 
         // To be reused, because C# is stupid
@@ -1682,7 +1361,7 @@ public sealed class Editor : TextViewer {
         DesiredVisualCol = Document.Caret.Col;
     }
 
-    private void OnEnter(bool splitLines, bool up) {
+    protected override void OnEnter(bool splitLines, bool up) {
         using var __ = Document.Update();
 
         string line = Document.Lines[Document.Caret.Row];
@@ -1745,34 +1424,7 @@ public sealed class Editor : TextViewer {
         Document.Selection.Clear();
     }
 
-    private void OnUndo() {
-        Document.Selection.Clear();
-        Document.Undo();
-    }
-
-    private void OnRedo() {
-        Document.Selection.Clear();
-        Document.Redo();
-    }
-
-    private void OnCut() {
-        using var __ = Document.Update();
-
-        OnCopy();
-
-        if (Document.Selection.Empty) {
-            Document.RemoveLine(Document.Caret.Row);
-        } else if (Document.Selection.Min.Col == 0 && Document.Selection.Max.Col == Document.Lines[Document.Selection.Max.Row].Length) {
-            // Remove the lines entirely when the selection is the full range
-            Document.RemoveLines(Document.Selection.Min.Row, Document.Selection.Max.Row);
-            Document.Caret = Document.Selection.Min;
-            Document.Selection.Clear();
-        } else {
-            OnDelete(CaretMovementType.None);
-        }
-    }
-
-    private void OnPaste() {
+    protected override void OnPaste() {
         if (!Clipboard.Instance.ContainsText) {
             return;
         }
@@ -1859,20 +1511,12 @@ public sealed class Editor : TextViewer {
         }
     }
 
-    private void OnDeleteSelectedLines() {
-        using var __ = Document.Update();
-
-        ClosePopupMenu();
-
-        int minRow = Document.Selection.Min.Row;
-        int maxRow = Document.Selection.Max.Row;
-        if (Document.Selection.Empty) {
-            minRow = maxRow = Document.Caret.Row;
-        }
-
-        Document.RemoveLines(minRow, maxRow);
+    protected override void OnGoTo() {
+        Document.Caret.Row = GoToDialog.Show(Document, owner: this, supportLabels: true);
+        Document.Caret = ClampCaret(Document.Caret);
         Document.Selection.Clear();
-        Document.Caret.Row = minRow;
+
+        ScrollCaretIntoView();
     }
 
     private void OnSetFrameCountToStepAmount() {
@@ -2096,29 +1740,6 @@ public sealed class Editor : TextViewer {
         }
     }
 
-    private void InsertLine(string text) {
-        using var __ = Document.Update();
-
-        CollapseSelection();
-
-        if (Settings.Instance.InsertDirection == InsertDirection.Above) {
-            Document.InsertLineAbove(text);
-
-            if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.AfterInsert) {
-                Document.Caret.Row--;
-                Document.Caret.Col = DesiredVisualCol = Document.Lines[Document.Caret.Row].Length;
-            }
-        } else if (Settings.Instance.InsertDirection == InsertDirection.Below) {
-            Document.InsertLineBelow(text);
-
-            if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.AfterInsert) {
-                int newLines = text.Count(c => c == Document.NewLine) + 1;
-                Document.Caret.Row += newLines;
-                Document.Caret.Col = DesiredVisualCol = Document.Lines[Document.Caret.Row].Length;
-            }
-        }
-    }
-
     private void InsertOrRemoveText(Regex regex, string text) {
         using var __ = Document.Update();
 
@@ -2139,29 +1760,6 @@ public sealed class Editor : TextViewer {
         // Otherwise insert new breakpoint
         else {
             InsertLine(text);
-        }
-    }
-
-    /// Deletes text in the specified range, while accounting for collapsed
-    private void RemoveRange(CaretPosition min, CaretPosition max) {
-        if (GetCollapse(min.Row) is { } collapse) {
-            var foldMin = new CaretPosition(collapse.MinRow, 0);
-            var foldMax = new CaretPosition(collapse.MinRow, Document.Lines[collapse.MinRow].Length);
-            if (min <= foldMin && max >= foldMax) {
-                // Entire folding is selected, so just remove it entirely
-                Document.RemoveRange(min, max);
-                return;
-            }
-
-            // Only partially selected, so don't delete the collapsed content, only the stuff around it
-            if (min.Row == max.Row) {
-                Document.RemoveRange(min, max);
-            } else {
-                Document.RemoveRange(min, new CaretPosition(collapse.MinRow, Document.Lines[collapse.MinRow].Length));
-                Document.RemoveRange(new CaretPosition(collapse.MaxRow, Document.Lines[collapse.MaxRow].Length), max);
-            }
-        } else {
-            Document.RemoveRange(min, max);
         }
     }
 
@@ -2296,10 +1894,6 @@ public sealed class Editor : TextViewer {
         var oldActionLine = ActionLine.Parse(Document.Lines[oldCaret.Row]);
 
         base.MoveCaretTo(newCaret, updateSelection);
-
-        if (oldCaret.Row != Document.Caret.Row) {
-            FixInvalidInput(oldCaret.Row);
-        }
 
         // When going from a non-action-line to an action-line, snap the caret to the frame count
         if (oldActionLine == null && TryParseAndFormatActionLine(newCaret.Row, out _)) {

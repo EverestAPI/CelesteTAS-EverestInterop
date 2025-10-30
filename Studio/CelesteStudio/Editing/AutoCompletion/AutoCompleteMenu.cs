@@ -1,4 +1,5 @@
 using CelesteStudio.Communication;
+using CelesteStudio.Controls;
 using Eto.Forms;
 using StudioCommunication;
 using StudioCommunication.Util;
@@ -12,7 +13,7 @@ namespace CelesteStudio.Editing.AutoCompletion;
 
 public class AutoCompleteMenu : PopupMenu {
 
-    private readonly Editor editor;
+    private readonly TextEditor editor;
     private Document Document => editor.Document;
 
     /// Auto-complete entries for commands and snippets
@@ -23,7 +24,7 @@ public class AutoCompleteMenu : PopupMenu {
     /// Index of the currently fetched entries, to prevent flashing "Loading..." while typing
     private int currArgumentIndex = -1;
 
-    public AutoCompleteMenu(Editor editor) {
+    public AutoCompleteMenu(TextEditor editor) {
         this.editor = editor;
 
         // Commands

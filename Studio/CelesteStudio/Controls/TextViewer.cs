@@ -15,6 +15,10 @@ using WrapEntry = (int StartOffset, (string Line, int Index)[] Lines);
 namespace CelesteStudio.Controls;
 
 public class TextViewer : SkiaDrawable {
+    /// Allows applying fixes / formatting to text changes, after the caret has moved away
+    public event Action<Document, CaretPosition, CaretPosition> CaretMoved = (_, _, _) => { };
+    public void OnCaretMoved(CaretPosition oldPosition, CaretPosition newPosition) => CaretMoved(document!, oldPosition, newPosition);
+
     /// Reports insertions and deletions of the underlying document
     public event Action<Document, Dictionary<int, string>, Dictionary<int, string>> TextChanged = (_, _, _) => { };
     /// Allows applying fixes / formatting to text changes, before being commited to the undo-stack
@@ -457,6 +461,7 @@ public class TextViewer : SkiaDrawable {
         Invalidate();
     }
 
+    protected void BaseOnKeyDown(KeyEventArgs e) => base.OnKeyDown(e);
     protected override void OnKeyDown(KeyEventArgs e) {
         var mods = e.Modifiers;
         if (e.Key is Keys.LeftShift or Keys.RightShift) mods |= Keys.Shift;
@@ -468,17 +473,9 @@ public class TextViewer : SkiaDrawable {
         Console.WriteLine($"KEY: {e}");
 
         // Handle bindings
-        var hotkey = Hotkey.FromEvent(e);
-        foreach (var binding in AllBindings) {
-            foreach (var entry in binding.InstanceEntries) {
-                if (Settings.Instance.KeyBindings.GetValueOrDefault(entry.Identifier, entry.DefaultHotkey) == hotkey && entry.Action(this)) {
-                    Recalc();
-                    ScrollCaretIntoView();
-
-                    e.Handled = true;
-                    return;
-                }
-            }
+        if (e.Key != Keys.None && CheckHotkey(Hotkey.FromEvent(e))) {
+            e.Handled = true;
+            return;
         }
 
         switch (e.Key) {
@@ -516,7 +513,25 @@ public class TextViewer : SkiaDrawable {
                 break;
         }
 
-        Recalc();
+        if (e.Handled) {
+            Recalc();
+        }
+    }
+
+    protected virtual bool CheckHotkey(Hotkey hotkey) {
+        // Handle bindings
+        foreach (var binding in AllBindings) {
+            foreach (var entry in binding.InstanceEntries) {
+                if (Settings.Instance.KeyBindings.GetValueOrDefault(entry.Identifier, entry.DefaultHotkey) == hotkey && entry.Action(this)) {
+                    Recalc();
+                    ScrollCaretIntoView();
+
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     #region Visual Rows
@@ -645,8 +660,8 @@ public class TextViewer : SkiaDrawable {
         FindDialog.Show(this, ref lastFindQuery, ref lastFindMatchCase);
     }
 
-    private void OnGoTo() {
-        Document.Caret.Row = GoToDialog.Show(Document);
+    protected virtual void OnGoTo() {
+        Document.Caret.Row = GoToDialog.Show(Document, owner: this);
         Document.Caret = ClampCaret(Document.Caret);
         Document.Selection.Clear();
 
@@ -790,6 +805,8 @@ public class TextViewer : SkiaDrawable {
         } else {
             Document.Selection.Start = Document.Selection.End = Document.Caret;
         }
+
+        OnCaretMoved(oldCaret, Document.Caret);
 
         ClosePopupMenu();
     }

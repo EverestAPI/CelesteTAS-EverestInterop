@@ -48,7 +48,7 @@ public class FindDialog : Eto.Forms.Dialog {
         KeyDown += HandleKeyDown;
         searchQuery.KeyDown += HandleKeyDown;
 
-        Studio.RegisterDialog(this);
+        Studio.RegisterDialog(this, viewer.ParentWindow);
 
         return;
 
@@ -147,7 +147,7 @@ public class FindDialog : Eto.Forms.Dialog {
 
     public static void Show(TextViewer viewer, ref string searchQuery, ref bool matchCase) {
         var dialog = new FindDialog(viewer, searchQuery);
-        dialog.ShowModal();
+        dialog.ShowModal(viewer);
 
         searchQuery = dialog.searchQuery.Text;
         matchCase = dialog.matchCase.Checked == true;
