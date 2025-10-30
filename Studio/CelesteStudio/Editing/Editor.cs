@@ -29,71 +29,76 @@ public sealed class Editor : TextViewer {
 
     #region Bindings
 
-    private static readonly ActionBinding Cut = CreateAction("Editor_Cut", "Cut", Hotkey.KeyCtrl(Keys.X), editor => editor.OnCut());
-    private static readonly ActionBinding Paste = CreateAction("Editor_Paste", "Paste", Hotkey.KeyCtrl(Keys.V), editor => editor.OnPaste());
+    private static InstanceActionBinding<Editor> CreateAction(string identifier, string displayName, Hotkey defaultHotkey, Action<Editor> action)
+        => new(identifier, displayName, Binding.Category.Editor, defaultHotkey, action);
 
-    private static readonly ActionBinding Undo = CreateAction("Editor_Undo", "Undo", Hotkey.KeyCtrl(Keys.Z), editor => editor.OnUndo());
-    private static readonly ActionBinding Redo = CreateAction("Editor_Redo", "Redo", Hotkey.KeyCtrl(Keys.Z | Keys.Shift), editor => editor.OnRedo());
+    private static readonly InstanceBinding Cut = CreateAction("Editor_Cut", "Cut", Hotkey.KeyCtrl(Keys.X), editor => editor.OnCut());
+    private static readonly InstanceBinding Paste = CreateAction("Editor_Paste", "Paste", Hotkey.KeyCtrl(Keys.V), editor => editor.OnPaste());
 
-    private static readonly ActionBinding DeleteSelectedLines = CreateAction("Editor_DeleteSelectedLines", "Delete Selected Lines", Hotkey.KeyCtrl(Keys.Y), editor => editor.OnDeleteSelectedLines());
-    private static readonly ActionBinding SetFrameCountToStepAmount = CreateAction("Editor_SetFrameCountToStepAmount", "Set Frame Count to current Step Amount", Hotkey.None, editor => editor.OnSetFrameCountToStepAmount());
+    private static readonly InstanceBinding Undo = CreateAction("Editor_Undo", "Undo", Hotkey.KeyCtrl(Keys.Z), editor => editor.OnUndo());
+    private static readonly InstanceBinding Redo = CreateAction("Editor_Redo", "Redo", Hotkey.KeyCtrl(Keys.Z | Keys.Shift), editor => editor.OnRedo());
 
-    private static readonly ActionBinding InsertRemoveBreakpoint = CreateAction("Editor_InsertRemoveBreakpoint", "Insert / Remove Breakpoint", Hotkey.KeyCtrl(Keys.Period), editor => editor.InsertOrRemoveText(UncommentedBreakpointRegex, "***"));
-    private static readonly ActionBinding InsertRemoveSavestateBreakpoint = CreateAction("Editor_InsertRemoveSavestateBreakpoint", "Insert / Remove Savestate Breakpoint", Hotkey.KeyCtrl(Keys.Period | Keys.Shift), editor => editor.InsertOrRemoveText(UncommentedBreakpointRegex, "***S"));
-    private static readonly ActionBinding RemoveAllUncommentedBreakpoints = CreateAction("Editor_RemoveAllUncommentedBreakpoints", "Remove All Uncommented Breakpoints", Hotkey.KeyCtrl(Keys.P), editor => editor.RemoveLinesMatching(UncommentedBreakpointRegex));
-    private static readonly ActionBinding RemoveAllBreakpoints = CreateAction("Editor_RemoveAllBreakpoints", "Remove All Breakpoints", Hotkey.KeyCtrl(Keys.P | Keys.Shift), editor => editor.RemoveLinesMatching(AllBreakpointRegex));
-    private static readonly ActionBinding ToggleCommentBreakpoints = CreateAction("Editor_CommentUncommentAllBreakpoints", "Comment / Uncomment All Breakpoints", Hotkey.KeyCtrl(Keys.P | Application.Instance.AlternateModifier), editor => editor.OnToggleCommentBreakpoints());
-    private static readonly ActionBinding ToggleCommentInputs = CreateAction("Editor_CommentUncommentInputs", "Comment / Uncomment Inputs", Hotkey.KeyCtrl(Keys.K), editor => editor.OnToggleCommentInputs());
-    private static readonly ActionBinding ToggleCommentText = CreateAction("Editor_CommentUncommentText", "Comment / Uncomment Text", Hotkey.KeyCtrl(Keys.K | Keys.Shift), editor => editor.OnToggleCommentText());
+    private static readonly InstanceBinding DeleteSelectedLines = CreateAction("Editor_DeleteSelectedLines", "Delete Selected Lines", Hotkey.KeyCtrl(Keys.Y), editor => editor.OnDeleteSelectedLines());
+    private static readonly InstanceBinding SetFrameCountToStepAmount = CreateAction("Editor_SetFrameCountToStepAmount", "Set Frame Count to current Step Amount", Hotkey.None, editor => editor.OnSetFrameCountToStepAmount());
 
-    private static readonly ActionBinding InsertRoomName = CreateAction("Editor_InsertRoomName", "Insert current Room Name", Hotkey.KeyCtrl(Keys.R), editor => editor.InsertLine($"#lvl_{CommunicationWrapper.LevelName.Trim()}"));
-    private static readonly ActionBinding InsertChapterTime = CreateAction("Editor_InsertCurrentChapterTime", "Insert current ChapterTime", Hotkey.KeyCtrl(Keys.T), editor => editor.InsertLine($"#{CommunicationWrapper.ChapterTime}"));
-    private static readonly ActionBinding RemoveAllTimestamps = CreateAction("Editor_RemoveAllTimestamps", "Remove All Timestamps", Hotkey.KeyCtrl(Keys.T | Keys.Shift), editor => editor.RemoveLinesMatching(TimestampRegex));
+    private static readonly InstanceBinding InsertRemoveBreakpoint = CreateAction("Editor_InsertRemoveBreakpoint", "Insert / Remove Breakpoint", Hotkey.KeyCtrl(Keys.Period), editor => editor.InsertOrRemoveText(UncommentedBreakpointRegex, "***"));
+    private static readonly InstanceBinding InsertRemoveSavestateBreakpoint = CreateAction("Editor_InsertRemoveSavestateBreakpoint", "Insert / Remove Savestate Breakpoint", Hotkey.KeyCtrl(Keys.Period | Keys.Shift), editor => editor.InsertOrRemoveText(UncommentedBreakpointRegex, "***S"));
+    private static readonly InstanceBinding RemoveAllUncommentedBreakpoints = CreateAction("Editor_RemoveAllUncommentedBreakpoints", "Remove All Uncommented Breakpoints", Hotkey.KeyCtrl(Keys.P), editor => editor.RemoveLinesMatching(UncommentedBreakpointRegex));
+    private static readonly InstanceBinding RemoveAllBreakpoints = CreateAction("Editor_RemoveAllBreakpoints", "Remove All Breakpoints", Hotkey.KeyCtrl(Keys.P | Keys.Shift), editor => editor.RemoveLinesMatching(AllBreakpointRegex));
+    private static readonly InstanceBinding ToggleCommentBreakpoints = CreateAction("Editor_CommentUncommentAllBreakpoints", "Comment / Uncomment All Breakpoints", Hotkey.KeyCtrl(Keys.P | Application.Instance.AlternateModifier), editor => editor.OnToggleCommentBreakpoints());
+    private static readonly InstanceBinding ToggleCommentInputs = CreateAction("Editor_CommentUncommentInputs", "Comment / Uncomment Inputs", Hotkey.KeyCtrl(Keys.K), editor => editor.OnToggleCommentInputs());
+    private static readonly InstanceBinding ToggleCommentText = CreateAction("Editor_CommentUncommentText", "Comment / Uncomment Text", Hotkey.KeyCtrl(Keys.K | Keys.Shift), editor => editor.OnToggleCommentText());
 
-    private static readonly ActionBinding InsertPlayerPosition = CreateAction("Editor_InsertCurrentPosition", "Insert current Player Position", Hotkey.None, editor => {
+    private static readonly InstanceBinding InsertRoomName = CreateAction("Editor_InsertRoomName", "Insert current Room Name", Hotkey.KeyCtrl(Keys.R), editor => editor.InsertLine($"#lvl_{CommunicationWrapper.LevelName.Trim()}"));
+    private static readonly InstanceBinding InsertChapterTime = CreateAction("Editor_InsertCurrentChapterTime", "Insert current ChapterTime", Hotkey.KeyCtrl(Keys.T), editor => editor.InsertLine($"#{CommunicationWrapper.ChapterTime}"));
+    private static readonly InstanceBinding RemoveAllTimestamps = CreateAction("Editor_RemoveAllTimestamps", "Remove All Timestamps", Hotkey.KeyCtrl(Keys.T | Keys.Shift), editor => editor.RemoveLinesMatching(TimestampRegex));
+
+    private static readonly InstanceBinding InsertPlayerPosition = CreateAction("Editor_InsertCurrentPosition", "Insert current Player Position", Hotkey.None, editor => {
         string xPos = (CommunicationWrapper.PlayerPosition.X + CommunicationWrapper.PlayerPositionRemainder.X).ToFormattedString(CommunicationWrapper.GameSettings.PositionDecimals);
         string yPos = (CommunicationWrapper.PlayerPosition.Y + CommunicationWrapper.PlayerPositionRemainder.Y).ToFormattedString(CommunicationWrapper.GameSettings.PositionDecimals);
         editor.InsertLine($"# Pos: {xPos}, {yPos}");
     });
-    private static readonly ActionBinding InsertPlayerSpeed = CreateAction("Editor_InsertCurrentSpeed", "Insert current Player Speed", Hotkey.None, editor => {
+    private static readonly InstanceBinding InsertPlayerSpeed = CreateAction("Editor_InsertCurrentSpeed", "Insert current Player Speed", Hotkey.None, editor => {
         string xSpeed = CommunicationWrapper.PlayerSpeed.X.ToFormattedString(CommunicationWrapper.GameSettings.SpeedDecimals);
         string ySpeed = CommunicationWrapper.PlayerSpeed.Y.ToFormattedString(CommunicationWrapper.GameSettings.SpeedDecimals);
         editor.InsertLine($"# Speed: {xSpeed}, {ySpeed}");
     });
-    private static readonly ActionBinding InsertModInfo = CreateAction("Editor_InsertModInfo", "Insert Mod Info", Hotkey.None, editor => {
+    private static readonly InstanceBinding InsertModInfo = CreateAction("Editor_InsertModInfo", "Insert Mod Info", Hotkey.None, editor => {
         if (CommunicationWrapper.GetModInfo() is var modInfo && !string.IsNullOrWhiteSpace(modInfo)) {
             editor.InsertLine(modInfo);
         }
     });
-    private static readonly ActionBinding InsertConsoleLoadCommand = CreateAction("Editor_InsertConsoleLoadCommand", "Insert Exact \"console load\" Command", Hotkey.KeyCtrl(Keys.R | Keys.Shift), editor => {
+    private static readonly InstanceBinding InsertConsoleLoadCommand = CreateAction("Editor_InsertConsoleLoadCommand", "Insert Exact \"console load\" Command", Hotkey.KeyCtrl(Keys.R | Keys.Shift), editor => {
         if (CommunicationWrapper.GetConsoleCommand(simple: false) is var command && !string.IsNullOrWhiteSpace(command)) {
             editor.InsertLine(command);
         }
     });
-    private static readonly ActionBinding InsertSimpleConsoleLoadCommand = CreateAction("Editor_InsertSimpleConsoleLoadCommand", "Insert Simple \"console load\" Command", Hotkey.KeyCtrl(Keys.R | Application.Instance.AlternateModifier), editor => {
+    private static readonly InstanceBinding InsertSimpleConsoleLoadCommand = CreateAction("Editor_InsertSimpleConsoleLoadCommand", "Insert Simple \"console load\" Command", Hotkey.KeyCtrl(Keys.R | Application.Instance.AlternateModifier), editor => {
         if (CommunicationWrapper.GetConsoleCommand(simple: true) is var command && !string.IsNullOrWhiteSpace(command)) {
             editor.InsertLine(command);
         }
     });
 
-    private static readonly ActionBinding OpenAutoCompleteMenu = CreateAction("Editor_OpenAutoCompleteMenu", "Open Auto-Complete Menu...", Hotkey.KeyCtrl(Keys.Space), editor => {
+    private static readonly InstanceBinding OpenAutoCompleteMenu = CreateAction("Editor_OpenAutoCompleteMenu", "Open Auto-Complete Menu...", Hotkey.KeyCtrl(Keys.Space), editor => {
         editor.autoCompleteMenu.Refresh();
         editor.Recalc();
     });
-    private static readonly ActionBinding OpenContextActionsMenu = CreateAction("Editor_OpenContextActionsMenu", "Open Context-Actions Menu...", Hotkey.KeyAlt(Keys.Enter), editor => {
+    private static readonly InstanceBinding OpenContextActionsMenu = CreateAction("Editor_OpenContextActionsMenu", "Open Context-Actions Menu...", Hotkey.KeyAlt(Keys.Enter), editor => {
         editor.contextActionsMenu.Refresh();
         editor.Recalc();
     });
 
-    private static readonly ConditionalActionBinding FrameOperationAdd = new("Editor_FrameOperationAdd", "Add", Binding.Category.FrameOperations, Hotkey.Char('+'), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Add), preferTextHotkey: true);
-    private static readonly ConditionalActionBinding FrameOperationSub = new("Editor_FrameOperationSub", "Subtract", Binding.Category.FrameOperations, Hotkey.Char('-'), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Sub), preferTextHotkey: true);
-    private static readonly ConditionalActionBinding FrameOperationMul = new("Editor_FrameOperationMul", "Multiply", Binding.Category.FrameOperations, Hotkey.Char('*'), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Mul), preferTextHotkey: true);
-    private static readonly ConditionalActionBinding FrameOperationDiv = new("Editor_FrameOperationDiv", "Divide", Binding.Category.FrameOperations, Hotkey.Char('/'), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Div), preferTextHotkey: true);
-    private static readonly ConditionalActionBinding FrameOperationSet = new("Editor_FrameOperationSet", "Set", Binding.Category.FrameOperations, Hotkey.Char('='), () => Studio.Instance.Editor.OnFrameOperation(CalculationOperator.Set), preferTextHotkey: true);
+    private static readonly ConditionalInstanceActionBinding<Editor> FrameOperationAdd = new("Editor_FrameOperationAdd", "Add", Binding.Category.FrameOperations, Hotkey.Char('+'), editor => editor.OnFrameOperation(CalculationOperator.Add), preferTextHotkey: true);
+    private static readonly ConditionalInstanceActionBinding<Editor> FrameOperationSub = new("Editor_FrameOperationSub", "Subtract", Binding.Category.FrameOperations, Hotkey.Char('-'), editor => editor.OnFrameOperation(CalculationOperator.Sub), preferTextHotkey: true);
+    private static readonly ConditionalInstanceActionBinding<Editor> FrameOperationMul = new("Editor_FrameOperationMul", "Multiply", Binding.Category.FrameOperations, Hotkey.Char('*'), editor => editor.OnFrameOperation(CalculationOperator.Mul), preferTextHotkey: true);
+    private static readonly ConditionalInstanceActionBinding<Editor> FrameOperationDiv = new("Editor_FrameOperationDiv", "Divide", Binding.Category.FrameOperations, Hotkey.Char('/'), editor => editor.OnFrameOperation(CalculationOperator.Div), preferTextHotkey: true);
+    private static readonly ConditionalInstanceActionBinding<Editor> FrameOperationSet = new("Editor_FrameOperationSet", "Set", Binding.Category.FrameOperations, Hotkey.Char('='), editor => editor.OnFrameOperation(CalculationOperator.Set), preferTextHotkey: true);
 
-    public static new readonly Binding[] AllBindings = [
-        Cut, Paste,
+    public static new readonly InstanceBinding[] AllBindings = [
+        Cut, Copy, Paste,
         Undo, Redo,
+        SelectAll, SelectBlock,
+        Find, GoTo, ToggleFolding,
         DeleteSelectedLines, SetFrameCountToStepAmount,
         InsertRemoveBreakpoint, InsertRemoveSavestateBreakpoint, RemoveAllUncommentedBreakpoints, RemoveAllBreakpoints, ToggleCommentBreakpoints, ToggleCommentInputs, ToggleCommentText,
         InsertRoomName, InsertChapterTime, RemoveAllTimestamps,
@@ -245,44 +250,44 @@ public sealed class Editor : TextViewer {
 
         ContextMenu CreateMenu() => new() {
             Items = {
-                Cut,
-                Copy,
-                Paste,
+                Cut.CreateItem(this),
+                Copy.CreateItem(this),
+                Paste.CreateItem(this),
                 new SeparatorMenuItem(),
-                Undo,
-                Redo,
+                Undo.CreateItem(this),
+                Redo.CreateItem(this),
                 new SeparatorMenuItem(),
-                SelectAll,
-                SelectBlock,
+                SelectAll.CreateItem(this),
+                SelectBlock.CreateItem(this),
                 new SeparatorMenuItem(),
-                Find,
-                GoTo,
-                ToggleFolding,
+                Find.CreateItem(this),
+                GoTo.CreateItem(this),
+                ToggleFolding.CreateItem(this),
                 new SeparatorMenuItem(),
-                DeleteSelectedLines,
-                SetFrameCountToStepAmount,
+                DeleteSelectedLines.CreateItem(this),
+                SetFrameCountToStepAmount.CreateItem(this),
                 new SeparatorMenuItem(),
-                InsertRemoveBreakpoint,
-                InsertRemoveSavestateBreakpoint,
-                RemoveAllUncommentedBreakpoints,
-                RemoveAllBreakpoints,
-                ToggleCommentBreakpoints,
-                ToggleCommentInputs,
-                ToggleCommentText,
+                InsertRemoveBreakpoint.CreateItem(this),
+                InsertRemoveSavestateBreakpoint.CreateItem(this),
+                RemoveAllUncommentedBreakpoints.CreateItem(this),
+                RemoveAllBreakpoints.CreateItem(this),
+                ToggleCommentBreakpoints.CreateItem(this),
+                ToggleCommentInputs.CreateItem(this),
+                ToggleCommentText.CreateItem(this),
                 new SeparatorMenuItem(),
-                InsertRoomName,
-                InsertChapterTime,
-                RemoveAllTimestamps,
+                InsertRoomName.CreateItem(this),
+                InsertChapterTime.CreateItem(this),
+                RemoveAllTimestamps.CreateItem(this),
                 new SeparatorMenuItem(),
-                InsertPlayerPosition,
-                InsertPlayerSpeed,
-                InsertModInfo,
-                InsertConsoleLoadCommand,
-                InsertSimpleConsoleLoadCommand,
+                InsertPlayerPosition.CreateItem(this),
+                InsertPlayerSpeed.CreateItem(this),
+                InsertModInfo.CreateItem(this),
+                InsertConsoleLoadCommand.CreateItem(this),
+                InsertSimpleConsoleLoadCommand.CreateItem(this),
                 commandsMenu,
                 new SeparatorMenuItem(),
-                OpenAutoCompleteMenu,
-                OpenContextActionsMenu,
+                OpenAutoCompleteMenu.CreateItem(this),
+                OpenContextActionsMenu.CreateItem(this),
             }
         };
 
@@ -448,13 +453,6 @@ public sealed class Editor : TextViewer {
     #endregion
 
     protected override void OnKeyDown(KeyEventArgs e) {
-        var mods = e.Modifiers;
-        if (e.Key is Keys.LeftShift or Keys.RightShift) mods |= Keys.Shift;
-        if (e.Key is Keys.LeftControl or Keys.RightControl) mods |= Keys.Control;
-        if (e.Key is Keys.LeftAlt or Keys.RightAlt) mods |= Keys.Alt;
-        if (e.Key is Keys.LeftApplication or Keys.RightApplication) mods |= Keys.Application;
-        UpdateMouseCursor(PointFromScreen(Mouse.Position), mods);
-
         string lineTrimmed = Document.Lines[Document.Caret.Row].TrimStart();
 
         // Send inputs to Celeste if applicable
@@ -580,89 +578,65 @@ public sealed class Editor : TextViewer {
                 OnEnter(e.HasCommonModifier(), up: e.Shift);
                 e.Handled = true;
                 break;
-            case Keys.Left when !e.HasAlternateModifier(): // Prevent Alt+Left from getting handled
-                MoveCaret(e.HasCommonModifier() ? CaretMovementType.WordLeft : CaretMovementType.CharLeft, updateSelection: e.Shift);
-                e.Handled = true;
-                break;
-            case Keys.Right:
-                MoveCaret(e.HasCommonModifier() ? CaretMovementType.WordRight : CaretMovementType.CharRight, updateSelection: e.Shift);
-                e.Handled = true;
-                break;
-            case Keys.Up:
-                if (e.HasCommonModifier() && e.Shift) {
-                    // Adjust frame count
-                    if (Document.Selection.Empty) {
-                        AdjustNumericValues(Document.Caret.Row, Document.Caret.Row, 1);
-                    } else {
-                        AdjustNumericValues(Document.Selection.Start.Row, Document.Selection.End.Row, 1);
-                    }
-                } else if (e.HasAlternateModifier()) {
-                    // Move lines
-                    using (Document.Update()) {
-                        if (Document.Caret.Row > 0 && Document.Selection is { Empty: false, Min.Row: > 0 }) {
-                            var line = Document.Lines[Document.Selection.Min.Row - 1];
-                            Document.RemoveLine(Document.Selection.Min.Row - 1);
-                            Document.InsertLine(Document.Selection.Max.Row, line);
 
-                            Document.Selection.Start.Row--;
-                            Document.Selection.End.Row--;
-                            Document.Caret.Row--;
-                        } else if (Document.Caret.Row > 0 && Document.Selection.Empty) {
-                            Document.SwapLines(Document.Caret.Row, Document.Caret.Row - 1);
-                            Document.Caret.Row--;
-                        }
-                    }
+            case Keys.Up when e.HasCommonModifier() && e.Shift:
+                // Adjust frame count
+                if (Document.Selection.Empty) {
+                    AdjustNumericValues(Document.Caret.Row, Document.Caret.Row, 1);
                 } else {
-                    MoveCaret(e.HasCommonModifier() ? CaretMovementType.LabelUp : CaretMovementType.LineUp, updateSelection: e.Shift);
+                    AdjustNumericValues(Document.Selection.Start.Row, Document.Selection.End.Row, 1);
                 }
 
                 e.Handled = true;
                 break;
-            case Keys.Down:
-                if (e.HasCommonModifier() && e.Shift) {
-                    // Adjust frame count
-                    if (Document.Selection.Empty) {
-                        AdjustNumericValues(Document.Caret.Row, Document.Caret.Row, -1);
-                    } else {
-                        AdjustNumericValues(Document.Selection.Start.Row, Document.Selection.End.Row, -1);
-                    }
-                } else if (e.HasAlternateModifier()) {
-                    // Move lines
-                    using (Document.Update()) {
-                        if (Document.Caret.Row < Document.Lines.Count - 1 && !Document.Selection.Empty && Document.Selection.Max.Row < Document.Lines.Count - 1) {
-                            var line = Document.Lines[Document.Selection.Max.Row + 1];
-                            Document.RemoveLine(Document.Selection.Max.Row + 1);
-                            Document.InsertLine(Document.Selection.Min.Row, line);
+            case Keys.Up when e.HasAlternateModifier(): {
+                // Move lines
+                using var __ = Document.Update();
+                if (Document.Caret.Row > 0 && Document.Selection is { Empty: false, Min.Row: > 0 }) {
+                    var line = Document.Lines[Document.Selection.Min.Row - 1];
+                    Document.RemoveLine(Document.Selection.Min.Row - 1);
+                    Document.InsertLine(Document.Selection.Max.Row, line);
 
-                            Document.Selection.Start.Row++;
-                            Document.Selection.End.Row++;
-                        } else if (Document.Caret.Row < Document.Lines.Count - 1 && Document.Selection.Empty) {
-                            Document.SwapLines(Document.Caret.Row, Document.Caret.Row + 1);
-                            Document.Caret.Row++;
-                        }
-                    }
-                } else {
-                    MoveCaret(e.HasCommonModifier() ? CaretMovementType.LabelDown : CaretMovementType.LineDown, updateSelection: e.Shift);
+                    Document.Selection.Start.Row--;
+                    Document.Selection.End.Row--;
+                    Document.Caret.Row--;
+                } else if (Document.Caret.Row > 0 && Document.Selection.Empty) {
+                    Document.SwapLines(Document.Caret.Row, Document.Caret.Row - 1);
+                    Document.Caret.Row--;
                 }
 
                 e.Handled = true;
                 break;
-            case Keys.PageUp:
-                MoveCaret(CaretMovementType.PageUp, updateSelection: e.Shift);
+            }
+
+            case Keys.Down when e.HasCommonModifier() && e.Shift:
+                // Adjust frame count
+                if (Document.Selection.Empty) {
+                    AdjustNumericValues(Document.Caret.Row, Document.Caret.Row, -1);
+                } else {
+                    AdjustNumericValues(Document.Selection.Start.Row, Document.Selection.End.Row, -1);
+                }
+
                 e.Handled = true;
                 break;
-            case Keys.PageDown:
-                MoveCaret(CaretMovementType.PageDown, updateSelection: e.Shift);
+            case Keys.Down when e.HasAlternateModifier(): {
+                // Move lines
+                using var __ = Document.Update();
+                if (Document.Caret.Row < Document.Lines.Count - 1 && !Document.Selection.Empty && Document.Selection.Max.Row < Document.Lines.Count - 1) {
+                    var line = Document.Lines[Document.Selection.Max.Row + 1];
+                    Document.RemoveLine(Document.Selection.Max.Row + 1);
+                    Document.InsertLine(Document.Selection.Min.Row, line);
+
+                    Document.Selection.Start.Row++;
+                    Document.Selection.End.Row++;
+                } else if (Document.Caret.Row < Document.Lines.Count - 1 && Document.Selection.Empty) {
+                    Document.SwapLines(Document.Caret.Row, Document.Caret.Row + 1);
+                    Document.Caret.Row++;
+                }
+
                 e.Handled = true;
                 break;
-            case Keys.Home:
-                MoveCaret(e.HasCommonModifier() ? CaretMovementType.DocumentStart : CaretMovementType.LineStart, updateSelection: e.Shift);
-                e.Handled = true;
-                break;
-            case Keys.End:
-                MoveCaret(e.HasCommonModifier() ? CaretMovementType.DocumentEnd : CaretMovementType.LineEnd, updateSelection: e.Shift);
-                e.Handled = true;
-                break;
+            }
 
             // Allow zoom in/out
             case Keys.Equal when e.HasCommonModifier():
@@ -704,10 +678,12 @@ public sealed class Editor : TextViewer {
                 e.Handled = true;
                 break;
             }
-            case Keys.F7:
-                new TestForm().Show();
-                break;
             default:
+                base.OnKeyDown(e);
+                if (e.Handled) {
+                    break;
+                }
+
                 // macOS will make a beep sounds when the event isn't handled
                 // ..that also means OnTextInput won't be called..
                 if (Eto.Platform.Instance.IsMac) {
@@ -732,10 +708,21 @@ public sealed class Editor : TextViewer {
     }
 
     private bool CheckHotkey(Hotkey hotkey) {
-        // Handle bindings
+        // Handle global bindings
         foreach (var binding in Studio.GetAllStudioBindings()) {
             foreach (var entry in binding.Entries) {
                 if (Settings.Instance.KeyBindings.GetValueOrDefault(entry.Identifier, entry.DefaultHotkey) == hotkey && entry.Action()) {
+                    Recalc();
+                    ScrollCaretIntoView();
+
+                    return true;
+                }
+            }
+        }
+        // Handle editor bindings
+        foreach (var binding in AllBindings) {
+            foreach (var entry in binding.InstanceEntries) {
+                if (Settings.Instance.KeyBindings.GetValueOrDefault(entry.Identifier, entry.DefaultHotkey) == hotkey && entry.Action(this)) {
                     Recalc();
                     ScrollCaretIntoView();
 

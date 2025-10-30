@@ -444,7 +444,6 @@ public sealed class Studio : Form {
     /// Provides all `Bindings` which exist in Studio
     public static IEnumerable<Binding> GetAllStudioBindings() {
         return AllBindings
-            .Concat(TextViewer.AllBindings)
             .Concat(Editor.AllBindings)
             .Concat(ContextActionsMenu.ContextActions.Select(contextAction => contextAction.ToBinding()))
             .Concat(GameInfo.AllBindings)

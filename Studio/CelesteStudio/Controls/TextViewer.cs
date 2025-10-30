@@ -89,19 +89,19 @@ public class TextViewer : SkiaDrawable {
 
     #region Bindings
 
-    protected static ActionBinding CreateAction(string identifier, string displayName, Hotkey defaultHotkey, Action<Editor> action)
-        => new(identifier, displayName, Binding.Category.Editor, defaultHotkey, () => action(Studio.Instance.Editor));
+    private static InstanceActionBinding<TextViewer> CreateAction(string identifier, string displayName, Hotkey defaultHotkey, Action<TextViewer> action)
+        => new(identifier, displayName, Binding.Category.Editor, defaultHotkey, action);
 
-    protected static readonly ActionBinding Copy = CreateAction("Editor_Copy", "Copy", Hotkey.KeyCtrl(Keys.C), editor => editor.OnCopy());
+    protected static readonly InstanceBinding Copy = CreateAction("Editor_Copy", "Copy", Hotkey.KeyCtrl(Keys.C), editor => editor.OnCopy());
 
-    protected static readonly ActionBinding SelectAll = CreateAction("Editor_SelectAll", "Select All", Hotkey.KeyCtrl(Keys.A), editor => editor.OnSelectAll());
-    protected static readonly ActionBinding SelectBlock = CreateAction("Editor_Cut", "Select Block", Hotkey.KeyCtrl(Keys.W), editor => editor.OnSelectBlock());
+    protected static readonly InstanceBinding SelectAll = CreateAction("Editor_SelectAll", "Select All", Hotkey.KeyCtrl(Keys.A), editor => editor.OnSelectAll());
+    protected static readonly InstanceBinding SelectBlock = CreateAction("Editor_Cut", "Select Block", Hotkey.KeyCtrl(Keys.W), editor => editor.OnSelectBlock());
 
-    protected static readonly ActionBinding Find = CreateAction("Editor_Find", "Find...", Hotkey.KeyCtrl(Keys.F), editor => editor.OnFind());
-    protected static readonly ActionBinding GoTo = CreateAction("Editor_GoTo", "Go To...", Hotkey.KeyCtrl(Keys.G), editor => editor.OnGoTo());
-    protected static readonly ActionBinding ToggleFolding = CreateAction("Editor_ToggleFolding", "Toggle Folding", Hotkey.KeyCtrl(Keys.Minus), editor => editor.OnToggleFolding());
+    protected static readonly InstanceBinding Find = CreateAction("Editor_Find", "Find...", Hotkey.KeyCtrl(Keys.F), editor => editor.OnFind());
+    protected static readonly InstanceBinding GoTo = CreateAction("Editor_GoTo", "Go To...", Hotkey.KeyCtrl(Keys.G), editor => editor.OnGoTo());
+    protected static readonly InstanceBinding ToggleFolding = CreateAction("Editor_ToggleFolding", "Toggle Folding", Hotkey.KeyCtrl(Keys.Minus), editor => editor.OnToggleFolding());
 
-    public static readonly Binding[] AllBindings = [
+    public static readonly InstanceBinding[] AllBindings = [
         Copy,
         SelectAll, SelectBlock,
         Find, GoTo, ToggleFolding,
@@ -198,6 +198,19 @@ public class TextViewer : SkiaDrawable {
                 Recalc();
             } else {
                 Invalidate(); // Update SkiaDrawable
+            }
+        };
+
+        ContextMenu = new() {
+            Items = {
+                Copy.CreateItem(this),
+                new SeparatorMenuItem(),
+                SelectAll.CreateItem(this),
+                SelectBlock.CreateItem(this),
+                new SeparatorMenuItem(),
+                Find.CreateItem(this),
+                GoTo.CreateItem(this),
+                ToggleFolding.CreateItem(this),
             }
         };
     }
@@ -442,6 +455,68 @@ public class TextViewer : SkiaDrawable {
         pixelLayout.Move(activePopupPanel, menuX, menuY);
 
         Invalidate();
+    }
+
+    protected override void OnKeyDown(KeyEventArgs e) {
+        var mods = e.Modifiers;
+        if (e.Key is Keys.LeftShift or Keys.RightShift) mods |= Keys.Shift;
+        if (e.Key is Keys.LeftControl or Keys.RightControl) mods |= Keys.Control;
+        if (e.Key is Keys.LeftAlt or Keys.RightAlt) mods |= Keys.Alt;
+        if (e.Key is Keys.LeftApplication or Keys.RightApplication) mods |= Keys.Application;
+        UpdateMouseCursor(PointFromScreen(Mouse.Position), mods);
+
+        Console.WriteLine($"KEY: {e}");
+
+        // Handle bindings
+        var hotkey = Hotkey.FromEvent(e);
+        foreach (var binding in AllBindings) {
+            foreach (var entry in binding.InstanceEntries) {
+                if (Settings.Instance.KeyBindings.GetValueOrDefault(entry.Identifier, entry.DefaultHotkey) == hotkey && entry.Action(this)) {
+                    Recalc();
+                    ScrollCaretIntoView();
+
+                    e.Handled = true;
+                    return;
+                }
+            }
+        }
+
+        switch (e.Key) {
+            case Keys.Left when !e.HasAlternateModifier(): // Prevent Alt+Left from getting handled
+                MoveCaret(e.HasCommonModifier() ? CaretMovementType.WordLeft : CaretMovementType.CharLeft, updateSelection: e.Shift);
+                e.Handled = true;
+                break;
+            case Keys.Right:
+                MoveCaret(e.HasCommonModifier() ? CaretMovementType.WordRight : CaretMovementType.CharRight, updateSelection: e.Shift);
+                e.Handled = true;
+                break;
+            case Keys.Up:
+                MoveCaret(e.HasCommonModifier() ? CaretMovementType.LabelUp : CaretMovementType.LineUp, updateSelection: e.Shift);
+                e.Handled = true;
+                break;
+            case Keys.Down:
+                MoveCaret(e.HasCommonModifier() ? CaretMovementType.LabelDown : CaretMovementType.LineDown, updateSelection: e.Shift);
+                e.Handled = true;
+                break;
+            case Keys.PageUp:
+                MoveCaret(CaretMovementType.PageUp, updateSelection: e.Shift);
+                e.Handled = true;
+                break;
+            case Keys.PageDown:
+                MoveCaret(CaretMovementType.PageDown, updateSelection: e.Shift);
+                e.Handled = true;
+                break;
+            case Keys.Home:
+                MoveCaret(e.HasCommonModifier() ? CaretMovementType.DocumentStart : CaretMovementType.LineStart, updateSelection: e.Shift);
+                e.Handled = true;
+                break;
+            case Keys.End:
+                MoveCaret(e.HasCommonModifier() ? CaretMovementType.DocumentEnd : CaretMovementType.LineEnd, updateSelection: e.Shift);
+                e.Handled = true;
+                break;
+        }
+
+        Recalc();
     }
 
     #region Visual Rows
@@ -861,7 +936,7 @@ public class TextViewer : SkiaDrawable {
         }
 
         if (e.Buttons.HasFlag(MouseButtons.Alternate)) {
-            ContextMenu.Show();
+            ContextMenu?.Show();
             e.Handled = true;
             return;
         }
@@ -1109,10 +1184,10 @@ public class TextViewer : SkiaDrawable {
     public override bool CanDraw => !Document.UpdateInProgress;
 
     protected virtual void DrawLine(SKCanvas canvas, string line, float x, float y) {
-        canvas.DrawText(line, x, y, Font, Settings.Instance.Theme.CommentPaint.ForegroundColor);
+        canvas.DrawText(line, x, y + Font.Offset(), Font, Settings.Instance.Theme.CommentPaint.ForegroundColor);
     }
     protected virtual void DrawWrappedLine(SKCanvas canvas, string subLine, float x, float y) {
-        canvas.DrawText(subLine, x, y, Font, Settings.Instance.Theme.CommentPaint.ForegroundColor);
+        canvas.DrawText(subLine, x, y + Font.Offset(), Font, Settings.Instance.Theme.CommentPaint.ForegroundColor);
     }
     protected virtual void DrawCollapseBox(SKCanvas canvas, float x, float y, float w, float h) {
         const float foldingPadding = 1.0f;
@@ -1174,7 +1249,7 @@ public class TextViewer : SkiaDrawable {
                         string subLine = wrap.Lines[i].Line;
                         float xIdent = i == 0 ? 0 : wrap.StartOffset * Font.CharWidth();
 
-                        DrawWrappedLine(canvas, subLine, textOffsetX + xIdent, yPos + Font.Offset());
+                        DrawWrappedLine(canvas, subLine, textOffsetX + xIdent, yPos);
                         yPos += Font.LineHeight();
                         width = Math.Max(width, Font.MeasureWidth(subLine) + xIdent);
                         height += Font.LineHeight();
@@ -1201,7 +1276,7 @@ public class TextViewer : SkiaDrawable {
                     string subLine = wrap.Lines[i].Line;
                     float xIdent = i == 0 ? 0 : wrap.StartOffset * Font.CharWidth();
 
-                    DrawWrappedLine(canvas, subLine, textOffsetX + xIdent, yPos + Font.Offset());
+                    DrawWrappedLine(canvas, subLine, textOffsetX + xIdent, yPos);
                     yPos += Font.LineHeight();
                 }
             } else {
