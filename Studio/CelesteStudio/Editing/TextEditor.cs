@@ -1,4 +1,3 @@
-using CelesteStudio.Editing;
 using CelesteStudio.Editing.AutoCompletion;
 using CelesteStudio.Util;
 using Eto.Forms;
@@ -7,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CelesteStudio.Controls;
+namespace CelesteStudio.Editing;
 
 public class TextEditor : TextViewer {
 

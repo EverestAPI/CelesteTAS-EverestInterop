@@ -1,5 +1,5 @@
+using CelesteStudio.Controls;
 using CelesteStudio.Dialog;
-using CelesteStudio.Editing;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
@@ -12,7 +12,7 @@ using System.Linq;
 using WrapLine = (string Line, int Index);
 using WrapEntry = (int StartOffset, (string Line, int Index)[] Lines);
 
-namespace CelesteStudio.Controls;
+namespace CelesteStudio.Editing;
 
 public class TextViewer : SkiaDrawable {
     /// Allows applying fixes / formatting to text changes, after the caret has moved away

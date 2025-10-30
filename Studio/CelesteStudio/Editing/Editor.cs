@@ -6,7 +6,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using CelesteStudio.Communication;
-using CelesteStudio.Controls;
 using CelesteStudio.Dialog;
 using CelesteStudio.Editing.ContextActions;
 using CelesteStudio.Util;
@@ -72,7 +71,7 @@ public sealed class Editor : TextEditor {
     });
 
     private static readonly InstanceBinding OpenAutoCompleteMenu = CreateAction("Editor_OpenAutoCompleteMenu", "Open Auto-Complete Menu...", Hotkey.KeyCtrl(Keys.Space), editor => {
-        editor.autoCompleteMenu.Refresh();
+        editor.autoCompleteMenu!.Refresh();
         editor.Recalc();
     });
     private static readonly InstanceBinding OpenContextActionsMenu = CreateAction("Editor_OpenContextActionsMenu", "Open Context-Actions Menu...", Hotkey.KeyAlt(Keys.Enter), editor => {
@@ -1189,7 +1188,7 @@ public sealed class Editor : TextEditor {
         }
 
         DesiredVisualCol = Document.Caret.Col;
-        autoCompleteMenu.Refresh();
+        autoCompleteMenu!.Refresh();
     }
 
     protected override void OnDelete(CaretMovementType direction) {
@@ -1343,7 +1342,7 @@ public sealed class Editor : TextEditor {
                 Document.Caret.Col = Math.Min(Document.Caret.Col, caret.Col);
                 Document.Caret = ClampCaret(Document.Caret, wrapLine: true);
 
-                autoCompleteMenu.Refresh(open: false);
+                autoCompleteMenu!.Refresh(open: false);
             } else {
                 var min = Document.Caret < caret ? Document.Caret : caret;
                 var max = Document.Caret < caret ? caret : Document.Caret;
