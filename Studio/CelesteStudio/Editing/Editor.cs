@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CelesteStudio.Communication;
 using CelesteStudio.Dialog;
+using CelesteStudio.Editing.AutoCompletion;
 using CelesteStudio.Editing.ContextActions;
 using CelesteStudio.Util;
 using Eto.Drawing;
@@ -156,8 +157,8 @@ public sealed class Editor : TextEditor {
         StyleConfig.Initialize(this);
         FileRefactor.Initialize(this);
 
-        autoCompleteMenu = new(this);
-        contextActionsMenu = new(this);
+        autoCompleteMenu = new CommandAutoCompleteMenu(this);
+        contextActionsMenu = new ContextActionsMenu(this);
 
         Focus();
 
