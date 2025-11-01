@@ -23,12 +23,18 @@ public class TextEditor : TextViewer {
 
     protected static readonly InstanceBinding DeleteSelectedLines = CreateAction("Editor_DeleteSelectedLines", "Delete Selected Lines", Hotkey.KeyCtrl(Keys.Y), editor => editor.OnDeleteSelectedLines());
 
+    protected static readonly InstanceBinding OpenAutoCompleteMenu = CreateAction("Editor_OpenAutoCompleteMenu", "Open Auto-Complete Menu...", Hotkey.KeyCtrl(Keys.Space), editor => {
+        editor.autoCompleteMenu?.Refresh();
+        editor.Recalc();
+    });
+
     public static new readonly InstanceBinding[] AllBindings = [
         Cut, Copy, Paste,
         Undo, Redo,
         SelectAll, SelectBlock,
         Find, GoTo, ToggleFolding,
         DeleteSelectedLines,
+        OpenAutoCompleteMenu,
     ];
 
     #endregion
@@ -54,6 +60,8 @@ public class TextEditor : TextViewer {
                 ToggleFolding.CreateItem(this),
                 new SeparatorMenuItem(),
                 DeleteSelectedLines.CreateItem(this),
+                new SeparatorMenuItem(),
+                OpenAutoCompleteMenu.CreateItem(this),
             }
         };
     }

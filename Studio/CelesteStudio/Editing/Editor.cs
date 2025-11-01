@@ -71,10 +71,6 @@ public sealed class Editor : TextEditor {
         }
     });
 
-    private static readonly InstanceBinding OpenAutoCompleteMenu = CreateAction("Editor_OpenAutoCompleteMenu", "Open Auto-Complete Menu...", Hotkey.KeyCtrl(Keys.Space), editor => {
-        editor.autoCompleteMenu!.Refresh();
-        editor.Recalc();
-    });
     private static readonly InstanceBinding OpenContextActionsMenu = CreateAction("Editor_OpenContextActionsMenu", "Open Context-Actions Menu...", Hotkey.KeyAlt(Keys.Enter), editor => {
         editor.contextActionsMenu.Refresh();
         editor.Recalc();

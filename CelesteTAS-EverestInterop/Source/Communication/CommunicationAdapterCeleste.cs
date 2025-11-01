@@ -119,7 +119,9 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                             case GameDataType.CommandHash:
                                 (string commandName, string[] commandArgs, string filePath, int fileLine) = ((string, string[], string, int))arg!;
 
-                                var meta = Command.GetMeta(commandName);
+                                var meta = commandName.Equals(CommandInfo.GetCommand, StringComparison.InvariantCultureIgnoreCase)
+                                    ? InfoCustom.Meta
+                                    : Command.GetMeta(commandName);
                                 if (meta == null) {
                                     // Fallback to the default implementation
                                     gameData = commandArgs[..^1].Aggregate(17, (current, commandArg) => 31 * current + 17 * commandArg.GetStableHashCode());
@@ -183,7 +185,9 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 int fileLine = reader.ReadInt32();
                 LogVerbose($"Received message RequestCommandAutoComplete: '{commandName}' '{string.Join(' ', commandArgs)}' file '{filePath}' line {fileLine} ({hash})");
 
-                var meta = Command.GetMeta(commandName);
+                var meta = commandName.Equals(CommandInfo.GetCommand, StringComparison.InvariantCultureIgnoreCase)
+                    ? InfoCustom.Meta
+                    : Command.GetMeta(commandName);
                 if (meta == null) {
                     QueueMessage(MessageID.CommandAutoComplete, writer => {
                         writer.Write(hash);

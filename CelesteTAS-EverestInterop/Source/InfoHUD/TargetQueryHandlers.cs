@@ -189,7 +189,7 @@ internal class AssistsQueryHandler : TargetQuery.Handler {
                 yield return new CommandAutoCompleteEntry {
                     Name = f.Name,
                     Extra = $"{f.FieldType.CSharpName()} (Assists)",
-                    Suggestion = f.Name is nameof(Assists.Invincible),
+                    Suggestion = variant == TargetQuery.Variant.Set && f.Name is nameof(Assists.Invincible),
                     IsDone = true,
                     StorageKey = $"{variant}_{typeof(Assists).FullName}"
                 };

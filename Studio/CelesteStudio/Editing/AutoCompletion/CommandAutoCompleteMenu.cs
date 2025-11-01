@@ -78,8 +78,8 @@ public class CommandAutoCompleteMenu : AutoCompleteMenu {
     }
 
     private const string StorageKeySeparator = "__";
-    private const string RootStorageKey = $"AutoComplete{StorageKeySeparator}Root";
-    private const string BaseStorageKey = $"AutoComplete{StorageKeySeparator}Command";
+    private const string RootStorageKey = $"AutoCompleteCommand{StorageKeySeparator}Root";
+    private const string BaseStorageKey = $"AutoCompleteCommand{StorageKeySeparator}Command";
 
     public override void Refresh(bool open = true) {
         string fullLine = Document.Lines[Document.Caret.Row];
@@ -140,119 +140,149 @@ public class CommandAutoCompleteMenu : AutoCompleteMenu {
 
                 var token = tokenSource.Token;
                 Task.Run(async () => {
-                    int loadingDots = 0;
+                    try {
+                        int loadingDots = 0;
 
-                    while (!token.IsCancellationRequested && await Application.Instance.InvokeAsync(() => Visible).ConfigureAwait(false)) {
-                        if (!CommunicationWrapper.Connected) {
-                            loadingEntry.DisplayText = "Connection with Celeste required for command auto-complete!";
+                        while (!token.IsCancellationRequested && await Application.Instance.InvokeAsync(() => Visible).ConfigureAwait(false)) {
+                            if (!CommunicationWrapper.Connected) {
+                                loadingEntry.DisplayText = "Connection with Celeste required for command auto-complete!";
+                                await Application.Instance.InvokeAsync(() => {
+                                    Entries.Clear();
+                                    Entries.Add(loadingEntry);
+                                    editor.RecalcPopupMenu();
+                                }).ConfigureAwait(false);
+
+                                break;
+                            }
+
+                            loadingDots = (loadingDots + 1).Mod(4);
+                            loadingEntry.DisplayText = $"Loading{new string('.', loadingDots)}{new string(' ', 3 - loadingDots)}";
+
+                            (var commandEntries, bool done) = await CommunicationWrapper.RequestAutoCompleteEntries(command.Name, commandLine.Value.Arguments, Document.FilePath, Document.Caret.Row, refresh: isNewArgumentIndex).ConfigureAwait(false);
+                            isNewArgumentIndex = false; // Clear flag to avoid re-requesting every loop iterator
+
+                            var menuEntries = commandEntries.Select(entry => new Entry {
+                                SearchText = entry.FullName,
+                                DisplayText = entry.Name,
+                                ExtraText = entry.Extra,
+                                Suggestion = entry.Suggestion,
+                                StorageKey = entry.StorageKey == null ? null : $"{BaseStorageKey}{StorageKeySeparator}{entry.StorageKey}",
+                                StorageName = entry.StorageName,
+                                OnUse = () => {
+                                    using var __ = Document.Update();
+
+                                    string insert = entry.FullName;
+
+                                    var selectedQuickEdit = editor.GetQuickEdits()
+                                        .FirstOrDefault(anchor => Document.Caret.Row == anchor.Row &&
+                                                                  Document.Caret.Col >= anchor.MinCol &&
+                                                                  Document.Caret.Col <= anchor.MaxCol);
+
+                                    // Jump to the next parameter and open the auto-complete menu if applicable
+                                    if (selectedQuickEdit != null) {
+                                        // Replace the current quick-edit instead
+                                        Document.ReplaceRangeInLine(selectedQuickEdit.Row, selectedQuickEdit.MinCol, selectedQuickEdit.MaxCol, insert);
+
+                                        if (entry.IsDone) {
+                                            var quickEdits = editor.GetQuickEdits().ToArray();
+                                            bool lastQuickEditSelected = quickEdits.Length != 0 &&
+                                                                         quickEdits[^1].Row == Document.Caret.Row &&
+                                                                         quickEdits[^1].MinCol <= Document.Caret.Col &&
+                                                                         quickEdits[^1].MaxCol >= Document.Caret.Col;
+
+                                            if (lastQuickEditSelected) {
+                                                editor.ClearQuickEdits();
+                                                Document.Selection.Clear();
+                                                Document.Caret.Col = Document.Lines[Document.Caret.Row].Length;
+
+                                                editor.ClosePopupMenu();
+                                            } else {
+                                                editor.SelectNextQuickEdit();
+
+                                                // Don't start a new base auto-complete. Only arguments
+                                                if (!string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
+                                                    Refresh();
+                                                } else {
+                                                    editor.ClosePopupMenu();
+                                                }
+                                            }
+                                        } else {
+                                            Document.Selection.Clear();
+                                            Document.Caret.Col = selectedQuickEdit.MinCol + insert.Length;
+
+                                            Refresh();
+                                        }
+                                    } else {
+                                        if (!entry.IsDone) {
+                                            Document.ReplaceRangeInLine(Document.Caret.Row, lastArgRegion.StartCol, lastArgRegion.EndCol, insert);
+                                            Document.Caret.Col = editor.DesiredVisualCol = lastArgRegion.StartCol + insert.Length;
+                                            Document.Selection.Clear();
+
+                                            Refresh();
+                                        } else if (entry.HasNext ?? false/*command.Value.AutoCompleteEntries.Length != allArgs.Length - 1*/) {
+                                            // Include separator for next argument
+                                            Document.ReplaceRangeInLine(Document.Caret.Row, lastArgRegion.StartCol, lastArgRegion.EndCol, insert + commandLine.Value.ArgumentSeparator);
+                                            Document.Caret.Col = editor.DesiredVisualCol = lastArgRegion.StartCol + insert.Length + commandLine.Value.ArgumentSeparator.Length;
+                                            Document.Selection.Clear();
+
+                                            Refresh();
+                                        } else {
+                                            Document.ReplaceRangeInLine(Document.Caret.Row, lastArgRegion.StartCol, lastArgRegion.EndCol, insert);
+                                            Document.Caret.Col = editor.DesiredVisualCol = lastArgRegion.StartCol + insert.Length;
+                                            Document.Selection.Clear();
+
+                                            editor.ClosePopupMenu();
+                                        }
+                                    }
+                                },
+                            });
+
                             await Application.Instance.InvokeAsync(() => {
                                 Entries.Clear();
-                                Entries.Add(loadingEntry);
+                                Entries.AddRange(menuEntries);
+                                if (!done) {
+                                    Entries.Add(loadingEntry);
+                                }
+
                                 editor.RecalcPopupMenu();
                             }).ConfigureAwait(false);
 
-                            break;
+                            if (done) {
+                                tokenSource?.Dispose();
+                                tokenSource = null;
+                                break;
+                            }
+
+                            await Task.Delay(TimeSpan.FromSeconds(0.25f), token).ConfigureAwait(false);
+                        }
+                    } catch (Exception ex) {
+                        if (ex is TaskCanceledException) {
+                            return; // Ignore
                         }
 
-                        loadingDots = (loadingDots + 1).Mod(4);
-                        loadingEntry.DisplayText = $"Loading{new string('.', loadingDots)}{new string(' ', 3 - loadingDots)}";
-
-                        (var commandEntries, bool done) = await CommunicationWrapper.RequestAutoCompleteEntries(command.Name, commandLine.Value.Arguments, Document.FilePath, Document.Caret.Row, refresh: isNewArgumentIndex).ConfigureAwait(false);
-                        isNewArgumentIndex = false; // Clear flag to avoid re-requesting every loop iterator
-
-                        var menuEntries = commandEntries.Select(entry => new Entry {
-                            SearchText = entry.FullName,
-                            DisplayText = entry.Name,
-                            ExtraText = entry.Extra,
-                            Suggestion = entry.Suggestion,
-                            StorageKey = entry.StorageKey == null ? null : $"{BaseStorageKey}{StorageKeySeparator}{entry.StorageKey}",
-                            StorageName = entry.StorageName,
-                            OnUse = () => {
-                                using var __ = Document.Update();
-
-                                string insert = entry.FullName;
-
-                                var selectedQuickEdit = editor.GetQuickEdits()
-                                    .FirstOrDefault(anchor => Document.Caret.Row == anchor.Row &&
-                                                              Document.Caret.Col >= anchor.MinCol &&
-                                                              Document.Caret.Col <= anchor.MaxCol);
-
-                                // Jump to the next parameter and open the auto-complete menu if applicable
-                                if (selectedQuickEdit != null) {
-                                    // Replace the current quick-edit instead
-                                    Document.ReplaceRangeInLine(selectedQuickEdit.Row, selectedQuickEdit.MinCol, selectedQuickEdit.MaxCol, insert);
-
-                                    if (entry.IsDone) {
-                                        var quickEdits = editor.GetQuickEdits().ToArray();
-                                        bool lastQuickEditSelected = quickEdits.Length != 0 &&
-                                                                     quickEdits[^1].Row == Document.Caret.Row &&
-                                                                     quickEdits[^1].MinCol <= Document.Caret.Col &&
-                                                                     quickEdits[^1].MaxCol >= Document.Caret.Col;
-
-                                        if (lastQuickEditSelected) {
-                                            editor.ClearQuickEdits();
-                                            Document.Selection.Clear();
-                                            Document.Caret.Col = Document.Lines[Document.Caret.Row].Length;
-
-                                            editor.ClosePopupMenu();
-                                        } else {
-                                            editor.SelectNextQuickEdit();
-
-                                            // Don't start a new base auto-complete. Only arguments
-                                            if (!string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
-                                                Refresh();
-                                            } else {
-                                                editor.ClosePopupMenu();
-                                            }
-                                        }
-                                    } else {
-                                        Document.Selection.Clear();
-                                        Document.Caret.Col = selectedQuickEdit.MinCol + insert.Length;
-
-                                        Refresh();
-                                    }
-                                } else {
-                                    if (!entry.IsDone) {
-                                        Document.ReplaceRangeInLine(Document.Caret.Row, lastArgRegion.StartCol, lastArgRegion.EndCol, insert);
-                                        Document.Caret.Col = editor.DesiredVisualCol = lastArgRegion.StartCol + insert.Length;
-                                        Document.Selection.Clear();
-
-                                        Refresh();
-                                    } else if (entry.HasNext ?? false/*command.Value.AutoCompleteEntries.Length != allArgs.Length - 1*/) {
-                                        // Include separator for next argument
-                                        Document.ReplaceRangeInLine(Document.Caret.Row, lastArgRegion.StartCol, lastArgRegion.EndCol, insert + commandLine.Value.ArgumentSeparator);
-                                        Document.Caret.Col = editor.DesiredVisualCol = lastArgRegion.StartCol + insert.Length + commandLine.Value.ArgumentSeparator.Length;
-                                        Document.Selection.Clear();
-
-                                        Refresh();
-                                    } else {
-                                        Document.ReplaceRangeInLine(Document.Caret.Row, lastArgRegion.StartCol, lastArgRegion.EndCol, insert);
-                                        Document.Caret.Col = editor.DesiredVisualCol = lastArgRegion.StartCol + insert.Length;
-                                        Document.Selection.Clear();
-
-                                        editor.ClosePopupMenu();
-                                    }
-                                }
-                            },
-                        });
+                        await Console.Error.WriteLineAsync("An unexpected exception occured while trying to load auto-complete entries:");
+                        await Console.Error.WriteLineAsync(ex.ToString());
 
                         await Application.Instance.InvokeAsync(() => {
                             Entries.Clear();
-                            Entries.AddRange(menuEntries);
-                            if (!done) {
-                                Entries.Add(loadingEntry);
+                            Entries.Add(new Entry {
+                                DisplayText = "An unexpected exception occured! Please report this issue!",
+                                SearchText = string.Empty,
+                                ExtraText = string.Empty,
+                                OnUse = null!,
+                                Disabled = true,
+                            });
+                            foreach (var exLine in ex.ToString().AsSpan().EnumerateLines()) {
+                                Entries.Add(new Entry {
+                                    DisplayText = "    " + exLine.ToString(),
+                                    SearchText = string.Empty,
+                                    ExtraText = string.Empty,
+                                    OnUse = null!,
+                                    Disabled = true,
+                                });
                             }
-
                             editor.RecalcPopupMenu();
-                        }).ConfigureAwait(false);
-
-                        if (done) {
-                            tokenSource?.Dispose();
-                            tokenSource = null;
-                            break;
-                        }
-
-                        await Task.Delay(TimeSpan.FromSeconds(0.25f), token).ConfigureAwait(false);
+                        });
                     }
                 }, token);
             } else {

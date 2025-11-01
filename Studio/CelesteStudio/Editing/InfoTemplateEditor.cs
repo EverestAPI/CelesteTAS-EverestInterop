@@ -8,7 +8,7 @@ namespace CelesteStudio.Editing;
 
 public class InfoTemplateEditor : TextEditor {
     public InfoTemplateEditor(Document document, Scrollable scrollable) : base(document, scrollable) {
-
+        autoCompleteMenu = new InfoTemplateAutoCompleteMenu(this);
     }
 
     private enum LineMode { Regular, TargetQuery, Lua }

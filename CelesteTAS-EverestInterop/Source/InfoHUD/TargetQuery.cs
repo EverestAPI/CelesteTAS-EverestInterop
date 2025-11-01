@@ -565,11 +565,11 @@ public static class TargetQuery {
                 }
 
                 if (targetType == typeof(bool)) {
-                    yield return new CommandAutoCompleteEntry { Name = "true", Extra = targetType.CSharpName(), IsDone = true, StorageKey = "Get_bool", Suggestion = true };
-                    yield return new CommandAutoCompleteEntry { Name = "false", Extra = targetType.CSharpName(), IsDone = true, StorageKey = "Get_bool", Suggestion = true };
+                    yield return new CommandAutoCompleteEntry { Name = "true", Extra = targetType.CSharpName(), IsDone = true, StorageKey = $"{nameof(Variant.Get)}_{typeof(bool).FullName}", Suggestion = true };
+                    yield return new CommandAutoCompleteEntry { Name = "false", Extra = targetType.CSharpName(), IsDone = true, StorageKey = $"{nameof(Variant.Get)}_{typeof(bool).FullName}", Suggestion = true };
                 } else if (targetType.IsEnum) {
                     foreach (object value in Enum.GetValues(targetType)) {
-                        yield return new CommandAutoCompleteEntry { Name = value.ToString()!, Extra = targetType.CSharpName(), IsDone = true, StorageKey = targetType.FullName == null ? null : $"Get_{targetType.FullName}", Suggestion = true };
+                        yield return new CommandAutoCompleteEntry { Name = value.ToString()!, Extra = targetType.CSharpName(), IsDone = true, StorageKey = targetType.FullName == null ? null : $"{nameof(Variant.Get)}_{targetType.FullName}", Suggestion = true };
                     }
                 }
 
