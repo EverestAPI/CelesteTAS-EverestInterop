@@ -349,6 +349,10 @@ public static class InfoCustom {
                 return stringValue;
             case Vector2 vectorValue:
                 return vectorValue.ToSimpleString(decimals);
+            case EntityQueryHandler.SubpixelComponent subpixelComponentValue:
+                return subpixelComponentValue.ToFormattedString(decimals);
+            case EntityQueryHandler.SubpixelPosition subpixelPositionValue:
+                return subpixelPositionValue.ToFormattedString(decimals);
             case Vector2Double vectorValue:
                 return vectorValue.ToSimpleString(decimals);
             case float floatValue:
