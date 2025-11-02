@@ -194,6 +194,7 @@ public class TextEditor : TextViewer {
 
         if (e.Handled) {
             Recalc();
+            ScrollCaretIntoView();
         }
     }
 
@@ -238,6 +239,7 @@ public class TextEditor : TextViewer {
         DesiredVisualCol = Document.Caret.Col;
 
         Recalc();
+        ScrollCaretIntoView();
 
         autoCompleteMenu?.Refresh();
     }

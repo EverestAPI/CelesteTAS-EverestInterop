@@ -74,8 +74,6 @@ public sealed class Studio : Form {
     public readonly GameInfo GameInfo;
 
     private readonly Scrollable editorScrollable;
-    private readonly GameInfoPanel gameInfoPanel;
-
     private JadderlineForm? jadderlineForm;
     private FeatherlineForm? featherlineForm;
     private RadelineSimForm? radelineSimForm;
@@ -196,24 +194,24 @@ public sealed class Studio : Form {
 
             // Needs to be done after the Editor is set up
             GameInfo = new GameInfo(Editor);
-            gameInfoPanel = new GameInfoPanel();
 
             Content = new StackLayout {
                 Padding = 0,
                 Items = {
                     editorScrollable,
-                    gameInfoPanel
+                    GameInfo
                 }
             };
 
             Shown += (_, _) => {
-                gameInfoPanel.UpdateLayout();
+                // gameInfoPanel.UpdateLayout();
                 RecalculateLayout();
             };
             SizeChanged += (_, _) => {
                 RecalculateLayout();
             };
-            gameInfoPanel.SizeChanged += (_, _) => {
+            GameInfo.PreferredSizeChanged += () => {
+                Console.WriteLine($"GI: {GameInfo.Size} // {GameInfo.Content.Size}");
                 RecalculateLayout();
             };
 
@@ -338,20 +336,28 @@ public sealed class Studio : Form {
     }
 
     private void RecalculateLayout() {
-        gameInfoPanel.Width = ClientSize.Width;
+        Console.WriteLine($"Curr: {editorScrollable.Size} // {GameInfo.Size}");
+
+        const int borderSize = 1;
+        int gameInfoHeight = Math.Min((int)GameInfo.Content.GetPreferredSize().Height + GameInfo.Padding.Top + GameInfo.Padding.Bottom + borderSize*2, (int)(ClientSize.Height * Settings.Instance.MaxGameInfoHeight));
+
+        GameInfo.Size = new Size(
+            Math.Max(0, ClientSize.Width),
+            Math.Max(0, gameInfoHeight));
         editorScrollable.Size = new Size(
             Math.Max(0, ClientSize.Width),
-            Math.Max(0, ClientSize.Height - Math.Max(0, gameInfoPanel.Height)));
+            Math.Max(0, ClientSize.Height - Math.Max(0, gameInfoHeight)));
 
         // Calling UpdateLayout() seems to be required on GTK but causes issues on WPF
         // TODO: Figure out how macOS handles this
         if (Eto.Platform.Instance.IsGtk) {
-            gameInfoPanel.UpdateLayout();
+            GameInfo.UpdateLayout();
             editorScrollable.UpdateLayout();
             Content.UpdateLayout();
         } else if (Eto.Platform.Instance.IsWpf && WPFHackEnabled) {
             Content.UpdateLayout();
         }
+        Console.WriteLine($"Next: {editorScrollable.Size} // {GameInfo.Size}");
     }
 
     private void ApplySettings() {

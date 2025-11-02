@@ -29,7 +29,7 @@ public class InfoTemplateForm : Form {
         var preview = new TextViewer(Document.Create(evaluatedTemplate), previewScrollable) { ShowLineNumbers = false };
         previewScrollable.Content = preview;
 
-        editor.Document.TextChanged += (_, insertions, deletions) => Task.Run(async () => {
+        editor.Document.TextChanged += (_, _, _) => Task.Run(async () => {
             string[] evaluated = await CommunicationWrapper.EvaluateInfoTemplateAsync(editor.Document.Lines.ToArray());
             await Application.Instance.InvokeAsync(() => {
                 using var __ = preview.Document.Update();
@@ -50,6 +50,9 @@ public class InfoTemplateForm : Form {
         buttonsLayout.Add(cancelButton);
         buttonsLayout.AddSpace();
         buttonsLayout.Add(confirmButton);
+
+        Title = "Edit Info-Template";
+        Icon = Assets.AppIcon;
 
         const int padding = 10;
         Content = new StackLayout {
@@ -73,5 +76,7 @@ public class InfoTemplateForm : Form {
 
         Width = 600;
         Height = 700;
+
+        Studio.RegisterWindow(this);
     }
 }

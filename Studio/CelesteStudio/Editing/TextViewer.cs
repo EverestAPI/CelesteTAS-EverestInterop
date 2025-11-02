@@ -28,6 +28,9 @@ public class TextViewer : SkiaDrawable {
     public event Action<Document?> PreDocumentChanged = _ => { };
     public event Action<Document> PostDocumentChanged = _ => { };
 
+    /// Invoked when the preferred size of the game info is changed
+    public event Action<Size>? PreferredSizeChanged;
+
     private Document? document;
     public Document Document {
         get => document!;
@@ -73,7 +76,6 @@ public class TextViewer : SkiaDrawable {
                 TextChanged(document, insertions, deletions);
 
                 Recalc();
-                ScrollCaretIntoView();
             }
             Document.Patch? HandleFixupPatch(Document _, Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
                 var fixup = Document.Update(raiseEvents: false);
@@ -117,7 +119,7 @@ public class TextViewer : SkiaDrawable {
     #endregion
 
     protected const int OffscreenLinePadding = 3;
-    protected const float LineNumberPadding = 5.0f;
+    public const float LineNumberPadding = 5.0f;
 
     // Only expand width of line numbers for actually visible digits
     private int lastVisibleLineNumberDigits = -1;
@@ -135,7 +137,7 @@ public class TextViewer : SkiaDrawable {
     protected Point scrollablePosition;
     protected Size scrollableSize;
 
-    protected static SKFont Font => FontManager.SKEditorFontRegular;
+    protected virtual SKFont Font => FontManager.SKEditorFontRegular;
 
     private readonly PixelLayout pixelLayout = new();
     private readonly Panel activePopupPanel = new();
@@ -143,6 +145,10 @@ public class TextViewer : SkiaDrawable {
 
     /// Toggle for displaying line numbers
     public bool ShowLineNumbers = true;
+
+    // Padding values to expand past the content area
+    public float PaddingRight = 50.0f;
+    public float PaddingBottom = 100.0f;
 
     // When editing a long line and moving to a short line, "remember" the column on the long line, unless the caret has been moved.
     public int DesiredVisualCol;
@@ -170,8 +176,7 @@ public class TextViewer : SkiaDrawable {
         CanFocus = true;
         Cursor = Cursors.IBeam;
 
-        BackgroundColor = Settings.Instance.Theme.Background;
-        Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.Background;
+        SetupBackgroundColor();
 
         pixelLayout.Add(activePopupPanel, 0, 0);
         Content = pixelLayout;
@@ -387,15 +392,14 @@ public class TextViewer : SkiaDrawable {
                 ? foldingWidth + LineNumberPadding * 3.0f
                 : LineNumberPadding;
 
-        const float paddingRight = 50.0f;
-        const float paddingBottom = 100.0f;
-
+        var targetSize = new Size((int)(width + textOffsetX + PaddingRight), (int)(height + PaddingBottom));
         // Apparently you need to set the size from the parent on WPF?
         if (Eto.Platform.Instance.IsWpf) {
-            scrollable.ScrollSize = new((int)(width + textOffsetX + paddingRight), (int)(height + paddingBottom));
+            scrollable.ScrollSize = targetSize;
         } else {
-            Size = new((int)(width + textOffsetX + paddingRight), (int)(height + paddingBottom));
+            Size = targetSize;
         }
+        PreferredSizeChanged?.Invoke(targetSize);
 
         RecalcPopupMenu();
         Invalidate();
@@ -520,6 +524,7 @@ public class TextViewer : SkiaDrawable {
 
         if (e.Handled) {
             Recalc();
+            ScrollCaretIntoView();
         }
     }
 
@@ -1205,8 +1210,22 @@ public class TextViewer : SkiaDrawable {
     public override int DrawHeight => scrollable.Height;
     public override bool CanDraw => !Document.UpdateInProgress;
 
+    protected virtual void SetupBackgroundColor() {
+        BackgroundColor = Settings.Instance.Theme.Background;
+        Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.Background;
+    }
+
     protected virtual void DrawLine(SKCanvas canvas, string line, float x, float y) {
         canvas.DrawText(line, x, y + Font.Offset(), Font, Settings.Instance.Theme.StatusFgPaint);
+    }
+    protected virtual void DrawCurrentLineHighlight(SKCanvas canvas, float carY, SKPaint fillPaint) {
+        fillPaint.ColorF = Settings.Instance.Theme.CurrentLine.ToSkia();
+        canvas.DrawRect(
+            x: scrollablePosition.X,
+            y: carY,
+            w: scrollable.Width,
+            h: Font.LineHeight(),
+            fillPaint);
     }
     protected virtual void DrawWrappedLine(SKCanvas canvas, string subLine, float x, float y) {
         canvas.DrawText(subLine, x, y + Font.Offset(), Font, Settings.Instance.Theme.CommentPaint.ForegroundColor);
@@ -1257,7 +1276,6 @@ public class TextViewer : SkiaDrawable {
         int bottomVisualRow = (int)((scrollablePosition.Y + scrollableSize.Height) / Font.LineHeight()) + OffscreenLinePadding;
         int topRow = Math.Max(0, GetActualRow(topVisualRow));
         int bottomRow = Math.Min(Document.Lines.Count - 1, GetActualRow(bottomVisualRow));
-        Console.WriteLine($"Draw {this}: {topVisualRow} ~ {bottomVisualRow} // {topRow} ~ {bottomRow} // {scrollablePosition} vs {scrollable.ScrollPosition}");
 
         // Draw text
         float yPos = actualToVisualRows[topRow] * Font.LineHeight();
@@ -1313,13 +1331,7 @@ public class TextViewer : SkiaDrawable {
         float carY = Font.LineHeight() * caretPos.Row;
 
         // Highlight caret line
-        fillPaint.ColorF = Settings.Instance.Theme.CurrentLine.ToSkia();
-        canvas.DrawRect(
-            x: scrollablePosition.X,
-            y: carY,
-            w: scrollable.Width,
-            h: Font.LineHeight(),
-            fillPaint);
+        DrawCurrentLineHighlight(canvas, carY, fillPaint);
 
         // Draw caret
         if (HasFocus) {
