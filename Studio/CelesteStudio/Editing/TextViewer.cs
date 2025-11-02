@@ -71,6 +71,7 @@ public class TextViewer : SkiaDrawable {
 
             void HandleTextChanged(Document _, Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
                 TextChanged(document, insertions, deletions);
+                Recalc();
             }
             Document.Patch? HandleFixupPatch(Document _, Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
                 var fixup = Document.Update(raiseEvents: false);
@@ -158,10 +159,8 @@ public class TextViewer : SkiaDrawable {
     private bool lastFindMatchCase = false;
 
     public TextViewer(Document document, Scrollable scrollable) {
-        this.document = document;
         this.scrollable = scrollable;
-
-        PostDocumentChanged(document);
+        Document = document;
 
         CanFocus = true;
         Cursor = Cursors.IBeam;
@@ -469,8 +468,6 @@ public class TextViewer : SkiaDrawable {
         if (e.Key is Keys.LeftAlt or Keys.RightAlt) mods |= Keys.Alt;
         if (e.Key is Keys.LeftApplication or Keys.RightApplication) mods |= Keys.Application;
         UpdateMouseCursor(PointFromScreen(Mouse.Position), mods);
-
-        Console.WriteLine($"KEY: {e}");
 
         // Handle bindings
         if (e.Key != Keys.None && CheckHotkey(Hotkey.FromEvent(e))) {

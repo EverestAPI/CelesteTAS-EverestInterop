@@ -309,6 +309,20 @@ public static class DictionaryExtensions {
         }
         dict[key] = [..values];
     }
+
+    /// Insert all keys from the other dictionary into the current one
+    /// Will overwrite overlapping keys
+    public static void AddRange<TKey, TValue>(this IDictionary<TKey, TValue> dict, IDictionary<TKey, TValue> other) where TKey : notnull {
+#if NET7_0_OR_GREATER
+        if (dict is Dictionary<TKey, TValue> dictionary) {
+            dictionary.EnsureCapacity(other.Count);
+        }
+#endif
+
+        foreach (var (key, value) in other) {
+            dict[key] = value;
+        }
+    }
 }
 
 public static class HashSetExtensions {
