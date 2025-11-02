@@ -139,6 +139,9 @@ public class TextViewer : SkiaDrawable {
     private readonly Panel activePopupPanel = new();
     internal PopupMenu? ActivePopupMenu => activePopupPanel.Visible ? activePopupPanel.Content as PopupMenu : null;
 
+    /// Toggle for displaying line numbers
+    public bool ShowLineNumbers = true;
+
     // When editing a long line and moving to a short line, "remember" the column on the long line, unless the caret has been moved.
     public int DesiredVisualCol;
     // Offset from the left accounting for line numbers
@@ -176,8 +179,7 @@ public class TextViewer : SkiaDrawable {
             scrollablePosition = scrollable.ScrollPosition;
 
             // Only update if required
-            int newVisibleDigits = VisibleLineNumberDigits;
-            if (lastVisibleLineNumberDigits != newVisibleDigits) {
+            if (ShowLineNumbers && VisibleLineNumberDigits is var newVisibleDigits && lastVisibleLineNumberDigits != newVisibleDigits) {
                 lastVisibleLineNumberDigits = newVisibleDigits;
                 Recalc();
             } else {
@@ -369,7 +371,7 @@ public class TextViewer : SkiaDrawable {
         // Calculate line numbers width
         const float foldButtonPadding = 5.0f;
         bool hasFoldings = Settings.Instance.ShowFoldIndicators && foldings.Count != 0;
-        int visibleDigits = VisibleLineNumberDigits;
+        int visibleDigits = ShowLineNumbers ? VisibleLineNumberDigits : 0;
 
         // Only when the alignment is to the left, the folding indicator can fit into the existing space
         float foldingWidth = !hasFoldings ? 0.0f : Settings.Instance.LineNumberAlignment switch {
@@ -377,7 +379,11 @@ public class TextViewer : SkiaDrawable {
              LineNumberAlignment.Right => Font.CharWidth() * (visibleDigits + 1) + foldButtonPadding,
              _ => throw new UnreachableException(),
         };
-        textOffsetX = Math.Max(foldingWidth, Font.CharWidth() * visibleDigits) + LineNumberPadding * 3.0f;
+        textOffsetX = ShowLineNumbers
+            ? Math.Max(foldingWidth, Font.CharWidth() * visibleDigits) + LineNumberPadding * 3.0f
+            : hasFoldings
+                ? foldingWidth + LineNumberPadding * 3.0f
+                : LineNumberPadding;
 
         const float paddingRight = 50.0f;
         const float paddingBottom = 100.0f;
@@ -1198,7 +1204,7 @@ public class TextViewer : SkiaDrawable {
     public override bool CanDraw => !Document.UpdateInProgress;
 
     protected virtual void DrawLine(SKCanvas canvas, string line, float x, float y) {
-        canvas.DrawText(line, x, y + Font.Offset(), Font, Settings.Instance.Theme.CommentPaint.ForegroundColor);
+        canvas.DrawText(line, x, y + Font.Offset(), Font, Settings.Instance.Theme.StatusFgPaint);
     }
     protected virtual void DrawWrappedLine(SKCanvas canvas, string subLine, float x, float y) {
         canvas.DrawText(subLine, x, y + Font.Offset(), Font, Settings.Instance.Theme.CommentPaint.ForegroundColor);
@@ -1357,43 +1363,45 @@ public class TextViewer : SkiaDrawable {
         }
 
         // Draw line numbers
-        DrawLineNumberBackground(canvas, fillPaint, strokePaint, yPos);
+        if (ShowLineNumbers) {
+            DrawLineNumberBackground(canvas, fillPaint, strokePaint, yPos);
 
-        yPos = actualToVisualRows[topRow] * Font.LineHeight();
-        for (int row = topRow; row <= bottomRow; row++) {
-            int oldRow = row;
-            var numberString = (row + 1).ToString();
+            yPos = actualToVisualRows[topRow] * Font.LineHeight();
+            for (int row = topRow; row <= bottomRow; row++) {
+                int oldRow = row;
+                var numberString = (row + 1).ToString();
 
-            fillPaint.ColorF = GetLineNumberBackground(row).ToSkia();
+                fillPaint.ColorF = GetLineNumberBackground(row).ToSkia();
 
-            if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Left) {
-                canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding, yPos + Font.Offset(), Font, fillPaint);
-            } else if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Right) {
-                float ident = Font.CharWidth() * (bottomRow.Digits() - (row + 1).Digits());
-                canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding + ident, yPos + Font.Offset(), Font, fillPaint);
-            }
+                if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Left) {
+                    canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding, yPos + Font.Offset(), Font, fillPaint);
+                } else if (Settings.Instance.LineNumberAlignment == LineNumberAlignment.Right) {
+                    float ident = Font.CharWidth() * (bottomRow.Digits() - (row + 1).Digits());
+                    canvas.DrawText(numberString, scrollablePosition.X + LineNumberPadding + ident, yPos + Font.Offset(), Font, fillPaint);
+                }
 
-            bool collapsed = false;
-            if (GetCollapse(row) is { } collapse) {
-                row = collapse.MaxRow;
-                collapsed = true;
-            }
-            if (Settings.Instance.ShowFoldIndicators && foldings.FirstOrDefault(fold => fold.MinRow == oldRow) is var folding && folding.MinRow != folding.MaxRow) {
-                canvas.Save();
-                canvas.Translate(
-                    dx: scrollablePosition.X + textOffsetX - LineNumberPadding * 2.0f - Font.CharWidth(),
-                    dy: yPos + (Font.LineHeight() - Font.CharWidth()) / 2.0f);
-                canvas.Scale(Font.CharWidth());
+                bool collapsed = false;
+                if (GetCollapse(row) is { } collapse) {
+                    row = collapse.MaxRow;
+                    collapsed = true;
+                }
+                if (Settings.Instance.ShowFoldIndicators && foldings.FirstOrDefault(fold => fold.MinRow == oldRow) is var folding && folding.MinRow != folding.MaxRow) {
+                    canvas.Save();
+                    canvas.Translate(
+                        dx: scrollablePosition.X + textOffsetX - LineNumberPadding * 2.0f - Font.CharWidth(),
+                        dy: yPos + (Font.LineHeight() - Font.CharWidth()) / 2.0f);
+                    canvas.Scale(Font.CharWidth());
 
-                canvas.DrawPath(collapsed ? Assets.CollapseClosedPath : Assets.CollapseOpenPath, fillPaint);
+                    canvas.DrawPath(collapsed ? Assets.CollapseClosedPath : Assets.CollapseOpenPath, fillPaint);
 
-                canvas.Restore();
-            }
+                    canvas.Restore();
+                }
 
-            if (lineWraps.TryGetValue(oldRow, out wrap)) {
-                yPos += Font.LineHeight() * wrap.Lines.Length;
-            } else {
-                yPos += Font.LineHeight();
+                if (lineWraps.TryGetValue(oldRow, out wrap)) {
+                    yPos += Font.LineHeight() * wrap.Lines.Length;
+                } else {
+                    yPos += Font.LineHeight();
+                }
             }
         }
     }

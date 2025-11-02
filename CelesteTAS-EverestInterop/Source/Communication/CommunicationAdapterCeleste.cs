@@ -9,7 +9,6 @@ using Celeste.Mod;
 using StudioCommunication;
 using StudioCommunication.Util;
 using TAS.EverestInterop;
-using TAS.EverestInterop.InfoHUD;
 using TAS.InfoHUD;
 using TAS.Input;
 using TAS.Input.Commands;
@@ -82,6 +81,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 object? arg = gameDataType switch {
                     GameDataType.ConsoleCommand => reader.ReadBoolean(),
                     GameDataType.SettingValue => reader.ReadString(),
+                    GameDataType.EvaluateInfoTemplate => reader.ReadObject<string[]>(),
                     GameDataType.CommandHash => reader.ReadObject<(string, string[], string, int)>(),
                     _ => null,
                 };
@@ -112,6 +112,9 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                 break;
                             case GameDataType.CustomInfoTemplate:
                                 gameData = !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty;
+                                break;
+                            case GameDataType.EvaluateInfoTemplate:
+                                gameData = InfoCustom.ParseTemplate((string[])arg!, TasSettings.CustomInfoDecimals, forceAllowCodeExecution: true).ToArray();
                                 break;
                             case GameDataType.GameState:
                                 gameData = GameData.GetGameState();
@@ -155,6 +158,10 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                 case GameDataType.ModUrl:
                                 case GameDataType.CustomInfoTemplate:
                                     writer.Write((string?)gameData ?? string.Empty);
+                                    break;
+
+                                case GameDataType.EvaluateInfoTemplate:
+                                    writer.WriteObject((string[])gameData!);
                                     break;
 
                                 case GameDataType.GameState:

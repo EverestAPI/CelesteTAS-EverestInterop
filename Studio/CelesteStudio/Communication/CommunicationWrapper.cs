@@ -240,6 +240,15 @@ public static class CommunicationWrapper {
         return (LevelInfo?)comm!.RequestGameData(GameDataType.LevelInfo).Result;
     }
 
+    public static async Task<string[]> EvaluateInfoTemplateAsync(string[] template) {
+        if (!Connected) {
+            return [];
+        }
+
+        object? result = await comm!.RequestGameData(GameDataType.EvaluateInfoTemplate, template).ConfigureAwait(false);
+        return result as string[] ?? [];
+    }
+
     // The hashcode is stored instead of the actual key, since it is used as an identifier in responses from Celeste
     private static readonly Dictionary<int, List<CommandAutoCompleteEntry>> autoCompleteEntryCacheDone = [];
     private static readonly Dictionary<int, List<CommandAutoCompleteEntry>> autoCompleteEntryCachePending = [];
