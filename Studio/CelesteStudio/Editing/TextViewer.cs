@@ -71,7 +71,9 @@ public class TextViewer : SkiaDrawable {
 
             void HandleTextChanged(Document _, Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
                 TextChanged(document, insertions, deletions);
+
                 Recalc();
+                ScrollCaretIntoView();
             }
             Document.Patch? HandleFixupPatch(Document _, Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
                 var fixup = Document.Update(raiseEvents: false);
@@ -944,10 +946,10 @@ public class TextViewer : SkiaDrawable {
 
             primaryMouseButtonDown = true;
 
-            var (actualPos, visual) = LocationToCaretPosition(e.Location);
+            var (actualPos, visualPos) = LocationToCaretPosition(e.Location);
 
+            DesiredVisualCol = visualPos.Col;
             MoveCaretTo(actualPos, e.Modifiers.HasFlag(Keys.Shift));
-            DesiredVisualCol = visual.Col;
             ScrollCaretIntoView();
 
             e.Handled = true;
@@ -1255,6 +1257,7 @@ public class TextViewer : SkiaDrawable {
         int bottomVisualRow = (int)((scrollablePosition.Y + scrollableSize.Height) / Font.LineHeight()) + OffscreenLinePadding;
         int topRow = Math.Max(0, GetActualRow(topVisualRow));
         int bottomRow = Math.Min(Document.Lines.Count - 1, GetActualRow(bottomVisualRow));
+        Console.WriteLine($"Draw {this}: {topVisualRow} ~ {bottomVisualRow} // {topRow} ~ {bottomRow} // {scrollablePosition} vs {scrollable.ScrollPosition}");
 
         // Draw text
         float yPos = actualToVisualRows[topRow] * Font.LineHeight();

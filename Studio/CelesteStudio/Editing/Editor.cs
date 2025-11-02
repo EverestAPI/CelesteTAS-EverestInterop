@@ -137,8 +137,6 @@ public sealed class Editor : TextEditor {
             LastModification = DateTime.UtcNow;
 
             Task.Run(() => FileRefactor.FixRoomLabelIndices(Document.FilePath, StyleConfig.Current, Document.Caret.Row));
-            Recalc();
-            ScrollCaretIntoView();
         };
         FixupText += (_, insertions, _) => {
             FormatLines(insertions.Keys);

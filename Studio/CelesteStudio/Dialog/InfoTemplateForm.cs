@@ -26,7 +26,7 @@ public class InfoTemplateForm : Form {
             Width = Size.Width,
             Height = Size.Height,
         }.FixBorder();
-        var preview = new TextViewer(Document.Create(evaluatedTemplate), editorScrollable) { ShowLineNumbers = false };
+        var preview = new TextViewer(Document.Create(evaluatedTemplate), previewScrollable) { ShowLineNumbers = false };
         previewScrollable.Content = preview;
 
         editor.Document.TextChanged += (_, insertions, deletions) => Task.Run(async () => {
