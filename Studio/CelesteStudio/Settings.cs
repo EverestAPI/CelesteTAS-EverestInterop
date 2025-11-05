@@ -143,6 +143,7 @@ public sealed class Settings {
     }
 
     public static string SettingsPath => Path.Combine(BaseConfigPath, "Settings.toml");
+    public static string PopupStoragePath => Path.Combine(BaseConfigPath, "PopupStorage.toml");
 
     public static Settings Instance { get; private set; } = new();
 

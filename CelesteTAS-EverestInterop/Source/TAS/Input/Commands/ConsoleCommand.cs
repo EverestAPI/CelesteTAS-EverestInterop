@@ -23,11 +23,18 @@ public static class ConsoleCommand {
         public bool HasArguments => true;
 
         public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
+            AreaMode? currAreaMode = null;
+            int currAreaID = -1;
+            if (Engine.Scene.GetSession() is { } session) {
+                currAreaMode = session.Area.Mode;
+                currAreaID = session.Area.ID;
+            }
+
             if (args.Length == 1) {
                 // load-commands first as they are the most common
-                yield return new CommandAutoCompleteEntry { Name = "load", Extra = "A-Side", HasNext = true };
-                yield return new CommandAutoCompleteEntry { Name = "hard", Extra = "B-Side", HasNext = true };
-                yield return new CommandAutoCompleteEntry { Name = "rmx2", Extra = "C-Side", HasNext = true };
+                yield return new CommandAutoCompleteEntry { Name = "load", Extra = "A-Side", Suggestion = currAreaMode == AreaMode.Normal, HasNext = true, StorageKey = "CommandRoot" };
+                yield return new CommandAutoCompleteEntry { Name = "hard", Extra = "B-Side", Suggestion = currAreaMode == AreaMode.BSide,  HasNext = true, StorageKey = "CommandRoot" };
+                yield return new CommandAutoCompleteEntry { Name = "rmx2", Extra = "C-Side", Suggestion = currAreaMode == AreaMode.CSide,  HasNext = true, StorageKey = "CommandRoot" };
 
                 // Remaining commands
                 foreach (var command in Engine.Commands.GetCommands()) {
@@ -35,7 +42,7 @@ public static class ConsoleCommand {
                         continue;
                     }
 
-                    yield return new CommandAutoCompleteEntry { Name = command.Name.ToLowerInvariant(), HasNext = false };
+                    yield return new CommandAutoCompleteEntry { Name = command.Name.ToLowerInvariant(), HasNext = false, StorageKey = "CommandRoot" };
                 }
             } else if (args.Length >= 2 && LoadCommandRegex.Match(args[0]) is { Success: true } match) {
                 // Only support argument auto-complete for load commands
@@ -60,7 +67,9 @@ public static class ConsoleCommand {
                                     ? area.ID.ToString()
                                     : area.SID,
                                 Extra = Dialog.Clean(area.Name, Dialog.Languages[Settings.EnglishLanguage]),
-                                HasNext = false
+                                Suggestion = currAreaID == area.ID,
+                                HasNext = false,
+                                StorageKey = $"Command_{commandName}",
                             };
                         }
                     }

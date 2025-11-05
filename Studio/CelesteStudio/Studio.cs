@@ -8,6 +8,7 @@ using CelesteStudio.Communication;
 using CelesteStudio.Dialog;
 using CelesteStudio.Dialog.Git;
 using CelesteStudio.Editing;
+using CelesteStudio.Editing.ContextActions;
 using CelesteStudio.Migration;
 using CelesteStudio.Tool;
 using CelesteStudio.Util;
@@ -443,7 +444,7 @@ public sealed class Studio : Form {
     public static IEnumerable<Binding> GetAllStudioBindings() {
         return AllBindings
             .Concat(Editor.AllBindings)
-            .Concat(Editor.ContextActions.Select(contextAction => contextAction.ToBinding()))
+            .Concat(ContextActionsMenu.ContextActions.Select(contextAction => contextAction.ToBinding()))
             .Concat(GameInfo.AllBindings)
             .Concat(CommunicationWrapper.AllBindings);
     }

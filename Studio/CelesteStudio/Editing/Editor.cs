@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using CelesteStudio.Communication;
 using CelesteStudio.Controls;
 using CelesteStudio.Dialog;
+using CelesteStudio.Editing.AutoCompletion;
 using CelesteStudio.Editing.ContextActions;
 using CelesteStudio.Util;
 using Eto.Drawing;
@@ -59,7 +60,7 @@ public sealed class Editor : SkiaDrawable {
             document.FixupPatch += HandleFixupPatch;
 
             // Reset various state
-            ActivePopupMenu = null;
+            // ActivePopupMenu = null;
 
             FixInvalidInputs();
             Recalc();
@@ -209,11 +210,11 @@ public sealed class Editor : SkiaDrawable {
     });
 
     private static readonly ActionBinding OpenAutoCompleteMenu = CreateAction("Editor_OpenAutoCompleteMenu", "Open Auto-Complete Menu...", Hotkey.KeyCtrl(Keys.Space), editor => {
-        editor.UpdateAutoComplete();
+        editor.autoCompleteMenu.Refresh();
         editor.Recalc();
     });
     private static readonly ActionBinding OpenContextActionsMenu = CreateAction("Editor_OpenContextActionsMenu", "Open Context-Actions Menu...", Hotkey.KeyAlt(Keys.Enter), editor => {
-        editor.UpdateContextActions();
+        editor.contextActionsMenu.Refresh();
         editor.Recalc();
     });
 
@@ -238,25 +239,6 @@ public sealed class Editor : SkiaDrawable {
 
     #endregion
 
-    // These should be ordered from most specific to most applicable.
-    public static readonly ContextAction[] ContextActions = [
-        new CombineConsecutiveSameInputs(),
-
-        new SwapActions(Actions.Left, Actions.Right),
-        new SwapActions(Actions.Jump, Actions.Jump2),
-        new SwapActions(Actions.Dash, Actions.Dash2),
-
-        new ForceCombineInputFrames(),
-        new SplitFrames(),
-
-        new CreateRepeatCommand(),
-        new InlineRepeatCommand(),
-        new InlineReadCommand(),
-
-        new UseLineLink(LineLinkType.OpenReadFile),
-        new UseLineLink(LineLinkType.GoToPlayLine),
-    ];
-
     private readonly Scrollable scrollable;
     // These values need to be stored, since WPF doesn't like accessing them directly from the scrollable
     private Point scrollablePosition;
@@ -276,36 +258,11 @@ public sealed class Editor : SkiaDrawable {
     }
 
     private readonly PixelLayout pixelLayout = new();
-    private readonly PopupMenu autoCompleteMenu = new();
-    private readonly PopupMenu contextActionsMenu = new();
+    private readonly Panel activePopupPanel = new();
+    internal PopupMenu? ActivePopupMenu => activePopupPanel.Visible ? activePopupPanel.Content as PopupMenu : null;
 
-    private PopupMenu? activePopupMenu;
-    public PopupMenu? ActivePopupMenu {
-        get => activePopupMenu;
-        set {
-            if (activePopupMenu == value && (activePopupMenu?.Visible ?? false)) {
-                return;
-            }
-
-            if (activePopupMenu != null && value == null) {
-                activePopupMenu.Visible = false;
-            }
-            activePopupMenu = value;
-            if (activePopupMenu != null) {
-                activePopupMenu.Visible = true;
-            }
-
-            Recalc();
-        }
-    }
-
-    /// Auto-complete entries for commands and snippets
-    private readonly List<PopupMenu.Entry> baseAutoCompleteEntries = [];
-
-    /// Cancellation token for fetching command-argument auto-complete entries
-    private CancellationTokenSource? commandAutoCompleteTokenSource;
-    /// Index of the currently fetched entries, to prevent flashing "Loading..." while typing
-    private int lastAutoCompleteArgumentIndex = -1;
+    private readonly AutoCompleteMenu autoCompleteMenu;
+    private readonly ContextActionsMenu contextActionsMenu;
 
     private SKFont Font => FontManager.SKEditorFontRegular;
     private SyntaxHighlighter highlighter;
@@ -321,7 +278,7 @@ public sealed class Editor : SkiaDrawable {
     private float textOffsetX;
 
     // When editing a long line and moving to a short line, "remember" the column on the long line, unless the caret has been moved.
-    private int desiredVisualCol;
+    public int DesiredVisualCol;
 
     // Wrap long lines into multiple visual lines
     private readonly Dictionary<int, WrapEntry> commentLineWraps = new();
@@ -357,11 +314,10 @@ public sealed class Editor : SkiaDrawable {
         CanFocus = true;
         Cursor = Cursors.IBeam;
 
-        autoCompleteMenu.Visible = false;
-        contextActionsMenu.Visible = false;
+        autoCompleteMenu = new(this);
+        contextActionsMenu = new(this);
 
-        pixelLayout.Add(autoCompleteMenu, 0, 0);
-        pixelLayout.Add(contextActionsMenu, 0, 0);
+        pixelLayout.Add(activePopupPanel, 0, 0);
         Content = pixelLayout;
 
         Focus();
@@ -384,6 +340,8 @@ public sealed class Editor : SkiaDrawable {
             if (lastVisibleLineNumberDigits != newVisibleDigits) {
                 lastVisibleLineNumberDigits = newVisibleDigits;
                 Recalc();
+            } else {
+                RecalcPopupMenu();
             }
 
             Invalidate();
@@ -420,11 +378,11 @@ public sealed class Editor : SkiaDrawable {
 
             if (Settings.Instance.SyncCaretWithPlayback && state.CurrentLine != -1) {
                 if (Document.Caret.Row != state.CurrentLine) {
-                    ActivePopupMenu = null;
+                    ClosePopupMenu();
                 }
 
                 Document.Caret.Row = state.CurrentLine;
-                Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
+                Document.Caret.Col = DesiredVisualCol = ActionLine.MaxFramesDigits;
                 Document.Caret = ClampCaret(Document.Caret);
                 Document.Selection.Clear();
 
@@ -438,18 +396,15 @@ public sealed class Editor : SkiaDrawable {
         var commandsMenu = new SubMenuItem { Text = "Insert Other Command" };
 
         CommunicationWrapper.CommandsChanged += _ => {
-            GenerateBaseAutoCompleteEntries();
             GenerateCommandMenu();
             Recalc();
         };
         // Update command separator
         Settings.Changed += () => {
-            GenerateBaseAutoCompleteEntries();
             GenerateCommandMenu();
             Recalc();
         };
 
-        GenerateBaseAutoCompleteEntries();
         GenerateCommandMenu();
 
         void GenerateCommandMenu() {
@@ -780,7 +735,6 @@ public sealed class Editor : SkiaDrawable {
         // Clear invalid foldings
         Document.RemoveAnchorsIf(anchor => anchor.UserData is CollapseAnchorData && foldings.All(fold => fold.MinRow != anchor.Row));
 
-
         // Calculate line numbers width
         const float foldButtonPadding = 5.0f;
         bool hasFoldings = Settings.Instance.ShowFoldIndicators && foldings.Count != 0;
@@ -804,59 +758,74 @@ public sealed class Editor : SkiaDrawable {
             Size = new((int)(width + textOffsetX + paddingRight), (int)(height + paddingBottom));
         }
 
+        RecalcPopupMenu();
+
+        Invalidate();
+    }
+    public void RecalcPopupMenu() {
         // Update popup-menu position
-        if (ActivePopupMenu != null) {
-            const int menuXOffset = 8;
-            const int menuYOffset = 7;
-            const int menuLPadding = 7;
-            const int menuRPadding = 20;
-
-            float carX = Font.CharWidth() * Document.Caret.Col;
-            float carY = Font.LineHeight() * (actualToVisualRows[Document.Caret.Row] + 1);
-
-            int menuX, menuY;
-
-            void UpdateMenuH() {
-                menuX = (int)(carX + scrollablePosition.X + textOffsetX + menuXOffset);
-                int menuMaxRight = scrollablePosition.X + scrollableSize.Width - menuRPadding - (ActivePopupMenu.VScrollBarVisible ? Studio.ScrollBarSize : 0);
-                int menuMaxW = menuMaxRight - menuX;
-
-                // Try moving the menu to the left when there isn't enough space, before having to shrink it
-                if (menuMaxW < ActivePopupMenu.ContentWidth) {
-                    menuX = (int)Math.Max(menuMaxRight - ActivePopupMenu.ContentWidth, scrollablePosition.X + textOffsetX + menuLPadding);
-                    menuMaxW = menuMaxRight - menuX;
-                }
-
-                ActivePopupMenu.ContentWidth = Math.Min(ActivePopupMenu.ContentWidth, menuMaxW);
-            }
-            void UpdateMenuV() {
-                int menuYBelow = (int)(carY + menuYOffset);
-                int menuYAbove = (int)Math.Max(carY - Font.LineHeight() - menuYOffset - ActivePopupMenu.ContentHeight, scrollablePosition.Y + menuYOffset);
-
-                int menuMaxHBelow = (int)(scrollablePosition.Y + scrollableSize.Height - Font.LineHeight() - menuYBelow) - (ActivePopupMenu.HScrollBarVisible ? Studio.ScrollBarSize : 0);
-                int menuMaxHAbove = (int)(scrollablePosition.Y + carY - Font.LineHeight() - menuYOffset - menuYAbove);
-
-                // Chose above / below caret depending on which provides more height. Default to below
-                int menuMaxH;
-                if (Math.Min(ActivePopupMenu.ContentHeight, menuMaxHBelow) >= Math.Min(ActivePopupMenu.ContentHeight, menuMaxHAbove)) {
-                    menuY = menuYBelow;
-                    menuMaxH = menuMaxHBelow;
-                } else {
-                    menuY = menuYAbove;
-                    menuMaxH = menuMaxHAbove;
-                }
-
-                ActivePopupMenu.ContentHeight = Math.Min(ActivePopupMenu.ContentHeight, menuMaxH);
-            }
-
-            // Both depend on each-other, so one needs to be updated twice
-            UpdateMenuH();
-            UpdateMenuV();
-            UpdateMenuH();
-
-            ActivePopupMenu.Recalc();
-            pixelLayout.Move(ActivePopupMenu, menuX, menuY);
+        if (ActivePopupMenu is not { } menu) {
+            return;
         }
+
+        const int menuXOffset = 8;
+        const int menuYOffset = 7;
+        const int menuLPadding = 7;
+        const int menuRPadding = 20;
+
+        const float menuMaxHeightFactor = 0.5f;
+        const int menuMinMaxHeight = 250;
+
+        float carX = Font.CharWidth() * Document.Caret.Col;
+        float carY = Font.LineHeight() * (actualToVisualRows[Document.Caret.Row] + 1);
+
+        int menuX, menuY;
+
+        void UpdateMenuH() {
+            menuX = (int)(carX + scrollablePosition.X + textOffsetX + menuXOffset);
+            int menuMaxRight = scrollablePosition.X + scrollableSize.Width - menuRPadding - (menu.VScrollBarVisible ? Studio.ScrollBarSize : 0);
+            int menuMaxW = menuMaxRight - menuX;
+
+            // Try moving the menu to the left when there isn't enough space, before having to shrink it
+            int recommendedWidth = menu.RecommendedWidth;
+            if (menuMaxW < recommendedWidth) {
+                menuX = (int)Math.Max(menuMaxRight - recommendedWidth, scrollablePosition.X + textOffsetX + menuLPadding);
+                menuMaxW = menuMaxRight - menuX;
+            }
+
+            menu.ContentWidth = Math.Min(recommendedWidth, menuMaxW);
+        }
+        void UpdateMenuV() {
+            int menuMaxHeight = Math.Max(menuMinMaxHeight, (int)(scrollableSize.Height * menuMaxHeightFactor));
+            int menuHeight = Math.Min(menuMaxHeight, menu.ContentHeight);
+
+            int menuYBelow = (int)(carY + menuYOffset);
+            int menuYAbove = (int)Math.Max(carY - Font.LineHeight() - menuYOffset - menuHeight, scrollablePosition.Y + menuYOffset);
+
+            int menuMaxHBelow = (int)(scrollablePosition.Y + scrollableSize.Height - Font.LineHeight() - menuYBelow) - (menu.HScrollBarVisible ? Studio.ScrollBarSize : 0);
+            int menuMaxHAbove = (int)(Math.Min(scrollablePosition.Y + scrollableSize.Height, carY) - Font.LineHeight() - menuYOffset - menuYAbove) - (menu.HScrollBarVisible ? Studio.ScrollBarSize : 0);
+
+            // Chose above / below caret depending on which provides more height. Default to below
+            int menuMaxH;
+            if (Math.Min(menuHeight, menuMaxHBelow) >= Math.Min(menuHeight, menuMaxHAbove)) {
+                menuY = menuYBelow;
+                menuMaxH = menuMaxHBelow;
+            } else {
+                menuY = menuYAbove;
+                menuMaxH = menuMaxHAbove;
+            }
+
+            menu.ContentHeight = Math.Min(menuHeight, menuMaxH);
+        }
+
+        // Calculate required content size
+        menu.Recalc();
+        // Both depend on each-other, so one needs to be updated twice
+        UpdateMenuH();
+        UpdateMenuV();
+        UpdateMenuH();
+
+        pixelLayout.Move(activePopupPanel, menuX, menuY);
 
         Invalidate();
     }
@@ -1068,16 +1037,11 @@ public sealed class Editor : SkiaDrawable {
 
         // Prevent editing file on accident
         if (Settings.Instance.SendInputsToCeleste && CommunicationWrapper.PlaybackRunning && Settings.Instance.SendInputsDisableWhileRunning) {
-            ActivePopupMenu = null;
-            lastAutoCompleteArgumentIndex = -1;
-
             e.Handled = true;
             return;
         }
 
-        // While there are quick-edits available, Tab will cycle through them
-        // Using tab doesn't feel "right" for the context actions menu
-        if (ActivePopupMenu?.HandleKeyDown(e, useTabComplete: ActivePopupMenu == autoCompleteMenu && !GetQuickEdits().Any()) ?? false) {
+        if (ActivePopupMenu is { } menu && menu.HandleKeyDown(e)) {
             e.Handled = true;
             Recalc();
             return;
@@ -1094,9 +1058,9 @@ public sealed class Editor : SkiaDrawable {
 
                 // Don't start a new base auto-complete. Only arguments
                 if (!string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
-                    UpdateAutoComplete();
+                    autoCompleteMenu.Refresh();
                 } else {
-                    CloseAutoCompletePopup();
+                    ClosePopupMenu();
                 }
 
                 e.Handled = true;
@@ -1456,67 +1420,38 @@ public sealed class Editor : SkiaDrawable {
 
     #endregion
 
-    // Helper methods to only close a specific menu type and not close an unrelated menu
-    private void CloseAutoCompletePopup() {
-        if (ActivePopupMenu == autoCompleteMenu) {
-            ActivePopupMenu = null;
-            lastAutoCompleteArgumentIndex = -1;
-        }
+    #region Popup Menu
+
+    public void OpenPopupMenu(PopupMenu menu) {
+        activePopupPanel.Content = menu;
+        activePopupPanel.Visible = true;
+
+        menu.Visible = true;
     }
-    private void CloseContextActionsPopup() {
-        if (ActivePopupMenu == contextActionsMenu) {
-            ActivePopupMenu = null;
+    public void ClosePopupMenu() {
+        if (ActivePopupMenu is { } menu) {
+            menu.Visible = false;
         }
+
+        activePopupPanel.Visible = false;
     }
 
-    #region Auto Complete
+    #endregion
 
-    private void GenerateBaseAutoCompleteEntries() {
-        baseAutoCompleteEntries.Clear();
+    #region Quick Edit
 
-        // Snippets
-        foreach (var snippet in Settings.Instance.Snippets) {
-            if (!string.IsNullOrWhiteSpace(snippet.Shortcut) && snippet.Enabled &&
-                CreateEntry(snippet.Shortcut, snippet.Insert, "Snippet", hasArguments: false) is { } entry)
-            {
-                baseAutoCompleteEntries.Add(entry);
-            }
-        }
+    /*
+     * Quick-edits are anchors to switch through with tab and edit
+     * They are used by auto-complete snippets
+     */
 
-        // Commands
-        foreach (string? commandName in CommandInfo.CommandOrder) {
-            if (commandName != null && CommunicationWrapper.Commands.FirstOrDefault(cmd => cmd.Name == commandName) is var command && !string.IsNullOrEmpty(command.Name) &&
-                CreateEntry(command.Name, command.Insert.Replace(CommandInfo.Separator, Settings.Instance.CommandSeparatorText), "Command", command.HasArguments) is { } entry)
-            {
-                baseAutoCompleteEntries.Add(entry);
-            }
-        }
-        foreach (var command in CommunicationWrapper.Commands) {
-            if (!CommandInfo.CommandOrder.Contains(command.Name) && !CommandInfo.HiddenCommands.Contains(command.Name) &&
-                CreateEntry(command.Name, command.Insert.Replace(CommandInfo.Separator, Settings.Instance.CommandSeparatorText), "Command", command.HasArguments) is { } entry)
-            {
-                baseAutoCompleteEntries.Add(entry);
-            }
-        }
-
-        return;
-
-        PopupMenu.Entry? CreateEntry(string name, string insert, string extra, bool hasArguments) {
-            if (CreateQuickEditAction(insert, hasArguments) is not { } action) {
-                return null;
-            }
-
-            return new PopupMenu.Entry {
-                SearchText = name,
-                DisplayText = name,
-                ExtraText = extra,
-                OnUse = action,
-            };
-        }
+    public record struct QuickEditAnchorData {
+        public required int Index;
+        public required string DefaultText;
     }
 
     /// Creates an action, which will insert the quick edit when invoked
-    private Action? CreateQuickEditAction(string insert, bool hasArguments) {
+    public Action? CreateQuickEditAction(string insert, bool hasArguments) {
         var quickEdit = QuickEdit.Parse(insert);
         if (quickEdit == null) {
             return null;
@@ -1545,249 +1480,19 @@ public sealed class Editor : SkiaDrawable {
                 }
                 SelectQuickEditIndex(0);
             } else {
-                desiredVisualCol = Document.Caret.Col = Document.Lines[Document.Caret.Row].Length;
+                DesiredVisualCol = Document.Caret.Col = Document.Lines[Document.Caret.Row].Length;
             }
 
-            if (hasArguments) {
-                // Keep open for arguments (but not a new base auto-complete)
-                if (!string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
-                    UpdateAutoComplete();
-                } else {
-                    CloseAutoCompletePopup();
-                }
+            // Keep open for arguments (but not a new base auto-complete)
+            if (hasArguments && !string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
+                autoCompleteMenu.Refresh();
             } else {
-                ActivePopupMenu = null;
+                ClosePopupMenu();
             }
         };
     }
 
-    private void UpdateAutoComplete(bool open = true) {
-        string fullLine = Document.Lines[Document.Caret.Row];
-        Document.Caret.Col = Math.Clamp(Document.Caret.Col, 0, fullLine.Length);
-
-        // Don't auto-complete on comments or action lines
-        string fullLineTrimmed = fullLine.TrimStart();
-        if (fullLineTrimmed.StartsWith('#') || fullLineTrimmed.StartsWith('*') || ActionLine.TryParse(fullLineTrimmed, out _)) {
-            CloseAutoCompletePopup();
-            return;
-        }
-
-        // Ignore text to the right of the caret to auto-completion
-        string line = fullLine[..Document.Caret.Col].TrimStart();
-
-        if (open) {
-            ActivePopupMenu = autoCompleteMenu;
-        }
-        if (ActivePopupMenu == null) {
-            lastAutoCompleteArgumentIndex = -1;
-            return;
-        }
-
-        // Use auto-complete entries for current command
-        var commandLine = CommandLine.Parse(line);
-        var fullCommandLine = CommandLine.Parse(fullLine);
-
-        if (commandLine == null || commandLine.Value.Arguments.Length == 0 ||
-            fullCommandLine == null || fullCommandLine.Value.Arguments.Length == 0)
-        {
-            autoCompleteMenu.Entries.Clear();
-            autoCompleteMenu.Entries.AddRange(baseAutoCompleteEntries);
-            autoCompleteMenu.Filter = line;
-            lastAutoCompleteArgumentIndex = -1;
-        } else {
-            var command = CommunicationWrapper.Commands.FirstOrDefault(cmd => string.Equals(cmd.Name, commandLine.Value.Command, StringComparison.OrdinalIgnoreCase));
-
-            var loadingEntry = new PopupMenu.Entry {
-                DisplayText = string.Empty,
-                SearchText = string.Empty,
-                ExtraText = string.Empty,
-                OnUse = null!,
-                Disabled = true,
-            };
-
-            if (!string.IsNullOrEmpty(command.Name) && command.HasArguments) {
-                var lastArgRegion = commandLine.Value.Regions[^1];
-
-                commandAutoCompleteTokenSource?.Cancel();
-                commandAutoCompleteTokenSource?.Dispose();
-                commandAutoCompleteTokenSource = new CancellationTokenSource();
-
-                // Don't clear on same argument to prevent flashing "Loading..."
-                if (lastAutoCompleteArgumentIndex != commandLine.Value.Arguments.Length) {
-                    autoCompleteMenu.Entries.Clear();
-                    autoCompleteMenu.Entries.Add(loadingEntry);
-                    autoCompleteMenu.Recalc();
-                    Recalc();
-                }
-                lastAutoCompleteArgumentIndex = commandLine.Value.Arguments.Length;
-
-                var token = commandAutoCompleteTokenSource.Token;
-                Task.Run(async () => {
-                    int loadingDots = 0;
-
-                    while (!token.IsCancellationRequested && ActivePopupMenu == autoCompleteMenu && await Application.Instance.InvokeAsync(() => ActivePopupMenu.Visible).ConfigureAwait(false)) {
-                        if (!CommunicationWrapper.Connected) {
-                            loadingEntry.DisplayText = "Connection with Celeste required for command auto-complete!";
-                            await Application.Instance.InvokeAsync(() => {
-                                autoCompleteMenu.Entries.Clear();
-                                autoCompleteMenu.Entries.Add(loadingEntry);
-                                autoCompleteMenu.Recalc();
-                                Recalc();
-                            }).ConfigureAwait(false);
-
-                            break;
-                        }
-
-                        loadingDots = (loadingDots + 1).Mod(4);
-                        loadingEntry.DisplayText = $"Loading{new string('.', loadingDots)}{new string(' ', 3 - loadingDots)}";
-
-                        (var commandEntries, bool done) = await CommunicationWrapper.RequestAutoCompleteEntries(command.Name, commandLine.Value.Arguments, Document.FilePath, Document.Caret.Row).ConfigureAwait(false);
-
-                        var menuEntries = commandEntries.Select(entry => new PopupMenu.Entry {
-                            SearchText = entry.FullName,
-                            DisplayText = entry.Name,
-                            ExtraText = entry.Extra,
-                            OnUse = () => {
-                                using var __ = Document.Update();
-
-                                string insert = entry.FullName;
-
-                                var selectedQuickEdit = GetQuickEdits()
-                                    .FirstOrDefault(anchor => Document.Caret.Row == anchor.Row &&
-                                                              Document.Caret.Col >= anchor.MinCol &&
-                                                              Document.Caret.Col <= anchor.MaxCol);
-
-                                // Jump to the next parameter and open the auto-complete menu if applicable
-                                if (selectedQuickEdit != null) {
-                                    // Replace the current quick-edit instead
-                                    Document.ReplaceRangeInLine(selectedQuickEdit.Row, selectedQuickEdit.MinCol, selectedQuickEdit.MaxCol, insert);
-
-                                    if (entry.IsDone) {
-                                        var quickEdits = GetQuickEdits().ToArray();
-                                        bool lastQuickEditSelected = quickEdits.Length != 0 &&
-                                                                     quickEdits[^1].Row == Document.Caret.Row &&
-                                                                     quickEdits[^1].MinCol <= Document.Caret.Col &&
-                                                                     quickEdits[^1].MaxCol >= Document.Caret.Col;
-
-                                        if (lastQuickEditSelected) {
-                                            ClearQuickEdits();
-                                            Document.Selection.Clear();
-                                            Document.Caret.Col = Document.Lines[Document.Caret.Row].Length;
-
-                                            CloseAutoCompletePopup();
-                                        } else {
-                                            SelectNextQuickEdit();
-
-                                            // Don't start a new base auto-complete. Only arguments
-                                            if (!string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
-                                                UpdateAutoComplete();
-                                            } else {
-                                                CloseAutoCompletePopup();
-                                            }
-                                        }
-                                    } else {
-                                        Document.Selection.Clear();
-                                        Document.Caret.Col = selectedQuickEdit.MinCol + insert.Length;
-
-                                        UpdateAutoComplete();
-                                    }
-                                } else {
-                                    if (!entry.IsDone) {
-                                        Document.ReplaceRangeInLine(Document.Caret.Row, lastArgRegion.StartCol, lastArgRegion.EndCol, insert);
-                                        Document.Caret.Col = desiredVisualCol = lastArgRegion.StartCol + insert.Length;
-                                        Document.Selection.Clear();
-
-                                        UpdateAutoComplete();
-                                    } else if (entry.HasNext ?? false/*command.Value.AutoCompleteEntries.Length != allArgs.Length - 1*/) {
-                                        // Include separator for next argument
-                                        Document.ReplaceRangeInLine(Document.Caret.Row, lastArgRegion.StartCol, lastArgRegion.EndCol, insert + commandLine.Value.ArgumentSeparator);
-                                        Document.Caret.Col = desiredVisualCol = lastArgRegion.StartCol + insert.Length + commandLine.Value.ArgumentSeparator.Length;
-                                        Document.Selection.Clear();
-
-                                        UpdateAutoComplete();
-                                    } else {
-                                        Document.ReplaceRangeInLine(Document.Caret.Row, lastArgRegion.StartCol, lastArgRegion.EndCol, insert);
-                                        Document.Caret.Col = desiredVisualCol = lastArgRegion.StartCol + insert.Length;
-                                        Document.Selection.Clear();
-
-                                        CloseAutoCompletePopup();
-                                    }
-                                }
-                            },
-                        });
-
-                        await Application.Instance.InvokeAsync(() => {
-                            autoCompleteMenu.Entries.Clear();
-                            autoCompleteMenu.Entries.AddRange(menuEntries);
-                            if (!done) {
-                                autoCompleteMenu.Entries.Add(loadingEntry);
-                            }
-
-                            autoCompleteMenu.Recalc();
-                            Recalc();
-                        }).ConfigureAwait(false);
-
-                        if (done) {
-                            commandAutoCompleteTokenSource?.Dispose();
-                            commandAutoCompleteTokenSource = null;
-                            break;
-                        }
-
-                        await Task.Delay(TimeSpan.FromSeconds(0.25f), token).ConfigureAwait(false);
-                    }
-                }, token);
-            } else {
-                autoCompleteMenu.Entries.Clear();
-                autoCompleteMenu.Recalc();
-                Recalc();
-            }
-
-            if (GetSelectedQuickEdit() is { } quickEdit && commandLine.Value.Arguments[^1] == quickEdit.DefaultText) {
-                // Display all entries when quick-edit still contains the default
-                autoCompleteMenu.Filter = string.Empty;
-            } else {
-                autoCompleteMenu.Filter = commandLine.Value.Arguments[^1];
-            }
-        }
-    }
-
-    #endregion
-
-    #region Context Actions
-
-    private void UpdateContextActions() {
-        contextActionsMenu.Entries = ContextActions
-            .Select(contextAction => {
-                var hotkey = Settings.Instance.KeyBindings.GetValueOrDefault(contextAction.Identifier, contextAction.DefaultHotkey);
-
-                return contextAction.Check() ?? new PopupMenu.Entry {
-                    DisplayText = contextAction.DisplayName,
-                    SearchText = contextAction.DisplayName,
-                    ExtraText = hotkey.KeysOrNone != Keys.None ? hotkey.ToShortcutString() : string.Empty,
-                    Disabled = true,
-                    OnUse = () => {},
-                };
-            })
-            .OrderBy(entry => entry.Disabled ? 1 : 0)
-            .ToList();
-
-        if (contextActionsMenu.Entries.Count > 0) {
-            ActivePopupMenu = contextActionsMenu;
-        }
-    }
-
-    #endregion
-
-    #region Quick Edit
-
-    /*
-     * Quick-edits are anchors to switch through with tab and edit
-     * They are used by auto-complete snippets
-     */
-
-    private record struct QuickEditAnchorData { public required int Index; public required string DefaultText; }
-
-    private void SelectNextQuickEdit() {
+    public void SelectNextQuickEdit() {
         var quickEdits = GetQuickEdits().ToArray();
         // Sort linearly inside the document
         Array.Sort(quickEdits, (a, b) => a.Row == b.Row
@@ -1817,7 +1522,7 @@ public sealed class Editor : SkiaDrawable {
         }
 
         Document.Caret.Row = quickEdit.Row;
-        Document.Caret.Col = desiredVisualCol = quickEdit.MinCol;
+        Document.Caret.Col = DesiredVisualCol = quickEdit.MinCol;
         Document.Selection = new Selection {
             Start = new CaretPosition(quickEdit.Row, quickEdit.MinCol),
             End = new CaretPosition(quickEdit.Row, quickEdit.MaxCol),
@@ -1855,7 +1560,7 @@ public sealed class Editor : SkiaDrawable {
         }
 
         Document.Caret.Row = quickEdit.Row;
-        Document.Caret.Col = desiredVisualCol = quickEdit.MinCol;
+        Document.Caret.Col = DesiredVisualCol = quickEdit.MinCol;
         Document.Selection = new Selection {
             Start = new CaretPosition(quickEdit.Row, quickEdit.MinCol),
             End = new CaretPosition(quickEdit.Row, quickEdit.MaxCol),
@@ -1877,7 +1582,7 @@ public sealed class Editor : SkiaDrawable {
         }
 
         Document.Caret.Row = quickEdit.Row;
-        Document.Caret.Col = desiredVisualCol = quickEdit.MinCol;
+        Document.Caret.Col = DesiredVisualCol = quickEdit.MinCol;
         Document.Selection = new Selection {
             Start = new CaretPosition(quickEdit.Row, quickEdit.MinCol),
             End = new CaretPosition(quickEdit.Row, quickEdit.MaxCol),
@@ -1885,11 +1590,11 @@ public sealed class Editor : SkiaDrawable {
     }
 
     /// Returns the quick-edit which is currently under the caret
-    private QuickEditAnchorData? GetSelectedQuickEdit() =>
+    public QuickEditAnchorData? GetSelectedQuickEdit() =>
         GetQuickEdits().FirstOrDefault(anchor => anchor.IsPositionInside(Document.Caret))?.UserData as QuickEditAnchorData?;
 
-    private IEnumerable<Anchor> GetQuickEdits() => Document.FindAnchors(anchor => anchor.UserData is QuickEditAnchorData);
-    private void ClearQuickEdits() => Document.RemoveAnchorsIf(anchor => anchor.UserData is QuickEditAnchorData);
+    public IEnumerable<Anchor> GetQuickEdits() => Document.FindAnchors(anchor => anchor.UserData is QuickEditAnchorData);
+    public void ClearQuickEdits() => Document.RemoveAnchorsIf(anchor => anchor.UserData is QuickEditAnchorData);
 
     /// Inserts a new quick-edit text at the current row
     private void InsertQuickEdit(string insert) {
@@ -1939,7 +1644,7 @@ public sealed class Editor : SkiaDrawable {
         } else if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.AfterInsert) {
             int newLines = quickEdit.ActualText.Count(c => c == Document.NewLine);
             Document.Caret.Row = row + newLines;
-            Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+            Document.Caret.Col = DesiredVisualCol = Document.Lines[Document.Caret.Row].Length;
         } else {
             Document.Caret = oldCaret;
         }
@@ -2139,7 +1844,7 @@ public sealed class Editor : SkiaDrawable {
             Studio.Instance.OpenFileInEditor(fullPath);
             if (targetRow is {} caretRow) {
                 Document.Caret.Row = caretRow;
-                Document.Caret.Col = desiredVisualCol = Document.Lines[caretRow].Length;
+                Document.Caret.Col = DesiredVisualCol = Document.Lines[caretRow].Length;
             } else {
                 Document.Caret = new CaretPosition(0, 0);
             }
@@ -2171,7 +1876,7 @@ public sealed class Editor : SkiaDrawable {
                 Type = LineLinkType.GoToPlayLine,
                 OnUse = () => {
                     Document.Caret.Row = labelRow;
-                    Document.Caret.Col = desiredVisualCol = Document.Lines[labelRow].Length;
+                    Document.Caret.Col = DesiredVisualCol = Document.Lines[labelRow].Length;
                     Recalc();
                     ScrollCaretIntoView(center: true);
                 },
@@ -2403,9 +2108,8 @@ public sealed class Editor : SkiaDrawable {
             FixInvalidInput(oldCaret.Row);
         }
 
-        desiredVisualCol = Document.Caret.Col;
-
-        UpdateAutoComplete();
+        DesiredVisualCol = Document.Caret.Col;
+        autoCompleteMenu.Refresh();
     }
 
     private void OnDelete(CaretMovementType direction) {
@@ -2456,7 +2160,7 @@ public sealed class Editor : SkiaDrawable {
                     if (Document.Caret.Row > 0 && string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row - 1])) {
                         Document.RemoveLine(Document.Caret.Row - 1);
                         Document.Caret.Row--;
-                        desiredVisualCol = Document.Caret.Col;
+                        DesiredVisualCol = Document.Caret.Col;
                         return;
                     }
                 } else {
@@ -2559,7 +2263,7 @@ public sealed class Editor : SkiaDrawable {
                 Document.Caret.Col = Math.Min(Document.Caret.Col, caret.Col);
                 Document.Caret = ClampCaret(Document.Caret, wrapLine: true);
 
-                UpdateAutoComplete(open: false);
+                autoCompleteMenu.Refresh(open: false);
             } else {
                 var min = Document.Caret < caret ? Document.Caret : caret;
                 var max = Document.Caret < caret ? caret : Document.Caret;
@@ -2570,11 +2274,11 @@ public sealed class Editor : SkiaDrawable {
                 // Ensure new line is correctly formatted
                 Document.ReplaceLine(Document.Caret.Row, FileRefactor.FormatLine(Document.Lines[Document.Caret.Row], StyleConfig.Current.ForceCorrectCommandCasing, StyleConfig.Current.CommandArgumentSeparator));
 
-                ActivePopupMenu = null;
+                ClosePopupMenu();
             }
         }
 
-        desiredVisualCol = Document.Caret.Col;
+        DesiredVisualCol = Document.Caret.Col;
     }
 
     private void OnEnter(bool splitLines, bool up) {
@@ -2600,7 +2304,7 @@ public sealed class Editor : SkiaDrawable {
             } else if (line.Trim() == "#") {
                 // Replace empty comment
                 Document.ReplaceLine(Document.Caret.Row, string.Empty);
-                Document.Caret.Col = desiredVisualCol = 0;
+                Document.Caret.Col = DesiredVisualCol = 0;
                 return;
             }
 
@@ -2619,7 +2323,7 @@ public sealed class Editor : SkiaDrawable {
                 Document.ReplaceLine(Document.Caret.Row, prefix + (up ? afterCaret : beforeCaret));
                 Document.InsertLine(newRow, prefix + (up ? beforeCaret : afterCaret));
                 Document.Caret.Row = newRow;
-                Document.Caret.Col = desiredVisualCol = prefix.Length + (up ? beforeCaret.Length : 0);
+                Document.Caret.Col = DesiredVisualCol = prefix.Length + (up ? beforeCaret.Length : 0);
             } else {
                 Document.Insert($"{Document.NewLine}");
             }
@@ -2634,7 +2338,7 @@ public sealed class Editor : SkiaDrawable {
 
             Document.InsertLine(newRow, prefix);
             Document.Caret.Row = newRow;
-            Document.Caret.Col = desiredVisualCol = Math.Max(Document.Caret.Col, prefix.Length);
+            Document.Caret.Col = DesiredVisualCol = Math.Max(Document.Caret.Col, prefix.Length);
         }
 
         Document.Selection.Clear();
@@ -2826,7 +2530,7 @@ public sealed class Editor : SkiaDrawable {
     private void OnDeleteSelectedLines() {
         using var __ = Document.Update();
 
-        ActivePopupMenu = null;
+        ClosePopupMenu();
 
         int minRow = Document.Selection.Min.Row;
         int maxRow = Document.Selection.Max.Row;
@@ -3070,7 +2774,7 @@ public sealed class Editor : SkiaDrawable {
 
             if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.AfterInsert) {
                 Document.Caret.Row--;
-                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+                Document.Caret.Col = DesiredVisualCol = Document.Lines[Document.Caret.Row].Length;
             }
         } else if (Settings.Instance.InsertDirection == InsertDirection.Below) {
             Document.InsertLineBelow(text);
@@ -3078,7 +2782,7 @@ public sealed class Editor : SkiaDrawable {
             if (Settings.Instance.CaretInsertPosition == CaretInsertPosition.AfterInsert) {
                 int newLines = text.Count(c => c == Document.NewLine) + 1;
                 Document.Caret.Row += newLines;
-                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+                Document.Caret.Col = DesiredVisualCol = Document.Lines[Document.Caret.Row].Length;
             }
         }
     }
@@ -3178,10 +2882,10 @@ public sealed class Editor : SkiaDrawable {
         // Wrap around to prev/next line
         if (wrapLine && position.Row > 0 && position.Col < 0) {
             position.Row = GetNextVisualLinePosition(-1, position).Row;
-            position.Col = desiredVisualCol = Document.Lines[position.Row].Length;
+            position.Col = DesiredVisualCol = Document.Lines[position.Row].Length;
         } else if (wrapLine && position.Row < Document.Lines.Count && position.Col > Document.Lines[position.Row].Length) {
             position.Row = GetNextVisualLinePosition( 1, position).Row;
-            position.Col = desiredVisualCol = 0;
+            position.Col = DesiredVisualCol = 0;
         }
 
         int maxVisualRow = GetActualRow(actualToVisualRows[^1]);
@@ -3282,12 +2986,12 @@ public sealed class Editor : SkiaDrawable {
                 direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft)
             {
                 Document.Caret.Row = GetNextVisualLinePosition(-1, Document.Caret).Row;
-                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+                Document.Caret.Col = DesiredVisualCol = Document.Lines[Document.Caret.Row].Length;
             } else if (Document.Caret.Row < Document.Lines.Count - 1 && Document.Caret.Col == line.Length &&
                        direction is CaretMovementType.CharRight or CaretMovementType.WordRight)
             {
                 Document.Caret.Row = GetNextVisualLinePosition( 1, Document.Caret).Row;
-                Document.Caret.Col = desiredVisualCol = 0;
+                Document.Caret.Col = DesiredVisualCol = 0;
             } else {
                 // Regular action line movement
                 Document.Caret = direction switch {
@@ -3308,12 +3012,12 @@ public sealed class Editor : SkiaDrawable {
                 direction is CaretMovementType.CharLeft or CaretMovementType.WordLeft)
             {
                 Document.Caret.Row = GetNextVisualLinePosition(-1, Document.Caret).Row;
-                Document.Caret.Col = desiredVisualCol = Document.Lines[Document.Caret.Row].Length;
+                Document.Caret.Col = DesiredVisualCol = Document.Lines[Document.Caret.Row].Length;
             } else if (Document.Caret.Row < Document.Lines.Count - 1 && Document.Caret.Col == line.Length &&
                        direction is CaretMovementType.CharRight or CaretMovementType.WordRight)
             {
                 Document.Caret.Row = GetNextVisualLinePosition( 1, Document.Caret).Row;
-                Document.Caret.Col = desiredVisualCol = 0;
+                Document.Caret.Col = DesiredVisualCol = 0;
             } else {
                 // Regular breakpoint movement
                 Document.Caret = direction switch {
@@ -3334,9 +3038,9 @@ public sealed class Editor : SkiaDrawable {
         // Apply / Update desired column
         var newVisualPos = GetVisualPosition(Document.Caret);
         if (oldCaret.Row != Document.Caret.Row) {
-            newVisualPos.Col = desiredVisualCol;
+            newVisualPos.Col = DesiredVisualCol;
         } else {
-            desiredVisualCol = newVisualPos.Col;
+            DesiredVisualCol = newVisualPos.Col;
         }
         Document.Caret = ClampCaret(GetActualPosition(newVisualPos));
 
@@ -3348,7 +3052,7 @@ public sealed class Editor : SkiaDrawable {
         if (direction is CaretMovementType.LineUp or CaretMovementType.LineDown or CaretMovementType.PageUp or CaretMovementType.PageDown or CaretMovementType.LabelUp or CaretMovementType.LabelDown &&
             currentActionLine == null && TryParseAndFormatActionLine(Document.Caret.Row, out _))
         {
-            Document.Caret.Col = desiredVisualCol = ActionLine.MaxFramesDigits;
+            Document.Caret.Col = DesiredVisualCol = ActionLine.MaxFramesDigits;
         }
 
         if (updateSelection) {
@@ -3373,7 +3077,7 @@ public sealed class Editor : SkiaDrawable {
             Document.Selection.Clear();
         }
 
-        ActivePopupMenu = null;
+        ClosePopupMenu();
 
         Document.Caret = Document.Caret;
         ScrollCaretIntoView(center: direction is CaretMovementType.LabelUp or CaretMovementType.LabelDown);
@@ -3519,14 +3223,14 @@ public sealed class Editor : SkiaDrawable {
                 Document.Selection.Start = Document.Selection.End = Document.Caret;
             }
 
-            desiredVisualCol = visual.Col;
+            DesiredVisualCol = visual.Col;
             ScrollCaretIntoView();
 
             if (oldCaret.Row != Document.Caret.Row) {
                 FixInvalidInput(oldCaret.Row);
             }
 
-            ActivePopupMenu = null;
+            ClosePopupMenu();
 
             e.Handled = true;
             Recalc();
@@ -3554,10 +3258,10 @@ public sealed class Editor : SkiaDrawable {
             (Document.Caret, var visual) = LocationToCaretPosition(e.Location, SnappingDirection.Left);
             Document.Caret = Document.Selection.End = ClampCaret(Document.Caret, direction: Document.Selection.Start < Document.Caret ? SnappingDirection.Left : SnappingDirection.Right);
 
-            desiredVisualCol = visual.Col;
+            DesiredVisualCol = visual.Col;
             ScrollCaretIntoView();
 
-            ActivePopupMenu = null;
+            ClosePopupMenu();
 
             Recalc();
         }

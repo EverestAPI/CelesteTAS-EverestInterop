@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace StudioCommunication.Util;
@@ -52,15 +53,32 @@ public static class NumberExtensions {
 }
 #endif
 
-public static class StringExtensions {
-    /// Replaces the specified range inside the string and returns the result
-    public static string ReplaceRange(this string self, int startIndex, int count, string replacement) {
-        return self.Remove(startIndex, count).Insert(startIndex, replacement);
+public interface IStableHash {
+    /// Computes a stable hash-code for the current object state
+    public int GetStableHashCode();
+}
+
+public static class HashExtensions {
+    public static int GetStableHashCode<T>(this T value) {
+        if (typeof(T).IsPrimitive) {
+            return value!.GetHashCode(); // Primitives return their bit-representation as hashcode
+        }
+        if (value is null) {
+            return 0;
+        }
+
+        if (typeof(T) == typeof(string)) {
+            return ((string)(object) value).GetStableHashCode();
+        }
+        if (typeof(T).IsSubclassOf(typeof(IStableHash))) {
+            return ((IStableHash) value).GetStableHashCode();
+        }
+
+        throw new NotImplementedException($"Cannot create stable hash of type '{typeof(T)}'");
     }
 
     /// A stable (consistent) hash code for a specific string
-    public static int GetStableHashCode(this string str)
-    {
+    public static int GetStableHashCode(this string str) {
         // Taken from https://stackoverflow.com/a/36845864
         unchecked {
             int hash1 = 5381;
@@ -76,6 +94,13 @@ public static class StringExtensions {
 
             return hash1 + (hash2*1566083941);
         }
+    }
+}
+
+public static class StringExtensions {
+    /// Replaces the specified range inside the string and returns the result
+    public static string ReplaceRange(this string self, int startIndex, int count, string replacement) {
+        return self.Remove(startIndex, count).Insert(startIndex, replacement);
     }
 
     /// Counts the amount of lines, accounting for LF, CRLF and CR line endings
@@ -178,6 +203,76 @@ public static class CollectionExtensions {
 
         return -1;
     }
+
+    // Median implementation based on https://stackoverflow.com/a/22702269
+
+    /// <summary>
+    /// Note: specified list would be mutated in the process.
+    /// </summary>
+    public static T Median<T>(this IList<T> list) where T : IComparable<T> {
+        return list.NthOrderStatistic((list.Count - 1)/2);
+    }
+
+    public static T Median<T>(this IEnumerable<T> sequence) where T : IComparable<T> {
+        var list = sequence.ToList();
+        int mid = (list.Count - 1) / 2;
+        return list.NthOrderStatistic(mid);
+    }
+
+    /// <summary>
+    /// Partitions the given list around a pivot element such that all elements on left of pivot are <= pivot
+    /// and the ones at thr right are > pivot. This method can be used for sorting, N-order statistics such as
+    /// as median finding algorithms.
+    /// Pivot is selected ranodmly if random number generator is supplied else its selected as last element in the list.
+    /// Reference: Introduction to Algorithms 3rd Edition, Corman et al, pp 171
+    /// </summary>
+    private static int Partition<T>(this IList<T> list, int start, int end, Random? rnd = null) where T : IComparable<T> {
+        if (rnd != null) {
+            list.Swap(end, rnd.Next(start, end+1));
+        }
+
+        var pivot = list[end];
+        int lastLow = start - 1;
+        for (int i = start; i < end; i++) {
+            if (list[i].CompareTo(pivot) <= 0) {
+                list.Swap(i, ++lastLow);
+            }
+        }
+        list.Swap(end, ++lastLow);
+        return lastLow;
+    }
+
+    /// <summary>
+    /// Returns Nth smallest element from the list. Here n starts from 0 so that n=0 returns minimum, n=1 returns 2nd smallest element etc.
+    /// Note: specified list would be mutated in the process.
+    /// Reference: Introduction to Algorithms 3rd Edition, Corman et al, pp 216
+    /// </summary>
+    public static T NthOrderStatistic<T>(this IList<T> list, int n, Random? rnd = null) where T : IComparable<T> {
+        return NthOrderStatistic(list, n, 0, list.Count - 1, rnd);
+    }
+    private static T NthOrderStatistic<T>(this IList<T> list, int n, int start, int end, Random? rnd) where T : IComparable<T> {
+        while (true) {
+            int pivotIndex = list.Partition(start, end, rnd);
+            if (pivotIndex == n) {
+                return list[pivotIndex];
+            }
+
+            if (n < pivotIndex) {
+                end = pivotIndex - 1;
+            } else {
+                start = pivotIndex + 1;
+            }
+        }
+    }
+
+    public static void Swap<T>(this IList<T> list, int i, int j) {
+        // This check is not required but Partition function may make many calls so its for perf reason
+        if (i == j) {
+            return;
+        }
+
+        (list[i], list[j]) = (list[j], list[i]);
+    }
 }
 
 public static class DictionaryExtensions {
@@ -277,5 +372,34 @@ public static class StackExtensions {
                 break;
             }
         }
+    }
+
+    /// Allow peeking below the surface
+    public static T Peek<T>(this Stack<T> stack, uint distance = 1) {
+        if (distance == 1) {
+            return stack.Peek();
+        }
+
+        var f_Stack_array = typeof(Stack<T>).GetField("_array", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        var array = (T[]) f_Stack_array.GetValue(stack)!;
+
+        return array[stack.Count - distance];
+    }
+}
+
+public static class QueueExtensions {
+    /// Allow peeking behind the front
+    public static T Peek<T>(this Queue<T> queue, uint distance = 0) {
+        if (distance == 0) {
+            return queue.Peek();
+        }
+
+        var f_Queue_array = typeof(Queue<T>).GetField("_array", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        var array = (T[]) f_Queue_array.GetValue(queue)!;
+
+        var f_Queue_head = typeof(Queue<T>).GetField("_head", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        int head = (int) f_Queue_head.GetValue(queue)!;
+
+        return array[(head + distance) % array.Length];
     }
 }
