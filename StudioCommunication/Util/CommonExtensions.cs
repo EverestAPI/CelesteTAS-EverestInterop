@@ -7,6 +7,22 @@ using System.Runtime.CompilerServices;
 
 namespace StudioCommunication.Util;
 
+public static class GenericExtensions {
+    /// Helper method to modify a value without requiring a variable
+    public static T Apply<T>(this T obj, Action<T> action) {
+        action(obj);
+        return obj;
+    }
+
+    /// Helper method to modify each value in an enumerable
+    public static IEnumerable<T> Apply<T>(this IEnumerable<T> enumerable, Action<T> action) {
+        foreach (var obj in enumerable) {
+            action(obj);
+            yield return obj;
+        }
+    }
+}
+
 /// Splits each line into its own slice, accounting for LF, CRLF and CR line endings
 public ref struct LineIterator(ReadOnlySpan<char> text) {
     private ReadOnlySpan<char> text = text;
@@ -308,6 +324,20 @@ public static class DictionaryExtensions {
             return;
         }
         dict[key] = [..values];
+    }
+
+    /// Insert all keys from the other dictionary into the current one
+    /// Will overwrite overlapping keys
+    public static void AddRange<TKey, TValue>(this IDictionary<TKey, TValue> dict, IDictionary<TKey, TValue> other) where TKey : notnull {
+#if NET7_0_OR_GREATER
+        if (dict is Dictionary<TKey, TValue> dictionary) {
+            dictionary.EnsureCapacity(other.Count);
+        }
+#endif
+
+        foreach (var (key, value) in other) {
+            dict[key] = value;
+        }
     }
 }
 

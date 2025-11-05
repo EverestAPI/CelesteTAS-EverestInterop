@@ -1,3 +1,4 @@
+using CelesteStudio.Controls;
 using Eto.Forms;
 using StudioCommunication;
 using System.Collections.Generic;
@@ -5,7 +6,7 @@ using System.Linq;
 
 namespace CelesteStudio.Editing.ContextActions;
 
-public class ContextActionsMenu : PopupMenu {
+public class ContextActionsMenu(Editor editor) : PopupMenu {
 
     // These should be ordered from most specific to most applicable.
     public static readonly ContextAction[] ContextActions = [
@@ -25,13 +26,6 @@ public class ContextActionsMenu : PopupMenu {
         new UseLineLink(Editor.LineLinkType.OpenReadFile),
         new UseLineLink(Editor.LineLinkType.GoToPlayLine),
     ];
-
-    private readonly Editor editor;
-    private Document Document => editor.Document;
-
-    public ContextActionsMenu(Editor editor) {
-        this.editor = editor;
-    }
 
     public void Refresh() {
         Entries = ContextActions

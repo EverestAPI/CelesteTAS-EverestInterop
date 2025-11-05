@@ -189,7 +189,7 @@ internal class AssistsQueryHandler : TargetQuery.Handler {
                 yield return new CommandAutoCompleteEntry {
                     Name = f.Name,
                     Extra = $"{f.FieldType.CSharpName()} (Assists)",
-                    Suggestion = f.Name is nameof(Assists.Invincible),
+                    Suggestion = variant == TargetQuery.Variant.Set && f.Name is nameof(Assists.Invincible),
                     IsDone = true,
                     StorageKey = $"{variant}_{typeof(Assists).FullName}"
                 };
@@ -415,6 +415,9 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         public static implicit operator SubpixelPosition(Vector2 value) {
             return new SubpixelPosition(value.X, value.Y);
         }
+
+        public override string ToString() => $"{{X:{X} Y:{Y}}}";
+        public string ToFormattedString(int decimals) => $"{X.ToFormattedString(decimals)}, {Y.ToFormattedString(decimals)}";
     }
 
     /// Holds a single axis with integer and fractional part separated
@@ -437,6 +440,9 @@ internal class EntityQueryHandler : TargetQuery.Handler {
 
             return new(position, remainder);
         }
+
+        public override string ToString() => ((double)Position + Remainder).ToString();
+        public string ToFormattedString(int decimals) => ((double)Position + Remainder).ToFormattedString(decimals);
     }
 
     /// Matches an EntityID specification on the base type
@@ -835,8 +841,8 @@ internal class EntityQueryHandler : TargetQuery.Handler {
             e.GetType() == type &&
             // Require a collider to avoid controller entities
             e.Collider != null &&
-            // Only recommend when setting / invoking something or getting a Vector2
-            (variant != TargetQuery.Variant.Get || (targetTypeFilter?.Contains(typeof(Vector2)) ?? false) || (targetTypeFilter?.Contains(typeof(SubpixelPosition)) ?? false))
+            // Only recommend when setting / invoking something or getting a info-template / Vector2
+            (variant != TargetQuery.Variant.Get || targetTypeFilter == null || targetTypeFilter.Contains(typeof(Vector2)) || targetTypeFilter.Contains(typeof(SubpixelPosition)))
         );
     }
     public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
