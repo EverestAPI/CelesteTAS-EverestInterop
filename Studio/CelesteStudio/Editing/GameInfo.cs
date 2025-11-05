@@ -1,16 +1,187 @@
 using CelesteStudio.Communication;
 using CelesteStudio.Controls;
+using CelesteStudio.Dialog;
 using CelesteStudio.Util;
+using Eto.Drawing;
 using Eto.Forms;
 using SkiaSharp;
 using StudioCommunication;
 using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 
 namespace CelesteStudio.Editing;
+
+public class GameInfoPanel : Panel {
+    private sealed class PopoutButton : Drawable {
+        public const int ButtonSize = IconSize + BackgroundPadding * 2;
+
+        private const int IconSize = 20;
+        private const int BackgroundPadding = 5;
+
+        public Action? Click;
+        private void PerformClick() => Click?.Invoke();
+
+        public PopoutButton() {
+            Width = Height = ButtonSize;
+        }
+
+        protected override void OnPaint(PaintEventArgs e) {
+            var mouse = PointFromScreen(Mouse.Position);
+
+            Color bgColor = Settings.Instance.Theme.PopoutButtonBg;
+            if (mouse.X >= 0.0f && mouse.X <= Width && mouse.Y >= 0.0f && mouse.Y <= Height) {
+                if (Mouse.Buttons.HasFlag(MouseButtons.Primary)) {
+                    bgColor = Settings.Instance.Theme.PopoutButtonSelected;
+                } else {
+                    bgColor = Settings.Instance.Theme.PopoutButtonHovered;
+                }
+            }
+
+            e.Graphics.FillPath(bgColor, GraphicsPath.GetRoundRect(new RectangleF(0.0f, 0.0f, Width, Height), BackgroundPadding * 1.5f));
+
+            e.Graphics.TranslateTransform(BackgroundPadding, BackgroundPadding);
+            e.Graphics.ScaleTransform(IconSize);
+            e.Graphics.FillPath(Settings.Instance.Theme.StatusFg, Assets.PopoutPath);
+        }
+
+        protected override void OnMouseDown(MouseEventArgs e) => Invalidate();
+        protected override void OnMouseUp(MouseEventArgs e) {
+            PerformClick();
+            Invalidate();
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e) => Invalidate();
+        protected override void OnMouseEnter(MouseEventArgs e) => Invalidate();
+        protected override void OnMouseLeave(MouseEventArgs e) => Invalidate();
+    }
+
+    private PixelLayout? layout;
+    private readonly GameInfo gameInfo;
+    private readonly PopoutButton popoutButton;
+
+    public bool Active {
+        set {
+            if (value && layout == null) {
+                layout = new();
+                layout.Add(gameInfo, 0, 0);
+                layout.Add(popoutButton, ClientSize.Width - Padding.Left - Padding.Right - PopoutButton.ButtonSize, 0);
+
+                ContextMenu = GameInfo.CreateContextMenu(gameInfo, popout: false);
+            } else if (!value && layout != null) {
+                layout.Remove(gameInfo);
+                layout.Remove(popoutButton);
+                layout = null;
+
+                ContextMenu = null;
+            }
+
+            Content = value ? layout : null;
+        }
+        get => Content != null;
+    }
+
+    public GameInfoPanel(GameInfo info, bool active) {
+        gameInfo = info;
+
+        popoutButton = new PopoutButton { Visible = true };
+        popoutButton.Click += () => {
+            Settings.Instance.GameInfo = GameInfoType.Popout;
+            Settings.OnChanged();
+            Settings.Save();
+        };
+
+        gameInfo.SizeChanged += (_, _) => layout?.Move(popoutButton, gameInfo.Width - gameInfo.Padding.Left - gameInfo.Padding.Right - PopoutButton.ButtonSize, gameInfo.Padding.Top);
+
+        // Only show popout button while hovering Info HUD
+        Shown += (_, _) => popoutButton.Visible = PointFromScreen(Mouse.Position) is var mousePos &&
+                                                  mousePos.X >= 0.0f && mousePos.Y >= 0.0f &&
+                                                  mousePos.X < ClientSize.Width && mousePos.Y < ClientSize.Height;
+        MouseEnter += (_, _) => popoutButton.Visible = true;
+        MouseLeave += (_, _) => popoutButton.Visible = false;
+
+        Active = active;
+    }
+
+    protected override void OnMouseDown(MouseEventArgs e) {
+        // Context menu doesn't open on its own for some reason
+        if (e.Buttons.HasFlag(MouseButtons.Alternate)) {
+            ContextMenu?.Show();
+            e.Handled = true;
+            return;
+        }
+
+        base.OnMouseDown(e);
+    }
+}
+public class GameInfoPopout : FloatingForm {
+    /// Indicates that closing the window should not switch to the panel version
+    public bool ForceClose = false;
+
+    public GameInfoPopout(GameInfo info) {
+        Topmost = Settings.Instance.GameInfoPopoutTopmost;
+        Settings.Changed += () => {
+            Topmost = Settings.Instance.GameInfoPopoutTopmost;
+        };
+
+        Title = "Game Info";
+        MinimumSize = new Size(300, 100);
+
+        Content = info;
+        ContextMenu = GameInfo.CreateContextMenu(info, popout: true);
+
+        Studio.RegisterWindow(this, centerWindow: false);
+        Shown += (_, _) => {
+            Size = Settings.Instance.GameInfoPopoutSize;
+            if (!Settings.Instance.GameInfoPopoutLocation.IsZero) {
+                var lastLocation = Settings.Instance.GameInfoPopoutLocation;
+                var lastSize = Settings.Instance.GameInfoPopoutSize;
+
+                // Clamp to screen
+                var screen = Screen.FromRectangle(new RectangleF(lastLocation, lastSize));
+                if (lastLocation.X < screen.WorkingArea.Left) {
+                    lastLocation = lastLocation with { X = (int)screen.WorkingArea.Left };
+                } else if (lastLocation.X + lastSize.Width > screen.WorkingArea.Right) {
+                    lastLocation = lastLocation with { X = (int)screen.WorkingArea.Right - lastSize.Width };
+                }
+                if (lastLocation.Y < screen.WorkingArea.Top) {
+                    lastLocation = lastLocation with { Y = (int)screen.WorkingArea.Top };
+                } else if (lastLocation.Y + lastSize.Height > screen.WorkingArea.Bottom) {
+                    lastLocation = lastLocation with { Y = (int)screen.WorkingArea.Bottom - lastSize.Height };
+                }
+                Location = lastLocation;
+            }
+        };
+    }
+
+    protected override void OnClosing(CancelEventArgs e) {
+        Settings.Instance.GameInfoPopoutLocation = Location;
+        Settings.Instance.GameInfoPopoutSize = Size;
+
+        if (!ForceClose) {
+            Settings.Instance.GameInfo = GameInfoType.Panel;
+            Settings.OnChanged();
+        }
+
+        Settings.Save();
+
+        base.OnClosing(e);
+    }
+
+    protected override void OnMouseDown(MouseEventArgs e) {
+        // Context menu doesn't open on its own for some reason
+        if (e.Buttons.HasFlag(MouseButtons.Alternate)) {
+            ContextMenu.Show();
+            e.Handled = true;
+            return;
+        }
+
+        base.OnMouseDown(e);
+    }
+}
 
 public class GameInfo : Scrollable {
     private sealed class InfoText(Document document, Scrollable scrollable) : TextViewer(document, scrollable) {
@@ -94,14 +265,14 @@ public class GameInfo : Scrollable {
     });
     private static readonly ActionBinding ReconnectStudioAndCeleste = new("Status_ReconnectStudioCeleste", "Force-reconnect Celeste and Studio", Binding.Category.Status, Hotkey.KeyCtrl(Keys.D | Keys.Shift), CommunicationWrapper.ForceReconnect);
 
-    // TODO:
-    private static readonly ActionBinding EditCustomInfoTemplate = new("Status_EditCustomInfoTemplate", "Edit Custom Info Template", Binding.Category.Status, Hotkey.None, () => {}/*Studio.Instance.GameInfo.OnEditCustomInfoTemplate()*/);
+    private static readonly ActionBinding EditCustomInfoTemplate = new("Status_EditCustomInfoTemplate", "Edit Custom Info Template", Binding.Category.Status, Hotkey.None, () => new InfoTemplateForm().Show());
     private static readonly ActionBinding ClearWatchEntityInfo = new("Status_ClearWatchEntityInfo", "Clear Watch-Entity Info", Binding.Category.Status, Hotkey.None, CommunicationWrapper.ClearWatchEntityInfo);
 
     private static readonly BoolBinding PopoutAlwaysOnTop = new("StatusPopout_AlwaysOnTop", "Always on Top", Binding.Category.StatusPopout, Hotkey.None,
         () => Settings.Instance.GameInfoPopoutTopmost,
         value => {
             Settings.Instance.GameInfoPopoutTopmost = value;
+            Settings.OnChanged();
             Settings.Save();
         });
 
@@ -109,11 +280,42 @@ public class GameInfo : Scrollable {
 
     #endregion
 
+    public static ContextMenu CreateContextMenu(GameInfo info, bool popout) {
+        var menu = new ContextMenu();
+        menu.Items.AddRange(CreateItems(popout));
+
+        // Also insert into text menu
+        info.infoText.ContextMenu = info.infoText.CreateContextMenu();
+        info.infoText.ContextMenu.Items.AddRange(CreateItems(popout).Apply(item => item.Order = -1));
+        info.infoText.ContextMenu.Items.AddSeparator(order: -1);
+
+        return menu;
+
+        static IEnumerable<MenuItem> CreateItems(bool popout) {
+            var editCustomInfoItem = EditCustomInfoTemplate.CreateItem();
+            editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
+            CommunicationWrapper.ConnectionChanged += () => editCustomInfoItem.Enabled = CommunicationWrapper.Connected;
+
+            yield return CopyGameInfoToClipboard;
+            yield return ReconnectStudioAndCeleste;
+            yield return new SeparatorMenuItem();
+            yield return editCustomInfoItem;
+            yield return ClearWatchEntityInfo;
+
+            if (popout) {
+                yield return new SeparatorMenuItem();
+                yield return PopoutAlwaysOnTop;
+            }
+        }
+    }
+
     /// Invoked when the preferred size of the game info is changed
     public event Action? PreferredSizeChanged;
 
     private const string DisconnectedText = "Searching for Celeste Instance...";
     private static IEnumerable<string> GameInfoLines => (CommunicationWrapper.GameInfo is { } gameInfo && !string.IsNullOrEmpty(gameInfo) ? gameInfo : DisconnectedText).SplitLines();
+
+    private readonly InfoText infoText;
 
     // Re-use builder to avoid allocations
     private readonly StringBuilder frameInfoBuilder = new();
@@ -121,14 +323,14 @@ public class GameInfo : Scrollable {
     private int totalFrameCount = 0;
 
     public GameInfo(Editor editor) {
-        var infoText = new InfoText(Document.Create(GameInfoLines.Prepend(string.Empty)), this) { ShowLineNumbers = false, PaddingRight = 0.0f, PaddingBottom = 0.0f };
+        infoText = new InfoText(Document.Create(GameInfoLines.Prepend(string.Empty)), this) { ShowLineNumbers = false, PaddingRight = 0.0f, PaddingBottom = 0.0f };
 
         var subpixelIndicator = new SubpixelIndicator { Width = 100, Height = 100 };
         subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
         subpixelIndicator.Invalidate();
 
         this.FixBorder();
-        Padding = 5;
+        Padding = new Padding(5, 10);
         Content = new StackLayout {
             Items = { infoText, subpixelIndicator }
         };

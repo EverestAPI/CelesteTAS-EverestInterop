@@ -213,7 +213,11 @@ public class TextViewer : SkiaDrawable {
             }
         };
 
-        ContextMenu = new() {
+        ContextMenu = CreateContextMenu();
+    }
+
+    public virtual ContextMenu CreateContextMenu() {
+        return new() {
             Items = {
                 Copy.CreateItem(this),
                 new SeparatorMenuItem(),

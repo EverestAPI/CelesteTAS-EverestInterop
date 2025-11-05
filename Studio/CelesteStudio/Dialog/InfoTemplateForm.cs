@@ -43,7 +43,16 @@ public class InfoTemplateForm : Form {
         var templateLabel = new Label { Text = "Template", Font = SystemFonts.Bold(14.0f) };
         var previewLabel = new Label { Text = "Preview", Font = SystemFonts.Bold(14.0f) };
 
-        var confirmButton = new Button((_, _) => Close()) { Text = "&OK" };
+        var confirmButton = new Button((_, _) => {
+            var lines = editor.Document.Lines
+                // Trim leading empty lines
+                .SkipWhile(string.IsNullOrWhiteSpace)
+                // Trim trailing empty lines
+                .Reverse().SkipWhile(string.IsNullOrWhiteSpace).Reverse();
+
+            CommunicationWrapper.SetCustomInfoTemplate(string.Join('\n', lines));
+            Close();
+        }) { Text = "&OK" };
         var cancelButton = new Button((_, _) => Close()) { Text = "&Cancel" };
         var buttonsLayout = new DynamicLayout();
         buttonsLayout.BeginHorizontal();
@@ -66,7 +75,8 @@ public class InfoTemplateForm : Form {
         };
 
         SizeChanged += (_, _) => {
-            editorScrollable.Width = previewScrollable.Width = buttonsLayout.Width = Width - padding*2 - 2; // Account for border
+            const int border = 1;
+            editorScrollable.Width = previewScrollable.Width = buttonsLayout.Width = Width - padding*2 - border*2;
 
             int extraHeight = templateLabel.Height + previewLabel.Height + buttonsLayout.Height + padding*6;
             editorScrollable.Height = previewScrollable.Height = (Height - extraHeight) / 2;

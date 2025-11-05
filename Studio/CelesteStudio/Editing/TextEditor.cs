@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace CelesteStudio.Editing;
 
-public class TextEditor : TextViewer {
+public class TextEditor(Document document, Scrollable scrollable) : TextViewer(document, scrollable) {
 
     #region Bindings
 
@@ -42,8 +42,8 @@ public class TextEditor : TextViewer {
     // Customizable auto-complete setup
     protected AutoCompleteMenu? autoCompleteMenu = null;
 
-    public TextEditor(Document document, Scrollable scrollable) : base(document, scrollable) {
-        ContextMenu = new() {
+    public override ContextMenu CreateContextMenu() {
+        return new() {
             Items = {
                 Cut.CreateItem(this),
                 Copy.CreateItem(this),

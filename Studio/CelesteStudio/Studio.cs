@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using CelesteStudio.Communication;
-using CelesteStudio.Controls;
 using CelesteStudio.Dialog;
 using CelesteStudio.Dialog.Git;
 using CelesteStudio.Editing;
@@ -74,6 +73,9 @@ public sealed class Studio : Form {
     public readonly GameInfo GameInfo;
 
     private readonly Scrollable editorScrollable;
+    private readonly GameInfoPanel gameInfoPanel;
+    private GameInfoPopout? gameInfoPopout;
+
     private JadderlineForm? jadderlineForm;
     private FeatherlineForm? featherlineForm;
     private RadelineSimForm? radelineSimForm;
@@ -194,33 +196,26 @@ public sealed class Studio : Form {
 
             // Needs to be done after the Editor is set up
             GameInfo = new GameInfo(Editor);
+            gameInfoPanel = new GameInfoPanel(GameInfo, active: false);
 
             Content = new StackLayout {
                 Padding = 0,
-                Items = {
-                    editorScrollable,
-                    GameInfo
-                }
+                Items = { editorScrollable, gameInfoPanel }
             };
 
             Shown += (_, _) => {
-                // gameInfoPanel.UpdateLayout();
+                ApplySettings();
                 RecalculateLayout();
             };
-            SizeChanged += (_, _) => {
-                RecalculateLayout();
-            };
+            SizeChanged += (_, _) => RecalculateLayout();
             GameInfo.PreferredSizeChanged += () => {
-                Console.WriteLine($"GI: {GameInfo.Size} // {GameInfo.Content.Size}");
-                RecalculateLayout();
+                if (gameInfoPanel.Content != null) {
+                    RecalculateLayout();
+                }
             };
-
-            ApplySettings();
 
             // Only enable some settings while connected
-            CommunicationWrapper.ConnectionChanged += () => Application.Instance.Invoke(() => {
-                RefreshMenu();
-            });
+            CommunicationWrapper.ConnectionChanged += () => Application.Instance.Invoke(RefreshMenu);
         }
 
         Load += (_, _) => {
@@ -336,17 +331,21 @@ public sealed class Studio : Form {
     }
 
     private void RecalculateLayout() {
-        Console.WriteLine($"Curr: {editorScrollable.Size} // {GameInfo.Size}");
+        if (gameInfoPanel.Active) {
+            const int borderSize = 1;
+            int gameInfoHeight = Math.Min((int)GameInfo.Content.GetPreferredSize().Height + GameInfo.Padding.Top + GameInfo.Padding.Bottom + borderSize*2, (int)(ClientSize.Height * Settings.Instance.MaxGameInfoHeight));
 
-        const int borderSize = 1;
-        int gameInfoHeight = Math.Min((int)GameInfo.Content.GetPreferredSize().Height + GameInfo.Padding.Top + GameInfo.Padding.Bottom + borderSize*2, (int)(ClientSize.Height * Settings.Instance.MaxGameInfoHeight));
-
-        GameInfo.Size = new Size(
-            Math.Max(0, ClientSize.Width),
-            Math.Max(0, gameInfoHeight));
-        editorScrollable.Size = new Size(
-            Math.Max(0, ClientSize.Width),
-            Math.Max(0, ClientSize.Height - Math.Max(0, gameInfoHeight)));
+            GameInfo.Size = new Size(
+                Math.Max(0, ClientSize.Width),
+                Math.Max(0, gameInfoHeight));
+            editorScrollable.Size = new Size(
+                Math.Max(0, ClientSize.Width),
+                Math.Max(0, ClientSize.Height - Math.Max(0, gameInfoHeight)));
+        } else {
+            editorScrollable.Size = new Size(
+                Math.Max(0, ClientSize.Width),
+                Math.Max(0, ClientSize.Height));
+        }
 
         // Calling UpdateLayout() seems to be required on GTK but causes issues on WPF
         // TODO: Figure out how macOS handles this
@@ -357,12 +356,48 @@ public sealed class Studio : Form {
         } else if (Eto.Platform.Instance.IsWpf && WPFHackEnabled) {
             Content.UpdateLayout();
         }
-        Console.WriteLine($"Next: {editorScrollable.Size} // {GameInfo.Size}");
     }
 
     private void ApplySettings() {
         Topmost = Settings.Instance.AlwaysOnTop;
         RefreshMenu(); // Recreate menu to reflect changes
+
+        switch (Settings.Instance.GameInfo) {
+            case GameInfoType.Disabled when gameInfoPanel.Active:
+                gameInfoPanel.Active = false;
+
+                RecalculateLayout();
+                break;
+            case GameInfoType.Disabled when gameInfoPopout != null:
+                gameInfoPopout.ForceClose = true;
+                gameInfoPopout.Content = null;
+                gameInfoPopout.Close();
+                gameInfoPopout = null;
+
+                RecalculateLayout();
+                break;
+
+            case GameInfoType.Panel when !gameInfoPanel.Active:
+                if (gameInfoPopout != null) {
+                    gameInfoPopout.ForceClose = true;
+                    gameInfoPopout.Content = null;
+                    gameInfoPopout.Close();
+                    gameInfoPopout = null;
+                }
+
+                gameInfoPanel.Active = true;
+
+                RecalculateLayout();
+                break;
+            case GameInfoType.Popout when gameInfoPopout == null:
+                gameInfoPanel.Active = false;
+
+                gameInfoPopout = new GameInfoPopout(GameInfo);
+                gameInfoPopout.Show();
+
+                RecalculateLayout();
+                break;
+        }
     }
 
     protected override void OnClosing(CancelEventArgs e) {
@@ -380,6 +415,12 @@ public sealed class Studio : Form {
         // Avoid storing sizes below the minimum in the settings
         if (Size.Width >= MinimumSize.Width && Size.Height >= MinimumSize.Height) {
             Settings.Instance.LastSize = Size;
+        }
+
+        if (gameInfoPopout != null) {
+            gameInfoPopout.ForceClose = true;
+            gameInfoPopout.Close();
+            gameInfoPopout = null;
         }
 
         Settings.Save();

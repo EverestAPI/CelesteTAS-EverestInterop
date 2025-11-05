@@ -7,6 +7,22 @@ using System.Runtime.CompilerServices;
 
 namespace StudioCommunication.Util;
 
+public static class GenericExtensions {
+    /// Helper method to modify a value without requiring a variable
+    public static T Apply<T>(this T obj, Action<T> action) {
+        action(obj);
+        return obj;
+    }
+
+    /// Helper method to modify each value in an enumerable
+    public static IEnumerable<T> Apply<T>(this IEnumerable<T> enumerable, Action<T> action) {
+        foreach (var obj in enumerable) {
+            action(obj);
+            yield return obj;
+        }
+    }
+}
+
 /// Splits each line into its own slice, accounting for LF, CRLF and CR line endings
 public ref struct LineIterator(ReadOnlySpan<char> text) {
     private ReadOnlySpan<char> text = text;

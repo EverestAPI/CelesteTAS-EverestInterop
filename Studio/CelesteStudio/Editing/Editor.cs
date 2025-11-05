@@ -187,59 +187,73 @@ public sealed class Editor : TextEditor {
             Invalidate();
         };
 
-        // Commands
-        var commandsMenu = new SubMenuItem { Text = "Insert Other Command" };
-
-        CommunicationWrapper.CommandsChanged += _ => {
-            GenerateCommandMenu();
-            Recalc();
-        };
-        // Update command separator
-        Settings.Changed += () => {
-            GenerateCommandMenu();
-            Recalc();
-        };
-
-        GenerateCommandMenu();
-
-        void GenerateCommandMenu() {
-            commandsMenu.Items.Clear();
-
-            foreach (string? commandName in CommandInfo.CommandOrder) {
-                if (commandName == null && commandsMenu.Items.Count != 0) {
-                    commandsMenu.Items.Add(new SeparatorMenuItem());
-                } else if (CommunicationWrapper.Commands.FirstOrDefault(cmd => cmd.Name == commandName) is var command && !string.IsNullOrEmpty(command.Name)) {
-                    commandsMenu.Items.Add(CreateCommandInsert(command));
-                }
-            }
-
-            // 3rd party commands (i.e. added through the API by another mod)
-            var thirdPartyCommands = CommunicationWrapper.Commands
-                .Where(command => !CommandInfo.CommandOrder.Contains(command.Name) && !CommandInfo.HiddenCommands.Contains(command.Name))
-                .ToArray();
-
-            if (thirdPartyCommands.Any()) {
-                if (commandsMenu.Items.Count != 0) {
-                    commandsMenu.Items.Add(new SeparatorMenuItem());
-                }
-                foreach (var command in thirdPartyCommands) {
-                    commandsMenu.Items.Add(CreateCommandInsert(command));
-                }
-            }
-
-            commandsMenu.Enabled = commandsMenu.Items.Count != 0;
-        }
-
-        ContextMenu = CreateMenu();
         Settings.KeyBindingsChanged += () => {
             // WPF doesn't like it when a UIElement has multiple parents, even if the other parent no longer exists
             ContextMenu.Items.Remove(commandsMenu);
-            ContextMenu = CreateMenu();
+            ContextMenu = CreateContextMenu();
         };
 
         Recalc();
+    }
 
-        ContextMenu CreateMenu() => new() {
+    private SubMenuItem? commandsMenu;
+    public override ContextMenu CreateContextMenu() {
+        // Commands
+        if (commandsMenu == null) {
+            commandsMenu = new SubMenuItem { Text = "Insert Other Command" };
+
+            CommunicationWrapper.CommandsChanged += _ => {
+                GenerateCommandMenu();
+                Recalc();
+            };
+            // Update command separator
+            Settings.Changed += () => {
+                GenerateCommandMenu();
+                Recalc();
+            };
+
+            GenerateCommandMenu();
+
+            void GenerateCommandMenu() {
+                commandsMenu.Items.Clear();
+
+                foreach (string? commandName in CommandInfo.CommandOrder) {
+                    if (commandName == null && commandsMenu.Items.Count != 0) {
+                        commandsMenu.Items.Add(new SeparatorMenuItem());
+                    } else if (CommunicationWrapper.Commands.FirstOrDefault(cmd => cmd.Name == commandName) is var command && !string.IsNullOrEmpty(command.Name)) {
+                        commandsMenu.Items.Add(CreateCommandInsert(command));
+                    }
+                }
+
+                // 3rd party commands (i.e. added through the API by another mod)
+                var thirdPartyCommands = CommunicationWrapper.Commands
+                    .Where(command => !CommandInfo.CommandOrder.Contains(command.Name) && !CommandInfo.HiddenCommands.Contains(command.Name))
+                    .ToArray();
+
+                if (thirdPartyCommands.Any()) {
+                    if (commandsMenu.Items.Count != 0) {
+                        commandsMenu.Items.Add(new SeparatorMenuItem());
+                    }
+                    foreach (var command in thirdPartyCommands) {
+                        commandsMenu.Items.Add(CreateCommandInsert(command));
+                    }
+                }
+
+                commandsMenu.Enabled = commandsMenu.Items.Count != 0;
+            }
+            MenuItem CreateCommandInsert(CommandInfo info) {
+                var cmd = new Command { Shortcut = Keys.None };
+                cmd.Executed += (_, _) => {
+                    InsertQuickEdit(info.Insert.Replace(CommandInfo.Separator, Settings.Instance.CommandSeparatorText));
+                    Recalc();
+                    ScrollCaretIntoView();
+                };
+
+                return new ButtonMenuItem(cmd) { Text = info.Name };
+            }
+        }
+
+        return new() {
             Items = {
                 Cut.CreateItem(this),
                 Copy.CreateItem(this),
@@ -281,17 +295,6 @@ public sealed class Editor : TextEditor {
                 OpenContextActionsMenu.CreateItem(this),
             }
         };
-
-        MenuItem CreateCommandInsert(CommandInfo info) {
-            var cmd = new Command { Shortcut = Keys.None };
-            cmd.Executed += (_, _) => {
-                InsertQuickEdit(info.Insert.Replace(CommandInfo.Separator, Settings.Instance.CommandSeparatorText));
-                Recalc();
-                ScrollCaretIntoView();
-            };
-
-            return new ButtonMenuItem(cmd) { Text = info.Name };
-        }
     }
 
     public static readonly TimeSpan DefaultToastTime = TimeSpan.FromSeconds(2);
