@@ -55,10 +55,11 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 break;
 
             case MessageID.SetCustomInfoTemplate:
-                var customInfoTemplate = reader.ReadString();
+                string customInfoTemplate = reader.ReadString();
                 LogVerbose($"Received message SetCustomInfoTemplate: '{customInfoTemplate}'");
 
                 TasSettings.InfoCustomTemplate = customInfoTemplate;
+                CelesteTasModule.Instance.SaveSettings();
                 GameInfo.Update();
                 break;
 
