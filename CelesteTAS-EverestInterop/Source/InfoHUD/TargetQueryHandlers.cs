@@ -1,5 +1,6 @@
 using Celeste;
 using Celeste.Mod;
+using Celeste.Mod.Core;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Monocle;
@@ -10,12 +11,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using TAS.Gameplay;
 using TAS.Gameplay.DesyncFix;
 using TAS.Input.Commands;
 using TAS.ModInterop;
 using TAS.Utils;
+using Assists = Celeste.Assists;
 
 namespace TAS.InfoHUD;
 
@@ -64,7 +67,7 @@ internal class SettingsQueryHandler : TargetQuery.Handler {
     }
 
     public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
-        if (queryArgs.Length != 0 || variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
+        if (queryArgs.Length > 1 || variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
             yield break;
         }
 
@@ -72,7 +75,12 @@ internal class SettingsQueryHandler : TargetQuery.Handler {
         var vanillaSettings = ((string[])["DisableFlashes", "ScreenShake", "GrabMode", "CrouchDashMode", "SpeedrunClock", "Pico8OnMainMenu", "VariantsUnlocked"]).Select(e => typeof(Settings).GetFieldInfo(e)!);
         foreach (var f in vanillaSettings) {
             if (targetTypeFilter == null || targetTypeFilter.Any(type => f.FieldType.CanCoerceTo(type))) {
-                yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Settings)", IsDone = true };
+                yield return new CommandAutoCompleteEntry {
+                    Name = f.Name,
+                    Extra = $"{f.FieldType.CSharpName()} (Settings)",
+                    IsDone = true,
+                    StorageKey = $"{variant}_{typeof(Settings).FullName}"
+                };
             }
         }
     }
@@ -119,9 +127,8 @@ internal class SaveDataQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
     }
 
-    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, TargetQuery.Variant variant,
-        Type[]? targetTypeFilter) {
-        if (queryArgs.Length != 0 || variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
+    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+        if (queryArgs.Length > 1 || variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
             yield break;
         }
 
@@ -129,7 +136,12 @@ internal class SaveDataQueryHandler : TargetQuery.Handler {
         var vanillaSaveData = ((string[])["CheatMode", "AssistMode", "VariantMode", "UnlockedAreas", "RevealedChapter9", "DebugMode"]).Select(e => typeof(SaveData).GetFieldInfo(e)!);
         foreach (var f in vanillaSaveData) {
             if (targetTypeFilter == null || targetTypeFilter.Any(type => f.FieldType.CanCoerceTo(type))) {
-                yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Save Data)", IsDone = true };
+                yield return new CommandAutoCompleteEntry {
+                    Name = f.Name,
+                    Extra = $"{f.FieldType.CSharpName()} (Save Data)",
+                    IsDone = true,
+                    StorageKey = $"{variant}_{typeof(SaveData).FullName}"
+                };
             }
         }
     }
@@ -167,15 +179,20 @@ internal class AssistsQueryHandler : TargetQuery.Handler {
         }
     }
 
-    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, TargetQuery.Variant variant,
-        Type[]? targetTypeFilter) {
-        if (queryArgs.Length != 0 || variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
+    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+        if (queryArgs.Length > 1 || variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
             yield break;
         }
 
         foreach (var f in typeof(Assists).GetAllFieldInfos(ReflectionExtensions.InstanceAnyVisibility)) {
             if (targetTypeFilter == null || targetTypeFilter.Any(type => f.FieldType.CanCoerceTo(type))) {
-                yield return new CommandAutoCompleteEntry { Name = f.Name, Extra = $"{f.FieldType.CSharpName()} (Assists)", IsDone = true };
+                yield return new CommandAutoCompleteEntry {
+                    Name = f.Name,
+                    Extra = $"{f.FieldType.CSharpName()} (Assists)",
+                    Suggestion = variant == TargetQuery.Variant.Set && f.Name is nameof(Assists.Invincible),
+                    IsDone = true,
+                    StorageKey = $"{variant}_{typeof(Assists).FullName}"
+                };
             }
         }
     }
@@ -223,8 +240,8 @@ internal class ExtendedVariantsQueryHandler : TargetQuery.Handler {
         return module is { Metadata.Name: "ExtendedVariantMode" };
     }
 
-    public override bool CanEnumerateMemberEntries(Type type, TargetQuery.Variant variant) {
-        return variant is TargetQuery.Variant.Get or TargetQuery.Variant.Set && IsExtVars(type, out _);
+    public override (bool CanEnumerate, bool ShouldOverride) CanEnumerateMemberEntries(Type type, TargetQuery.Variant variant, string queryPrefix, int memberIdx, string[] memberArgs) {
+        return (CanEnumerate: variant is TargetQuery.Variant.Get or TargetQuery.Variant.Set && IsExtVars(type, out _), ShouldOverride: true);
     }
 
     public override Result<bool, TargetQuery.MemberAccessError> ResolveMember(object? instance, out object? value, Type type, int memberIdx, string[] memberArgs) {
@@ -245,7 +262,7 @@ internal class ExtendedVariantsQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
     }
 
-    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, ref int memberIdx, string[] memberArgs) {
         if (!IsExtVars(type, out var module)) {
             targetTypes = [];
             return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
@@ -275,7 +292,7 @@ internal class ExtendedVariantsQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
     }
 
-    public override IEnumerator<CommandAutoCompleteEntry> EnumerateMemberEntries(Type type, TargetQuery.Variant variant) {
+    public override IEnumerator<CommandAutoCompleteEntry> EnumerateMemberEntries(Type type, TargetQuery.Variant variant, string queryPrefix, int memberIdx, string[] memberArgs) {
         if (ExtendedVariantsInterop.GetVariantsEnum() is { } variantsEnum) {
             foreach (object extendedVariant in Enum.GetValues(variantsEnum)) {
                 string typeName = string.Empty;
@@ -289,7 +306,13 @@ internal class ExtendedVariantsQueryHandler : TargetQuery.Handler {
                     // ignore
                 }
 
-                yield return new CommandAutoCompleteEntry { Name = extendedVariant.ToString()!, Extra = typeName, IsDone = true };
+                yield return new CommandAutoCompleteEntry {
+                    Name = extendedVariant.ToString()!,
+                    Extra = typeName,
+                    Prefix = $"{queryPrefix}.",
+                    IsDone = true,
+                    StorageKey = $"{variant}_{type.FullName ?? string.Empty}",
+                };
             }
         }
     }
@@ -310,15 +333,26 @@ internal class EverestModuleSettingsQueryHandler : TargetQuery.Handler {
     }
 
     public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
-        if (queryArgs.Length != 0 || variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
+        if (queryArgs.Length > 1 || variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
             yield break;
         }
 
         foreach (var mod in Everest.Modules) {
             if (mod.SettingsType != null && TargetQuery.IsTypeViable(mod.SettingsType, variant, isRoot: true, targetTypeFilter, maxDepth: 3)) {
-                yield return new CommandAutoCompleteEntry { Name = $"{mod.Metadata.Name}.", Extra = "Mod Setting", IsDone = false };
+                yield return new CommandAutoCompleteEntry {
+                    Name = $"{mod.Metadata.Name}.",
+                    Extra = "Mod Setting",
+                    IsDone = false,
+                    Suggestion = mod.Metadata.Name == "ExtendedVariantMode",
+                    StorageKey = $"{variant}_{mod.SettingsType.Namespace ?? string.Empty}",
+                    StorageName = mod.SettingsType.FullName,
+                };
             }
         }
+    }
+
+    public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+        return variant == TargetQuery.Variant.Get && member.DeclaringType == typeof(CoreModuleSettings) && member.Name == nameof(CoreModuleSettings.ShowModOptionsInGame);
     }
 }
 
@@ -351,6 +385,10 @@ internal class SceneQueryHandler : TargetQuery.Handler {
 
         return [];
     }
+
+    public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+        return variant == TargetQuery.Variant.Set && (member.DeclaringType?.IsSameOrSubclassOf(typeof(Scene)) ?? false) && member.Name == nameof(Scene.TimeActive);
+    }
 }
 
 internal class SessionQueryHandler : TargetQuery.Handler {
@@ -377,6 +415,9 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         public static implicit operator SubpixelPosition(Vector2 value) {
             return new SubpixelPosition(value.X, value.Y);
         }
+
+        public override string ToString() => $"{{X:{X} Y:{Y}}}";
+        public string ToFormattedString(int decimals) => $"{X.ToFormattedString(decimals)}, {Y.ToFormattedString(decimals)}";
     }
 
     /// Holds a single axis with integer and fractional part separated
@@ -399,45 +440,138 @@ internal class EntityQueryHandler : TargetQuery.Handler {
 
             return new(position, remainder);
         }
+
+        public override string ToString() => ((double)Position + Remainder).ToString();
+        public string ToFormattedString(int decimals) => ((double)Position + Remainder).ToFormattedString(decimals);
     }
 
     /// Matches an EntityID specification on the base type
     /// e.g. `BaseType[Room:ID]`
     private static readonly Regex EntityIDRegex = new(@"^(.+)(?:\[(.+):(\d+)\])(.*)$", RegexOptions.Compiled);
+    private static readonly Regex IncompleteEntityIDRegex = new(@"^([\w@]*)\[(.*)$", RegexOptions.Compiled);
 
     /// Matches a component specification on the base type / members
     /// e.g. `BaseTypeOrMember:Component@Assembly`
-    private static readonly Regex ComponentRegex = new(@"^([\w@]*):([\w@]+)$", RegexOptions.Compiled);
+    private static readonly Regex ComponentRegex = new(@"^([\w@]*):([\w@]*)$", RegexOptions.Compiled);
 
-    private const string SpecialSeparator = "___";
-    private const string EntityIDKey = "EntityIDFilter";
-    private const string ComponentKey = "ComponentAccess";
+    private const string EntityIDKey = "___EntityIDFilter___";
+    private const string IncompleteEntityIDKey = "___IncompleteEntityIDFilter___";
+    public const string ComponentKey = "___ComponentAccess___";
 
     public override bool CanResolveInstances(Type type) => type.IsSameOrSubclassOf(typeof(Entity));
     public override bool CanResolveValue(Type type) => type == typeof(SubpixelComponent) || type == typeof(SubpixelPosition);
-    public override bool CanEnumerateMemberEntries(Type type, TargetQuery.Variant variant) => type == typeof(SubpixelPosition);
+    public override (bool CanEnumerate, bool ShouldOverride) CanEnumerateMemberEntries(Type type, TargetQuery.Variant variant, string queryPrefix, int memberIdx, string[] memberArgs) {
+        if (type == typeof(SubpixelPosition)) {
+            return (CanEnumerate: true, ShouldOverride: true);
+        }
+        if ((memberIdx > 0 && type.IsSameOrSubclassOf(typeof(Entity)))) {
+            // Check for EntityID filter
+            if (memberArgs[memberIdx - 1] == IncompleteEntityIDKey) {
+                return (CanEnumerate: true, ShouldOverride: true);
+            }
+
+            // Search for last component access
+            for (int i = memberIdx - 1; i >= 0; i--) {
+                if (memberArgs[i] != ComponentKey) {
+                    continue;
+                }
+
+                string[] componentQuery = memberArgs[(i + 1)..];
+                var componentTypes = TargetQuery.ParseGenericBaseTypes(componentQuery, out string[] _);
+
+                // Only auto-complete if base-type is incomplete
+                return (CanEnumerate: componentTypes.IsEmpty(), ShouldOverride: true);
+            }
+        }
+
+        return (CanEnumerate: false, ShouldOverride: false);
+    }
 
     public override IEnumerable<string> ProcessQueryArguments(IEnumerable<string> queryArgs) {
-        foreach (string arg in queryArgs) {
+        using var enumerator = queryArgs.GetEnumerator();
+        while (enumerator.MoveNext()) {
+            string arg = enumerator.Current;
+
             if (EntityIDRegex.Match(arg) is { Success: true } entityMatch && int.TryParse(entityMatch.Groups[3].Value, out int id)) {
                 yield return entityMatch.Groups[1].Value;
-                yield return $"{EntityIDKey}{SpecialSeparator}{entityMatch.Groups[2].Value}{SpecialSeparator}{id}";
+                yield return EntityIDKey;
+                yield return $"{entityMatch.Groups[2].Value}:{id}";
 
-                if (ComponentRegex.Match(entityMatch.Groups[4].Value) is { Success: true} componentMatch) {
+                if (ComponentRegex.Match(entityMatch.Groups[4].Value) is { Success: true } componentMatch) {
                     if (!string.IsNullOrWhiteSpace(componentMatch.Groups[1].Value)) {
                         yield return TargetQuery.InvalidQueryArgument;
                         yield break;
                     }
-                    yield return $"{ComponentKey}{SpecialSeparator}{componentMatch.Groups[2].Value}";
+                    yield return ComponentKey;
+                    yield return componentMatch.Groups[2].Value;
                 } else if (!string.IsNullOrWhiteSpace(entityMatch.Groups[4].Value)) {
                     yield return TargetQuery.InvalidQueryArgument;
                     yield break;
                 }
+            } else if (IncompleteEntityIDRegex.Match(arg) is { Success: true} entityIncompleteMatch) {
+                yield return entityIncompleteMatch.Groups[1].Value;
+                yield return IncompleteEntityIDKey;
+                yield return entityIncompleteMatch.Groups[2].Value;
+
+                if (enumerator.MoveNext()) {
+                    // Only exists for auto-complete, so disallow arguments following this
+                    yield return TargetQuery.InvalidQueryArgument;
+                }
             } else if (ComponentRegex.Match(arg) is { Success: true} componentMatch) {
                 yield return componentMatch.Groups[1].Value;
-                yield return $"{ComponentKey}{SpecialSeparator}{componentMatch.Groups[2].Value}";
+                yield return ComponentKey;
+                yield return componentMatch.Groups[2].Value;
             } else {
                 yield return arg;
+            }
+        }
+    }
+    public override IEnumerable<string> FormatQueryArguments(IEnumerable<string> queryArgs) {
+        using var enumerator = new PeekEnumerator<string>(queryArgs);
+        foreach (string arg in enumerator) {
+            if (!enumerator.TryPeek(out string? key)) {
+                yield return arg;
+                yield break;
+            }
+
+            switch (key) {
+                case ComponentKey:
+                    enumerator.MoveNext(); // Drop 'ComponentKey' arg
+                    if (enumerator.MoveNext()) {
+                        yield return $"{arg}:{enumerator.Current}";
+                    } else {
+                        yield return $"{arg}:";
+                    }
+                    continue;
+
+                case EntityIDKey:
+                    enumerator.MoveNext(); // Drop 'EntityIDKey' arg
+                    enumerator.MoveNext();
+                    if (enumerator.TryPeek(out string? next) && next == ComponentKey) {
+                        string id = enumerator.Current;
+                        enumerator.MoveNext(); // Drop 'ComponentKey' arg
+                        if (enumerator.MoveNext()) {
+                            yield return $"{arg}[{id}]:{enumerator.Current}";
+                        } else {
+                            yield return $"{arg}[{id}]:";
+                        }
+                    } else {
+                        yield return $"{arg}[{enumerator.Current}]";
+                    }
+                    continue;
+
+                case IncompleteEntityIDKey:
+                    enumerator.MoveNext(); // Drop 'IncompleteEntityIDKey' arg
+                    if (enumerator.MoveNext()) {
+                        yield return $"{arg}[{enumerator.Current}";
+                    } else {
+                        yield return $"{arg}[";
+                    }
+                    continue;
+
+                default:
+                    yield return arg;
+                    continue;
             }
         }
     }
@@ -456,23 +590,9 @@ internal class EntityQueryHandler : TargetQuery.Handler {
     }
 
     public override Result<bool, TargetQuery.QueryError> ResolveMemberValues(ref object?[] values, ref int memberIdx, string[] memberArgs) {
-        string[] parts = memberArgs[memberIdx].Split(SpecialSeparator);
-        if (parts.Length == 0) {
-            return Result<bool, TargetQuery.QueryError>.Ok(false);
-        }
-
-        switch (parts[0]) {
-            case EntityIDKey when parts.Length == 3:
-                string key = $"{parts[1]}:{parts[2]}";
-                for (int valueIdx = 0; valueIdx < values.Length; valueIdx++) {
-                    if (values[valueIdx] is not Entity entity || entity.SourceId.Key != key) {
-                        values[valueIdx] = TargetQuery.InvalidValue;
-                    }
-                }
-                return Result<bool, TargetQuery.QueryError>.Ok(true);
-
-            case ComponentKey when parts.Length == 2:
-                string[] componentQuery = [parts[1], ..memberArgs[(memberIdx + 1)..]];
+        switch (memberArgs[memberIdx]) {
+            case ComponentKey when memberIdx + 1 < memberArgs.Length: {
+                string[] componentQuery = memberArgs[(memberIdx + 1)..];
                 var componentTypes = TargetQuery.ParseGenericBaseTypes(componentQuery, out string[] componentMemberArgs);
                 if (componentTypes.IsEmpty()) {
                     return Result<bool, TargetQuery.QueryError>.Fail(new TargetQuery.QueryError.NoBaseTypes(string.Join('.', componentQuery)));
@@ -513,6 +633,17 @@ internal class EntityQueryHandler : TargetQuery.Handler {
                 }
 
                 return Result<bool, TargetQuery.QueryError>.Ok(true);
+            }
+
+            case EntityIDKey when memberIdx + 1 < memberArgs.Length: {
+                string key = memberArgs[(memberIdx + 1)];
+                for (int valueIdx = 0; valueIdx < values.Length; valueIdx++) {
+                    if (values[valueIdx] is not Entity entity || entity.SourceId.Key != key) {
+                        values[valueIdx] = TargetQuery.InvalidValue;
+                    }
+                }
+                return Result<bool, TargetQuery.QueryError>.Ok(true);
+            }
         }
 
         return Result<bool, TargetQuery.QueryError>.Ok(false);
@@ -561,7 +692,7 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
     }
 
-    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, ref int memberIdx, string[] memberArgs) {
         if (type.IsSameOrSubclassOf(typeof(Actor)) || type.IsSameOrSubclassOf(typeof(Platform))) {
             switch (memberArgs[memberIdx]) {
                 case nameof(Entity.X):
@@ -575,12 +706,40 @@ internal class EntityQueryHandler : TargetQuery.Handler {
             }
         }
 
+        // Resolve special syntax
+        switch (memberArgs[memberIdx]) {
+            case ComponentKey when memberIdx + 1 < memberArgs.Length: {
+                string[] componentQuery = memberArgs[(memberIdx + 1)..];
+                var componentTypes = TargetQuery.ParseGenericBaseTypes(componentQuery, out string[] componentMemberArgs);
+                if (componentTypes.IsEmpty()) {
+                    // Incomplete component type. Pass along current type for auto-complete
+                    targetTypes = [type];
+                    return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+                }
+
+                memberIdx = memberArgs.Length - componentMemberArgs.Length - 1;
+                targetTypes = componentTypes.ToArray();
+                return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+            }
+            case ComponentKey when memberIdx + 1 == memberArgs.Length: {
+                // Missing component type. Pass along current type for auto-complete
+                targetTypes = [type];
+                return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+            }
+
+            case EntityIDKey or IncompleteEntityIDKey: {
+                memberIdx += 1; // Skip over special key
+
+                targetTypes = [type]; // Type stays the same
+                return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+            }
+        }
+
         targetTypes = null!;
         return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
     }
 
-    public override Result<bool, TargetQuery.MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx,
-        string[] memberArgs, bool forceAllowCodeExecution) {
+    public override Result<bool, TargetQuery.MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
         switch (instance) {
             case Actor actor:
                 switch (memberArgs[memberIdx]) {
@@ -672,16 +831,111 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.QueryError>.Ok(false);
     }
 
-    public override IEnumerator<CommandAutoCompleteEntry> EnumerateMemberEntries(Type type, TargetQuery.Variant variant) {
+    public override bool IsTypeSuggested(Type type, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+        if (Engine.Scene is not Level level) {
+            // Could support any scene, but usually only Level is relevant
+            return false;
+        }
+
+        return level.Entities.Any(e =>
+            e.GetType() == type &&
+            // Require a collider to avoid controller entities
+            e.Collider != null &&
+            // Only recommend when setting / invoking something or getting a info-template / Vector2
+            (variant != TargetQuery.Variant.Get || targetTypeFilter == null || targetTypeFilter.Contains(typeof(Vector2)) || targetTypeFilter.Contains(typeof(SubpixelPosition)))
+        );
+    }
+    public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+        if (!(member.DeclaringType?.IsSameOrSubclassOf(typeof(Entity)) ?? false)) {
+            return false;
+        }
+
+        if (member.DeclaringType.IsSameOrSubclassOf(typeof(Actor)) && member.Name is nameof(Actor.MoveH) or nameof(Actor.MoveV)) {
+            return true;
+        }
+        if (member.DeclaringType == typeof(Player) &&
+            member.Name is nameof(Player.Speed) or nameof(Player.StateMachine) or nameof(Player.Stamina)
+                        or nameof(Player.Dashes) or nameof(Player.Ducking) or nameof(Player.LiftBoost)
+                        or nameof(Player.jumpGraceTimer) or nameof(Player.varJumpTimer) or nameof(Player.varJumpSpeed)
+        ) {
+            return true;
+        }
+        if (member.DeclaringType == typeof(Seeker) && member.Name is nameof(Seeker.State) or nameof(Player.StateMachine)) {
+            return true;
+        }
+
+        return member.Name
+            is nameof(Entity.Position)
+            or nameof(Entity.X)
+            or nameof(Entity.Y);
+    }
+
+    public override IEnumerator<CommandAutoCompleteEntry> EnumerateMemberEntries(Type type, TargetQuery.Variant variant, string queryPrefix, int memberIdx, string[] memberArgs) {
         if (type == typeof(SubpixelPosition)) {
-            yield return new CommandAutoCompleteEntry { Name = "X", Extra = typeof(float).CSharpName(), IsDone = true };
-            yield return new CommandAutoCompleteEntry { Name = "Y", Extra = typeof(float).CSharpName(), IsDone = true };
+            yield return new CommandAutoCompleteEntry { Name = "X", Extra = typeof(float).CSharpName(), Prefix = $"{queryPrefix}.", IsDone = true };
+            yield return new CommandAutoCompleteEntry { Name = "Y", Extra = typeof(float).CSharpName(), Prefix = $"{queryPrefix}.", IsDone = true };
+        }
+
+        if (type.IsSameOrSubclassOf(typeof(Entity))) {
+            IEnumerable<Entity> entityInstances;
+            if (Engine.Scene.Tracker.Entities.TryGetValue(type, out var entities)) {
+                entityInstances = entities;
+            } else {
+                entityInstances = Engine.Scene.Entities.Where(e => e.GetType().IsSameOrSubclassOf(type));
+            }
+
+            // Check for EntityID filter
+            if (memberArgs[memberIdx - 1] == IncompleteEntityIDKey) {
+                foreach (var entity in entityInstances) {
+                    if (string.IsNullOrEmpty(entity.SourceId.Level)) {
+                        continue;
+                    }
+
+                    yield return new CommandAutoCompleteEntry {
+                        Name = entity.SourceId.Key,
+                        Extra = $"{entity.GetType().CSharpName()}  ({entity.Position.ToSimpleString(decimals: 0)})",
+                        Prefix = queryPrefix,
+                        Suffix = "].",
+                        IsDone = false,
+                    };
+                }
+                yield break;
+            }
+
+            // Search for key index (must exist since we validated it in CanEnumerateMemberEntries)
+            int componentKeyIndex = memberIdx - 1;
+            for (; componentKeyIndex >= 0; componentKeyIndex--) {
+                if (memberArgs[componentKeyIndex] == ComponentKey) {
+                    break;
+                }
+            }
+
+            var activeComponents = entityInstances
+                .SelectMany(entity => entity.Components)
+                .Select(component => component.GetType())
+                .Distinct()
+                .ToArray();
+
+            string[] componentQuery = memberArgs[(componentKeyIndex + 1)..];
+            string componentQueryPrefix = componentQuery.Length <= 1 ? string.Empty : $"{string.Join('.', componentQuery[..^1])}.";
+            using var enumerator = TargetQuery.ResolveBaseTypeAutoCompleteEntries(componentQuery, componentQueryPrefix, variant,
+                targetTypeFilter: null,
+                typeFilterPredicate: t => t.IsSameOrSubclassOf(typeof(Component)),
+                typeSuggestionPredicate: t => activeComponents.Contains(t));
+
+            while (enumerator.MoveNext()) {
+                yield return enumerator.Current with {
+                    Prefix = componentQuery.Length <= 1 ? queryPrefix : $"{queryPrefix}.",
+                    StorageKey = $"{variant}_{type.FullName ?? string.Empty}__{enumerator.Current.StorageKey}",
+                };
+            }
         }
     }
 }
 
 internal class ComponentQueryHandler : TargetQuery.Handler {
     public override bool CanResolveInstances(Type type) => type.IsSameOrSubclassOf(typeof(Component));
+    public override bool CanEnumerateTypeEntries(Type type) => type == typeof(PlayerState) || type == typeof(SeekerState) || type == typeof(OshiroState);
 
     public override object[] ResolveInstances(Type type) {
         IEnumerable<Component> componentInstances;
@@ -696,6 +950,138 @@ internal class ComponentQueryHandler : TargetQuery.Handler {
         return componentInstances
             .Select(object (c) => c)
             .ToArray();
+    }
+
+    // Marker types for StateMachine instances
+    private struct PlayerState;
+    private struct SeekerState;
+    private struct OshiroState;
+
+    private static readonly string[] playerStates = [
+        nameof(Player.StNormal),
+        nameof(Player.StClimb),
+        nameof(Player.StDash),
+        nameof(Player.StSwim),
+        nameof(Player.StBoost),
+        nameof(Player.StRedDash),
+        nameof(Player.StHitSquash),
+        nameof(Player.StLaunch),
+        nameof(Player.StPickup),
+        nameof(Player.StDreamDash),
+        nameof(Player.StSummitLaunch),
+        nameof(Player.StDummy),
+        nameof(Player.StIntroWalk),
+        nameof(Player.StIntroJump),
+        nameof(Player.StIntroRespawn),
+        nameof(Player.StIntroWakeUp),
+        nameof(Player.StBirdDashTutorial),
+        nameof(Player.StFrozen),
+        nameof(Player.StReflectionFall),
+        nameof(Player.StStarFly),
+        nameof(Player.StTempleFall),
+        nameof(Player.StCassetteFly),
+        nameof(Player.StAttract),
+        nameof(Player.StIntroMoonJump),
+        nameof(Player.StFlingBird),
+        nameof(Player.StIntroThinkForABit),
+    ];
+    private static readonly string[] seekerStates = [
+        nameof(Seeker.StIdle),
+        nameof(Seeker.StPatrol),
+        nameof(Seeker.StSpotted),
+        nameof(Seeker.StAttack),
+        nameof(Seeker.StStunned),
+        nameof(Seeker.StSkidding),
+        nameof(Seeker.StRegenerate),
+        nameof(Seeker.StReturned),
+    ];
+    private static readonly string[] oshiroStates = [
+        nameof(AngryOshiro.StChase),
+        nameof(AngryOshiro.StChargeUp),
+        nameof(AngryOshiro.StAttack),
+        nameof(AngryOshiro.StDummy),
+        nameof(AngryOshiro.StWaiting),
+        nameof(AngryOshiro.StHurt),
+    ];
+
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, ref int memberIdx, string[] memberArgs) {
+        bool memberAccess = memberIdx + 1 < memberArgs.Length && memberArgs[memberIdx + 1] == nameof(StateMachine.State);
+        bool componentAccess = false;
+        if (memberIdx + 2 < memberArgs.Length && memberArgs[memberIdx] == EntityQueryHandler.ComponentKey) {
+            string[] componentQuery = memberArgs[(memberIdx + 1)..];
+            var componentTypes = TargetQuery.ParseGenericBaseTypes(componentQuery, out string[] componentMemberArgs);
+            componentAccess = componentTypes.Contains(typeof(StateMachine)) && componentMemberArgs.Length > 0 && componentMemberArgs[0] == nameof(StateMachine.State);
+        }
+
+        int advanceIdx = componentAccess ? 2 : 1;
+
+        if (type.IsSameOrSubclassOf(typeof(Player)) && (memberAccess && memberArgs[memberIdx] == nameof(Player.StateMachine) || componentAccess)) {
+            memberIdx += advanceIdx; // Skip over parsed arguments
+            targetTypes = [typeof(PlayerState)];
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+        }
+
+        if (type.IsSameOrSubclassOf(typeof(Seeker)) && (memberAccess && memberArgs[memberIdx] == nameof(Seeker.State) || componentAccess)) {
+            memberIdx += advanceIdx; // Skip over parsed arguments
+            targetTypes = [typeof(SeekerState)];
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+        }
+
+        if (type.IsSameOrSubclassOf(typeof(AngryOshiro)) && (memberAccess && memberArgs[memberIdx] == nameof(AngryOshiro.state) || componentAccess)) {
+            memberIdx += advanceIdx; // Skip over parsed arguments
+            targetTypes = [typeof(OshiroState)];
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
+        }
+
+        targetTypes = null!;
+        return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+    }
+    public override IEnumerator<CommandAutoCompleteEntry> EnumerateTypeEntries(Type type) {
+        if (type == typeof(PlayerState)) {
+            foreach (string state in playerStates) {
+                yield return new CommandAutoCompleteEntry {
+                    Name = state,
+                    Extra = "State",
+                    Prefix = $"{nameof(Player)}.",
+                    Suggestion = true,
+                    IsDone = true,
+                    StorageKey = $"{nameof(TargetQuery.Variant.Get)}_{typeof(Player).FullName}",
+                    StorageName = state,
+                };
+            }
+        } else if (type == typeof(SeekerState)) {
+            foreach (string state in seekerStates) {
+                yield return new CommandAutoCompleteEntry {
+                    Name = state,
+                    Extra = "State",
+                    Prefix = $"{nameof(Seeker)}.",
+                    Suggestion = true,
+                    IsDone = true,
+                    StorageKey = $"{nameof(TargetQuery.Variant.Get)}_{typeof(Seeker).FullName}",
+                    StorageName = state,
+                };
+            }
+        } else if (type == typeof(OshiroState)) {
+            foreach (string state in oshiroStates) {
+                yield return new CommandAutoCompleteEntry {
+                    Name = state,
+                    Extra = "State",
+                    Prefix = $"{nameof(AngryOshiro)}.",
+                    Suggestion = true,
+                    IsDone = true,
+                    StorageKey = $"{nameof(TargetQuery.Variant.Get)}_{typeof(AngryOshiro).FullName}",
+                    StorageName = state,
+                };
+            }
+        }
+    }
+
+    public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+        if (member.DeclaringType == typeof(StateMachine) && member.Name is nameof(StateMachine.State)) {
+            return true;
+        }
+
+        return false;
     }
 }
 
@@ -748,7 +1134,7 @@ internal class CollectionQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.MemberAccessError>.Ok(success);
     }
 
-    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, int memberIdx, string[] memberArgs) {
+    public override Result<bool, TargetQuery.MemberAccessError> ResolveTargetTypes(out Type[] targetTypes, Type type, ref int memberIdx, string[] memberArgs) {
         if (!memberArgs[memberIdx].StartsWith(IndexKey)) {
             targetTypes = null!;
             return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
@@ -1016,7 +1402,7 @@ internal class SpecialValueQueryHandler : TargetQuery.Handler {
     }
 
     public override bool CanResolveValue(Type type) => type == typeof(Vector2) || type == typeof(Vector3) || type == typeof(Vector4) || type == typeof(Random) || type == typeof(ButtonBinding);
-    public override bool CanEnumerateTypeEntries(Type type, TargetQuery.Variant variant) => type == typeof(ButtonBinding);
+    public override bool CanEnumerateTypeEntries(Type type) => type == typeof(ButtonBinding);
 
     public override Result<bool, TargetQuery.MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
         var bindingFlags = memberArgs.Length == 1
@@ -1140,17 +1526,27 @@ internal class SpecialValueQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.QueryError>.Ok(false);
     }
 
-    public override IEnumerator<CommandAutoCompleteEntry> EnumerateTypeEntries(Type type, TargetQuery.Variant variant) {
+    public override IEnumerator<CommandAutoCompleteEntry> EnumerateTypeEntries(Type type) {
         if (type == typeof(ButtonBinding)) {
             foreach (var button in Enum.GetValues<MButtons>()) {
-                yield return new CommandAutoCompleteEntry { Name = button.ToString(), Extra = "Mouse", IsDone = true };
+                yield return new CommandAutoCompleteEntry {
+                    Name = button.ToString(),
+                    Extra = "Mouse",
+                    IsDone = true,
+                    StorageKey = $"{nameof(TargetQuery.Variant.Get)}_{typeof(MButtons).FullName}",
+                };
             }
             foreach (var key in Enum.GetValues<Keys>()) {
                 if (key is Keys.Left or Keys.Right) {
                     // These keys can't be used, since the mouse buttons already use that name
                     continue;
                 }
-                yield return new CommandAutoCompleteEntry { Name = key.ToString(), Extra = "Key", IsDone = true };
+                yield return new CommandAutoCompleteEntry {
+                    Name = key.ToString(),
+                    Extra = "Key",
+                    IsDone = true,
+                    StorageKey = $"{nameof(TargetQuery.Variant.Get)}_{typeof(Keys).FullName}",
+                };
             }
         }
     }

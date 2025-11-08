@@ -197,6 +197,12 @@ public class Document : IDisposable {
         CommunicationWrapper.LinesUpdated -= OnLinesUpdated;
     }
 
+    public static Document Create(IEnumerable<string> lines) {
+        var document = new Document(filePath: null);
+        document.CurrentLines.AddRange(lines);
+        return document;
+    }
+
     public static Document? Load(string path) {
         try {
             return new Document(path);

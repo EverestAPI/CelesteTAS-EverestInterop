@@ -100,6 +100,10 @@ public sealed class CommunicationAdapterStudio(
                         gameData[gameDataType] = reader.ReadString();
                         break;
 
+                    case GameDataType.EvaluateInfoTemplate:
+                        gameData[gameDataType] = reader.ReadObject<string[]>();
+                        break;
+
                     case GameDataType.GameState:
                         gameData[gameDataType] = reader.ReadObject<GameState?>();
                         break;

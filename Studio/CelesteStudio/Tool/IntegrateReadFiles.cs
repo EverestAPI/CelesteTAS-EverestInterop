@@ -21,7 +21,7 @@ public static class IntegrateReadFiles {
         foreach ((string line, _, string filePath, var targetCommand) in FileRefactor.IterateLines(sourceFile, followReadCommands: true)) {
             // Write original read command as comment
             if (targetCommand != null && currentTargetCommand != targetCommand.Value.OriginalText) {
-                integratedLines.Add($"# {targetCommand.Value.OriginalText}");
+                integratedLines.Add($"#{targetCommand.Value.OriginalText}");
                 currentTargetCommand = targetCommand.Value.OriginalText;
             }
 

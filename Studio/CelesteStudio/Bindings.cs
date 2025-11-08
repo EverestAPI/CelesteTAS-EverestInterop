@@ -21,6 +21,15 @@ public abstract record Binding {
 
     public static implicit operator MenuItem(Binding binding) => binding.CreateItem();
 }
+public abstract record InstanceBinding : Binding {
+    public new record struct Entry(string Identifier, string DisplayName, Hotkey DefaultHotkey, Func<object, bool> Action, bool PreferTextHotkey = false);
+
+    public sealed override Binding.Entry[] Entries => InstanceEntries.Select(entry => new Binding.Entry(entry.Identifier, entry.DisplayName, entry.DefaultHotkey, () => false, entry.PreferTextHotkey)).ToArray();
+    public abstract Entry[] InstanceEntries { get; }
+
+    public sealed override MenuItem CreateItem() => null!;
+    public abstract MenuItem CreateItem(object instance);
+}
 
 /// Binding to an arbitrary code action
 public record ActionBinding(string Identifier, string DisplayName, Binding.Category DisplayCategory, Hotkey DefaultHotkey, Action Action, bool preferTextHotkey = false) : Binding {
@@ -33,6 +42,17 @@ public record ActionBinding(string Identifier, string DisplayName, Binding.Categ
         return new ButtonMenuItem((_, _) => Action()) { Text = DisplayName, Shortcut = Settings.Instance.KeyBindings.GetValueOrDefault(Identifier, DefaultHotkey).KeysOrNone };
     }
 }
+/// Binding to an arbitrary code action on a specific instance
+public record InstanceActionBinding<T>(string Identifier, string DisplayName, Binding.Category DisplayCategory, Hotkey DefaultHotkey, Action<T> Action, bool preferTextHotkey = false) : InstanceBinding {
+    public override Entry[] InstanceEntries { get; } = [new(Identifier, DisplayName, DefaultHotkey, instance => {
+        Action((T) instance);
+        return true;
+    })];
+
+    public override MenuItem CreateItem(object instance) {
+        return new ButtonMenuItem((_, _) => Action((T) instance)) { Text = DisplayName, Shortcut = Settings.Instance.KeyBindings.GetValueOrDefault(Identifier, DefaultHotkey).KeysOrNone };
+    }
+}
 
 /// Binding to an arbitrary code action, which conditionally blocks further hotkey checks
 public record ConditionalActionBinding(string Identifier, string DisplayName, Binding.Category DisplayCategory, Hotkey DefaultHotkey, Func<bool> Action, bool preferTextHotkey = false) : Binding {
@@ -40,6 +60,14 @@ public record ConditionalActionBinding(string Identifier, string DisplayName, Bi
 
     public override MenuItem CreateItem() {
         return new ButtonMenuItem((_, _) => Action()) { Text = DisplayName, Shortcut = Settings.Instance.KeyBindings.GetValueOrDefault(Identifier, DefaultHotkey).KeysOrNone };
+    }
+}
+/// Binding to an arbitrary code action on a specific instance, which conditionally blocks further hotkey checks
+public record ConditionalInstanceActionBinding<T>(string Identifier, string DisplayName, Binding.Category DisplayCategory, Hotkey DefaultHotkey, Func<T, bool> Action, bool preferTextHotkey = false) : InstanceBinding {
+    public override Entry[] InstanceEntries { get; } = [new(Identifier, DisplayName, DefaultHotkey, instance => Action((T) instance), preferTextHotkey)];
+
+    public override MenuItem CreateItem(object instance) {
+        return new ButtonMenuItem((_, _) => Action((T) instance)) { Text = DisplayName, Shortcut = Settings.Instance.KeyBindings.GetValueOrDefault(Identifier, DefaultHotkey).KeysOrNone };
     }
 }
 
