@@ -127,7 +127,7 @@ internal static class RequireDependencyCommand {
         const int maxEntries = 6;
         foreach ((string name, var version) in missingDependencies) {
             if (count == maxEntries && missingDependencies.Count > maxEntries) {
-                string text = Dialog.Clean("REMAINING_DEPENDENCIES".ToDialogText())
+                string text = "REMAINING_DEPENDENCIES".ToDialogText()
                     .Replace("((left))", (missingDependencies.Count - (maxEntries - 1)).ToString());
                 menu.Add(new TextMenu.Button(text) { Selectable = false });
                 break;
