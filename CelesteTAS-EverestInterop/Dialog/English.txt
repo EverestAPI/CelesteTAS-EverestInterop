@@ -99,7 +99,9 @@ TAS_HOTKEYS=                                Hotkeys
 TAS_HOTKEYS_DESCRIPTION=                    Binding multiple keys to a control will cause those keys to act as a key-combo
 
 # ============================================== Command ==============================================
-TAS_INSTALL_DEPENDENCY=                     Install Dependency
+TAS_MISSING_DEPENDENCIES=                   Install Missing Dependencies
+TAS_INSTALL_DEPENDENCIES=                   The following dependencies need to be installed, to run the TAS:
+TAS_REMAINING_DEPENDENCIES=                 ...and ((left)) more dependencies
 
 # ============================================== More Options Submenu ==============================================
 TAS_CENTER_CAMERA=                          Center Camera
