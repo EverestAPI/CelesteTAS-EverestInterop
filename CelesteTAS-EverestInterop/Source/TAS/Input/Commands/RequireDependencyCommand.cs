@@ -73,7 +73,14 @@ internal static class RequireDependencyCommand {
             case Overworld overworld:
                 var oui = new OuiInstallDependenciesConfirmation();
                 overworld.Add(oui);
-                overworld.routineEntity.Add(new Coroutine(overworld.GotoRoutine(oui)));
+
+                if (overworld.Current is OuiChapterPanel chapterPanel) {
+                    // Avoid panning camera back to MountainIdle
+                    chapterPanel.Add(new Coroutine(chapterPanel.EaseOut()));
+                    overworld.routineEntity.Add(new Coroutine(SkipLeaveRoutine(overworld, oui)));
+                } else {
+                    overworld.routineEntity.Add(new Coroutine(overworld.GotoRoutine(oui)));
+                }
                 break;
 
             default: {
@@ -97,6 +104,21 @@ internal static class RequireDependencyCommand {
         }
 
         Manager.DisableRunLater();
+
+        static IEnumerator SkipLeaveRoutine(Overworld overworld, Oui next) {
+            overworld.transitioning = true;
+            overworld.Next = next;
+            overworld.Last = overworld.Current;
+            overworld.Current = null;
+            overworld.Last.Focused = false;
+            // Avoid calling last.Leave()
+
+            yield return next.Enter(overworld.Last);
+            next.Focused = true;
+            overworld.Current = next;
+            overworld.transitioning = false;
+            overworld.Next = null;
+        }
     }
 
     [ClearInputs]
@@ -248,6 +270,8 @@ internal static class RequireDependencyCommand {
         private float alpha = 0.0f;
 
         private Oui? previousOui;
+        private bool? markerRunning;
+        private OuiChapterSelectIcon? selectedIcon;
 
         public OuiInstallDependenciesConfirmation() {
             var dependencies = missingDependencies.Select(entry => new EverestModuleMetadata {
@@ -271,6 +295,27 @@ internal static class RequireDependencyCommand {
 
         public override IEnumerator Enter(Oui from) {
             previousOui = from;
+            markerRunning = Overworld.Maddy.Show ? Overworld.Maddy.running : null;
+            Overworld.Maddy.Hide();
+
+            // Handle special cases
+            foreach (var icon in Overworld.Entities.FindAll<OuiChapterSelectIcon>()) {
+                if (icon.selected) {
+                    selectedIcon = icon;
+
+                    var inspector = Overworld.GetUI<OuiChapterPanel>();
+
+                    var iconFrom = inspector.OpenPosition + inspector.IconOffset;
+                    var iconTo = inspector.ClosePosition + inspector.IconOffset;
+
+                    icon.Scale = Vector2.One;
+                    icon.hidden = true;
+                    icon.selected = false;
+                    icon.StartTween(0.25f, tween => icon.Position = Vector2.Lerp(iconFrom, iconTo, tween.Eased));
+                } else {
+                    icon.Hide();
+                }
+            }
 
             Scene.Add(menu);
 
@@ -293,6 +338,27 @@ internal static class RequireDependencyCommand {
                 menu.X = onScreenX + Celeste.Celeste.TargetWidth*Ease.CubeIn(p);
                 alpha = 1.0f - Ease.CubeIn(p);
                 yield return null;
+            }
+
+            if (markerRunning is { } running) {
+                if (running) {
+                    Overworld.Maddy.Running();
+                } else {
+                    Overworld.Maddy.Falling();
+                }
+            }
+
+            // Handle special cases
+            if (selectedIcon is { } icon) {
+                var inspector = Overworld.GetUI<OuiChapterPanel>();
+
+                var iconFrom = inspector.ClosePosition + inspector.IconOffset;
+                var iconTo = inspector.OpenPosition + inspector.IconOffset;
+
+                icon.Scale = Vector2.One;
+                icon.hidden = false;
+                icon.selected = true;
+                icon.StartTween(0.25f, tween => icon.Position = Vector2.Lerp(iconFrom, iconTo, tween.Eased));
             }
 
             menu.Visible = Visible = false;
