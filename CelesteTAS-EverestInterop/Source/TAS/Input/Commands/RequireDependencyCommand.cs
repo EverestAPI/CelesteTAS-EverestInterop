@@ -19,9 +19,26 @@ internal static class RequireDependencyCommand {
 
     public const string CommandName = "RequireDependency";
     private class Meta : ITasCommandMeta {
-        public string Insert => $"{CommandName}{CommandInfo.Separator}[0;Mod Name]{CommandInfo.Separator}[1;(Version)]";
-
+        public string Insert => $"{CommandName}{CommandInfo.Separator}[0;Name]";
         public bool HasArguments => true;
+
+        public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
+            if (args.Length == 1) {
+                foreach (var module in Everest.Modules) {
+                    yield return new CommandAutoCompleteEntry {
+                        Name = module.Metadata.Name,
+                        Extra = "v" + module.Metadata.Version.ToString(3),
+                        Suffix = CommandInfo.Separator + module.Metadata.Version.ToString(3),
+                        HasNext = false,
+                    };
+                }
+            } else if (args.Length == 2 && Everest.Modules.FirstOrDefault(mod => mod.Metadata.Name == args[0]) is { } module) {
+                yield return new CommandAutoCompleteEntry {
+                    Name = module.Metadata.Version.ToString(3),
+                    HasNext = false
+                };
+            }
+        }
     }
 
     private static readonly Dictionary<string, Version?> missingDependencies = new();

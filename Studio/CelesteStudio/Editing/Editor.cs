@@ -70,7 +70,7 @@ public sealed class Editor : TextEditor {
             editor.InsertLine(modInfo);
         }
     });
-    private static readonly InstanceBinding InsertRequireDependency = CreateAction("Editor_InsertRequireDependency", "Insert Require Dependency", Hotkey.None, editor => {
+    private static readonly InstanceBinding InsertRequireDependency = CreateAction("Editor_InsertRequireDependency", "Insert current Map Dependency Requirement", Hotkey.None, editor => {
         if (CommunicationWrapper.GetRequireDependency() is var requireDependencyInfo && !string.IsNullOrWhiteSpace(requireDependencyInfo)) {
             editor.InsertLine(requireDependencyInfo);
         }

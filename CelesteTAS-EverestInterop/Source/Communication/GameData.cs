@@ -1,4 +1,3 @@
-using AsmResolver.PE.DotNet.Metadata;
 using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.Helpers;
