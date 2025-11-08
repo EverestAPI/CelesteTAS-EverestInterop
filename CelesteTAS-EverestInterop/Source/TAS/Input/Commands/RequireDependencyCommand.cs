@@ -24,18 +24,35 @@ internal static class RequireDependencyCommand {
 
         public IEnumerator<CommandAutoCompleteEntry> GetAutoCompleteEntries(string[] args, string filePath, int fileLine) {
             if (args.Length == 1) {
+                string bestGuess = null;
+                // basically same as the code in GameData.GetRequireDependency()
+                if (Engine.Scene is Level level
+                    && Everest.Content.TryGet<AssetTypeMap>("Maps/" + AreaData.Get(level).SID, out ModAsset mapModAsset)
+                    && mapModAsset.Source != null
+                    && Everest.Modules.FirstOrDefault(module => module.Metadata.Name == mapModAsset.Source.Name) is { } moduleOfThisLevel) {
+                    bestGuess = moduleOfThisLevel.Metadata.Name;
+                    yield return CreateFullEntry(moduleOfThisLevel);
+                }
+
                 foreach (var module in Everest.Modules) {
-                    yield return new CommandAutoCompleteEntry {
-                        Name = module.Metadata.Name,
-                        Extra = "v" + module.Metadata.Version.ToString(3),
-                        Suffix = CommandInfo.Separator + module.Metadata.Version.ToString(3),
-                        HasNext = false,
-                    };
+                    if (bestGuess == module.Metadata.Name) {
+                        continue;
+                    }
+                    yield return CreateFullEntry(module);
                 }
             } else if (args.Length == 2 && Everest.Modules.FirstOrDefault(mod => mod.Metadata.Name == args[0]) is { } module) {
                 yield return new CommandAutoCompleteEntry {
                     Name = module.Metadata.Version.ToString(3),
                     HasNext = false
+                };
+            }
+
+            static CommandAutoCompleteEntry CreateFullEntry(EverestModule module) {
+                return new CommandAutoCompleteEntry {
+                    Name = module.Metadata.Name,
+                    Extra = "v" + module.Metadata.Version.ToString(3),
+                    Suffix = CommandInfo.Separator + module.Metadata.Version.ToString(3),
+                    HasNext = false,
                 };
             }
         }

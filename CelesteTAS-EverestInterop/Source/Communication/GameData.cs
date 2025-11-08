@@ -386,8 +386,8 @@ public static class GameData {
         if (Engine.Scene is Level level
             && Everest.Content.TryGet<AssetTypeMap>("Maps/" + AreaData.Get(level).SID, out ModAsset mapModAsset)
             && mapModAsset.Source != null
-            && Everest.Modules.Select(module => module.Metadata).FirstOrDefault(meta => meta.Name == mapModAsset.Source.Name) is { } mapMeta) {
-            return DependencyToString(mapMeta);
+            && Everest.Modules.FirstOrDefault(module => module.Metadata.Name == mapModAsset.Source.Name) is { } mod) {
+            return DependencyToString(mod.Metadata);
         }
 
         return string.Empty;
