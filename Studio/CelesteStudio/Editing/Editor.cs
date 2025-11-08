@@ -55,16 +55,6 @@ public sealed class Editor : TextEditor {
         string ySpeed = CommunicationWrapper.PlayerSpeed.Y.ToFormattedString(CommunicationWrapper.GameSettings.SpeedDecimals);
         editor.InsertLine($"# Speed: {xSpeed}, {ySpeed}");
     });
-    private static readonly InstanceBinding InsertModInfo = CreateAction("Editor_InsertModInfo", "Insert Mod Info", Hotkey.None, editor => {
-        if (CommunicationWrapper.GetModInfo() is var modInfo && !string.IsNullOrWhiteSpace(modInfo)) {
-            editor.InsertLine(modInfo);
-        }
-    });
-    private static readonly InstanceBinding InsertRequireDependency = CreateAction("Editor_InsertRequireDependency", "Insert Require Dependency", Hotkey.None, editor => {
-        if (CommunicationWrapper.GetRequireDependency() is var requireDependencyInfo && !string.IsNullOrWhiteSpace(requireDependencyInfo)) {
-            editor.InsertLine(requireDependencyInfo);
-        }
-    });
     private static readonly InstanceBinding InsertConsoleLoadCommand = CreateAction("Editor_InsertConsoleLoadCommand", "Insert Exact \"console load\" Command", Hotkey.KeyCtrl(Keys.R | Keys.Shift), editor => {
         if (CommunicationWrapper.GetConsoleCommand(simple: false) is var command && !string.IsNullOrWhiteSpace(command)) {
             editor.InsertLine(command);
@@ -73,6 +63,16 @@ public sealed class Editor : TextEditor {
     private static readonly InstanceBinding InsertSimpleConsoleLoadCommand = CreateAction("Editor_InsertSimpleConsoleLoadCommand", "Insert Simple \"console load\" Command", Hotkey.KeyCtrl(Keys.R | Application.Instance.AlternateModifier), editor => {
         if (CommunicationWrapper.GetConsoleCommand(simple: true) is var command && !string.IsNullOrWhiteSpace(command)) {
             editor.InsertLine(command);
+        }
+    });
+    private static readonly InstanceBinding InsertModInfo = CreateAction("Editor_InsertModInfo", "Insert Mod Info", Hotkey.None, editor => {
+        if (CommunicationWrapper.GetModInfo() is var modInfo && !string.IsNullOrWhiteSpace(modInfo)) {
+            editor.InsertLine(modInfo);
+        }
+    });
+    private static readonly InstanceBinding InsertRequireDependency = CreateAction("Editor_InsertRequireDependency", "Insert Require Dependency", Hotkey.None, editor => {
+        if (CommunicationWrapper.GetRequireDependency() is var requireDependencyInfo && !string.IsNullOrWhiteSpace(requireDependencyInfo)) {
+            editor.InsertLine(requireDependencyInfo);
         }
     });
 
@@ -95,7 +95,7 @@ public sealed class Editor : TextEditor {
         DeleteSelectedLines, SetFrameCountToStepAmount,
         InsertRemoveBreakpoint, InsertRemoveSavestateBreakpoint, RemoveAllUncommentedBreakpoints, RemoveAllBreakpoints, ToggleCommentBreakpoints, ToggleCommentInputs, ToggleCommentText,
         InsertRoomName, InsertChapterTime, RemoveAllTimestamps,
-        InsertPlayerPosition, InsertPlayerSpeed, InsertModInfo, InsertRequireDependency, InsertConsoleLoadCommand, InsertSimpleConsoleLoadCommand,
+        InsertPlayerPosition, InsertPlayerSpeed, InsertConsoleLoadCommand, InsertSimpleConsoleLoadCommand, InsertModInfo, InsertRequireDependency,
         OpenAutoCompleteMenu, OpenContextActionsMenu,
         FrameOperationAdd, FrameOperationSub, FrameOperationMul, FrameOperationDiv, FrameOperationSet,
     ];
@@ -291,10 +291,10 @@ public sealed class Editor : TextEditor {
                 new SeparatorMenuItem(),
                 InsertPlayerPosition.CreateItem(this),
                 InsertPlayerSpeed.CreateItem(this),
-                InsertModInfo.CreateItem(this),
-                InsertRequireDependency.CreateItem(this),
                 InsertConsoleLoadCommand.CreateItem(this),
                 InsertSimpleConsoleLoadCommand.CreateItem(this),
+                InsertModInfo.CreateItem(this),
+                InsertRequireDependency.CreateItem(this),
                 commandsMenu,
                 new SeparatorMenuItem(),
                 OpenAutoCompleteMenu.CreateItem(this),
