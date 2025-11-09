@@ -67,10 +67,6 @@ public class TextEditor(Document document, Scrollable scrollable) : TextViewer(d
     }
 
     protected override void OnKeyDown(KeyEventArgs e) {
-        HandleKeyDown(e, forwardToText: true);
-    }
-
-    protected virtual void HandleKeyDown(KeyEventArgs e, bool forwardToText) {
         if (ActivePopupMenu is { } menu && menu.HandleKeyDown(e)) {
             e.Handled = true;
             Recalc();
@@ -119,24 +115,16 @@ public class TextEditor(Document document, Scrollable scrollable) : TextViewer(d
             }
         }
 
-        base.OnKeyDown(e);
-        if (e.Handled) {
-            return;
-        }
-
         switch (e.Key) {
             case Keys.Backspace:
                 OnDelete(e.HasCommonModifier() ? CaretMovementType.WordLeft : CaretMovementType.CharLeft);
-                e.Handled = true;
-                break;
+                goto Handled;
             case Keys.Delete:
                 OnDelete(e.HasCommonModifier() ? CaretMovementType.WordRight : CaretMovementType.CharRight);
-                e.Handled = true;
-                break;
+                goto Handled;
             case Keys.Enter:
                 OnEnter(e.HasCommonModifier(), up: e.Shift);
-                e.Handled = true;
-                break;
+                goto Handled;
 
             case Keys.Up when e.HasAlternateModifier(): {
                 // Move lines
@@ -154,8 +142,7 @@ public class TextEditor(Document document, Scrollable scrollable) : TextViewer(d
                     Document.Caret.Row--;
                 }
 
-                e.Handled = true;
-                break;
+                goto Handled;
             }
             case Keys.Down when e.HasAlternateModifier(): {
                 // Move lines
@@ -172,30 +159,32 @@ public class TextEditor(Document document, Scrollable scrollable) : TextViewer(d
                     Document.Caret.Row++;
                 }
 
-                e.Handled = true;
-                break;
+                goto Handled;
             }
-
-            default:
-                if (forwardToText) {
-                    // macOS will make a beep sounds when the event isn't handled
-                    // ..that also means OnTextInput won't be called..
-                    if (Eto.Platform.Instance.IsMac) {
-                        e.Handled = true;
-                        if (e.KeyChar != char.MaxValue) {
-                            OnTextInput(new TextInputEventArgs(e.KeyChar.ToString()));
-                        }
-                    } else {
-                        BaseOnKeyDown(e);
-                    }
-                }
-                break;
         }
 
+        base.OnKeyDown(e);
         if (e.Handled) {
-            Recalc();
-            ScrollCaretIntoView();
+            return;
         }
+
+        // macOS will make a beep sounds when the event isn't handled
+        // ..that also means OnTextInput won't be called..
+        if (Eto.Platform.Instance.IsMac) {
+            e.Handled = true;
+            if (e.KeyChar != char.MaxValue) {
+                OnTextInput(new TextInputEventArgs(e.KeyChar.ToString()));
+            }
+        } else {
+            BaseOnKeyDown(e);
+        }
+
+        return;
+
+        Handled:
+        e.Handled = true;
+        Recalc();
+        ScrollCaretIntoView();
     }
 
     protected override bool CheckHotkey(Hotkey hotkey) {
