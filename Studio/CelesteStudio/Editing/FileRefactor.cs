@@ -1,5 +1,6 @@
 using CelesteStudio.Communication;
 using StudioCommunication;
+using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -25,7 +26,7 @@ public static class FileRefactor {
     private static readonly Dictionary<string, FileSystemWatcher> watchers = [];
 
     public static void Initialize(Editor editor) {
-        editor.DocumentChanged += (_, document) => EnsureFileWatched(document.FilePath);
+        editor.PostDocumentChanged += document => EnsureFileWatched(document.FilePath);
     }
 
     #region Style Fixing
@@ -317,6 +318,8 @@ public static class FileRefactor {
         }
     }
 
+    public const string ErrorCommentPrefix = "# ERROR: ";
+
     /// Iterates over all lines of the document, optionally following Read-commands
     public static IEnumerable<(string Line, int Row, string File, CommandLine? TargetCommand)> IterateLines(string filePath, bool followReadCommands) {
         string[] fileLines = ReadLines(filePath);
@@ -349,40 +352,59 @@ public static class FileRefactor {
 
                 // Follow Read-command
                 if (Path.GetDirectoryName(path) is not { } documentDir) {
+                    yield return ($"{ErrorCommentPrefix}Couldn't find directory of current file '{path}'", row, path, commandLine);
+                    continue;
+                }
+
+                if (Parsing.FindReadTargetFile(documentDir, commandLine.Arguments[0], out string errorMessage) is not { } targetPath) {
+                    yield return ($"{ErrorCommentPrefix}{errorMessage}", row, path, commandLine);
+                    continue;
+                }
+
+                if (Path.GetFullPath(path) == Path.GetFullPath(targetPath)) {
+                    yield return ($"{ErrorCommentPrefix}File is not allowed to read itself", row, path, commandLine);
                     continue;
                 }
 
                 string fullPath = Path.Combine(documentDir, $"{commandLine.Arguments[0]}.tas");
                 if (!File.Exists(fullPath)) {
+                    yield return ($"{ErrorCommentPrefix}Couldn't find target file '{fullPath}'", row, path, commandLine);
                     continue;
                 }
 
-                var readLines = ReadLines(fullPath)
-                    .Select((readLine, i) => (line: readLine, i))
-                    .ToArray();
+                string[] readLines = ReadLines(fullPath);
 
-                int? startLabelRow = null;
+                int readStartRow = 0;
                 if (commandLine.Arguments.Length > 1) {
-                    (string label, startLabelRow) = readLines
-                        .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[1]}");
-                    if (label == null) {
+                    if (!Parsing.TryGetLineTarget(commandLine.Arguments[1], readLines, out readStartRow, out bool isLabel)) {
+                        yield return ($"{ErrorCommentPrefix}Start label '{commandLine.Arguments[1]}' not found in file '{fullPath}'", row, path, commandLine);
                         continue;
                     }
+                    readStartRow--; // Convert to 0-indexed
+
+                    if (isLabel) {
+                        readStartRow++; // Skip over label
+                    }
                 }
-                int? endLabelRow = null;
+                int readEndRow = readLines.Length - 1;
                 if (commandLine.Arguments.Length > 2) {
-                    (string label, endLabelRow) = readLines
-                        .FirstOrDefault(pair => pair.line == $"#{commandLine.Arguments[2]}");
-                    if (label == null) {
+                    if (!Parsing.TryGetLineTarget(commandLine.Arguments[2], readLines, out readEndRow, out bool isLabel)) {
+                        yield return ($"{ErrorCommentPrefix}End label '{commandLine.Arguments[2]}' not found in file '{fullPath}'", row, path, commandLine);
                         continue;
+                    }
+                    readEndRow--; // Convert to 0-indexed
+
+                    if (isLabel) {
+                        readEndRow--; // Skip over label
                     }
                 }
 
-                startLabelRow ??= 0;
-                endLabelRow ??= readLines.Length - 1;
+                // Clamp values
+                readStartRow = Math.Max(0, readStartRow);
+                readEndRow = Math.Min(readLines.Length - 1, readEndRow);
 
                 fileStack.Push((path, row + 1, endRow, targetCommand)); // Store current state
-                fileStack.Push((fullPath, startLabelRow.Value + 1, endLabelRow.Value - 1, commandLine)); // Setup next state (skip start / end labels)
+                fileStack.Push((fullPath, readStartRow, readEndRow, commandLine)); // Setup next state (skip start / end labels)
                 break;
             }
         }
@@ -401,7 +423,7 @@ public static class FileRefactor {
                     try {
                         for (int i = 1; i <= numberOfRetries; i++) {
                             try {
-                                await File.WriteAllTextAsync(filePath, Document.FormatLinesToText(FileCache[filePath]));
+                                await File.WriteAllTextAsync(filePath, FileCache[filePath].FormatTasLinesToText());
                                 Console.WriteLine($"Successfully flushed file '{filePath}'");
                             } catch (IOException ex) when (ex.HResult == ERROR_SHARING_VIOLATION || ex is FileNotFoundException) {
                                 await Task.Delay(delayOnRetry);

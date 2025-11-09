@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using Celeste;
@@ -205,9 +205,9 @@ public static class Manager {
             if (CurrState == State.Running && !FastForwarding) {
                 float duration = seenAutoPauseToast ? 2.0f : 8.0f;
                 if (autoPauseDraft is not { Active: true }) {
-                    autoPauseDraft = PopupToast.Show(Dialog.Clean("TAS_AutoPauseToast"), duration);
+                    autoPauseDraft = PopupToast.Show("AutoPauseToast".ToDialogText(), duration);
                 } else {
-                    autoPauseDraft.Text = Dialog.Clean("TAS_AutoPauseToast");
+                    autoPauseDraft.Text = "AutoPauseToast".ToDialogText();
                     autoPauseDraft.Timeout = duration;
                 }
 

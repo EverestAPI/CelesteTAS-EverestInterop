@@ -1,16 +1,99 @@
 using CelesteStudio.Controls;
+using CelesteStudio.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
 using SkiaSharp;
 using StudioCommunication.Util;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Runtime.InteropServices;
+using Tomlet;
+using Tomlet.Exceptions;
+using Tomlet.Models;
 
 namespace CelesteStudio.Editing;
 
-public sealed class PopupMenu : Scrollable {
+public abstract class PopupMenu : Scrollable {
+    #region Storage
+
+    public record StorageData(HashSet<string> Favourites, Dictionary<string, uint> Usages);
+    private static readonly Dictionary<string, StorageData> popupDataStorage = new();
+
+    public static void LoadStorage() {
+        popupDataStorage.Clear();
+
+        if (!File.Exists(Settings.PopupStoragePath)) {
+            return;
+        }
+
+        var toml = TomlParser.ParseFile(Settings.PopupStoragePath);
+
+        foreach ((string key, var tomlValue) in toml.Entries) {
+            if (tomlValue is not TomlTable table) {
+                throw new TomlTypeMismatchException(typeof(TomlTable), tomlValue.GetType(), typeof(StorageData));
+            }
+
+            popupDataStorage[key] = new StorageData(
+                table.GetArray(nameof(StorageData.Favourites)).ArrayValues
+                    .Select(value => value.StringValue)
+                    .ToHashSet(),
+                table.GetArray(nameof(StorageData.Usages)).ArrayValues
+                    .Select(e => {
+                        if (e is not TomlTable entry) {
+                            throw new TomlTypeMismatchException(typeof(TomlTable), e.GetType(), typeof((string, uint)));
+                        }
+                        if (entry.GetValue("Name") is not TomlString name) {
+                            throw new TomlTypeMismatchException(typeof(TomlString), table.GetValue("Name").GetType(), typeof(string));
+                        }
+                        if (entry.GetValue("Amount") is not TomlLong amount || amount.Value < 0) {
+                            throw new TomlTypeMismatchException(typeof(TomlLong), table.GetValue("Amount").GetType(), typeof(uint));
+                        }
+
+                        return (Name: name.StringValue, Amount: (uint) amount.Value);
+                    })
+                    .ToDictionary(e => e.Name, e => e.Amount)
+            );
+        }
+    }
+    public static void SaveStorage() {
+        var toml = TomlDocument.CreateEmpty();
+
+        foreach ((string key, var data) in popupDataStorage) {
+            if (data.Favourites.Count == 0 && data.Usages.Count == 0) {
+                continue;
+            }
+
+            var table = new TomlTable();
+
+            var favourites = new TomlArray();
+            foreach (string favourite in data.Favourites) {
+                favourites.ArrayValues.Add(new TomlString(favourite));
+            }
+            var usages = new TomlArray();
+            foreach ((string name, uint amount) in data.Usages) {
+                var entry = new TomlTable();
+                entry.Put("Name", name);
+                entry.Put("Amount", amount);
+                usages.ArrayValues.Add(entry);
+            }
+
+            table.Put(nameof(data.Favourites), favourites);
+            table.Put(nameof(data.Usages), usages);
+
+            toml.PutValue(key, table);
+        }
+
+        // Write to another file and then move that over, to avoid getting interrupted while writing and corrupting the settings
+        string tmpFile = Settings.PopupStoragePath + ".tmp";
+        File.WriteAllText(tmpFile, toml.SerializedValue);
+        File.Move(tmpFile, Settings.PopupStoragePath, overwrite: true);
+    }
+
+    #endregion
+
     public record Entry {
         /// The text which will be used for filtering results.
         public required string SearchText;
@@ -18,14 +101,55 @@ public sealed class PopupMenu : Scrollable {
         public required string DisplayText;
         /// The extra text which will be displayed to the right of the main text.
         public required string ExtraText;
+
+        /// Whether this entry should be suggested as "probably relevant"
+        public bool Suggestion = false;
+
         /// Callback for when this entry is selected.
         public required Action OnUse;
         /// Whether the entry can be selected.
         public bool Disabled = false;
+
+        /// Index used to determine "usage frequency" of entry
+        public int FrequentlyUsedIndex = -1;
+
+        /// Unique identifier for the category of the entry
+        private string? storageKey;
+        public string? StorageKey {
+            get => storageKey;
+            set => storageKey = value?.Replace('.', '#');
+        }
+
+        /// Unique identifier inside the current category
+        private string? storageName;
+        [AllowNull]
+        public string StorageName {
+            get => storageName ?? DisplayText.Replace('.', '#');
+            set => storageName = value?.Replace('.', '#');
+        }
+
+        /// Active data slot, used for storing persistant data
+        public StorageData? Data {
+            get {
+                if (string.IsNullOrEmpty(StorageKey)) {
+                    return null; // Data collection is disabled for this popup
+                }
+
+                ref var data = ref CollectionsMarshal.GetValueRefOrAddDefault(popupDataStorage, StorageKey, out bool exists);
+                if (!exists) {
+                    return data = new StorageData(Favourites: new(), Usages: new());
+                }
+
+                return data!;
+            }
+        }
     }
 
     /// Spacing between the longest DisplayText and ExtraText of entries in characters
     private const int DisplayExtraPadding = 2;
+
+    /// Maximum amount of entries in the "Frequently Used" category
+    private const int FrequentlyUsedCategorySize = 5;
 
     private sealed class ContentDrawable : SkiaDrawable {
         private readonly PopupMenu menu;
@@ -52,7 +176,7 @@ public sealed class PopupMenu : Scrollable {
         public override void Draw(SKSurface surface) {
             var canvas = surface.Canvas;
 
-            if (menu.shownEntries.Length == 0) {
+            if (menu.shownEntries.Length == 0 || menu.BottomVisibleEntry <= menu.TopVisibleEntry) {
                 return;
             }
 
@@ -61,10 +185,11 @@ public sealed class PopupMenu : Scrollable {
             canvas.DrawRect(backgroundRect, Settings.Instance.Theme.PopupMenuBgPaint);
 
             var font = FontManager.SKPopupFont;
-            int maxDisplayLen = menu.shownEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
+            int maxDisplayLen = menu.VisibleEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
 
             float width = menu.ContentWidth - Settings.Instance.Theme.PopupMenuBorderPadding * 2.0f;
             float height = menu.EntryHeight;
+            int iconWidth = menu.IconWidth;
 
             const int rowCullOverhead = 3;
             int minRow = Math.Max(0, (int)(menu.ScrollPosition.Y / height) - rowCullOverhead);
@@ -73,12 +198,77 @@ public sealed class PopupMenu : Scrollable {
             for (int row = minRow; row <= maxRow; row++) {
                 var entry = menu.shownEntries[row];
 
+                const float normalIconScale = 0.75f;
+                const float hoverIconScale = 0.9f;
+                if (entry.Data is { } data && iconWidth > 0) {
+                    var mousePos = PointFromScreen(Mouse.Position);
+                    int mouseRow = (int)((mousePos.Y - Settings.Instance.Theme.PopupMenuBorderPadding) / height);
+
+                    bool isFavourite = data.Favourites.Contains(entry.StorageName);
+                    bool isFrequentlyUsed = entry.FrequentlyUsedIndex is >= 0 and < FrequentlyUsedCategorySize;
+                    bool isSuggestion = entry.Suggestion;
+
+                    if (isFavourite || mouseRow == row && mousePos.X > 0.0f && mousePos.X < menu.ClientSize.Width - (menu.VScrollBarVisible ? Studio.ScrollBarSize : 0)) {
+                        // Show favourite icon
+                        bool isHoveringIcon = mouseRow == row && mousePos.X > Settings.Instance.Theme.PopupMenuBorderPadding && mousePos.X < Settings.Instance.Theme.PopupMenuBorderPadding + iconWidth;
+
+                        var favouritePaint = isHoveringIcon
+                            ? Settings.Instance.Theme.PopupMenuFavouriteHoverPaint
+                            : Settings.Instance.Theme.PopupMenuFavouritePaint;
+                        favouritePaint.Style = isFavourite
+                            ? SKPaintStyle.StrokeAndFill
+                            : SKPaintStyle.Stroke;
+
+                        float iconScale = isHoveringIcon ? hoverIconScale : normalIconScale;
+
+                        canvas.Save();
+                        canvas.Translate(
+                            dx: Settings.Instance.Theme.PopupMenuBorderPadding + ((1.0f - iconScale) / 2.0f) * menu.IconWidth,
+                            dy: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f + ((1.0f - iconScale) / 2.0f) * menu.IconWidth);
+                        canvas.Scale(menu.IconWidth * iconScale);
+
+                        canvas.DrawPath(Assets.FavouritePath, favouritePaint);
+
+                        canvas.Restore();
+                    } else if (isFrequentlyUsed) {
+                        canvas.Save();
+                        canvas.Translate(
+                            dx: Settings.Instance.Theme.PopupMenuBorderPadding + ((1.0f - normalIconScale) / 2.0f) * menu.IconWidth,
+                            dy: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f + ((1.0f - normalIconScale) / 2.0f) * menu.IconWidth);
+                        canvas.Scale(menu.IconWidth * normalIconScale);
+
+                        canvas.DrawPath(Assets.FrequentlyUsedPath, Settings.Instance.Theme.PopupMenuFrequentlyUsedPaint);
+
+                        canvas.Restore();
+                    } else if (isSuggestion) {
+                        canvas.Save();
+                        canvas.Translate(
+                            dx: Settings.Instance.Theme.PopupMenuBorderPadding + ((1.0f - normalIconScale) / 2.0f) * menu.IconWidth,
+                            dy: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f + ((1.0f - normalIconScale) / 2.0f) * menu.IconWidth);
+                        canvas.Scale(menu.IconWidth * normalIconScale);
+
+                        canvas.DrawPath(Assets.SuggestionPath, Settings.Instance.Theme.PopupMenuSuggestionPaint);
+
+                        canvas.Restore();
+                    }
+                } else if (entry.Suggestion) {
+                    canvas.Save();
+                    canvas.Translate(
+                        dx: Settings.Instance.Theme.PopupMenuBorderPadding + ((1.0f - normalIconScale) / 2.0f) * menu.IconWidth,
+                        dy: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f + ((1.0f - normalIconScale) / 2.0f) * menu.IconWidth);
+                    canvas.Scale(menu.IconWidth * normalIconScale);
+
+                    canvas.DrawPath(Assets.SuggestionPath, Settings.Instance.Theme.PopupMenuSuggestionPaint);
+
+                    canvas.Restore();
+                }
+
                 // Highlight selected entry
                 if (row == menu.SelectedEntry && !entry.Disabled) {
                     canvas.DrawRoundRect(
-                        x: Settings.Instance.Theme.PopupMenuBorderPadding,
+                        x: Settings.Instance.Theme.PopupMenuBorderPadding + iconWidth,
                         y: row * height + Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f,
-                        w: width,
+                        w: width - iconWidth,
                         h: height - Settings.Instance.Theme.PopupMenuEntrySpacing,
                         rx: Settings.Instance.Theme.PopupMenuEntryRounding,
                         ry: Settings.Instance.Theme.PopupMenuEntryRounding,
@@ -86,11 +276,11 @@ public sealed class PopupMenu : Scrollable {
                 }
 
                 canvas.DrawText(entry.DisplayText,
-                    x: Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding,
+                    x: Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding + menu.IconWidth,
                     y: Settings.Instance.Theme.PopupMenuBorderPadding + row * height + Settings.Instance.Theme.PopupMenuEntryVerticalPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f + font.Offset(),
                     font, entry.Disabled ? Settings.Instance.Theme.PopupMenuFgDisabledPaint : Settings.Instance.Theme.PopupMenuFgPaint);
                 canvas.DrawText(entry.ExtraText,
-                    x: Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding + font.CharWidth() * (maxDisplayLen + DisplayExtraPadding),
+                    x: Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding + menu.IconWidth + font.CharWidth() * (maxDisplayLen + DisplayExtraPadding),
                     y: Settings.Instance.Theme.PopupMenuBorderPadding + row * height + Settings.Instance.Theme.PopupMenuEntryVerticalPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f + font.Offset(),
                     font, Settings.Instance.Theme.PopupMenuFgExtraPaint);
             }
@@ -110,6 +300,7 @@ public sealed class PopupMenu : Scrollable {
                 Cursor = null;
             }
 
+            e.Handled = true;
             Invalidate();
             base.OnMouseMove(e);
         }
@@ -119,8 +310,32 @@ public sealed class PopupMenu : Scrollable {
 
             if (e.Buttons.HasFlag(MouseButtons.Primary)) {
                 int mouseRow = (int)(e.Location.Y / menu.EntryHeight);
-                if (mouseRow >= 0 && mouseRow < menu.shownEntries.Length && !menu.shownEntries[mouseRow].Disabled) {
-                    menu.shownEntries[mouseRow].OnUse();
+                if (mouseRow >= 0 && mouseRow < menu.shownEntries.Length && menu.shownEntries[mouseRow] is var currEntry && !currEntry.Disabled) {
+                    if (e.Location.X < menu.IconWidth) {
+                        if (currEntry.Data is { } data) {
+                            if (!data.Favourites.Remove(currEntry.StorageName)) {
+                                data.Favourites.Add(currEntry.StorageName);
+                            }
+
+                            SaveStorage();
+                            menu.Recalc();
+
+                            if (menu.shownEntries.IndexOf(currEntry) is var targetIndex && targetIndex >= 0) {
+                                menu.SelectedEntry = targetIndex;
+                                menu.ScrollIntoView();
+
+                                Mouse.Position = lastMouseSelection = e.Location + PointToScreen(new PointF(0.0f, (targetIndex - mouseRow) * menu.EntryHeight));
+                            }
+                        }
+                    } else {
+                        if (currEntry.Data is { } data) {
+                            ref uint amount = ref CollectionsMarshal.GetValueRefOrAddDefault(data.Usages, currEntry.StorageName, out bool _);
+                            amount++;
+                            SaveStorage();
+                        }
+
+                        currEntry.OnUse();
+                    }
                 }
             }
 
@@ -209,12 +424,55 @@ public sealed class PopupMenu : Scrollable {
         get => contentHeight;
     }
 
+    // Choose sensible middle-ground with width to avoid wasting space for a handful long entries
+    public int RecommendedWidth {
+        get {
+            if (shownEntries.Length == 0) {
+                return 0;
+            }
+
+            int visibleEntryCount = Math.Min(shownEntries.Length, (int) MathF.Ceiling(ClientSize.Height / EntryHeight) + 1);
+            int medianGroupLen = shownEntries
+                .Where((_, idx) => idx + visibleEntryCount <= shownEntries.Length)
+                .Select((_, idx) => {
+                    var visible = shownEntries.Skip(idx).Take(visibleEntryCount).ToArray();
+
+                    int displayMax = visible.Select(e => e.DisplayText.Length).Aggregate(Math.Max);
+                    int extraMax = visible.Select(e => e.ExtraText.Length).Aggregate(Math.Max);
+
+                    if (extraMax == 0) {
+                        return displayMax;
+                    } else {
+                        return displayMax + DisplayExtraPadding + extraMax;
+                    }
+                })
+                .Median();
+
+            var font = FontManager.SKPopupFont;
+            return (int)(IconWidth + font.CharWidth() * medianGroupLen + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding * 2.0f + Settings.Instance.Theme.PopupMenuBorderPadding * 2);
+        }
+    }
+
     public int EntryHeight => (int)(FontManager.SKPopupFont.LineHeight() + Settings.Instance.Theme.PopupMenuEntryVerticalPadding * 2.0f + Settings.Instance.Theme.PopupMenuEntrySpacing);
+    public int IconWidth => shownEntries.Any(e => e.Suggestion || e.StorageKey != null) ? EntryHeight : 0; // Enforce square icon size
 
     private Entry[] shownEntries = [];
     private readonly ContentDrawable drawable;
 
+    private int TopVisibleEntry => (int) MathF.Floor(ScrollPosition.Y / EntryHeight);
+    private int BottomVisibleEntry => (int) MathF.Ceiling((ScrollPosition.Y + ClientSize.Height) / EntryHeight);
+    private IEnumerable<Entry> VisibleEntries {
+        get {
+            int top = TopVisibleEntry;
+            int bottom = BottomVisibleEntry;
+
+            return shownEntries.Skip(top).Take(Math.Min(bottom - top + 1, shownEntries.Length - top));
+        }
+    }
+
     public PopupMenu() {
+        LoadStorage();
+
         drawable = new ContentDrawable(this);
         Content = drawable;
         Border = BorderType.None;
@@ -231,7 +489,40 @@ public sealed class PopupMenu : Scrollable {
             return;
         }
 
-        shownEntries = entries.Where(entry => string.IsNullOrEmpty(entry.SearchText) || entry.SearchText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase)).ToArray();
+        // Order for the categories
+        const int frequentlyUsedThreshold = 5;
+
+        const int favouriteIndex = 0;
+        const int frequentlyUsedIndex = favouriteIndex + 1;
+        const int suggestionIndex = frequentlyUsedIndex + FrequentlyUsedCategorySize;
+        const int regularIndex = suggestionIndex + 1;
+
+        var frequentlyUsed = entries
+            .Where(entry => (string.IsNullOrEmpty(entry.SearchText) || entry.SearchText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase))
+                         && entry.Data is { } data && data.Usages.TryGetValue(entry.StorageName, out uint amount) && amount >= frequentlyUsedThreshold)
+            .OrderBy(entry => entry.Data!.Usages[entry.StorageName]);
+        int i = 0;
+        foreach (var entry in frequentlyUsed) {
+            entry.FrequentlyUsedIndex = i++;
+        }
+
+        shownEntries = entries
+            .Where(entry => string.IsNullOrEmpty(entry.SearchText) || entry.SearchText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase))
+            .OrderBy(entry => {
+                if (entry.Data is { } data && data.Favourites.Contains(entry.StorageName)) {
+                    return favouriteIndex;
+                }
+                if (entry.FrequentlyUsedIndex is >= 0 and < FrequentlyUsedCategorySize) {
+                    return frequentlyUsedIndex + entry.FrequentlyUsedIndex;
+                }
+                if (entry.Suggestion) {
+                    return suggestionIndex;
+                }
+
+                return regularIndex;
+            })
+            .ToArray();
+
         if (shownEntries.Length == 0) {
             shownEntries = [new Entry {
                 DisplayText = "No results",
@@ -254,7 +545,7 @@ public sealed class PopupMenu : Scrollable {
             maxDisplayLen += DisplayExtraPadding;
         }
 
-        contentWidth = (int)(font.CharWidth() * (maxDisplayLen + maxExtraLen) + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding * 2.0f + Settings.Instance.Theme.PopupMenuBorderPadding * 2);
+        contentWidth = (int)(IconWidth + font.CharWidth() * (maxDisplayLen + maxExtraLen) + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding * 2.0f + Settings.Instance.Theme.PopupMenuBorderPadding * 2);
 
         drawable.Size = new(ContentWidth, ContentHeight);
         drawable.Invalidate();
@@ -292,7 +583,8 @@ public sealed class PopupMenu : Scrollable {
         ScrollIntoView();
     }
 
-    public bool HandleKeyDown(KeyEventArgs e, bool useTabComplete) {
+    public abstract bool HandleKeyDown(KeyEventArgs e);
+    protected bool HandleKeyDown(KeyEventArgs e, bool useTabComplete) {
         if (!Visible) {
             return false;
         }
@@ -316,8 +608,15 @@ public sealed class PopupMenu : Scrollable {
             return true;
         }
         if (e.Key == Keys.Enter || useTabComplete && e.Key == Keys.Tab) {
-            if (!shownEntries[SelectedEntry].Disabled) {
-                shownEntries[SelectedEntry].OnUse();
+            var currEntry = shownEntries[SelectedEntry];
+            if (!currEntry.Disabled) {
+                if (currEntry.Data is { } data) {
+                    ref uint amount = ref CollectionsMarshal.GetValueRefOrAddDefault(data.Usages, currEntry.StorageName, out bool _);
+                    amount++;
+                    SaveStorage();
+                }
+
+                currEntry.OnUse();
             }
             return true;
         }

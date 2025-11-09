@@ -7,7 +7,6 @@ using Monocle;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
-using GameInput = Celeste.Input;
 
 namespace TAS;
 

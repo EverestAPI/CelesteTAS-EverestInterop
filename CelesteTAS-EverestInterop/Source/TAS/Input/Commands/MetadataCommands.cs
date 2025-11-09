@@ -5,6 +5,7 @@ using Celeste;
 using Celeste.Mod;
 using Monocle;
 using StudioCommunication;
+using StudioCommunication.Util;
 using TAS.Communication;
 using TAS.Gameplay;
 using TAS.ModInterop;
@@ -215,7 +216,7 @@ internal static class MetadataCommands {
         // Prevent a reload from being triggered by the file-system change
         bool needsReload = Manager.Controller.NeedsReload;
         try {
-            File.WriteAllLines(tasFilePath, allLines);
+            File.WriteAllText(tasFilePath, allLines.FormatTasLinesToText());
         } catch (IOException) {
             // Something is blocking the TAS file. Just ignore it, the change should be reflected in Studio either way.
         }

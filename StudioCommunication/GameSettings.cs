@@ -14,7 +14,7 @@ public partial class GameSettings {
     public bool UnloadedRoomsHitboxes = true;
     public bool CameraHitboxes = true;
     public bool SimplifiedHitboxes = true;
-    public ActualCollideHitboxType ActualCollideHitboxes = ActualCollideHitboxType.Off;
+    public ActualCollideHitboxType ActualCollideHitboxes = ActualCollideHitboxType.Append;
 
     public bool SimplifiedGraphics = false;
     public bool Gameplay = true;

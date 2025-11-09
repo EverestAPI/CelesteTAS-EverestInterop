@@ -138,12 +138,18 @@ public class InputController {
                 Clear();
                 Manager.DisableRunLater();
             } else {
-                NeedsReload = false;
-                StartWatchers();
                 AttributeUtils.Invoke<ParseFileEndAttribute>();
+                if (Manager.NextState == Manager.State.Disabled) {
+                    // The TAS contains something invalid
+                    Clear();
+                    Manager.DisableRunLater();
+                } else {
+                    NeedsReload = false;
+                    StartWatchers();
 
-                if (!firstRun && lastChecksum != Checksum) {
-                    MetadataCommands.UpdateRecordCount(this);
+                    if (!firstRun && lastChecksum != Checksum) {
+                        MetadataCommands.UpdateRecordCount(this);
+                    }
                 }
             }
         } else {

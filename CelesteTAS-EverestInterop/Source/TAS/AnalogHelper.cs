@@ -8,7 +8,6 @@ using StudioCommunication;
 using System.Collections.Generic;
 using TAS.Input;
 using TAS.Utils;
-using GameInput = Celeste.Input;
 
 namespace TAS;
 

@@ -15,6 +15,9 @@ public partial record struct CommandInfo(
 ) {
     public const string Separator = "##SEPARATOR##"; // Placeholder to-be replaced by the actual value
 
+    /// Special-case command which provides auto-complete entries for getting values
+    public const string GetCommand = "Get";
+
     /// Groups command into a meaningful order with null as a separator
     public static readonly string?[] CommandOrder = [
         "console", "Set", "Invoke", "EvalLua",

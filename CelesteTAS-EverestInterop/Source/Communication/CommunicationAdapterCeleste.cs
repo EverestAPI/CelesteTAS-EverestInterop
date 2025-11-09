@@ -9,7 +9,6 @@ using Celeste.Mod;
 using StudioCommunication;
 using StudioCommunication.Util;
 using TAS.EverestInterop;
-using TAS.EverestInterop.InfoHUD;
 using TAS.InfoHUD;
 using TAS.Input;
 using TAS.Input.Commands;
@@ -56,10 +55,11 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 break;
 
             case MessageID.SetCustomInfoTemplate:
-                var customInfoTemplate = reader.ReadString();
+                string customInfoTemplate = reader.ReadString();
                 LogVerbose($"Received message SetCustomInfoTemplate: '{customInfoTemplate}'");
 
                 TasSettings.InfoCustomTemplate = customInfoTemplate;
+                CelesteTasModule.Instance.SaveSettings();
                 GameInfo.Update();
                 break;
 
@@ -82,6 +82,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 object? arg = gameDataType switch {
                     GameDataType.ConsoleCommand => reader.ReadBoolean(),
                     GameDataType.SettingValue => reader.ReadString(),
+                    GameDataType.EvaluateInfoTemplate => reader.ReadObject<string[]>(),
                     GameDataType.CommandHash => reader.ReadObject<(string, string[], string, int)>(),
                     _ => null,
                 };
@@ -113,13 +114,18 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                             case GameDataType.CustomInfoTemplate:
                                 gameData = !string.IsNullOrWhiteSpace(TasSettings.InfoCustomTemplate) ? TasSettings.InfoCustomTemplate : string.Empty;
                                 break;
+                            case GameDataType.EvaluateInfoTemplate:
+                                gameData = InfoCustom.ParseTemplate((string[])arg!, TasSettings.CustomInfoDecimals, forceAllowCodeExecution: true).ToArray();
+                                break;
                             case GameDataType.GameState:
                                 gameData = GameData.GetGameState();
                                 break;
                             case GameDataType.CommandHash:
                                 (string commandName, string[] commandArgs, string filePath, int fileLine) = ((string, string[], string, int))arg!;
 
-                                var meta = Command.GetMeta(commandName);
+                                var meta = commandName.Equals(CommandInfo.GetCommand, StringComparison.InvariantCultureIgnoreCase)
+                                    ? InfoCustom.Meta
+                                    : Command.GetMeta(commandName);
                                 if (meta == null) {
                                     // Fallback to the default implementation
                                     gameData = commandArgs[..^1].Aggregate(17, (current, commandArg) => 31 * current + 17 * commandArg.GetStableHashCode());
@@ -134,6 +140,9 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                     IntroTime = GameData.GetIntroTime(),
                                     StartingRoom = GameData.GetStartingRoom(),
                                 };
+                                break;
+                            case GameDataType.RequireDependency:
+                                gameData = GameData.GetRequireDependency();
                                 break;
 
                             default:
@@ -151,8 +160,13 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                 case GameDataType.SettingValue:
                                 case GameDataType.CompleteInfoCommand:
                                 case GameDataType.ModUrl:
+                                case GameDataType.RequireDependency:
                                 case GameDataType.CustomInfoTemplate:
                                     writer.Write((string?)gameData ?? string.Empty);
+                                    break;
+
+                                case GameDataType.EvaluateInfoTemplate:
+                                    writer.WriteObject((string[])gameData!);
                                     break;
 
                                 case GameDataType.GameState:
@@ -183,7 +197,9 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 int fileLine = reader.ReadInt32();
                 LogVerbose($"Received message RequestCommandAutoComplete: '{commandName}' '{string.Join(' ', commandArgs)}' file '{filePath}' line {fileLine} ({hash})");
 
-                var meta = Command.GetMeta(commandName);
+                var meta = commandName.Equals(CommandInfo.GetCommand, StringComparison.InvariantCultureIgnoreCase)
+                    ? InfoCustom.Meta
+                    : Command.GetMeta(commandName);
                 if (meta == null) {
                     QueueMessage(MessageID.CommandAutoComplete, writer => {
                         writer.Write(hash);

@@ -80,9 +80,11 @@ public enum GameDataType : byte {
     ModUrl,
     ExactGameInfo,
     CustomInfoTemplate,
+    EvaluateInfoTemplate,
     GameState,
     CommandHash,
     LevelInfo,
+    RequireDependency
 }
 
 public enum RecordingFailedReason : byte {

@@ -134,8 +134,11 @@ public static class ReadCommand {
             return;
         }
 
-        if (FindTargetFile(commandName, fileDirectory, args[0], out string errorMessage) is not { } path) {
-            AbortTas(errorMessage, true);
+        if (Parsing.FindReadTargetFile(fileDirectory, args[0], out string errorMessage) is not { } path) {
+            AbortTas($"""
+                      "{commandName}" failed
+                      {errorMessage}
+                      """, true);
             return;
         }
 
@@ -150,13 +153,13 @@ public static class ReadCommand {
         int startLine = 0;
         int endLine = int.MaxValue;
         if (args.Length > 1) {
-            if (!TryGetLine(args[1], lines, out startLine)) {
+            if (!Parsing.TryGetLineTarget(args[1], lines, out startLine, out _)) {
                 AbortTas($"\"{commandName}\" failed\n{args[1]} is invalid", true);
                 return;
             }
 
             if (args.Length > 2) {
-                if (!TryGetLine(args[2], lines, out endLine)) {
+                if (!Parsing.TryGetLineTarget(args[2], lines, out endLine, out _)) {
                     AbortTas($"\"{commandName}\" failed\n{args[2]} is invalid", true);
                     return;
                 }
@@ -198,110 +201,5 @@ public static class ReadCommand {
         }
 
         Manager.Controller.ReadLine($"AnalogMode,{origAnalogMode}", filePath, fileLine, studioLine);
-    }
-
-    private static string? FindTargetFile(string commandName, string fileDirectory, string filePath, out string errorMessage) {
-        string path = Path.Combine(fileDirectory, filePath);
-        if (!path.EndsWith(".tas", StringComparison.InvariantCulture)) {
-            path += ".tas";
-        }
-
-        if (File.Exists(path)) {
-            errorMessage = string.Empty;
-            return path;
-        }
-
-        // Windows allows case-insensitive names, but Linux/macOS don't...
-        string[] components = filePath.Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries);
-        if (components.Length == 0) {
-            errorMessage = $"""
-                            "{commandName}" failed
-                            No file path specified
-                            """;
-            return null;
-        }
-
-        string realDirectory = fileDirectory;
-        for (int i = 0; i < components.Length - 1; i++) {
-            string directory = components[i];
-
-            if (directory == "..") {
-                string? parentDirectory = Path.GetDirectoryName(realDirectory);
-                if (parentDirectory == null) {
-                    errorMessage = $"""
-                                    "{commandName}" failed
-                                    Parent directory for '{realDirectory}' not found
-                                    """;
-                    return null;
-                }
-
-                realDirectory = parentDirectory;
-                continue;
-            }
-
-            string[] directories = Directory.EnumerateDirectories(realDirectory)
-                .Where(d => Path.GetFileName(d).Equals(directory, StringComparison.InvariantCultureIgnoreCase))
-                .ToArray();
-
-            if (directories.Length > 1) {
-                errorMessage = $"""
-                                "{commandName}" failed
-                                Ambiguous match for directory '{directory}'
-                                """;
-                return null;
-            }
-            if (directories.Length == 0) {
-                errorMessage = $"""
-                                "{commandName}" failed
-                                Couldn't find directory '{directory}'
-                                """;
-                return null;
-            }
-
-            realDirectory = Path.Combine(realDirectory, directories[0]);
-        }
-
-        string file = Path.GetFileNameWithoutExtension(components[^1]);
-        string[] files = Directory.EnumerateFiles(realDirectory)
-            // Allow an optional suffix on file names. Example: 9D_04 -> 9D_04_Curiosity.tas
-            .Where(f => Path.GetFileNameWithoutExtension(f).StartsWith(file, StringComparison.InvariantCultureIgnoreCase))
-            .ToArray();
-
-        if (files.Length > 1) {
-            errorMessage = $"""
-                            "{commandName}" failed
-                            Ambiguous match for file '{file}'
-                            """;
-            return null;
-        }
-        if (files.Length == 1) {
-            path = Path.Combine(realDirectory, files[0]);
-            if (File.Exists(path)) {
-                errorMessage = string.Empty;
-                return path;
-            }
-        }
-
-        errorMessage = $"""
-                        "{commandName}" failed
-                        Couldn't find file '{file}'
-                        """;
-        return null;
-    }
-
-    internal static bool TryGetLine(string labelOrLineNumber, string[] lines, out int lineNumber) {
-        if (int.TryParse(labelOrLineNumber, out lineNumber)) {
-            return true;
-        }
-
-        var labelRegex = new Regex(@$"^#\s*{Regex.Escape(labelOrLineNumber)}$");
-        for (lineNumber = 1; lineNumber <= lines.Length; lineNumber++) {
-            if (labelRegex.IsMatch(lines[lineNumber - 1].AsSpan().Trim())) {
-                return true;
-            }
-        }
-
-        return false;
-
     }
 }
