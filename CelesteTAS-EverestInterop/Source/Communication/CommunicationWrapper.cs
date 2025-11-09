@@ -109,12 +109,12 @@ public static class CommunicationWrapper {
         comm.WriteCommandList(Command.GetCommandList());
     }
 
-    public static void SendThirdParty(string title, string text) {
+    public static void SendThirdPartyPopup(string id, string title, string text) {
         if (!Connected) {
             return;
         }
 
-        comm.WriteThirdParty(title, text);
+        comm.WriteThirdPartyPopup(id, title, text);
     }
 
     #endregion

@@ -1,4 +1,5 @@
 using CelesteStudio.Dialog;
+using CelesteStudio.Tool;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -137,12 +138,13 @@ public sealed class CommunicationAdapterStudio(
                 commandAutoCompleteResponse(hash, entries, done);
                 break;
 
-            case MessageID.ThirdParty:
+            case MessageID.ThirdPartyPopup:
+                string id = reader.ReadString();
                 string title = reader.ReadString();
                 string text = reader.ReadString();
-                LogVerbose($"Received message ThirdParty: {title} {text}");
+                LogVerbose($"Received message ThirdPartyPopup: '{id}'");
 
-                Tool.ExternalDialog.Show(title, text);
+                Application.Instance.AsyncInvoke(() => ThirdPartyDialog.Show(id, title, text));
                 break;
 
             case MessageID.GameSettings:

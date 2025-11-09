@@ -42,7 +42,7 @@ public enum MessageID : byte {
     CommandAutoComplete = 0x16,
 
     /// Messages from other mods to Studio
-    ThirdParty = 0x17,
+    ThirdPartyPopup = 0x17,
 
     #endregion
 
