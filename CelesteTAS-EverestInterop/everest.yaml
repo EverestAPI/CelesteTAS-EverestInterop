@@ -11,3 +11,5 @@
       Version: 1.6.0
     - Name: ExtendedCameraDynamics
       Version: 1.0.5
+    - Name: CollabUtils2
+      Version: 1.10.14
