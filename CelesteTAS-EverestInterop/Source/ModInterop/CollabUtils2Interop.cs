@@ -3,6 +3,7 @@ using Celeste.Mod.CollabUtils2;
 using Celeste.Mod.CollabUtils2.Entities;
 using Celeste.Mod.CollabUtils2.UI;
 using Microsoft.Xna.Framework;
+using Monocle;
 using MonoMod.ModInterop;
 using System;
 using System.Diagnostics.CodeAnalysis;
@@ -26,6 +27,8 @@ internal static class CollabUtils2Interop {
     public static class Lobby {
         /// Check if a given campaign SID is part of a collab
         public static Func<string, bool>? IsCollabLevelSet = null;
+        /// Check if a given level SID is a lobby
+        public static Func<string, bool>? IsCollabLobby = null;
 
         /// Attempts to retrieve all currently unlocked lobby warp points
         public static bool TryGetActiveWarps(Level level, [NotNullWhen(true)] out string[]? activeWarps) {
@@ -38,6 +41,21 @@ internal static class CollabUtils2Interop {
         }
 
         // These methods must not be called (or inlined!) unless the mod is loaded
+
+        /// Clears all map data of the specified SID
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ClearLobbyMap(string sid) {
+            if (Engine.Scene is Level level && level.Session.Area.SID == sid && level.Tracker.GetEntity<LobbyMapController>() is { } lmc) {
+                lmc.VisitManager?.Reset();
+                lmc.VisitManager?.Save();
+            }
+
+            string[] keys = CollabModule.Instance.SaveData.VisitedLobbyPositions.Keys.Where(key => key.StartsWith(sid)).ToArray();
+            foreach (string key in keys) {
+                CollabModule.Instance.SaveData.VisitedLobbyPositions.Remove(key);
+            }
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static bool GetActiveWarps(Level level, [NotNullWhen(true)] out string[]? activeWarps) {
             activeWarps = null;

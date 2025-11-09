@@ -226,6 +226,7 @@ public static class ConsoleCommand {
     private static void LoadCommand(string command, string[] args, int slot) {
         try {
             if (slot >= 0) {
+                // Setup actual slot
                 if (SaveData.Instance?.FileSlot != slot) {
                     if (UserIO.Load<SaveData>(SaveData.GetFilename(slot)) is { } data) {
                         if (CheckValid(data, args)) {
@@ -239,7 +240,8 @@ public static class ConsoleCommand {
                     }
                 }
             } else if (SaveData.Instance == null || SafeCommand.DisallowUnsafeInput && SaveData.Instance.FileSlot != -1) {
-                SaveData data = SaveData.Instance ?? UserIO.Load<SaveData>(SaveData.GetFilename(-1)) ?? new SaveData();
+                // Setup debug slot
+                var data = SaveData.Instance ?? UserIO.Load<SaveData>(SaveData.GetFilename(-1)) ?? new SaveData();
                 if (!CheckValid(data, args)) {
                     return;
                 }
@@ -270,7 +272,7 @@ public static class ConsoleCommand {
                 }
             }
 
-            AreaMode mode = command switch {
+            var mode = command switch {
                 "hard" => AreaMode.BSide,
                 "rmx2" => AreaMode.CSide,
                 _ => AreaMode.Normal
@@ -281,17 +283,15 @@ public static class ConsoleCommand {
                 return;
             }
 
-            int areaId;
-
             // we have checked the args is valid
             if (args.Length == 0) {
                 EnterLevel(new LevelLoader(saveData.CurrentSession_Safe));
                 return;
-            } else {
-                if (!TryGetAreaId(args[0], out areaId)) {
-                    AbortTas($"Map {args[0]} does not exist");
-                    return;
-                }
+            }
+
+            if (!TryGetAreaId(args[0], out int areaId)) {
+                AbortTas($"Map {args[0]} does not exist");
+                return;
             }
 
             if (AreaData.Get(areaId).Mode.GetValueOrDefault((int) mode) == null) {
@@ -300,7 +300,7 @@ public static class ConsoleCommand {
             }
 
             // complete prologue if incomplete and make sure the return to map menu item will be shown
-            LevelSetStats stats = saveData.GetLevelSetStatsFor("Celeste");
+            var stats = saveData.GetLevelSetStatsFor("Celeste");
             if (areaId > 0 && !saveData.Areas[0].Modes[0].Completed) {
                 saveData.Areas[0].Modes[0].Completed = true;
                 stats.UnlockedAreas++;
@@ -335,10 +335,10 @@ public static class ConsoleCommand {
                         Load(mode, areaId, screen);
                     }
                 } else if (args.Length > 2 && double.TryParse(args[2], out double y)) {
-                    Vector2 position = new((int) Math.Round(x), (int) Math.Round(y));
-                    Vector2 remainder = new((float) (x - position.X), (float) (y - position.Y));
+                    var position = new Vector2((int) Math.Round(x), (int) Math.Round(y));
+                    var remainder = new Vector2((float) (x - position.X), (float) (y - position.Y));
 
-                    Vector2 speed = Vector2.Zero;
+                    var speed = Vector2.Zero;
                     if (args.Length > 3 && float.TryParse(args[3], out float speedX)) {
                         speed.X = speedX;
                     }
@@ -389,8 +389,8 @@ public static class ConsoleCommand {
     }
 
     private static void Load(AreaMode mode, int areaId, string? screen = null, int? spawnPoint = null) {
-        AreaKey areaKey = new(areaId, mode);
-        Session session = AreaData.GetCheckpoint(areaKey, screen) != null ? new Session(areaKey, screen) : new Session(areaKey);
+        var areaKey = new AreaKey(areaId, mode);
+        var session = AreaData.GetCheckpoint(areaKey, screen) != null ? new Session(areaKey, screen) : new Session(areaKey);
 
         if (screen != null) {
             session.Level = screen;
@@ -402,13 +402,18 @@ public static class ConsoleCommand {
             startPosition = session.MapData.Get(screen).Spawns[spawnPoint.Value];
         }
 
+        if (CollabUtils2Interop.Lobby.IsCollabLobby is { } isLobby && isLobby(areaKey.SID)) {
+            CollabUtils2Interop.Lobby.ClearLobbyMap(areaKey.SID);
+            MetadataCommands.LoadedLobbySID = areaKey.SID;
+        }
+
         session.StartedFromBeginning = spawnPoint == null && session.FirstLevel;
         EnterLevel(new LevelLoader(session, startPosition));
     }
 
     private static void Load(AreaMode mode, int areaId, Vector2 spawnPoint, Vector2 remainder, Vector2 speed) {
-        AreaKey areaKey = new(areaId, mode);
-        Session session = new(areaKey);
+        var areaKey = new AreaKey(areaId, mode);
+        var session = new Session(areaKey);
 
         if (session.MapData.GetAt(spawnPoint) is not { } levelData) {
             AbortTas($"Room does not exist at {spawnPoint}");
@@ -418,6 +423,11 @@ public static class ConsoleCommand {
         session.Level = levelData.Name;
         if (AreaData.GetCheckpoint(areaKey, session.Level) != null) {
             session = new Session(areaKey, session.Level);
+        }
+
+        if (CollabUtils2Interop.Lobby.IsCollabLobby is { } isLobby && isLobby(areaKey.SID)) {
+            CollabUtils2Interop.Lobby.ClearLobbyMap(areaKey.SID);
+            MetadataCommands.LoadedLobbySID = areaKey.SID;
         }
 
         session.FirstLevel = false;

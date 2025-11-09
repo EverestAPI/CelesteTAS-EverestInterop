@@ -24,6 +24,9 @@ internal static class MetadataCommands {
     /// Total real-time frames in the TAS, without loading times
     internal static (int FrameCount, int FileSlot)? RealTimeInfo = null;
 
+    /// Only allow updating 'ActivatedLobbyWarps:' when loading with a 'console load'
+    internal static string? LoadedLobbySID = null;
+
     [Load]
     private static void Load() {
         Everest.Events.Level.OnComplete += UpdateChapterTime;
@@ -60,6 +63,7 @@ internal static class MetadataCommands {
         // Reset values, but make sure savestates overwrite with the correct value
         TasStartInfo = null;
         RealTimeInfo = null;
+        LoadedLobbySID = null;
     }
 
     [DisableRun]
@@ -70,20 +74,29 @@ internal static class MetadataCommands {
         if (RealTimeInfo != null && !Manager.Controller.CanPlayback) {
             UpdateAllMetadata("RealTime", _ => $"{TimeSpan.FromSeconds(RealTimeInfo.Value.FrameCount / 60.0f).ShortGameplayFormat()}({RealTimeInfo.Value.FrameCount})");
         }
+        if (Manager.Running && Engine.Scene is Level level && level.Session.Area.SID == LoadedLobbySID) {
+            string res = CollabUtils2Interop.Lobby.TryGetActiveWarps(level, out string[]? warps)
+                ? '[' + string.Join(", ", warps) + ']'
+                : "[]";
+            UpdateAllMetadata("ActivatedLobbyWarps", _ => res);
+        }
 
         TasStartInfo = null;
         RealTimeInfo = null;
+        LoadedLobbySID = null;
     }
 
     [SaveState]
     private static void SaveState(SavestateData data) {
         data[nameof(TasStartInfo)] = TasStartInfo;
         data[nameof(RealTimeInfo)] = RealTimeInfo;
+        data[nameof(LoadedLobbySID)] = LoadedLobbySID;
     }
     [LoadState]
     private static void LoadState(SavestateData data) {
         TasStartInfo = ((long FileTimeTicks, int FileSlot)?) data[nameof(TasStartInfo)];
         RealTimeInfo = ((int FrameCount, int FileSlot)?) data[nameof(RealTimeInfo)];
+        LoadedLobbySID = (string?) data[nameof(LoadedLobbySID)];
     }
 
     [Events.PreEngineUpdate]
@@ -163,20 +176,6 @@ internal static class MetadataCommands {
             command => Manager.Controller.CurrentCommands.Contains(command));
     }
 
-    [TasCommand("ActiveWarps", Aliases = ["ActiveWarps:", "ActiveWarps："], CalcChecksum = false)]
-    private static void ActiveWarpsCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
-        if (!Manager.Running || Engine.Scene is not Level level) {
-            return;
-        }
-
-        if (CollabUtils2Interop.Lobby.TryGetActiveWarps(level, out string[]? warps)) {
-            string res = '[' + string.Join(", ", warps) + ']';
-            UpdateAllMetadata("ActiveWarps", _ => res);
-        } else {
-            UpdateAllMetadata("ActiveWarps", _ => "[]");
-        }
-    }
-
     [TasCommand("MidwayRealTime", Aliases = ["MidwayRealTime:", "MidwayRealTime："], CalcChecksum = false)]
     private static void MidwayRealTimeCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
         if (RealTimeInfo == null) {
@@ -186,6 +185,11 @@ internal static class MetadataCommands {
         UpdateAllMetadata("MidwayRealTime",
             _ => $"{TimeSpan.FromSeconds(RealTimeInfo.Value.FrameCount / 60.0f).ShortGameplayFormat()}({RealTimeInfo.Value.FrameCount})",
             command => Manager.Controller.CurrentCommands.Contains(command));
+    }
+
+    [TasCommand("ActivatedLobbyWarps", Aliases = ["ActivatedLobbyWarps:", "ActivatedLobbyWarps："], CalcChecksum = false)]
+    private static void ActiveWarpsCommand(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
+        // dummy
     }
 
     private static void UpdateAllMetadata(string commandName, Func<Command, string> getMetadata, Func<Command, bool>? predicate = null) {
