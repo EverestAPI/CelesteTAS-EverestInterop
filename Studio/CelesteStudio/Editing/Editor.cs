@@ -452,7 +452,7 @@ public sealed class Editor : TextEditor {
 
     #endregion
 
-    protected override void HandleKeyDown(KeyEventArgs e, bool forwardToText) {
+    protected override void OnKeyDown(KeyEventArgs e) {
         string lineTrimmed = Document.Lines[Document.Caret.Row].TrimStart();
 
         // Send inputs to Celeste if applicable
@@ -505,17 +505,6 @@ public sealed class Editor : TextEditor {
             return;
         }
 
-        base.HandleKeyDown(e, forwardToText: false);
-        if (e.Handled) {
-            return;
-        }
-
-        if (calculationState != null) {
-            CalculationHandleKey(e);
-            Invalidate();
-            return;
-        }
-
         switch (e.Key) {
             // Adjust frame count
             case Keys.Up when e.HasCommonModifier() && e.Shift:
@@ -524,43 +513,36 @@ public sealed class Editor : TextEditor {
                 } else {
                     AdjustNumericValues(Document.Selection.Start.Row, Document.Selection.End.Row, 1);
                 }
-
-                e.Handled = true;
-                break;
+                goto Handled;
             case Keys.Down when e.HasCommonModifier() && e.Shift:
                 if (Document.Selection.Empty) {
                     AdjustNumericValues(Document.Caret.Row, Document.Caret.Row, -1);
                 } else {
                     AdjustNumericValues(Document.Selection.Start.Row, Document.Selection.End.Row, -1);
                 }
-
-                e.Handled = true;
-                break;
+                goto Handled;
 
             // Allow zoom in/out
             case Keys.Equal when e.HasCommonModifier():
                 AdjustZoom(+0.1f);
-                break;
+                goto Handled;
             case Keys.Minus when e.HasCommonModifier():
                 AdjustZoom(-0.1f);
-                break;
+                goto Handled;
 
             case Keys.C when e.HasCommonModifier() && e.HasAlternateModifier():
                 Clipboard.Instance.Clear();
                 Clipboard.Instance.Text = Document.FilePath;
                 ShowToastMessage("Copied current file path to Clipboard", DefaultToastTime);
 
-                e.Handled = true;
-                break;
+                goto Handled;
             // Use Ctrl+/ as an alternative for Ctrl+K
             case Keys.Slash when e.HasCommonModifier():
                 OnToggleCommentInputs();
-                e.Handled = true;
-                break;
+                goto Handled;
             case Keys.Slash when e.Shift && e.HasCommonModifier():
                 OnToggleCommentText();
-                e.Handled = true;
-                break;
+                goto Handled;
             case Keys.F2:
             {
                 // Rename label
@@ -574,34 +556,31 @@ public sealed class Editor : TextEditor {
                     using var __ = Document.Update();
                     Document.ReplaceLine(Document.Caret.Row, $"#{newLabel}");
                 }
-                e.Handled = true;
-                break;
+                goto Handled;
             }
-            default:
-                if (forwardToText) {
-                    // macOS will make a beep sounds when the event isn't handled
-                    // ..that also means OnTextInput won't be called..
-                    if (Eto.Platform.Instance.IsMac) {
-                        e.Handled = true;
-                        if (e.KeyChar != char.MaxValue) {
-                            OnTextInput(new TextInputEventArgs(e.KeyChar.ToString()));
-                        }
-                    } else {
-                        BaseOnKeyDown(e);
-                    }
-                }
-                break;
+        }
+
+        if (calculationState != null) {
+            CalculationHandleKey(e);
+            Invalidate();
+            return;
+        }
+
+        base.OnKeyDown(e);
+        if (e.Handled) {
+            return;
         }
 
         // If nothing handled this, and it's not a character, send it anyway
         if (Settings.Instance.SendInputsToCeleste && Settings.Instance.SendInputsNonWritable && !Platform.IsWpf && CommunicationWrapper.Connected && !isTyping && !sendInputs && !e.Handled && e.KeyChar == char.MaxValue && CommunicationWrapper.SendKeyEvent(e.Key, e.Modifiers, released: false)) {
             e.Handled = true;
-            return;
         }
 
-        if (e.Handled) {
-            Recalc();
-        }
+        return;
+
+        Handled:
+        e.Handled = true;
+        Recalc();
     }
 
     protected override bool CheckHotkey(Hotkey hotkey) {
