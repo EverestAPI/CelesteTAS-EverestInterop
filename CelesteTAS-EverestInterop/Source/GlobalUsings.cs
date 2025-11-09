@@ -1,5 +1,6 @@
 global using static TAS.GlobalVariables;
 global using MonocleCommand = Monocle.Command;
+global using GameInput = Celeste.Input;
 using Celeste.Mod;
 using TAS.Input;
 using TAS.Module;

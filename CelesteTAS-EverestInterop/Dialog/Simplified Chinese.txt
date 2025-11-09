@@ -1,9 +1,9 @@
-# ============================================== Menu ==============================================
+﻿# ============================================== Menu ==============================================
 TAS_ENABLED=                                开关
 TAS_ENABLED_DESCRIPTION=                    TAS 文件路径：
 TAS_SHOW_HITBOXES=                          碰撞箱
-TAS_HITBOX_COLOR_DESCRIPTION_1=             请到标题页 Mod 菜单中修改碰撞箱颜色
-TAS_HITBOX_COLOR_DESCRIPTION_2=             或者在控制台中使用 entity/trigger/platform_hitbox_color 命令
+TAS_HITBOX_COLOR_DESCRIPTION=               请到标题页 Mod 菜单中修改碰撞箱颜色
+                                            或者在控制台中使用 entity/trigger/platform_hitbox_color 命令
 TAS_SIMPLIFIED_GRAPHICS=                    简化图形
 TAS_INFO_HUD=                               信息面板
 TAS_INFO_HUD_DESCRIPTION=                   双击信息面板快捷键开关信息面板,{n}
@@ -96,7 +96,12 @@ TAS_SLOW_FORWARD_SPEED=                     慢进速度
 
 # ============================================== Hotkeys Submenu ==============================================
 TAS_HOTKEYS=                                快捷键
-TAS_HOTKEYS_DESCRIPTION=                    绑定多个按键表示组合键，需要同时按下才能触发相应操作
+TAS_HOTKEYS_DESCRIPTION=                    绑定多个按键表示组合键, 需要同时按下才能触发相应操作
+
+# ============================================== Command ==============================================
+TAS_MISSING_DEPENDENCIES=                   安装缺失的依赖项
+TAS_INSTALL_DEPENDENCIES=                   要运行 TAS, 需要安装以下依赖项:
+TAS_REMAINING_DEPENDENCIES=                 ...及另外 ((left)) 个依赖项
 
 # ============================================== More Options Submenu ==============================================
 TAS_CENTER_CAMERA=                          镜头居中
@@ -118,8 +123,15 @@ TAS_BETTER_INVINCIBLE_DESCRIPTION=          运行 "Set Invincible true" 既会�
                                             同时也会避免例如在掉落致死时自动弹跳的游戏物理变化,{n}
                                             从而避免 TAS 意外 desync. 仅在 TAS 运行期间生效.
 TAS_FORCE_ALLOW_ACCESS_TOOLS=               强制启用辅助工具
-TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC=          强制启用被刻意禁用的辅助工具 (如 Debug 地图).
-                                            这可能会破坏预设的随意游玩时的游戏体验.
+TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_1=        强制启用被刻意禁用的辅助工具 (如 Debug 地图).
+TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_2=        这与预设的游戏体验背道而驰, 还可能造成剧透, 甚至以非预期或损坏性方式修改您的存档数据.
+TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_A=        仅在 Celeste Studio 连接到 Celeste 时激活.
+TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_B=        需在当前关卡已至少通关一次, 或使用了 Debug 存档后, 方可激活.
+TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_C=        此功能将对所有关卡生效! 请留意, 以免其意外破坏您的正常游戏体验!
+                                            将在游戏重启后重置为默认值.
+TAS_FORCE_ALLOW_ACCESS_TOOLS_DESC_D=        此功能始终对所有关卡生效! 它很有可能会被无意中一直开启, 从而可能破坏您的正常游戏体验!
+TAS_PREVENT_SKINMOD_CHANGES=                保持游戏行为不受皮肤模组影响
+TAS_PREVENT_SKINMOD_CHANGES_DESC=           使玩家动画时长与可抓取物的位置与原版游戏行为保持一致
 TAS_HIDE_FREEZE_FRAMES=                     TAS 时跳过冻结帧
 TAS_HIDE_FREEZE_FRAMES_DESCRIPTION=         运行到冻结帧时自动跳过进入下一帧{n}
                                             仅在 TAS 时启用
@@ -146,6 +158,11 @@ TAS_KEY_INFO_HUD=                           信息面板
 TAS_KEY_FREE_CAMERA=                        镜头控制
 TAS_KEY_FRAME_STEP_BACK=                    倒带 TAS
 
+# ============================================== Toast Messages ==============================================
+TAS_AutoPauseToast=                         草稿结束时自动暂停:
+                                            请在末尾插入任何 *Time 指令，或直接关闭本设置
+                                            详细信息请查看 'Mod 选项 -> Celeste TAS -> 更多选项'
+
 # ============================================== Option Values ==============================================
 TAS_DEFAULT=                                默认
 TAS_HIDE=                                   隐藏
@@ -163,4 +180,7 @@ TAS_OVERRIDE=                               覆盖
 TAS_APPEND=                                 附加
 TAS_NEVER=                                  从不
 TAS_ALWAYS=                                 总是
-TAS_EnableCondition_WhileStudioConnected=   当 Studio 连接时
+TAS_StudioEnableCondition_StudioConnected=  当 Studio 连接时
+TAS_StudioEnableCondition_AfterCasual=      在游玩后
+TAS_StudioEnableCondition_CurrentSession=   本次游戏生效
+TAS_GameplayEnableCondition_DuringTAS=      在 TAS 中

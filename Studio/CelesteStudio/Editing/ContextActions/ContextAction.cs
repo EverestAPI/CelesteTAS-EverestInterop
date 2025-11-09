@@ -23,7 +23,7 @@ public abstract class ContextAction {
             ExtraText = hotkey.KeysOrNone != Keys.None ? hotkey.KeysOrNone.ToShortcutString() : extraText,
             OnUse = () => {
                 onUse();
-                Editor.ActivePopupMenu = null;
+                Editor.ClosePopupMenu();
             },
         };
     }

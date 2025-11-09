@@ -26,7 +26,7 @@ public static class FileRefactor {
     private static readonly Dictionary<string, FileSystemWatcher> watchers = [];
 
     public static void Initialize(Editor editor) {
-        editor.DocumentChanged += (_, document) => EnsureFileWatched(document.FilePath);
+        editor.PostDocumentChanged += document => EnsureFileWatched(document.FilePath);
     }
 
     #region Style Fixing

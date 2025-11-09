@@ -54,6 +54,10 @@ public class Theme {
     public Color PopupMenuFgExtra;
     public Color PopupMenuBg;
     public Color PopupMenuSelected;
+    public Color PopupMenuFavourite;
+    public Color PopupMenuFavouriteHover;
+    public Color PopupMenuFrequentlyUsed;
+    public Color PopupMenuSuggestion;
     public int PopupMenuBorderPadding;
     public float PopupMenuBorderRounding;
     public int PopupMenuEntryHorizontalPadding;
@@ -78,7 +82,7 @@ public class Theme {
     [TomlNonSerialized]
     private StylePaint? _actionPaint, _anglePaint, _breakpointPaint, _forceStopBreakpointPaint, _savestateBreakpointPaint, _delimiter, _command, _frame, _comment;
     [TomlNonSerialized]
-    private SKPaint? _commentBox, _statusFgPaint, _subpixelIndicatorDotPaint, _popupMenuFgPaint, _popupMenuFgDisabledPaint, _popupMenuFgExtraPaint, _popupMenuBgPaint, _popupMenuSelectedPaint;
+    private SKPaint? _commentBox, _statusFgPaint, _subpixelIndicatorDotPaint, _popupMenuFgPaint, _popupMenuFgDisabledPaint, _popupMenuFgExtraPaint, _popupMenuBgPaint, _popupMenuSelectedPaint, _popupMenuFavouritePaint, _popupMenuFavouriteHoverPaint, _popupMenuFrequentlyUsedPaint, _popupMenuSuggestionPaint;
 
     [TomlNonSerialized]
     public StylePaint ActionPaint => _actionPaint ??= Action.CreatePaint();
@@ -115,6 +119,14 @@ public class Theme {
     public SKPaint PopupMenuBgPaint => _popupMenuBgPaint ??= new SKPaint { ColorF = PopupMenuBg.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true, SubpixelText = true };
     [TomlNonSerialized]
     public SKPaint PopupMenuSelectedPaint => _popupMenuSelectedPaint ??= new SKPaint { ColorF = PopupMenuSelected.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true, SubpixelText = true };
+    [TomlNonSerialized]
+    public SKPaint PopupMenuFavouritePaint => _popupMenuFavouritePaint ??= new SKPaint { ColorF = PopupMenuFavourite.ToSkia(), StrokeWidth = 0.07f, IsAntialias = true };
+    [TomlNonSerialized]
+    public SKPaint PopupMenuFavouriteHoverPaint => _popupMenuFavouriteHoverPaint ??= new SKPaint { ColorF = PopupMenuFavouriteHover.ToSkia(), StrokeWidth = 0.07f, IsAntialias = true };
+    [TomlNonSerialized]
+    public SKPaint PopupMenuFrequentlyUsedPaint => _popupMenuFrequentlyUsedPaint ??= new SKPaint { ColorF = PopupMenuFrequentlyUsed.ToSkia(), Style = SKPaintStyle.Fill, IsAntialias = true };
+    [TomlNonSerialized]
+    public SKPaint PopupMenuSuggestionPaint => _popupMenuSuggestionPaint ??= new SKPaint { ColorF = PopupMenuSuggestion.ToSkia(), Style = SKPaintStyle.Stroke, StrokeWidth = 0.07f, IsAntialias = true };
 
     public void InvalidateCache() {
         _actionPaint?.Dispose();
@@ -134,6 +146,10 @@ public class Theme {
         _popupMenuFgExtraPaint?.Dispose();
         _popupMenuBgPaint?.Dispose();
         _popupMenuSelectedPaint?.Dispose();
+        _popupMenuFavouritePaint?.Dispose();
+        _popupMenuFavouriteHoverPaint?.Dispose();
+        _popupMenuFrequentlyUsedPaint?.Dispose();
+        _popupMenuSuggestionPaint?.Dispose();
 
         _actionPaint = _anglePaint = _breakpointPaint = _savestateBreakpointPaint = _delimiter = _command = _frame = _comment = null;
         _commentBox = _statusFgPaint = _subpixelIndicatorDotPaint = _popupMenuFgPaint = _popupMenuFgDisabledPaint = _popupMenuFgExtraPaint = _popupMenuBgPaint = _popupMenuSelectedPaint = null;
@@ -177,6 +193,10 @@ public class Theme {
             PopupMenuFgExtra = Color.FromRgb(0x595959),
             PopupMenuBg = Color.FromRgb(0xD3D3D3),
             PopupMenuSelected = Color.FromArgb(0x25, 0x25, 0x25, 0x4A),
+            PopupMenuFavourite = Color.FromRgb(0xCD5C5C),
+            PopupMenuFavouriteHover = Color.FromRgb(0xDB7676),
+            PopupMenuFrequentlyUsed = Color.FromRgb(0xD19D18),
+            PopupMenuSuggestion = Color.FromRgb(0x2A9868),
             PopupMenuBorderPadding = 5,
             PopupMenuBorderRounding = 6.0f,
             PopupMenuEntryHorizontalPadding = 5,
@@ -224,6 +244,10 @@ public class Theme {
             PopupMenuFgExtra = Color.FromRgb(0x9F9F9F),
             PopupMenuBg = Color.FromRgb(0x2C2C2C),
             PopupMenuSelected = Color.FromArgb(0x30, 0x50, 0x91, 0x96),
+            PopupMenuFavourite = Color.FromRgb(0xCD5C5C),
+            PopupMenuFavouriteHover = Color.FromRgb(0xDB7676),
+            PopupMenuFrequentlyUsed = Color.FromRgb(0xD19D18),
+            PopupMenuSuggestion = Color.FromRgb(0x76DEB1),
             PopupMenuBorderPadding = 5,
             PopupMenuBorderRounding = 6.0f,
             PopupMenuEntryHorizontalPadding = 5,
@@ -272,6 +296,10 @@ public class Theme {
             PopupMenuFgExtra = Color.FromRgb(0x646464),
             PopupMenuBg = Color.FromRgb(0xE9E9E9),
             PopupMenuSelected = Color.FromArgb(0x44, 0x44, 0x44, 0x3F),
+            PopupMenuFavourite = Color.FromRgb(0xCD5C5C),
+            PopupMenuFavouriteHover = Color.FromRgb(0xDB7676),
+            PopupMenuFrequentlyUsed = Color.FromRgb(0xD6B151),
+            PopupMenuSuggestion = Color.FromRgb(0x2A9868),
             PopupMenuBorderPadding = 1,
             PopupMenuBorderRounding = 0.0f,
             PopupMenuEntryHorizontalPadding = 3,
@@ -319,6 +347,10 @@ public class Theme {
             PopupMenuFgExtra = Color.FromRgb(0x9F9F9F),
             PopupMenuBg = Color.FromRgb(0x2F303B),
             PopupMenuSelected = Color.FromArgb(0xBB, 0xBB, 0xC4, 0x4F),
+            PopupMenuFavourite = Color.FromRgb(0xCD5C5C),
+            PopupMenuFavouriteHover = Color.FromRgb(0xDB7676),
+            PopupMenuFrequentlyUsed = Color.FromRgb(0xD6B151),
+            PopupMenuSuggestion = Color.FromRgb(0x76DEB1),
             PopupMenuBorderPadding = 1,
             PopupMenuBorderRounding = 0.0f,
             PopupMenuEntryHorizontalPadding = 3,
