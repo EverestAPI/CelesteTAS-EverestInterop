@@ -73,9 +73,8 @@ public class TextViewer : SkiaDrawable {
             return;
 
             void HandleTextChanged(Document _, Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
-                TextChanged(document, insertions, deletions);
-
                 Recalc();
+                TextChanged(document, insertions, deletions);
             }
             Document.Patch? HandleFixupPatch(Document _, Dictionary<int, string> insertions, Dictionary<int, string> deletions) {
                 var fixup = Document.Update(raiseEvents: false);
