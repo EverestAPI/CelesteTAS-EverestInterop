@@ -31,12 +31,10 @@
         <Reference Include="$(CelestePrefix)\Celeste.dll" Private="false" Publicize="true" />
         <Reference Include="$(CelestePrefix)\FNA.dll" Private="false" Publicize="true" />
         <Reference Include="$(CelestePrefix)\MMHOOK_Celeste.dll" Private="false" />
-        <Reference Include="CollabUtils2">
-          <HintPath>lib-stripped\CollabUtils2.dll</HintPath>
-        </Reference>
 
         <Reference Include="lib-stripped\TASRecorder.dll" Private="false" />
         <Reference Include="lib-stripped\ExCameraDynamics.dll" Private="false" />
+        <Reference Include="lib-stripped\CollabUtils2.dll" Private="false" />
     </ItemGroup>
 
     <ItemGroup>

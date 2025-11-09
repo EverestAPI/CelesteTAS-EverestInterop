@@ -169,9 +169,12 @@ internal static class MetadataCommands {
             return;
         }
 
-        LobbyWarpHelper.TryGetActiveWarps(level, out string[] warps);
-        string res = '[' + string.Join(", ", warps) + ']';
-        UpdateAllMetadata("ActiveWarps", _ => res);
+        if (CollabUtils2Interop.Lobby.TryGetActiveWarps(level, out string[]? warps)) {
+            string res = '[' + string.Join(", ", warps) + ']';
+            UpdateAllMetadata("ActiveWarps", _ => res);
+        } else {
+            UpdateAllMetadata("ActiveWarps", _ => "[]");
+        }
     }
 
     [TasCommand("MidwayRealTime", Aliases = ["MidwayRealTime:", "MidwayRealTime："], CalcChecksum = false)]
