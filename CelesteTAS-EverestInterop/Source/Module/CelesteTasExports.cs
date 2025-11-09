@@ -5,6 +5,7 @@ using Monocle;
 using MonoMod.ModInterop;
 using System;
 using System.Linq;
+using TAS.Communication;
 using TAS.EverestInterop;
 using TAS.EverestInterop.Hitboxes;
 using TAS.ModInterop;
@@ -19,15 +20,14 @@ namespace TAS.Module;
 /* How to use the CelesteTAS ModInterop API:
  *  1. Copy-Paste the CelesteTasImports class into your mod
  *  2. Remove the [PublicAPI] attribute if you aren't using JetBrains' annotations
- *  3. Add the [ModImportName("CelesteTAS")] attribute to the class
- *  4. Call typeof(CelesteTasImports).ModInterop() in EverestModule.Initialize()
+ *  3. Call typeof(CelesteTasImports).ModInterop() in EverestModule.Initialize()
  */
 
 [PublicAPI]
+[ModImportName("CelesteTAS")]
 public static class CelesteTasImports {
     public delegate void AddSettingsRestoreHandlerDelegate(EverestModule module, (Func<object> Backup, Action<object> Restore)? handler);
     public delegate void RemoveSettingsRestoreHandlerDelegate(EverestModule module);
-    public delegate void DrawAccurateLineDelegate(Vector2 from, Vector2 to, Color color);
 
     /// Checks if a TAS is active (i.e. running / paused / etc.)
     public static Func<bool> IsTasActive = null!;
@@ -75,6 +75,8 @@ public static class CelesteTasImports {
 
     #region Rendering
 
+    public delegate void DrawAccurateLineDelegate(Vector2 from, Vector2 to, Color color);
+
     /// <summary>
     /// Draws an exact line, filling all pixels the line actually intersects. <br/>
     /// Based on the logic of <see cref="Collide.RectToLine(float,float,float,float,Microsoft.Xna.Framework.Vector2,Microsoft.Xna.Framework.Vector2)">Collide.RectToLine</see> and with the assumption that other colliders are grid-aligned.
@@ -84,6 +86,22 @@ public static class CelesteTasImports {
     /// Available since CelesteTAS v3.44.0
     /// </remarks>
     public static DrawAccurateLineDelegate DrawAccurateLine = null!;
+
+    #endregion
+
+    #region Studio
+
+    public delegate void ShowStudioPopupMessageDelegate(string id, string title, string text);
+
+    /// <summary>
+    /// Shows a popup message in Studio with the specified title and content
+    /// Re-using an ID will update the currently open window, if possible
+    /// </summary>
+    ///
+    /// <remarks>
+    /// Available since CelesteTAS v3.47.0
+    /// </remarks>
+    public static ShowStudioPopupMessageDelegate ShowStudioPopupMessage = null!;
 
     #endregion
 }
@@ -149,4 +167,6 @@ internal static class CelesteTasExports {
     }
 
     public static void DrawAccurateLine(Vector2 from, Vector2 to, Color color) => HitboxFixer.DrawExactLine(from, to, color);
+
+    public static void ShowStudioPopupMessage(string id, string title, string text) => CommunicationWrapper.SendThirdPartyPopup(id ,title, text);
 }

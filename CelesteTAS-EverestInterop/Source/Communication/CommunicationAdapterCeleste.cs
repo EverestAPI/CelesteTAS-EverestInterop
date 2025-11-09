@@ -325,6 +325,15 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
         LogVerbose("Sent message CommandList");
     }
 
+    public void WriteThirdPartyPopup(string id, string title, string text) {
+        QueueMessage(MessageID.ThirdPartyPopup, writer => {
+            writer.Write(id);;
+            writer.Write(title);
+            writer.Write(text);
+        });
+        LogVerbose("Sent message ThirdPartyPopup");
+    }
+
     private void ProcessRecordTAS(string fileName) {
         if (!TASRecorderInterop.Installed) {
             WriteRecordingFailed(RecordingFailedReason.TASRecorderNotInstalled);

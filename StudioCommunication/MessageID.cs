@@ -41,6 +41,9 @@ public enum MessageID : byte {
     /// Sends incremental auto-complete results about a specific command-line to Studio
     CommandAutoComplete = 0x16,
 
+    /// Messages from other mods to Studio
+    ThirdPartyPopup = 0x17,
+
     #endregion
 
     #region Studio to Celeste
