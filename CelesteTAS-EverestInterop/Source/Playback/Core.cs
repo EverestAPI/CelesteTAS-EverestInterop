@@ -10,7 +10,6 @@ using TAS.Gameplay;
 using TAS.Module;
 using TAS.Tools;
 using TAS.Utils;
-using GameInput = Celeste.Input;
 
 namespace TAS.Playback;
 

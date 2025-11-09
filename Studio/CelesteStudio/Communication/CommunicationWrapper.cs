@@ -239,6 +239,13 @@ public static class CommunicationWrapper {
 
         return (LevelInfo?)comm!.RequestGameData(GameDataType.LevelInfo).Result;
     }
+    public static string GetRequireDependency() {
+        if (!Connected) {
+            return string.Empty;
+        }
+
+        return (string?)comm!.RequestGameData(GameDataType.RequireDependency).Result ?? string.Empty;
+    }
 
     public static async Task<string[]> EvaluateInfoTemplateAsync(string[] template) {
         if (!Connected) {

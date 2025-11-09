@@ -87,7 +87,7 @@ public class InfoTemplateAutoCompleteMenu : AutoCompleteMenu {
                     needEntryRefresh = false; // Clear flag to avoid re-requesting every loop iterator
 
                     var menuEntries = commandEntries.Select(entry => new Entry {
-                        SearchText = entry.FullName,
+                        SearchText = entry.Prefix + entry.Name,
                         DisplayText = entry.Name,
                         ExtraText = entry.Extra,
                         Suggestion = entry.Suggestion,

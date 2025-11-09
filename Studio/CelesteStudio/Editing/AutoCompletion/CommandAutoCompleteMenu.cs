@@ -162,7 +162,7 @@ public class CommandAutoCompleteMenu : AutoCompleteMenu {
                             isNewArgumentIndex = false; // Clear flag to avoid re-requesting every loop iterator
 
                             var menuEntries = commandEntries.Select(entry => new Entry {
-                                SearchText = entry.FullName,
+                                SearchText = entry.Prefix + entry.Name,
                                 DisplayText = entry.Name,
                                 ExtraText = entry.Extra,
                                 Suggestion = entry.Suggestion,
@@ -171,7 +171,7 @@ public class CommandAutoCompleteMenu : AutoCompleteMenu {
                                 OnUse = () => {
                                     using var __ = Document.Update();
 
-                                    string insert = entry.FullName;
+                                    string insert = entry.FullName.Replace(CommandInfo.Separator, Settings.Instance.CommandSeparatorText);
 
                                     var selectedQuickEdit = editor.GetQuickEdits()
                                         .FirstOrDefault(anchor => Document.Caret.Row == anchor.Row &&
