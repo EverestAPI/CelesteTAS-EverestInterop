@@ -61,6 +61,9 @@ internal static class TriggerHitbox {
         On.Monocle.Engine.OnSceneTransition -= On_Engine_OnSceneTransition;
     }
 
+    [LoadState]
+    private static void LoadState(SavestateData data) => RecacheTriggers(Engine.Scene);
+
     private static void On_EntityList_UpdateLists(On.Monocle.EntityList.orig_UpdateLists orig, EntityList self) {
         if (TasSettings.SimplifiedHitboxes) {
             currentUnimportantTriggers.RemoveWhere(entity => self.toRemove.Contains(entity));
