@@ -193,6 +193,10 @@ public sealed class Studio : Form {
             if (Eto.Platform.Instance.IsGtk) {
                 editorScrollable.KeyDown += (_, e) => e.Handled = true;
             }
+            // On WPF, the scroll size needs to be set manually
+            else if (Eto.Platform.Instance.IsWpf) {
+                Editor.PreferredSizeChanged += size => editorScrollable.ScrollSize = size;
+            }
 
             // Needs to be done after the Editor is set up
             GameInfo = new GameInfo(Editor);

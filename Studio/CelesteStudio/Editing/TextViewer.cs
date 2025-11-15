@@ -396,12 +396,7 @@ public class TextViewer : SkiaDrawable {
                 : LineNumberPadding;
 
         var targetSize = new Size((int)(width + textOffsetX + PaddingRight), (int)(height + PaddingBottom));
-        // Apparently you need to set the size from the parent on WPF?
-        if (Eto.Platform.Instance.IsWpf) {
-            scrollable.ScrollSize = targetSize;
-        } else {
-            Size = targetSize;
-        }
+        Size = targetSize;
         PreferredSizeChanged?.Invoke(targetSize);
 
         RecalcPopupMenu();

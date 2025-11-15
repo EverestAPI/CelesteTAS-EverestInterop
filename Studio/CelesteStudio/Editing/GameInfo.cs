@@ -94,7 +94,16 @@ public class GameInfoPanel : Panel {
             Settings.Save();
         };
 
-        gameInfo.SizeChanged += (_, _) => layout?.Move(popoutButton, gameInfo.Width - gameInfo.Padding.Left - gameInfo.Padding.Right - PopoutButton.ButtonSize, gameInfo.Padding.Top);
+        gameInfo.SizeChanged += (_, _) => {
+            bool vScrollBarVisible;
+            if (Eto.Platform.Instance.IsWpf) {
+                vScrollBarVisible = gameInfo.ScrollSize.Height > gameInfo.ClientSize.Height;
+            } else {
+                const int border = 1;
+                vScrollBarVisible = gameInfo.ScrollSize.Height > gameInfo.ClientSize.Height + border;
+            }
+            layout?.Move(popoutButton, gameInfo.Width - gameInfo.Padding.Left - gameInfo.Padding.Right - PopoutButton.ButtonSize - (vScrollBarVisible ? Studio.ScrollBarSize : 0), gameInfo.Padding.Top);
+        };
 
         // Only show popout button while hovering Info HUD
         Shown += (_, _) => popoutButton.Visible = PointFromScreen(Mouse.Position) is var mousePos &&
@@ -411,7 +420,7 @@ public class GameInfo : Scrollable {
                 patch.Modify(0, frameInfoBuilder.ToString());
             }
         };
-
+        
         infoText.PreferredSizeChanged += _ => PreferredSizeChanged?.Invoke();
     }
 
