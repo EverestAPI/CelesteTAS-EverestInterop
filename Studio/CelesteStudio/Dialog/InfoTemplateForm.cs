@@ -86,7 +86,7 @@ public class InfoTemplateForm : Form {
             editorScrollable.Width = previewScrollable.Width = buttonsLayout.Width = Math.Max(0, ClientSize.Width - padding*2 - border*2);
 
             int extraHeight = templateLabel.Height + previewLabel.Height + buttonsLayout.Height + padding*6;
-            editorScrollable.Height = previewScrollable.Height = (Height - extraHeight) / 2;
+            editorScrollable.Height = previewScrollable.Height = Math.Max(0, (ClientSize.Height - extraHeight) / 2);
         };
 
         BackgroundColor = Settings.Instance.Theme.Background;
