@@ -64,11 +64,6 @@ public sealed class Studio : Form {
     /// Path to the Studio install
     public static readonly string InstallDirectory;
 
-    /// For some **UNHOLY** reasons, not calling Content.UpdateLayout() in RecalculateLayout() places during startup causes themeing to crash.
-    /// _However_, while this hack is active, you can't resize the window, so this has to be disabled again as soon as possible...
-    /// I would personally like to burn WPF to the ground ._.
-    public bool WPFHackEnabled = true;
-
     public readonly Editor Editor;
     public readonly GameInfo GameInfo;
 
@@ -351,13 +346,10 @@ public sealed class Studio : Form {
                 Math.Max(0, ClientSize.Height));
         }
 
-        // Calling UpdateLayout() seems to be required on GTK but causes issues on WPF
-        // TODO: Figure out how macOS handles this
+        // Calling UpdateLayout() seems to be required on GTK
         if (Eto.Platform.Instance.IsGtk) {
             GameInfo.UpdateLayout();
             editorScrollable.UpdateLayout();
-            Content.UpdateLayout();
-        } else if (Eto.Platform.Instance.IsWpf && WPFHackEnabled) {
             Content.UpdateLayout();
         }
     }

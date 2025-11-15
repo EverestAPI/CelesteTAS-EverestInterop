@@ -35,10 +35,7 @@ public static class Program {
             UpdateTheme(Settings.Instance.Theme.DarkMode);
             
             var nativeStudioWindow = ((IWpfWindow)studio.Handler).Control;
-            nativeStudioWindow.SourceInitialized += (_, _) => {
-                ApplyTheme(studio, Settings.Instance.Theme.DarkMode);
-                studio.WPFHackEnabled = false;
-            };
+            nativeStudioWindow.SourceInitialized += (_, _) => ApplyTheme(studio, Settings.Instance.Theme.DarkMode);
             
             Settings.ThemeChanged += () => ApplyTheme(studio, Settings.Instance.Theme.DarkMode);
 
