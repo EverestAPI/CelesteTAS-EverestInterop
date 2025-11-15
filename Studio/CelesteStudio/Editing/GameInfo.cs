@@ -342,7 +342,7 @@ public class GameInfo : Scrollable {
         subpixelIndicator.Visible = CommunicationWrapper.ShowSubpixelIndicator && Settings.Instance.ShowSubpixelIndicator;
         subpixelIndicator.Invalidate();
 
-        this.FixBorder();
+        Border = BorderType.None;
         Padding = new Padding(5, 10);
         Content = new StackLayout {
             Items = { infoText, subpixelIndicator }

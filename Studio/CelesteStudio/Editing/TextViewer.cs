@@ -1024,7 +1024,7 @@ public class TextViewer : SkiaDrawable {
         if (Settings.Instance.ScrollSpeed > 0.0f) {
             // Manually scroll to respect our scroll speed
             scrollable.ScrollPosition = scrollable.ScrollPosition with {
-                Y = Math.Clamp((int)(scrollable.ScrollPosition.Y - e.Delta.Height * Font.LineHeight() * Settings.Instance.ScrollSpeed), 0, Height - scrollable.ClientSize.Height)
+                Y = Math.Clamp((int)(scrollable.ScrollPosition.Y - e.Delta.Height * Font.LineHeight() * Settings.Instance.ScrollSpeed), 0, Math.Max(0, Height - scrollable.ClientSize.Height))
             };
             e.Handled = true;
         }
