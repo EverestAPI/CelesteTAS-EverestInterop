@@ -633,6 +633,7 @@ public class TextViewer : SkiaDrawable {
     private void OnSelectAll() {
         Document.Selection.Start = new CaretPosition(0, 0);
         Document.Selection.End = new CaretPosition(Document.Lines.Count - 1, Document.Lines[^1].Length);
+        Recalc();
     }
 
     private void OnSelectBlock() {
@@ -649,6 +650,7 @@ public class TextViewer : SkiaDrawable {
 
         Document.Selection.Start = new CaretPosition(above, 0);
         Document.Selection.End = new CaretPosition(below, Document.Lines[below].Length);
+        Recalc();
     }
 
     private void OnFind() {
