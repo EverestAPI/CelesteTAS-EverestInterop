@@ -105,6 +105,8 @@ public class GameInfoPanel : Panel {
             layout?.Move(popoutButton, gameInfo.Width - gameInfo.Padding.Left - gameInfo.Padding.Right - PopoutButton.ButtonSize - (vScrollBarVisible ? Studio.ScrollBarSize : 0), gameInfo.Padding.Top);
         };
 
+        Settings.ThemeChanged += () => ContextMenu = layout == null ? null : GameInfo.CreateContextMenu(gameInfo, popout: false);
+
         // Only show popout button while hovering Info HUD
         Shown += (_, _) => popoutButton.Visible = PointFromScreen(Mouse.Position) is var mousePos &&
                                                   mousePos.X >= 0.0f && mousePos.Y >= 0.0f &&
@@ -141,6 +143,8 @@ public class GameInfoPopout : FloatingForm {
 
         Content = info;
         ContextMenu = GameInfo.CreateContextMenu(info, popout: true);
+
+        Settings.ThemeChanged += () => ContextMenu = GameInfo.CreateContextMenu(info, popout: true);
 
         Studio.RegisterWindow(this, centerWindow: false);
         Shown += (_, _) => {

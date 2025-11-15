@@ -213,6 +213,8 @@ public class TextViewer : SkiaDrawable {
         };
 
         ContextMenu = CreateContextMenu();
+        Settings.KeyBindingsChanged += () => ContextMenu = CreateContextMenu();
+        Settings.ThemeChanged += () => ContextMenu = CreateContextMenu();
     }
 
     public virtual ContextMenu CreateContextMenu() {

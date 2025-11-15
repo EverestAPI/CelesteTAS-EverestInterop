@@ -192,12 +192,6 @@ public sealed class Editor : TextEditor {
             Invalidate();
         };
 
-        Settings.KeyBindingsChanged += () => {
-            // WPF doesn't like it when a UIElement has multiple parents, even if the other parent no longer exists
-            ContextMenu.Items.Remove(commandsMenu);
-            ContextMenu = CreateContextMenu();
-        };
-
         Recalc();
     }
 
@@ -257,6 +251,9 @@ public sealed class Editor : TextEditor {
                 return new ButtonMenuItem(cmd) { Text = info.Name };
             }
         }
+
+        // WPF doesn't like it when a UIElement has multiple parents, even if the other parent no longer exists
+        ContextMenu?.Items.Remove(commandsMenu);
 
         return new() {
             Items = {
