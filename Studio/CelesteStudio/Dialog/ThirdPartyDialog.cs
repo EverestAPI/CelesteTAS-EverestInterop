@@ -25,7 +25,7 @@ public class ThirdPartyDialog : Form {
 
         Content = viewerScrollable;
 
-        Size = new Size(400, 600);
+        Size = new Size(600, 800);
 
         Studio.RegisterWindow(this);
     }
