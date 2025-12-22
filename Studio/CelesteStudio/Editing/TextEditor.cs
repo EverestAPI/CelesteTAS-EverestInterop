@@ -122,7 +122,7 @@ public class TextEditor(Document document, Scrollable scrollable) : TextViewer(d
             case Keys.Delete:
                 OnDelete(e.HasCommonModifier() ? CaretMovementType.WordRight : CaretMovementType.CharRight);
                 goto Handled;
-            case Keys.Enter:
+            case Keys.Enter when !e.HasAlternateModifier(): // Avoid triggering for Alt+Enter
                 OnEnter(e.HasCommonModifier(), up: e.Shift);
                 goto Handled;
 
