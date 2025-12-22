@@ -301,11 +301,25 @@ public class TextEditor(Document document, Scrollable scrollable) : TextViewer(d
     private void OnUndo() {
         Document.Selection.Clear();
         Document.Undo();
+
+        // Don't start a new base auto-complete. Only arguments
+        if (!string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
+            autoCompleteMenu?.Refresh();
+        } else {
+            ClosePopupMenu();
+        }
     }
 
     private void OnRedo() {
         Document.Selection.Clear();
         Document.Redo();
+
+        // Don't start a new base auto-complete. Only arguments
+        if (!string.IsNullOrWhiteSpace(Document.Lines[Document.Caret.Row])) {
+            autoCompleteMenu?.Refresh();
+        } else {
+            ClosePopupMenu();
+        }
     }
 
     private void OnCut() {

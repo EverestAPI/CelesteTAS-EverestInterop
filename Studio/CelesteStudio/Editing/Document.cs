@@ -491,7 +491,7 @@ public class Document : IDisposable {
             Document = document;
             this.raiseEvents = raiseEvents;
 
-            if (document.updateStack.Count == 0) {
+            if (raiseEvents && document.updateStack.All(update => !update.raiseEvents)) {
                 document.undoStack.PrepareState(document);
             }
             document.updateStack.Push(this);
@@ -504,19 +504,23 @@ public class Document : IDisposable {
         /// Pushes the modification onto the undo-stack and raises events if enabled
         /// Automatically called with the using-syntax
         public void Dispose() {
-            Document.updateStack.Pop();
-
             if (Patches.Count == 0) {
+                Document.updateStack.Pop();
                 return;
             }
 
-            if (Document.updateStack.Count == 0) {
+            if (Document.updateStack.Count == 1) {
+                // Last update in stack -> perform patch
                 var totalPatch = Patches
                     .Select(patch => patch.Copy())
                     .Aggregate(Patch.Merge);
                 if (Document.OnFixupPatch(totalPatch.Insertions, totalPatch.Deletions) is { } fixupPatch) {
                     totalPatch = Patch.Merge(totalPatch, fixupPatch);
                 }
+
+                // Wait until here with popping, to avoid overwriting the prepared undo-state by some fixup action
+                Document.updateStack.Pop();
+
                 totalPatch.CleanupNoOps();
                 if (totalPatch.Insertions.Count == 0 && totalPatch.Deletions.Count == 0) {
                     return;
@@ -534,6 +538,8 @@ public class Document : IDisposable {
                     Application.Instance.AsyncInvoke(Studio.Instance.RefreshTitle);
                 }
             } else {
+                // Merge with parent update
+                Document.updateStack.Pop();
                 Document.updateStack.Peek().Patches.AddRange(Patches);
             }
         }
