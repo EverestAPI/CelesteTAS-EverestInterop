@@ -472,8 +472,9 @@ public static class ConsoleCommand {
         Engine.Scene = levelLoader;
     }
 
+    /// Create a "load" command for the current situation
     public static string CreateConsoleCommand(bool simple) {
-        if (Engine.Scene is Emulator {game.room: var room}) {
+        if (Engine.Scene is Emulator { game.room: var room }) {
             return $"console pico {room.X} {room.Y}";
         }
 
@@ -481,48 +482,50 @@ public static class ConsoleCommand {
             return string.Empty;
         }
 
-        AreaKey area = level.Session.Area;
-        string mode;
-        switch (area.Mode) {
-            case AreaMode.Normal:
-                mode = "load";
-                break;
-            case AreaMode.BSide:
-                mode = "hard";
-                break;
-            case AreaMode.CSide:
-                mode = "rmx2";
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
+        var area = level.Session.Area;
+        string mode = area.Mode switch {
+            AreaMode.Normal => "load",
+            AreaMode.BSide => "hard",
+            AreaMode.CSide => "rmx2",
+            _ => throw new ArgumentOutOfRangeException()
+        };
 
+        // Only use IDs for vanilla levels
         string id = area.ID <= 10 ? area.ID.ToString() : area.GetSID();
-        string separator = id.Contains(" ") ? ", " : " ";
-        List<string> values = new() {"console", mode, id};
+        List<string> values = ["console", mode, id];
 
         if (!simple) {
-            Player player = level.Tracker.GetEntity<Player>();
-            if (player == null) {
-                values.Add(level.Session.Level);
-            } else {
-                double x = player.X;
-                double y = player.Y;
-                double subX = player.movementCounter.X;
-                double subY = player.movementCounter.Y;
+            if (level.Tracker.GetEntity<Player>() is { } player) {
+                if (player.movementCounter == Vector2.Zero && player.Speed != Vector2.Zero) {
+                    if (player.Position == level.DefaultSpawnPoint) {
+                        if (level.Session.Level == level.Session.MapData.StartLevel().Name) {
+                            // Simplify to load from beginning
+                        } else {
+                            // Simplify to default room load
+                            values.Add(level.Session.Level);
+                        }
+                    } else if (level.Session.LevelData.Spawns.IndexOf(player.Position) is var spawnIndex && spawnIndex > 0) {
+                        // Simplify to indexed room load
+                        values.Add(level.Session.Level);
+                        values.Add(spawnIndex.ToString());
+                    }
+                } else {
+                    // Load exact position
+                    string format = "0.".PadRight(GameSettings.MaxDecimals + 2, '#');
+                    values.Add(((double)player.X + player.movementCounter.X).ToString(format, CultureInfo.InvariantCulture));
+                    values.Add(((double)player.Y + player.movementCounter.Y).ToString(format, CultureInfo.InvariantCulture));
 
-                string format = "0.".PadRight(GameSettings.MaxDecimals + 2, '#');
-                values.Add((x + subX).ToString(format, CultureInfo.InvariantCulture));
-                values.Add((y + subY).ToString(format, CultureInfo.InvariantCulture));
-
-                if (player.Speed != Vector2.Zero) {
-                    values.Add(player.Speed.X.ToString(CultureInfo.InvariantCulture));
-                    values.Add(player.Speed.Y.ToString(CultureInfo.InvariantCulture));
+                    if (player.Speed != Vector2.Zero) {
+                        values.Add(player.Speed.X.ToString(CultureInfo.InvariantCulture));
+                        values.Add(player.Speed.Y.ToString(CultureInfo.InvariantCulture));
+                    }
                 }
+            } else {
+                values.Add(level.Session.Level);
             }
         }
 
-        return string.Join(separator, values);
+        return string.Join(' ', values.Select(val => val.Contains(' ') ? $"\"{val}\"" : val));
     }
 
     [Monocle.Command("giveberry", "Gives player a red berry (CelesteTAS)")]

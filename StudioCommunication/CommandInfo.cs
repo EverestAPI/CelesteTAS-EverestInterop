@@ -13,7 +13,7 @@ public partial record struct CommandInfo(
     // Whether to automatically open the auto-complete menu for arguments
     bool HasArguments
 ) {
-    public const string Separator = "##SEPARATOR##"; // Placeholder to-be replaced by the actual value
+    public const string Separator = "##SEPARATOR##"; // Placeholder, to be replaced by the actual value
 
     /// Special-case command which provides auto-complete entries for getting values
     public const string GetCommand = "Get";
