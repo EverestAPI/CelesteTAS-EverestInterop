@@ -345,6 +345,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
         }
 
         Manager.AddMainThreadAction(() => {
+            Manager.DisableRun();
             Manager.Controller.RefreshInputs();
             if (RecordingCommand.RecordingTimes.IsNotEmpty()) {
                 AbortTas("Can't use StartRecording/StopRecording with \"Record TAS\"");

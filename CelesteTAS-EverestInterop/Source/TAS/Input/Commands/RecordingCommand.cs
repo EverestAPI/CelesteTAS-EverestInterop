@@ -64,6 +64,7 @@ internal static class RecordingCommand {
             }
 
             Manager.CurrState = Manager.NextState = Manager.State.Running;
+            Manager.PlaybackSpeed = 1.0f;
         }
     }
 

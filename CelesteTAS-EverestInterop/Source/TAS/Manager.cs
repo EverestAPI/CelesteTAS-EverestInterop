@@ -55,7 +55,7 @@ public static class Manager {
 
     public static bool Running => CurrState != State.Disabled;
     public static bool FastForwarding => Running && PlaybackSpeed >= 5.0f;
-    public static float PlaybackSpeed { get; private set; } = 1.0f;
+    public static float PlaybackSpeed { get; internal set; } = 1.0f;
 
     public static State CurrState, NextState;
     public static readonly InputController Controller = new();
@@ -279,7 +279,7 @@ public static class Manager {
             return;
         }
 
-        if (TASRecorderInterop.IsRecording) {
+        if (Running && TASRecorderInterop.IsRecording) {
             // Force recording at 1x playback
             NextState = State.Running;
             PlaybackSpeed = 1.0f;
