@@ -26,17 +26,16 @@ public static class Program {
 
             var app = new Application(platform);
             var studio = new Studio(args, windowCreationCallback: window => {
-                ApplyTheme(window, Settings.Instance.Theme.DarkMode);
+                var nativeWindow = ((IWpfWindow)window.Handler).Control;
+                nativeWindow.SourceInitialized += (_, _) => ApplyTheme(window, Settings.Instance.Theme.DarkMode);
+
                 Settings.ThemeChanged += () => ApplyTheme(window, Settings.Instance.Theme.DarkMode);
             });
 
             UpdateTheme(Settings.Instance.Theme.DarkMode);
             
-            var nativeWindow = ((IWpfWindow)studio.Handler).Control;
-            nativeWindow.SourceInitialized += (_, _) => {
-                ApplyTheme(studio, Settings.Instance.Theme.DarkMode);
-                studio.WPFHackEnabled = false;
-            };
+            var nativeStudioWindow = ((IWpfWindow)studio.Handler).Control;
+            nativeStudioWindow.SourceInitialized += (_, _) => ApplyTheme(studio, Settings.Instance.Theme.DarkMode);
             
             Settings.ThemeChanged += () => ApplyTheme(studio, Settings.Instance.Theme.DarkMode);
 

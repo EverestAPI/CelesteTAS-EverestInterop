@@ -213,6 +213,8 @@ public class TextViewer : SkiaDrawable {
         };
 
         ContextMenu = CreateContextMenu();
+        Settings.KeyBindingsChanged += () => ContextMenu = CreateContextMenu();
+        Settings.ThemeChanged += () => ContextMenu = CreateContextMenu();
     }
 
     public virtual ContextMenu CreateContextMenu() {
@@ -396,12 +398,7 @@ public class TextViewer : SkiaDrawable {
                 : LineNumberPadding;
 
         var targetSize = new Size((int)(width + textOffsetX + PaddingRight), (int)(height + PaddingBottom));
-        // Apparently you need to set the size from the parent on WPF?
-        if (Eto.Platform.Instance.IsWpf) {
-            scrollable.ScrollSize = targetSize;
-        } else {
-            Size = targetSize;
-        }
+        Size = targetSize;
         PreferredSizeChanged?.Invoke(targetSize);
 
         RecalcPopupMenu();
@@ -636,6 +633,7 @@ public class TextViewer : SkiaDrawable {
     private void OnSelectAll() {
         Document.Selection.Start = new CaretPosition(0, 0);
         Document.Selection.End = new CaretPosition(Document.Lines.Count - 1, Document.Lines[^1].Length);
+        Recalc();
     }
 
     private void OnSelectBlock() {
@@ -652,6 +650,7 @@ public class TextViewer : SkiaDrawable {
 
         Document.Selection.Start = new CaretPosition(above, 0);
         Document.Selection.End = new CaretPosition(below, Document.Lines[below].Length);
+        Recalc();
     }
 
     private void OnFind() {
@@ -1027,7 +1026,7 @@ public class TextViewer : SkiaDrawable {
         if (Settings.Instance.ScrollSpeed > 0.0f) {
             // Manually scroll to respect our scroll speed
             scrollable.ScrollPosition = scrollable.ScrollPosition with {
-                Y = Math.Clamp((int)(scrollable.ScrollPosition.Y - e.Delta.Height * Font.LineHeight() * Settings.Instance.ScrollSpeed), 0, Height - scrollable.ClientSize.Height)
+                Y = Math.Clamp((int)(scrollable.ScrollPosition.Y - e.Delta.Height * Font.LineHeight() * Settings.Instance.ScrollSpeed), 0, Math.Max(0, Height - scrollable.ClientSize.Height))
             };
             e.Handled = true;
         }

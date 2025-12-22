@@ -527,6 +527,7 @@ public class TextEditor(Document document, Scrollable scrollable) : TextViewer(d
         // We aren't inside a quick-edit and don't have enough info to goto the prev index
         // Therefore just go to the prev selection linearly, ignoring the index
         var quickEdit = quickEdits
+            .AsEnumerable()
             .Reverse()
             .FirstOrDefault(anchor => anchor.Row == Document.Caret.Row && anchor.MinCol < Document.Caret.Col ||
                                       anchor.Row < Document.Caret.Row);

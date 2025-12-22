@@ -43,7 +43,7 @@ public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, Eto.Forms.Cont
                         bitmap = new WriteableBitmap(width, height, bitmapDpi * dpiX, bitmapDpi * dpiY, PixelFormats.Pbgra32, null);
 
                         surface?.Dispose();
-                        surface = SKSurface.Create(new SKImageInfo(width, height, SKImageInfo.PlatformColorType, SKAlphaType.Premul), bitmap.BackBuffer, bitmap.BackBufferStride, new SKSurfaceProperties(SKPixelGeometry.Unknown));
+                        surface = SKSurface.Create(new SKImageInfo(width, height, SKImageInfo.PlatformColorType, SKAlphaType.Premul), bitmap.BackBuffer, bitmap.BackBufferStride, new SKSurfaceProperties(SKPixelGeometry.RgbHorizontal));
                         surface.Canvas.Scale((float)dpiX, (float)dpiY);
                         surface.Canvas.Save();
                     }

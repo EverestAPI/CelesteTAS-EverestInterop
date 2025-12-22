@@ -4,6 +4,7 @@ using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
 using StudioCommunication.Util;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -28,6 +29,12 @@ public class InfoTemplateForm : Form {
         }.FixBorder();
         var preview = new TextViewer(Document.Create(evaluatedTemplate), previewScrollable) { ShowLineNumbers = false };
         previewScrollable.Content = preview;
+        
+        // On WPF, the scroll size needs to be set manually
+        if (Eto.Platform.Instance.IsWpf) {
+            editor.PreferredSizeChanged += size => editorScrollable.ScrollSize = size;
+            preview.PreferredSizeChanged += size => previewScrollable.ScrollSize = size;
+        }
 
         editor.Document.TextChanged += (_, _, _) => Task.Run(async () => {
             string[] evaluated = await CommunicationWrapper.EvaluateInfoTemplateAsync(editor.Document.Lines.ToArray());
@@ -76,10 +83,10 @@ public class InfoTemplateForm : Form {
 
         SizeChanged += (_, _) => {
             const int border = 1;
-            editorScrollable.Width = previewScrollable.Width = buttonsLayout.Width = Width - padding*2 - border*2;
+            editorScrollable.Width = previewScrollable.Width = buttonsLayout.Width = Math.Max(0, ClientSize.Width - padding*2 - border*2);
 
             int extraHeight = templateLabel.Height + previewLabel.Height + buttonsLayout.Height + padding*6;
-            editorScrollable.Height = previewScrollable.Height = (Height - extraHeight) / 2;
+            editorScrollable.Height = previewScrollable.Height = Math.Max(0, (ClientSize.Height - extraHeight) / 2);
         };
 
         BackgroundColor = Settings.Instance.Theme.Background;
