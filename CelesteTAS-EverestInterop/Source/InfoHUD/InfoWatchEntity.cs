@@ -124,6 +124,11 @@ public static class InfoWatchEntity {
         var checkRect = new Rectangle((int) worldPosition.X, (int) worldPosition.Y, 1, 1);
 
         foreach (var entity in level.Entities.Where(e => !IgnoreEntity(e))) {
+            if (entity.Scene == null) {
+                // Some cursed entity, which we don't want to deal with
+                continue;
+            }
+
             if (entity.Collider == null) {
                 // Attempt to reconstruct collider from entity data
                 if (entity.SourceData is { } data) {
