@@ -64,8 +64,27 @@ public class InfoTemplateAutoCompleteMenu : AutoCompleteMenu {
         var token = tokenSource.Token;
         Task.Run(async () => {
             try {
-                int loadingDots = 0;
+                if (!CommunicationWrapper.Connected) {
+                    loadingEntry.DisplayText = "Connection with Celeste required for command auto-complete!";
+                    await Application.Instance.InvokeAsync(() => {
+                        Entries.Clear();
+                        Entries.Add(loadingEntry);
+                        editor.RecalcPopupMenu();
+                    }).ConfigureAwait(false);
+                    return;
+                }
+                if (await CommunicationWrapper.RequestCommandHash(CommandInfo.GetCommand, [fullLine[(queryStartIdx + 1)..Document.Caret.Col]], Document.FilePath, Document.Caret.Row) is not { } hash) {
+                    // Something probably broke..
+                    loadingEntry.DisplayText = "Failed to fetch command hash!";
+                    await Application.Instance.InvokeAsync(() => {
+                        Entries.Clear();
+                        Entries.Add(loadingEntry);
+                        editor.RecalcPopupMenu();
+                    }).ConfigureAwait(false);
+                    return;
+                }
 
+                int loadingDots = 0;
                 while (!token.IsCancellationRequested && await Application.Instance.InvokeAsync(() => Visible).ConfigureAwait(false)) {
                     if (!CommunicationWrapper.Connected) {
                         loadingEntry.DisplayText = "Connection with Celeste required for target-query auto-complete!";
@@ -81,9 +100,7 @@ public class InfoTemplateAutoCompleteMenu : AutoCompleteMenu {
                     loadingDots = (loadingDots + 1).Mod(4);
                     loadingEntry.DisplayText = $"Loading{new string('.', loadingDots)}{new string(' ', 3 - loadingDots)}";
 
-                    (var commandEntries, bool done) = await CommunicationWrapper.RequestAutoCompleteEntries(
-                        CommandInfo.GetCommand, [fullLine[(queryStartIdx + 1)..Document.Caret.Col]], Document.FilePath, Document.Caret.Row, refresh: needEntryRefresh)
-                            .ConfigureAwait(false);
+                    (var commandEntries, bool done) = CommunicationWrapper.RequestAutoCompleteEntries(hash, CommandInfo.GetCommand, [fullLine[(queryStartIdx + 1)..Document.Caret.Col]], Document.FilePath, Document.Caret.Row, refresh: needEntryRefresh);
                     needEntryRefresh = false; // Clear flag to avoid re-requesting every loop iterator
 
                     var menuEntries = commandEntries.Select(entry => new Entry {

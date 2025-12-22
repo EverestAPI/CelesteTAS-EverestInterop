@@ -236,7 +236,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                 Task.Run(async () => {
                     CommandAutoCompleteEntry[] entriesToWrite;
 
-                    var timeout = TimeSpan.FromSeconds(5.0f);
+                    var timeout = TimeSpan.FromSeconds(20.0f);
                     var lastWrite = DateTime.UtcNow;
 
                     while (Connected && !done) {
@@ -249,7 +249,7 @@ public sealed class CommunicationAdapterCeleste() : CommunicationAdapterBase(Loc
                                 writer.Write(/*done*/true);
                             });
                             LogVerbose($"Sent message CommandAutoComplete: 0 [timeout] ({hash})");
-                            break;
+                            return;
                         }
 
                         lock (entries) {

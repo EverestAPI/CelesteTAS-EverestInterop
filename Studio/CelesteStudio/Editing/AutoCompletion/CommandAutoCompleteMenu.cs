@@ -141,8 +141,27 @@ public class CommandAutoCompleteMenu : AutoCompleteMenu {
                 var token = tokenSource.Token;
                 Task.Run(async () => {
                     try {
-                        int loadingDots = 0;
+                        if (!CommunicationWrapper.Connected) {
+                            loadingEntry.DisplayText = "Connection with Celeste required for command auto-complete!";
+                            await Application.Instance.InvokeAsync(() => {
+                                Entries.Clear();
+                                Entries.Add(loadingEntry);
+                                editor.RecalcPopupMenu();
+                            }).ConfigureAwait(false);
+                            return;
+                        }
+                        if (await CommunicationWrapper.RequestCommandHash(command.Name, commandLine.Value.Arguments, Document.FilePath, Document.Caret.Row) is not { } hash) {
+                            // Something probably broke..
+                            loadingEntry.DisplayText = "Failed to fetch command hash!";
+                            await Application.Instance.InvokeAsync(() => {
+                                Entries.Clear();
+                                Entries.Add(loadingEntry);
+                                editor.RecalcPopupMenu();
+                            }).ConfigureAwait(false);
+                            return;
+                        }
 
+                        int loadingDots = 0;
                         while (!token.IsCancellationRequested && await Application.Instance.InvokeAsync(() => Visible).ConfigureAwait(false)) {
                             if (!CommunicationWrapper.Connected) {
                                 loadingEntry.DisplayText = "Connection with Celeste required for command auto-complete!";
@@ -158,7 +177,7 @@ public class CommandAutoCompleteMenu : AutoCompleteMenu {
                             loadingDots = (loadingDots + 1).Mod(4);
                             loadingEntry.DisplayText = $"Loading{new string('.', loadingDots)}{new string(' ', 3 - loadingDots)}";
 
-                            (var commandEntries, bool done) = await CommunicationWrapper.RequestAutoCompleteEntries(command.Name, commandLine.Value.Arguments, Document.FilePath, Document.Caret.Row, refresh: isNewArgumentIndex).ConfigureAwait(false);
+                            (var commandEntries, bool done) = CommunicationWrapper.RequestAutoCompleteEntries(hash, command.Name, commandLine.Value.Arguments, Document.FilePath, Document.Caret.Row, refresh: isNewArgumentIndex);
                             isNewArgumentIndex = false; // Clear flag to avoid re-requesting every loop iterator
 
                             var menuEntries = commandEntries.Select(entry => new Entry {

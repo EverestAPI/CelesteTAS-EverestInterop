@@ -260,18 +260,19 @@ public static class CommunicationWrapper {
     private static readonly Dictionary<int, List<CommandAutoCompleteEntry>> autoCompleteEntryCacheDone = [];
     private static readonly Dictionary<int, List<CommandAutoCompleteEntry>> autoCompleteEntryCachePending = [];
 
-    public static async Task<(List<CommandAutoCompleteEntry> Entries, bool Done)> RequestAutoCompleteEntries(string commandName, string[] commandArgs, string filePath, int fileLine, bool refresh = false) {
+    public static async Task<int?> RequestCommandHash(string commandName, string[] commandArgs, string filePath, int fileLine) {
+        object? argsHash = await comm!.RequestGameData(GameDataType.CommandHash, (commandName, commandArgs, filePath, fileLine)).ConfigureAwait(false);
+        if (argsHash == null) {
+            return null;
+        }
+
+        return 31 * commandName.GetStableHashCode() +
+               17 * (int)argsHash;
+    }
+    public static (List<CommandAutoCompleteEntry> Entries, bool Done) RequestAutoCompleteEntries(int hash, string commandName, string[] commandArgs, string filePath, int fileLine, bool refresh = false) {
         if (!Connected) {
             return (Entries: [], Done: true);
         }
-
-        object? argsHash = await comm!.RequestGameData(GameDataType.CommandHash, (commandName, commandArgs, filePath, fileLine)).ConfigureAwait(false);
-        if (argsHash == null) {
-            return (Entries: [], Done: true);
-        }
-
-        int hash = 31 * commandName.GetStableHashCode() +
-                   17 * (int)argsHash;
 
         // Prefer completed entries
         if (autoCompleteEntryCacheDone.TryGetValue(hash, out var doneEntries)) {
@@ -280,7 +281,7 @@ public static class CommunicationWrapper {
                 pendingEntries ??= [];
 
                 if (!exists) {
-                    comm.WriteCommandAutoCompleteRequest(hash, commandName, commandArgs, filePath, fileLine);
+                    comm!.WriteCommandAutoCompleteRequest(hash, commandName, commandArgs, filePath, fileLine);
                 }
             }
 
@@ -293,7 +294,7 @@ public static class CommunicationWrapper {
             pendingEntries ??= [];
 
             if (!exists) {
-                comm.WriteCommandAutoCompleteRequest(hash, commandName, commandArgs, filePath, fileLine);
+                comm!.WriteCommandAutoCompleteRequest(hash, commandName, commandArgs, filePath, fileLine);
             }
 
             return (pendingEntries, Done: false);
