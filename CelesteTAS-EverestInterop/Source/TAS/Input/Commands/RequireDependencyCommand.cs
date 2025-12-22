@@ -1,4 +1,4 @@
-﻿using Celeste;
+using Celeste;
 using Celeste.Mod;
 using Celeste.Mod.UI;
 using Microsoft.Xna.Framework;
