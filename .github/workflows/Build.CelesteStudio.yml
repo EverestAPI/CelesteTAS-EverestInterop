@@ -177,7 +177,7 @@ jobs:
 
   build-mac:
     name: macOS
-    runs-on: macos-13
+    runs-on: macos-latest
 
     needs: cache
     if: needs.cache.outputs.macos_cache_hit != 'true'
@@ -193,8 +193,10 @@ jobs:
           dotnet-version: '9.0'
       - name: Install macOS workflow
         run: dotnet workload install macos
-      - name: Switch XCode
-        run: sudo xcode-select -switch /Applications/Xcode_15.1.app/Contents/Developer
+      - name: Setup XCode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
 
       - name: Set version suffix (release)
         run: sed -i '' -e "s/-dev//" Studio/CelesteStudio/Studio.cs
