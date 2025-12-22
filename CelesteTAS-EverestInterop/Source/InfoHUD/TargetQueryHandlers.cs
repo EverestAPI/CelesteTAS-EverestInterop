@@ -238,7 +238,7 @@ internal class ExtendedVariantsQueryHandler : TargetQuery.Handler {
     }
 
     public override (bool CanEnumerate, bool ShouldOverride) CanEnumerateMemberEntries(Type type, TargetQuery.Variant variant, string queryPrefix, int memberIdx, string[] memberArgs) {
-        return (CanEnumerate: variant is TargetQuery.Variant.Get or TargetQuery.Variant.Set && IsExtVars(type, out _), ShouldOverride: true);
+        return (CanEnumerate: variant is TargetQuery.Variant.Set && IsExtVars(type, out _), ShouldOverride: true);
     }
 
     public override Result<bool, TargetQuery.MemberAccessError> ResolveMember(object? instance, out object? value, Type type, int memberIdx, string[] memberArgs) {
@@ -848,7 +848,7 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         if (member.DeclaringType.IsSameOrSubclassOf(typeof(Actor)) && member.Name is nameof(Actor.MoveH) or nameof(Actor.MoveV)) {
             return true;
         }
-        if (member.DeclaringType == typeof(Player) &&
+        if (member.DeclaringType == typeof(Player) && variant is TargetQuery.Variant.Get &&
             member.Name is nameof(Player.Speed) or nameof(Player.StateMachine) or nameof(Player.Stamina)
                         or nameof(Player.Dashes) or nameof(Player.Ducking) or nameof(Player.LiftBoost)
                         or nameof(Player.jumpGraceTimer) or nameof(Player.varJumpTimer) or nameof(Player.varJumpSpeed)
