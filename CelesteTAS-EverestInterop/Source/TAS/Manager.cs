@@ -73,13 +73,14 @@ public static class Manager {
     private static float frameStepBackTimeout = 0.0f;
     private static PopupToast.Entry? frameStepBackToast = null;
 
-#if DEBUG
     // Hot-reloading support
     [Load]
     private static void RestoreStudioTasFilePath() {
+#if DEBUG
         if (Engine.Instance.GetDynamicDataInstance().Get<string>("CelesteTAS_FilePath") is { } filePath) {
             Controller.FilePath = filePath;
         }
+#endif
 
         // Stop TAS to avoid blocking reload
         typeof(AssetReloadHelper)
@@ -97,6 +98,7 @@ public static class Manager {
             });
     }
 
+#if DEBUG
     [Unload]
     private static void SaveStudioTasFilePath() {
         Engine.Instance.GetDynamicDataInstance().Set("CelesteTAS_FilePath", Controller.FilePath);

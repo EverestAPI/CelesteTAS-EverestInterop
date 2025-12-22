@@ -147,6 +147,19 @@ public static class TargetQuery {
     ];
 
     [Initialize(ConsoleEnhancements.InitializePriority + 1)]
+    private static void Initialize() {
+        CollectAllTypes();
+        
+        Everest.Events.Everest.OnLoadMod += OnModLoad;
+    }
+    [Unload]
+    private static void Unload() {
+        Everest.Events.Everest.OnLoadMod -= OnModLoad;
+    }
+
+    // Refresh type cache
+    private static void OnModLoad(EverestModuleMetadata _) => CollectAllTypes();
+
     private static void CollectAllTypes() {
         AllTypes.Clear();
         BaseTypeCache.Clear();
