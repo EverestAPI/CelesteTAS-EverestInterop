@@ -176,7 +176,8 @@ public abstract class PopupMenu : Scrollable {
         public override void Draw(SKSurface surface) {
             var canvas = surface.Canvas;
 
-            if (menu.shownEntries.Length == 0 || menu.BottomVisibleEntry <= menu.TopVisibleEntry) {
+            var visibleElements = menu.VisibleEntries.ToArray();
+            if (visibleElements.Length == 0) {
                 return;
             }
 
@@ -185,7 +186,7 @@ public abstract class PopupMenu : Scrollable {
             canvas.DrawRect(backgroundRect, Settings.Instance.Theme.PopupMenuBgPaint);
 
             var font = FontManager.SKPopupFont;
-            int maxDisplayLen = menu.VisibleEntries.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
+            int maxDisplayLen = visibleElements.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
 
             float width = menu.ContentWidth - Settings.Instance.Theme.PopupMenuBorderPadding * 2.0f;
             float height = menu.EntryHeight;
@@ -546,6 +547,10 @@ public abstract class PopupMenu : Scrollable {
         }
 
         contentWidth = (int)(IconWidth + font.CharWidth() * (maxDisplayLen + maxExtraLen) + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding * 2.0f + Settings.Instance.Theme.PopupMenuBorderPadding * 2);
+
+        if (Eto.Platform.Instance.IsWpf) {
+            ScrollSize = new(ContentWidth, ContentHeight);
+        }
 
         drawable.Size = new(ContentWidth, ContentHeight);
         drawable.Invalidate();

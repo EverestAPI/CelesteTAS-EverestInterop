@@ -1024,6 +1024,20 @@ public class TextViewer : SkiaDrawable {
 
     protected override void OnMouseWheel(MouseEventArgs e) {
         if (Settings.Instance.ScrollSpeed > 0.0f) {
+            // Manually forward since WPF won't do it for us
+            if (Eto.Platform.Instance.IsWpf && ActivePopupMenu != null) {
+                var pos = ActivePopupMenu.PointFromScreen(Mouse.Position);
+                if (pos.X >= 0.0f & pos.X <= ActivePopupMenu.Width &&
+                    pos.Y >= 0.0f & pos.Y <= ActivePopupMenu.Height)
+                {
+                    ActivePopupMenu.ScrollPosition = ActivePopupMenu.ScrollPosition with {
+                        Y = Math.Clamp((int)(ActivePopupMenu.ScrollPosition.Y - e.Delta.Height * ActivePopupMenu.EntryHeight * Settings.Instance.ScrollSpeed), 0, ActivePopupMenu.ScrollSize.Height - ActivePopupMenu.ClientSize.Height)
+                    };
+                    e.Handled = true;
+                    return;
+                }
+            }
+
             // Manually scroll to respect our scroll speed
             scrollable.ScrollPosition = scrollable.ScrollPosition with {
                 Y = Math.Clamp((int)(scrollable.ScrollPosition.Y - e.Delta.Height * Font.LineHeight() * Settings.Instance.ScrollSpeed), 0, Math.Max(0, Height - scrollable.ClientSize.Height))
