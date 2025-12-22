@@ -18,6 +18,6 @@ public abstract class AutoCompleteMenu(TextEditor editor) : PopupMenu {
 
     public abstract void Refresh(bool open = true);
 
-    // While there are quick-edits available, Tab will cycle through them
-    public override bool HandleKeyDown(KeyEventArgs e) => HandleKeyDown(e, useTabComplete: !editor.GetQuickEdits().Any());
+    // Allow completion with Tab
+    public override bool HandleKeyDown(KeyEventArgs e) => HandleKeyDown(e, useTabComplete: true);
 }
