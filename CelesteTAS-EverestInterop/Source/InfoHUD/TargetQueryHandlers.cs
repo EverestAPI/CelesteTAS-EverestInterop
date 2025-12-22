@@ -10,6 +10,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -66,7 +67,7 @@ internal class SettingsQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
     }
 
-    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, TargetQuery.Variant variant) {
         if (queryArgs.Length > 1 || variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
             yield break;
         }
@@ -74,14 +75,12 @@ internal class SettingsQueryHandler : TargetQuery.Handler {
         // Manually selected to filter out useless entries
         var vanillaSettings = ((string[])["DisableFlashes", "ScreenShake", "GrabMode", "CrouchDashMode", "SpeedrunClock", "Pico8OnMainMenu", "VariantsUnlocked"]).Select(e => typeof(Settings).GetFieldInfo(e)!);
         foreach (var f in vanillaSettings) {
-            if (targetTypeFilter == null || targetTypeFilter.Any(type => f.FieldType.CanCoerceTo(type))) {
-                yield return new CommandAutoCompleteEntry {
-                    Name = f.Name,
-                    Extra = $"{f.FieldType.CSharpName()} (Settings)",
-                    IsDone = true,
-                    StorageKey = $"{variant}_{typeof(Settings).FullName}"
-                };
-            }
+            yield return new CommandAutoCompleteEntry {
+                Name = f.Name,
+                Extra = $"{f.FieldType.CSharpName()} (Settings)",
+                IsDone = true,
+                StorageKey = $"{variant}_{typeof(Settings).FullName}"
+            };
         }
     }
 }
@@ -127,7 +126,7 @@ internal class SaveDataQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
     }
 
-    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, TargetQuery.Variant variant) {
         if (queryArgs.Length > 1 || variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
             yield break;
         }
@@ -135,14 +134,12 @@ internal class SaveDataQueryHandler : TargetQuery.Handler {
         // Manually selected to filter out useless entries
         var vanillaSaveData = ((string[])["CheatMode", "AssistMode", "VariantMode", "UnlockedAreas", "RevealedChapter9", "DebugMode"]).Select(e => typeof(SaveData).GetFieldInfo(e)!);
         foreach (var f in vanillaSaveData) {
-            if (targetTypeFilter == null || targetTypeFilter.Any(type => f.FieldType.CanCoerceTo(type))) {
-                yield return new CommandAutoCompleteEntry {
-                    Name = f.Name,
-                    Extra = $"{f.FieldType.CSharpName()} (Save Data)",
-                    IsDone = true,
-                    StorageKey = $"{variant}_{typeof(SaveData).FullName}"
-                };
-            }
+            yield return new CommandAutoCompleteEntry {
+                Name = f.Name,
+                Extra = $"{f.FieldType.CSharpName()} (Save Data)",
+                IsDone = true,
+                StorageKey = $"{variant}_{typeof(SaveData).FullName}"
+            };
         }
     }
 }
@@ -179,27 +176,27 @@ internal class AssistsQueryHandler : TargetQuery.Handler {
         }
     }
 
-    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, TargetQuery.Variant variant) {
         if (queryArgs.Length > 1 || variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
             yield break;
         }
 
         foreach (var f in typeof(Assists).GetAllFieldInfos(ReflectionExtensions.InstanceAnyVisibility)) {
-            if (targetTypeFilter == null || targetTypeFilter.Any(type => f.FieldType.CanCoerceTo(type))) {
-                yield return new CommandAutoCompleteEntry {
-                    Name = f.Name,
-                    Extra = $"{f.FieldType.CSharpName()} (Assists)",
-                    Suggestion = variant == TargetQuery.Variant.Set && f.Name is nameof(Assists.Invincible),
-                    IsDone = true,
-                    StorageKey = $"{variant}_{typeof(Assists).FullName}"
-                };
-            }
+            yield return new CommandAutoCompleteEntry {
+                Name = f.Name,
+                Extra = $"{f.FieldType.CSharpName()} (Assists)",
+                Suggestion = variant == TargetQuery.Variant.Set && f.Name is nameof(Assists.Invincible),
+                IsDone = true,
+                StorageKey = $"{variant}_{typeof(Assists).FullName}"
+            };
         }
     }
 
     public static void ApplyAssists(Assists? oldAssists, Assists newAssists) {
         if (oldAssists?.MirrorMode != newAssists.MirrorMode) {
+#pragma warning disable CS0618 // Type or member is obsolete
             Engine.TimeRateB = newAssists.GameSpeed / 10.0f;
+#pragma warning restore CS0618 // Type or member is obsolete
         }
         if (oldAssists?.MirrorMode != newAssists.MirrorMode) {
             Celeste.Input.Feather.InvertedX = Celeste.Input.Aim.InvertedX = Celeste.Input.MoveX.Inverted = newAssists.MirrorMode;
@@ -332,13 +329,13 @@ internal class EverestModuleSettingsQueryHandler : TargetQuery.Handler {
         return Everest.Modules.FirstOrDefault(mod => mod.SettingsType == type) is { } module ? [module._Settings] : [];
     }
 
-    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+    public override IEnumerator<CommandAutoCompleteEntry> ProvideGlobalEntries(string[] queryArgs, string queryPrefix, TargetQuery.Variant variant) {
         if (queryArgs.Length > 1 || variant is not (TargetQuery.Variant.Get or TargetQuery.Variant.Set)) {
             yield break;
         }
 
         foreach (var mod in Everest.Modules) {
-            if (mod.SettingsType != null && TargetQuery.IsTypeViable(mod.SettingsType, variant, isRoot: true, targetTypeFilter, maxDepth: 3)) {
+            if (mod.SettingsType != null && TargetQuery.IsTypeViable(mod.SettingsType, variant)) {
                 yield return new CommandAutoCompleteEntry {
                     Name = $"{mod.Metadata.Name}.",
                     Extra = "Mod Setting",
@@ -351,7 +348,7 @@ internal class EverestModuleSettingsQueryHandler : TargetQuery.Handler {
         }
     }
 
-    public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+    public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant) {
         return variant == TargetQuery.Variant.Get && member.DeclaringType == typeof(CoreModuleSettings) && member.Name == nameof(CoreModuleSettings.ShowModOptionsInGame);
     }
 }
@@ -386,7 +383,7 @@ internal class SceneQueryHandler : TargetQuery.Handler {
         return [];
     }
 
-    public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+    public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant) {
         return variant == TargetQuery.Variant.Set && (member.DeclaringType?.IsSameOrSubclassOf(typeof(Scene)) ?? false) && member.Name == nameof(Scene.TimeActive);
     }
 }
@@ -441,7 +438,7 @@ internal class EntityQueryHandler : TargetQuery.Handler {
             return new(position, remainder);
         }
 
-        public override string ToString() => ((double)Position + Remainder).ToString();
+        public override string ToString() => ((double)Position + Remainder).ToString(CultureInfo.InvariantCulture);
         public string ToFormattedString(int decimals) => ((double)Position + Remainder).ToFormattedString(decimals);
     }
 
@@ -831,7 +828,7 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         return Result<bool, TargetQuery.QueryError>.Ok(false);
     }
 
-    public override bool IsTypeSuggested(Type type, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+    public override bool IsTypeSuggested(Type type, TargetQuery.Variant variant) {
         if (Engine.Scene is not Level level) {
             // Could support any scene, but usually only Level is relevant
             return false;
@@ -840,12 +837,10 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         return level.Entities.Any(e =>
             e.GetType() == type &&
             // Require a collider to avoid controller entities
-            e.Collider != null &&
-            // Only recommend when setting / invoking something or getting a info-template / Vector2
-            (variant != TargetQuery.Variant.Get || targetTypeFilter == null || targetTypeFilter.Contains(typeof(Vector2)) || targetTypeFilter.Contains(typeof(SubpixelPosition)))
+            e.Collider != null
         );
     }
-    public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+    public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant) {
         if (!(member.DeclaringType?.IsSameOrSubclassOf(typeof(Entity)) ?? false)) {
             return false;
         }
@@ -919,7 +914,6 @@ internal class EntityQueryHandler : TargetQuery.Handler {
             string[] componentQuery = memberArgs[(componentKeyIndex + 1)..];
             string componentQueryPrefix = componentQuery.Length <= 1 ? string.Empty : $"{string.Join('.', componentQuery[..^1])}.";
             using var enumerator = TargetQuery.ResolveBaseTypeAutoCompleteEntries(componentQuery, componentQueryPrefix, variant,
-                targetTypeFilter: null,
                 typeFilterPredicate: t => t.IsSameOrSubclassOf(typeof(Component)),
                 typeSuggestionPredicate: t => activeComponents.Contains(t));
 
@@ -1076,7 +1070,7 @@ internal class ComponentQueryHandler : TargetQuery.Handler {
         }
     }
 
-    public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant, Type[]? targetTypeFilter) {
+    public override bool IsMemberSuggested(MemberInfo member, TargetQuery.Variant variant) {
         if (member.DeclaringType == typeof(StateMachine) && member.Name is nameof(StateMachine.State)) {
             return true;
         }
