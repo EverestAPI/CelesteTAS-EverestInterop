@@ -1389,67 +1389,85 @@ internal class CollectionQueryHandler : TargetQuery.Handler {
 }
 
 internal class SpecialValueQueryHandler : TargetQuery.Handler {
-    /// Data-class to hold parsed ButtonBinding data, before it being set
+    /// Data-class to hold parsed ButtonBinding/VirtualButton data, before it being set
     private class ButtonBindingData {
         public readonly HashSet<Keys> KeyboardKeys = [];
         public readonly HashSet<MInput.MouseData.MouseButtons> MouseButtons = [];
     }
 
-    public override bool CanResolveValue(Type type) => type == typeof(Vector2) || type == typeof(Vector3) || type == typeof(Vector4) || type == typeof(Random) || type == typeof(ButtonBinding);
-    public override bool CanEnumerateTypeEntries(Type type) => type == typeof(ButtonBinding);
+    public override bool CanResolveValue(Type type) => type == typeof(Vector2) || type == typeof(Vector3) || type == typeof(Vector4) || type == typeof(Random) || type == typeof(ButtonBinding) || type == typeof(VirtualButton);
+    public override bool CanEnumerateTypeEntries(Type type) => type == typeof(ButtonBinding) || type == typeof(VirtualButton);
 
     public override Result<bool, TargetQuery.MemberAccessError> SetMember(object? instance, object? value, Type type, int memberIdx, string[] memberArgs, bool forceAllowCodeExecution) {
+        if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
+            return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.CodeExecutionNotAllowed(type, memberArgs.Length - 1, memberArgs));
+        }
+
         var bindingFlags = memberArgs.Length == 1
             ? instance is Type
                 ? ReflectionExtensions.StaticAnyVisibility
                 : ReflectionExtensions.StaticInstanceAnyVisibility
             : ReflectionExtensions.InstanceAnyVisibility;
 
-        if (type.GetPropertyInfo(memberArgs[memberIdx], bindingFlags, logFailure: false) is { } property && property.PropertyType == typeof(ButtonBinding)) {
-            if (EnforceLegalCommand.EnabledWhenRunning && !forceAllowCodeExecution) {
-                return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.CodeExecutionNotAllowed(type, memberArgs.Length - 1, memberArgs));
+
+        VirtualButton button;
+        if (type.GetFieldInfo(memberArgs[memberIdx], bindingFlags, logFailure: false) is { } field) {
+            if (field.FieldType == typeof(ButtonBinding)) {
+                var binding = (ButtonBinding) field.GetValue(instance)!;
+                button = binding.Button;
+            } else if (field.FieldType == typeof(VirtualButton)) {
+                button = (VirtualButton) field.GetValue(instance)!;
+            } else {
+                return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
             }
-
-            var binding = (ButtonBinding) property.GetValue(instance)!;
-
-            var nodes = binding.Button.Nodes;
-            var mouseButtons = binding.Button.Binding.Mouse;
-            var data = (ButtonBindingData) value!;
-
-            if (data.KeyboardKeys.IsNotEmpty()) {
-                nodes.RemoveAll(node => node is VirtualButton.KeyboardKey);
-                nodes.AddRange(data.KeyboardKeys.Select(key => new VirtualButton.KeyboardKey(key)));
+        } else if (type.GetPropertyInfo(memberArgs[memberIdx], bindingFlags, logFailure: false) is { } property) {
+            if (property.PropertyType == typeof(ButtonBinding)) {
+                var binding = (ButtonBinding) property.GetValue(instance)!;
+                button = binding.Button;
+            } else if (property.PropertyType == typeof(VirtualButton)) {
+                button = (VirtualButton) property.GetValue(instance)!;
+            } else {
+                return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
             }
-            if (data.MouseButtons.IsNotEmpty()) {
-                nodes.RemoveAll(node => node is VirtualButton.MouseLeftButton or VirtualButton.MouseMiddleButton or VirtualButton.MouseRightButton);
+        } else {
+            return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+        }
+        
+        var nodes = button.Nodes;
+        var mouseButtons = button.Binding.Mouse;
+        var data = (ButtonBindingData) value!;
 
-                if (mouseButtons != null) {
-                    mouseButtons.Clear();
-                    mouseButtons.AddRange(data.MouseButtons);
-                } else {
-                    foreach (var button in data.MouseButtons) {
-                        switch (button)
-                        {
-                            case MInput.MouseData.MouseButtons.Left:
-                                nodes.AddRange(data.KeyboardKeys.Select(_ => new VirtualButton.MouseLeftButton()));
-                                break;
-                            case MInput.MouseData.MouseButtons.Right:
-                                nodes.AddRange(data.KeyboardKeys.Select(_ => new VirtualButton.MouseRightButton()));
-                                break;
-                            case MInput.MouseData.MouseButtons.Middle:
-                                nodes.AddRange(data.KeyboardKeys.Select(_ => new VirtualButton.MouseMiddleButton()));
-                                break;
-                            case MInput.MouseData.MouseButtons.XButton1 or MInput.MouseData.MouseButtons.XButton2:
-                                return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(type, memberIdx, "X1 and X2 are not supported before Everest adding mouse support"));
-                        }
+        if (data.KeyboardKeys.IsNotEmpty()) {
+            nodes.RemoveAll(node => node is VirtualButton.KeyboardKey);
+            nodes.AddRange(data.KeyboardKeys.Select(key => new VirtualButton.KeyboardKey(key)));
+        }
+        if (data.MouseButtons.IsNotEmpty()) {
+            nodes.RemoveAll(node => node is VirtualButton.MouseLeftButton or VirtualButton.MouseMiddleButton or VirtualButton.MouseRightButton);
+
+            if (mouseButtons != null) {
+                mouseButtons.Clear();
+                mouseButtons.AddRange(data.MouseButtons);
+            } else {
+                foreach (var mouseButton in data.MouseButtons) {
+                    switch (mouseButton)
+                    {
+                        case MInput.MouseData.MouseButtons.Left:
+                            nodes.AddRange(data.KeyboardKeys.Select(_ => new VirtualButton.MouseLeftButton()));
+                            break;
+                        case MInput.MouseData.MouseButtons.Right:
+                            nodes.AddRange(data.KeyboardKeys.Select(_ => new VirtualButton.MouseRightButton()));
+                            break;
+                        case MInput.MouseData.MouseButtons.Middle:
+                            nodes.AddRange(data.KeyboardKeys.Select(_ => new VirtualButton.MouseMiddleButton()));
+                            break;
+                        case MInput.MouseData.MouseButtons.XButton1 or MInput.MouseData.MouseButtons.XButton2:
+                            return Result<bool, TargetQuery.MemberAccessError>.Fail(new TargetQuery.MemberAccessError.Custom(type, memberIdx, "X1 and X2 are not supported before Everest adding mouse support"));
                     }
                 }
             }
-
-            return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
         }
 
-        return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
+        return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
     }
 
     public override Result<bool, TargetQuery.QueryError> ResolveValue(Type targetType, ref int argIdx, string[] valueArgs, out object? value) {
@@ -1489,7 +1507,7 @@ internal class SpecialValueQueryHandler : TargetQuery.Handler {
             return Result<bool, TargetQuery.QueryError>.Ok(true);
         }
 
-        if (targetType == typeof(ButtonBinding)) {
+        if (targetType == typeof(ButtonBinding) || targetType == typeof(VirtualButton)) {
             var data = new ButtonBindingData();
 
             // Parse all possible keys
@@ -1521,25 +1539,26 @@ internal class SpecialValueQueryHandler : TargetQuery.Handler {
     }
 
     public override IEnumerator<CommandAutoCompleteEntry> EnumerateTypeEntries(Type type) {
-        if (type == typeof(ButtonBinding)) {
+        if (type == typeof(ButtonBinding) || type == typeof(VirtualButton)) {
+            foreach (var key in Enum.GetValues<Keys>()) {
+                if (key is < Keys.A or > Keys.Z) {
+                    // Only ASCII alphabet is allowed
+                    continue;
+                }
+                
+                yield return new CommandAutoCompleteEntry {
+                    Name = key.ToString(),
+                    Extra = "Key",
+                    IsDone = true,
+                    StorageKey = $"{nameof(TargetQuery.Variant.Get)}_{typeof(Keys).FullName}",
+                };
+            }
             foreach (var button in Enum.GetValues<MButtons>()) {
                 yield return new CommandAutoCompleteEntry {
                     Name = button.ToString(),
                     Extra = "Mouse",
                     IsDone = true,
                     StorageKey = $"{nameof(TargetQuery.Variant.Get)}_{typeof(MButtons).FullName}",
-                };
-            }
-            foreach (var key in Enum.GetValues<Keys>()) {
-                if (key is Keys.Left or Keys.Right) {
-                    // These keys can't be used, since the mouse buttons already use that name
-                    continue;
-                }
-                yield return new CommandAutoCompleteEntry {
-                    Name = key.ToString(),
-                    Extra = "Key",
-                    IsDone = true,
-                    StorageKey = $"{nameof(TargetQuery.Variant.Get)}_{typeof(Keys).FullName}",
                 };
             }
         }
