@@ -60,7 +60,7 @@ public class Markdown : SkiaDrawable {
             IntPtr pixels = cacheBitmap.GetPixels();
 
             cacheSurface?.Dispose();
-            cacheSurface = SKSurface.Create(new SKImageInfo(cacheBitmap.Info.Width, cacheBitmap.Info.Height, colorType, SKAlphaType.Premul), pixels, cacheBitmap.Info.RowBytes);
+            cacheSurface = SKSurface.Create(new SKImageInfo(cacheBitmap.Info.Width, cacheBitmap.Info.Height, colorType, SKAlphaType.Premul), pixels, cacheBitmap.Info.RowBytes, new SKSurfaceProperties(SKPixelGeometry.RgbHorizontal));
 
             cacheSurface.Canvas.Clear(SKColor.Empty);
             Renderer.Reset(cacheSurface, width);

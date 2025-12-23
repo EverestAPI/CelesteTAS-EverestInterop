@@ -39,7 +39,6 @@ public class ChangelogDialog : Eto.Forms.Dialog {
     );
 
     private const int PaddingSize = 10;
-    private const int PagerHeight = 32;
 
     /// Require the user to spend at least 1s on each page, to discourage skipping through everything
     /// and have them at least look at the title and hopefully the body if it sounds interessting
@@ -56,17 +55,7 @@ public class ChangelogDialog : Eto.Forms.Dialog {
     private readonly DynamicLayout buttonsLayout;
     private readonly Scrollable scrollable;
 
-    // Honestly.. idk why those scalars are like that.. they kinda just work..
-    private int ContentWidth => Eto.Platform.Instance.IsGtk
-        ? Math.Max(0, Width - PaddingSize * 3)
-        : Eto.Platform.Instance.IsMac
-            ? Math.Max(0, Width - PaddingSize * 2)
-            : Math.Max(0, Width - PaddingSize * 4);
-    private int ContentHeight => Eto.Platform.Instance.IsGtk
-        ? Math.Max(0, Height - PagerHeight * 2 - PaddingSize * 5)
-        : Eto.Platform.Instance.IsMac
-            ? Math.Max(0, Height - PagerHeight * 2 - PaddingSize * 3)
-            : Math.Max(0, Height - PagerHeight * 2 - PaddingSize * 4);
+    private StackLayoutItem contentItem;
 
     private ChangelogDialog(VersionHistory versionHistory, List<Page> pages, Dictionary<string, List<string>> changes, Version oldVersion, Version newVersion, bool forceShow) {
         string title = $"# CelesteTAS v{newVersion.ToString(3)}";
@@ -86,6 +75,8 @@ public class ChangelogDialog : Eto.Forms.Dialog {
             }
         }
 
+        scrollable = new Scrollable { Border = BorderType.None };
+
         contentPages = new LazyValue<ContentPage>[pages.Count + 1];
         forceShowPages = forceShow && contentPages.Length <= 10; // Let's spare the user when having more than 10 pages
 
@@ -94,7 +85,7 @@ public class ChangelogDialog : Eto.Forms.Dialog {
             contentPages[i] = new LazyValue<ContentPage>(() => {
                 var page = pages[currIdx];
 
-                var markdown = new Markdown($"{title}\n{pages[currIdx].Text}", scrollable);
+                var markdown = new Markdown($"{title}\n{pages[currIdx].Text}", scrollable) { Padding = new(left: 0, top: 0, right: Studio.ScrollBarSize + PaddingSize, bottom: 0) };
 
                 if (Eto.Platform.Instance.IsGtk) {
                     int prevHeight = -1;
@@ -107,20 +98,21 @@ public class ChangelogDialog : Eto.Forms.Dialog {
                 }
 
                 if (page.Image is not { } image) {
-                    return (markdown, markdown, null);
+                    return (scrollable, markdown, null);
                 }
 
                 string srcPath = Path.Combine(Studio.InstallDirectory, image.Source);
                 if (!File.Exists(srcPath)) {
-                    return (markdown, markdown, null);
+                    return (scrollable, markdown, null);
                 }
 
                 using var fs = File.OpenRead(srcPath);
                 var view = new ImageView { Image = new Bitmap(fs), Width = image.Width, Height = image.Height };
+                Console.WriteLine(image.Source);
 
                 return (pages[currIdx].Image!.Value.Align switch {
-                    Alignment.Left => new StackLayout { Orientation = Orientation.Horizontal, VerticalContentAlignment = VerticalAlignment.Center, Spacing = PaddingSize, Items = { view, markdown } },
-                    Alignment.Right => new StackLayout { Orientation = Orientation.Horizontal, VerticalContentAlignment = VerticalAlignment.Center, Spacing = PaddingSize, Items = { markdown, view } },
+                    Alignment.Left => new StackLayout { Orientation = Orientation.Horizontal, VerticalContentAlignment = VerticalAlignment.Center, Spacing = PaddingSize, Items = { view, scrollable } },
+                    Alignment.Right => new StackLayout { Orientation = Orientation.Horizontal, VerticalContentAlignment = VerticalAlignment.Center, Spacing = PaddingSize, Items = { scrollable, view } },
                     _ => throw new ArgumentOutOfRangeException()
                 }, markdown, view);
             });
@@ -140,7 +132,7 @@ public class ChangelogDialog : Eto.Forms.Dialog {
                 }
             }
 
-            var markdown = new Markdown(builder.ToString(), scrollable);
+            var markdown = new Markdown(builder.ToString(), scrollable) { Padding = new(left: 0, top: 0, right: Studio.ScrollBarSize + PaddingSize, bottom: 0) };
 
             if (Eto.Platform.Instance.IsGtk) {
                 int prevHeight = -1;
@@ -151,13 +143,13 @@ public class ChangelogDialog : Eto.Forms.Dialog {
                     }
                 };
             }
-            return (markdown, markdown, null);
+            return (scrollable, markdown, null);
         });
 
         Resizable = true;
         Closeable = !forceShowPages;
         MinimumSize = new Size(400, 300);
-        Size = new Size(800, 600);
+        Size = new Size(900, 550);
         Title = "What's new?";
 
         nextButton = new Button { Text = "Next" };
@@ -166,7 +158,7 @@ public class ChangelogDialog : Eto.Forms.Dialog {
         prevButton = new Button { Text = "Previous" };
         prevButton.Click += (_, _) => SwitchToPage(currentPage - 1);
 
-        buttonsLayout = new DynamicLayout { Height = PagerHeight };
+        buttonsLayout = new DynamicLayout();
         buttonsLayout.BeginHorizontal();
         buttonsLayout.Add(prevButton);
         buttonsLayout.AddSpace();
@@ -181,12 +173,9 @@ public class ChangelogDialog : Eto.Forms.Dialog {
             Padding = PaddingSize,
             Spacing = PaddingSize,
             Items = {
-                new StackLayoutItem {
-                    Control = (scrollable = new Scrollable {
-                        Border = BorderType.None
-                    }),
+                (contentItem = new StackLayoutItem {
                     HorizontalAlignment = HorizontalAlignment.Center
-                },
+                }),
                 buttonsLayout,
             }
         };
@@ -252,7 +241,19 @@ public class ChangelogDialog : Eto.Forms.Dialog {
 
         bool firstLoad = scrollable.Content == null;
         scrollable.Content = null;
-        scrollable.Content = contentPages[page].Value.Control;
+        contentItem.Control = null;
+
+        contentPages[page].Reset(); // Force regeneration, since otherwise the Markdown is apparently just empty?
+        var (control, content, _) = contentPages[page].Value;
+        scrollable.Content = content;
+
+        var stackLayout = (StackLayout)Content;
+        stackLayout.Items.Clear();
+        stackLayout.Items.Add(contentItem = new StackLayoutItem {
+            Control = control,
+            HorizontalAlignment = HorizontalAlignment.Center
+        });
+        stackLayout.Items.Add(buttonsLayout);
 
         // Applying the proper size for the first page is already handled in the constructor
         if (!firstLoad) {
@@ -261,26 +262,25 @@ public class ChangelogDialog : Eto.Forms.Dialog {
         }
     }
     void ApplySize(object? _1, EventArgs _2) {
-        int width = ContentWidth, height = ContentHeight;
-
         var (_, content, image) = contentPages[currentPage].Value;
 
         // Gotta love the scrollable experience
         if (Eto.Platform.Instance.IsWpf) {
             scrollable.ScrollSize = new Size(
-                Math.Max(0, width - (image?.Width ?? 0) - 20),
-                Math.Max(height, content.RequiredHeight)
+                Math.Max(0, ClientSize.Width - Studio.ScrollBarSize - (image?.Width ?? PaddingSize) - PaddingSize*3),
+                Math.Max(ClientSize.Height - buttonsLayout.Height - PaddingSize*3, content.RequiredHeight)
             );
         } else {
             content.UpdateLayout();
-            content.Width = Math.Max(0, width - (image?.Width ?? 0) - 20);
+            content.Width = Math.Max(0, ClientSize.Width - Studio.ScrollBarSize - (image?.Width ?? PaddingSize) - PaddingSize*3);
             if (content.RequiredHeight != 0) {
-                content.Height = Math.Max(height, content.RequiredHeight);
+                content.Height = Math.Max(ClientSize.Height - buttonsLayout.Height - PaddingSize*3, content.RequiredHeight);
             }
         }
 
-        scrollable.Height = height;
-        buttonsLayout.Width = width;
+        scrollable.Width = Math.Max(0, ClientSize.Width - (image?.Width ?? PaddingSize) - PaddingSize*3);
+        scrollable.Height = contentItem.Control.Height = Math.Max(0, ClientSize.Height - buttonsLayout.Height - PaddingSize*3);
+        buttonsLayout.Width = Math.Max(0, ClientSize.Width - PaddingSize*2);
     }
 
     private class VersionConverter : JsonConverter<Version> {
