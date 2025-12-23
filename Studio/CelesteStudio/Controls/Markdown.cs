@@ -26,6 +26,10 @@ public class Markdown : SkiaDrawable {
     private readonly SkiaRenderer Renderer;
     private readonly Scrollable? Scrollable;
 
+    // Render everything onto a big image once and then sample from that
+    private SKBitmap? cacheBitmap;
+    private SKSurface? cacheSurface;
+
     public override int DrawX => Scrollable?.ScrollPosition.X ?? 0;
     public override int DrawY => Scrollable?.ScrollPosition.Y ?? 0;
     public override int DrawWidth => (Scrollable?.Width ?? Width) - Padding.Horizontal;
@@ -47,8 +51,24 @@ public class Markdown : SkiaDrawable {
     }
 
     public override void Draw(SKSurface surface) {
-        Renderer.Reset(surface, Width - Padding.Horizontal);
-        Renderer.Render(Document);
+        int width = Width - Padding.Horizontal, height = Height - Padding.Vertical;
+        if (cacheSurface == null || width != cacheBitmap?.Width || height != cacheBitmap?.Height) {
+            var colorType = SKImageInfo.PlatformColorType;
+
+            cacheBitmap?.Dispose();
+            cacheBitmap = new SKBitmap(width, height, colorType, SKAlphaType.Premul);
+            IntPtr pixels = cacheBitmap.GetPixels();
+
+            cacheSurface?.Dispose();
+            cacheSurface = SKSurface.Create(new SKImageInfo(cacheBitmap.Info.Width, cacheBitmap.Info.Height, colorType, SKAlphaType.Premul), pixels, cacheBitmap.Info.RowBytes);
+
+            cacheSurface.Canvas.Clear(SKColor.Empty);
+            Renderer.Reset(cacheSurface, width);
+            Renderer.Render(Document);
+            cacheSurface.Canvas.Flush();
+        }
+
+        surface.Canvas.DrawBitmap(cacheBitmap, 0.0f, 0.0f);
 
         RequiredHeight = (int) Renderer.Height;
         MinimumSize = new Size(0, (int) Renderer.Height);
@@ -170,7 +190,7 @@ public class Markdown : SkiaDrawable {
                 : SystemColors.ControlText;
 
             styleStack.Clear();
-            styleStack.Push(new StyleConfig(new SKFont(SKTypeface.Default, Settings.Instance.EditorFontSize * FontManager.DPI), textColor.ToSkiaPacked(), SKTextAlign.Left, FontStyle.None, FontDecoration.None));
+            styleStack.Push(new StyleConfig(new SKFont(SKTypeface.Default, 10.0f * FontManager.DPI), textColor.ToSkiaPacked(), SKTextAlign.Left, FontStyle.None, FontDecoration.None));
         }
 
         public override object Render(MarkdownObject markdownObject) {
