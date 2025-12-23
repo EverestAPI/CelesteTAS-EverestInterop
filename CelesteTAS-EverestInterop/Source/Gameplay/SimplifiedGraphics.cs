@@ -52,11 +52,14 @@ internal static class SimplifiedGraphics {
 
     [Initialize]
     private static void Initialize() {
+        #region Vanilla
+
         // Hide Badeline laser since it covers the hitbox
         typeof(FinalBossBeam)
             .GetMethodInfo(nameof(FinalBossBeam.Render))!
             .SkipMethod(() => false);
 
+        #endregion
         #region Spinner Color
 
         static bool OverwriteCrystalHue() => Enabled() && TasSettings.SimplifiedSpinnerColor == SpinnerColor.White;
@@ -156,6 +159,12 @@ internal static class SimplifiedGraphics {
             ?.OverrideReturn(() => Enabled() && TasSettings.SimplifiedBloomBase.HasValue, () => TasSettings.SimplifiedBloomBase!.Value / 10.0f);
         ModUtils.GetMethod("ExtendedVariantMode", "ExtendedVariants.Variants.RoomBloom", "modBloomStrength")
             ?.OverrideReturn(() => Enabled() && TasSettings.SimplifiedBloomStrength.HasValue, () => TasSettings.SimplifiedBloomStrength!.Value / 10.0f);
+
+        #endregion
+        #region Kosei Helper
+
+        ModUtils.GetMethod("KoseiHelper", "Celeste.Mod.KoseiHelper.Entities.DebugRenderer", nameof(Entity.Render))?.SkipMethod(Enabled);
+        ModUtils.GetMethod("KoseiHelper", "Celeste.Mod.KoseiHelper.Entities.DebugRenderer", nameof(Entity.DebugRender))?.SkipMethod(Enabled);
 
         #endregion
     }
