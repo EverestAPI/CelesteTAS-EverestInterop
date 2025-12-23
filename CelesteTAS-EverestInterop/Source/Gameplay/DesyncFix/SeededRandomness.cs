@@ -86,6 +86,9 @@ internal static class SeededRandomness {
         if (ModUtils.IsInstalled("AurorasHelper")) {
             handlers.Add(new AurorasHelperHandler());
         }
+        if (ModUtils.IsInstalled("BossesHelper")) {
+            handlers.Add(new BossesHelperHandler());
+        }
         if (ModUtils.IsInstalled("PandorasBox")) {
             handlers.Add(new PandorasBoxTileGlitcherHandler());
         }
@@ -546,6 +549,25 @@ internal static class SeededRandomness {
                 // Seed values are limited to positive integers https://github.com/AuroraKy/AuroraHelper/blob/4a5344bf2ae10d22471a8d402b5e2b466d062313/AurorasHelperModule.cs#L92-L93
                 f_currentSeed.SetValue(null, seed & 0x7FFFFFFF);
                 f_random.SetValue(ahModule, new Random(seed & 0x7FFFFFFF));
+                AssertNoSeedsRemaining();
+            }
+        }
+    }
+
+    /// Alias for the 'set_boss_seed' console command
+    public class BossesHelperHandler : Handler {
+        public override string Name => "BossesHelper_Shared";
+
+        private readonly FieldInfo? f_TASSeed = ModUtils.GetField("BossesHelper", "Celeste.Mod.BossesHelper.BossesHelperModule", "TASSeed");
+
+        public override void Reset() {
+            if (ModUtils.GetModule("BossesHelper") is { } bossModule && f_TASSeed != null) {
+                f_TASSeed.SetValue(bossModule, 0);
+            }
+        }
+        public override void PreUpdate() {
+            if (ModUtils.GetModule("BossesHelper") is { } bossModule && f_TASSeed != null && NextSeed(out int seed)) {
+                f_TASSeed.SetValue(bossModule, seed);
                 AssertNoSeedsRemaining();
             }
         }
