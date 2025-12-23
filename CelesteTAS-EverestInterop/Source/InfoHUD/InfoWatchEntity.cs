@@ -416,7 +416,7 @@ public static class InfoWatchEntity {
         }
 
         List<Entity> possibleEntities = [];
-        if (possibleTypes.All(type => level.Tracker.Entities.ContainsKey(type))) {
+        if (possibleTypes.All(type => Tracker.TrackedEntityTypes.TryGetValue(type, out var targetTypes) && targetTypes.Contains(type))) {
             foreach (var type in possibleTypes) {
                 possibleEntities.AddRange(level.Tracker.Entities[type]);
             }
