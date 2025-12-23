@@ -39,7 +39,7 @@ public static class TargetQuery {
         public virtual object[] ResolveInstances(Type type) => [];
 
         /// Can process the query arguments into special members, to allow for custom syntax
-        public virtual IEnumerable<string> ProcessQueryArguments(IEnumerable<string> queryArgs) => queryArgs;
+        public virtual IEnumerable<string> ProcessQueryArguments(IEnumerable<string> queryArgs, bool isAutoComplete) => queryArgs;
         /// Should format the query arguments back into their original custom syntax form
         public virtual IEnumerable<string> FormatQueryArguments(IEnumerable<string> queryArgs) => queryArgs;
 
@@ -514,7 +514,7 @@ public static class TargetQuery {
 
     internal static IEnumerator<CommandAutoCompleteEntry> ResolveAutoCompleteEntries(string[] queryArgs, Variant variant, Type[]? targetTypeFilter = null) {
         // Process query arguments
-        queryArgs = Handlers.Aggregate((IEnumerable<string>) queryArgs, (current, handler) => handler.ProcessQueryArguments(current)).ToArray();
+        queryArgs = Handlers.Aggregate((IEnumerable<string>) queryArgs, (current, handler) => handler.ProcessQueryArguments(current, isAutoComplete: true)).ToArray();
         // Drop last argument for prefix
         string queryPrefix = queryArgs.Length <= 1 ? string.Empty : string.Join('.', Handlers.Aggregate((IEnumerable<string>) queryArgs[..^1], (current, handler) => handler.FormatQueryArguments(current)));
         string memberQueryPrefix = queryArgs.Length <= 1 ? queryPrefix : $"{queryPrefix}.";
@@ -844,7 +844,7 @@ public static class TargetQuery {
         }
 
         return Handlers
-            .Aggregate((IEnumerable<string>) args[index].Split('.'), (current, handler) => handler.ProcessQueryArguments(current))
+            .Aggregate((IEnumerable<string>) args[index].Split('.'), (current, handler) => handler.ProcessQueryArguments(current, isAutoComplete: true))
             // Only skip last part if we're currently editing that
             .SkipLast(args.Length == index + 1 ? 1 : 0);
     }
@@ -859,7 +859,7 @@ public static class TargetQuery {
         }
 
         if (processArgs) {
-            queryArgs = Handlers.Aggregate((IEnumerable<string>) queryArgs, (current, handler) => handler.ProcessQueryArguments(current)).ToArray();
+            queryArgs = Handlers.Aggregate((IEnumerable<string>) queryArgs, (current, handler) => handler.ProcessQueryArguments(current, isAutoComplete: false)).ToArray();
         }
 
         if (queryArgs.Any(arg => arg == InvalidQueryArgument)) {

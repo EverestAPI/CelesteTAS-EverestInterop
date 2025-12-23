@@ -484,7 +484,7 @@ internal class EntityQueryHandler : TargetQuery.Handler {
         return (CanEnumerate: false, ShouldOverride: false);
     }
 
-    public override IEnumerable<string> ProcessQueryArguments(IEnumerable<string> queryArgs) {
+    public override IEnumerable<string> ProcessQueryArguments(IEnumerable<string> queryArgs, bool isAutoComplete) {
         using var enumerator = queryArgs.GetEnumerator();
         while (enumerator.MoveNext()) {
             string arg = enumerator.Current;
@@ -505,7 +505,7 @@ internal class EntityQueryHandler : TargetQuery.Handler {
                     yield return TargetQuery.InvalidQueryArgument;
                     yield break;
                 }
-            } else if (IncompleteEntityIDRegex.Match(arg) is { Success: true} entityIncompleteMatch) {
+            } else if (isAutoComplete && IncompleteEntityIDRegex.Match(arg) is { Success: true } entityIncompleteMatch) {
                 yield return entityIncompleteMatch.Groups[1].Value;
                 yield return IncompleteEntityIDKey;
                 yield return entityIncompleteMatch.Groups[2].Value;
@@ -514,7 +514,7 @@ internal class EntityQueryHandler : TargetQuery.Handler {
                     // Only exists for auto-complete, so disallow arguments following this
                     yield return TargetQuery.InvalidQueryArgument;
                 }
-            } else if (ComponentRegex.Match(arg) is { Success: true} componentMatch) {
+            } else if (ComponentRegex.Match(arg) is { Success: true } componentMatch) {
                 yield return componentMatch.Groups[1].Value;
                 yield return ComponentKey;
                 yield return componentMatch.Groups[2].Value;
@@ -1087,7 +1087,7 @@ internal class CollectionQueryHandler : TargetQuery.Handler {
     private const string SpreadKey = "___SpreadCollection___";
     private const string IndexKey = "___Index___";
 
-    public override IEnumerable<string> ProcessQueryArguments(IEnumerable<string> queryArgs) {
+    public override IEnumerable<string> ProcessQueryArguments(IEnumerable<string> queryArgs, bool isAutoComplete) {
         foreach (string arg in queryArgs) {
             if (arg.EndsWith('*')) {
                 string newArg = arg[..^1];
@@ -1162,6 +1162,7 @@ internal class CollectionQueryHandler : TargetQuery.Handler {
             keyType = type.GenericTypeArguments[0];
         }
 
+        // TODO: This supports resolving target-queries, but the query-arg parsing logic does not..
         var keyResult = TargetQuery.ResolveValue([memberArgs[memberIdx][IndexKey.Length..]], [keyType]);
         if (keyResult.CheckFailure(out var error)) {
             value = null;
@@ -1432,7 +1433,7 @@ internal class SpecialValueQueryHandler : TargetQuery.Handler {
         } else {
             return Result<bool, TargetQuery.MemberAccessError>.Ok(false);
         }
-        
+
         var nodes = button.Nodes;
         var mouseButtons = button.Binding.Mouse;
         var data = (ButtonBindingData) value!;
@@ -1545,7 +1546,7 @@ internal class SpecialValueQueryHandler : TargetQuery.Handler {
                     // Only ASCII alphabet is allowed
                     continue;
                 }
-                
+
                 yield return new CommandAutoCompleteEntry {
                     Name = key.ToString(),
                     Extra = "Key",
