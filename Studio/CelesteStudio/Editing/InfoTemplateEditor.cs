@@ -21,10 +21,10 @@ public class InfoTemplateEditor : TextEditor {
         // Attempt to auto-close special syntax pairs
         if (e.Text == "{") {
             string line = Document.Lines[Document.Caret.Row];
-            int nextOpen  = line.IndexOf('{', startIndex: Document.Caret.Col);
-            int nextClose = line.IndexOf('}', startIndex: Document.Caret.Col);
+            int nextOpenCurly  = line.IndexOf('{', startIndex: Document.Caret.Col);
+            int nextCloseCurly = line.IndexOf('}', startIndex: Document.Caret.Col);
 
-            if (nextClose == -1 || nextClose > nextOpen) {
+            if (nextCloseCurly == -1 || nextCloseCurly > nextOpenCurly) {
                 using var __ = Document.Update();
 
                 if (!Document.Selection.Empty) {
@@ -42,11 +42,38 @@ public class InfoTemplateEditor : TextEditor {
             }
         } else if (e.Text == "[") {
             string line = Document.Lines[Document.Caret.Row];
-            int nextOpen  = line.IndexOf("[[", startIndex: Document.Caret.Col, StringComparison.Ordinal);
-            int nextClose = line.IndexOf("]]", startIndex: Document.Caret.Col, StringComparison.Ordinal);
+            int nextOpenCurly         = line.IndexOf('{', startIndex: Document.Caret.Col);
+            int nextCloseCurly        = line.IndexOf('}', startIndex: Document.Caret.Col);
+            int nextOpenDoubleSquare  = line.IndexOf("[[", startIndex: Document.Caret.Col, StringComparison.Ordinal);
+            int nextCloseDoubleSquare = line.IndexOf("]]", startIndex: Document.Caret.Col, StringComparison.Ordinal);
             bool nextToExisting = Document.Caret.Col > 0 && line[Document.Caret.Col - 1] == '[' || Document.Caret.Col + 1 < line.Length && line[Document.Caret.Col + 1] == '[';
 
-            if ((nextClose == -1 || nextClose > nextOpen) && !nextToExisting) {
+            if (nextCloseCurly != -1 && (nextOpenCurly == -1 || nextOpenCurly > nextCloseCurly)) {
+                // We're inside a query-block, so use single square brackets
+                int nextOpenSquare  = line.IndexOf('[', startIndex: Document.Caret.Col);
+                int nextCloseSquare = line.IndexOf(']', startIndex: Document.Caret.Col);
+
+                if (nextCloseSquare == -1 || nextCloseSquare > nextOpenSquare) {
+                    using var __ = Document.Update();
+
+                    if (!Document.Selection.Empty) {
+                        RemoveRange(Document.Selection.Min, Document.Selection.Max);
+                        Document.Caret = Document.Selection.Min;
+                        Document.Selection.Clear();
+                    }
+
+                    Document.Insert("[]");
+                    DesiredVisualCol = Document.Caret.Col -= 1;
+
+                    Recalc();
+                    autoCompleteMenu?.Refresh();
+                } else {
+                    base.OnTextInput(e);
+                }
+                return;
+            }
+
+            if ((nextCloseDoubleSquare == -1 || nextCloseDoubleSquare > nextOpenDoubleSquare) && !nextToExisting) {
                 using var __ = Document.Update();
 
                 if (!Document.Selection.Empty) {
