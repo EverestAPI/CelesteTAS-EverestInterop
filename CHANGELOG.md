@@ -1,3 +1,96 @@
+# CelesteTAS v3.47.0, Studio v3.10.0
+
+## Improved Auto-Completion
+<!-- IMAGE right 300 204 Assets/v3.47.0/ImprovedAutoComplete.png -->
+
+Auto-complete has been has been a big feature of the initial Studio v3 release,
+however now with over a year of user feedback, there have been some improvements:
+
+### Importancy Ranking
+
+All entries are now ranked, such that the most relevant ones are more likely to be at the top.
+This is achived by placed them into 4 different categories, which are listed in the following order:
+1. **Favourites:** These are manually chosen by clicking on the heart icon and always appead on top
+2. **Frequently Used:** These are your top-5 most used entries (note that an entry is only counted when it is actually selected)
+3. **Suggestions:** These are suggestions from the game, based on what could be useful in the current situation
+4. **Uncategorized:** This is everything remaining, which doesn't fall into another category
+
+### Reduced Clutter
+
+Entries which have seen basically no usage have been removed to reduce visual clutter.
+Additionally, the popup window now attempts to take up less space.
+
+### Feedback
+
+Please continue to share feedback about the auto-complete feature - but of course everything else too! - so that they can further be improved.
+
+---
+
+## Custom-Info Editor
+<!-- IMAGE right 350 282 Assets/v3.47.0/ImprovedCustomInfoEditor.png -->
+
+The Custom-Info editor has now been upgraded from a simple textbox into a full proper editor!
+
+That includes **auto-completion**, **syntax-highlighting** and a **live preview**.
+With this, it should now be considerably easier to quickly create a Custom-Info template for something specific.
+
+Additionally, the Game Info displayed in Studio is now a proper textfield, meaing you can **select and copy** anything from it with ease.
+
+---
+
+## New Commands
+
+### `RequireDependency`
+
+This command declares dependencies required for the TAS to run, which can easily be installed with a respective dialog box.
+**Examples:**
+- `RequireDependency, StrawberryJam2021` for any version
+- `RequireDependency, StrawberryJam2021, 1.10.0` for specifically v1.10.0 or higher
+
+### `ActivatedLobbyWarps`
+
+This command tracks which warp points have been activated during the TAS' execution,
+which can be useful for lobby routing or sync-checking.
+**Example:** `ActivatedLobbyWarps: [4, 7]`
+
+---
+
+- Feature: Add accurate hitbox rendering for CommunalHelper Melvins
+- Feature: Allow other mods to open a 3rd-party text window in Studio
+- Feature: Add `RequireDepenency` command
+- Feature: Add `ActivatedLobbyWarps` command
+- Feature: Display popup when generated TAS file contains errors
+- Feature: Add Favourite/Suggestion/Frequently Used entries to auto-complete menus
+- Feature: Rework Custom-Info Editor into own popup
+- Feature: Allow for selection of text from the Game Info box
+- Featuer: Add auto-complete support for Entity IDs
+- Feature: Add auto-complte support for StateMachine states of Player/Seeker/Oshiro
+- Feature: Allow setting VirtualButton fields/properties directly
+- Feature: Add BossesHelper support to `SeedRandom` command
+- Tweak: Hide JungleHelper fireflies with Simplified Graphics
+- Tweak: Hide light beams with Simplified Graphics
+- Tweak: Hide KoseiHelper Debug Renderer with Simplified Graphics
+- Tweak: Enable appended Actual Collide Hitboxes by default
+- Tweak: Clear discovered lobby map when 'console load'ing
+- Tweak: Always allow for tab-completion in the auto-complete menu
+- Fix: Inaccuracies in RTA timer
+- Fix: Deadlock when stepping back into freeze frames
+- Fix: Inactive timers showing up in Info HUD when TimeRate is zero
+- Fix: Properly save altered Crouch Dash and Grab modes in savestates
+- Fix: Desync caused by inconsistant timings for exiting options menu
+- Fix: Folder path with spaces not being correctly opened Finder on macOS
+- Fix: `Integrate Read Commands` incorrectly skipping some lines at the start/end
+- Fix: Light/Dark title bar not being properly applied on Windows
+- Fix: Properly style bottom-right corner tile of scrollbars on Windows (R.I.P. ugly white square)
+- Fix: Undo-state getting corruped by fix-up actions
+- Fix: Don't register mouse inputs while window isn't focused
+- Fix: Crash if entity has a `null` scene
+- Fix: Use quotes if generated `console` command uses spaces
+- Fix: Avoid starting TAS when manually starting recording with TAS Recorder
+- Fix: Certain entities not being watchable in the Info HUD
+- Remove: Unused clutter in parameter auto-complete for `Set`/`Invoke` commands
+
+
 # CelesteTAS v3.46.2, Studio v3.9.7
 
 ## Repository Cloning
