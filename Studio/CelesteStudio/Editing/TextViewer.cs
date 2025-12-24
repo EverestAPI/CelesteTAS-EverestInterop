@@ -387,7 +387,7 @@ public class TextViewer : SkiaDrawable {
 
         // Only when the alignment is to the left, the folding indicator can fit into the existing space
         float foldingWidth = !hasFoldings ? 0.0f : Settings.Instance.LineNumberAlignment switch {
-             LineNumberAlignment.Left => Font.CharWidth() * (foldings[^1].MinRow.Digits() + 1) + foldButtonPadding,
+             LineNumberAlignment.Left => Font.CharWidth() * ((foldings[^1].MinRow + 1).Digits() + 1) + foldButtonPadding,
              LineNumberAlignment.Right => Font.CharWidth() * (visibleDigits + 1) + foldButtonPadding,
              _ => throw new UnreachableException(),
         };
