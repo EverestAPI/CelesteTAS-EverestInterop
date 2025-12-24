@@ -547,8 +547,13 @@ internal static class SeededRandomness {
         public override void PreUpdate() {
             if (ModUtils.GetModule("AurorasHelper") is { } ahModule && f_currentSeed != null && f_random != null && NextSeed(out int seed)) {
                 // Seed values are limited to positive integers https://github.com/AuroraKy/AuroraHelper/blob/4a5344bf2ae10d22471a8d402b5e2b466d062313/AurorasHelperModule.cs#L92-L93
-                f_currentSeed.SetValue(null, seed & 0x7FFFFFFF);
-                f_random.SetValue(ahModule, new Random(seed & 0x7FFFFFFF));
+                int actualSeed = seed & 0x7FFFFFFF;
+                if (seed != actualSeed) {
+                    Manager.Controller.ReportWarning(SeedSource, $"Target '{Name}' was provided a negative seed '{seed}', consider using '{actualSeed}' instead");
+                }
+
+                f_currentSeed.SetValue(null, actualSeed);
+                f_random.SetValue(ahModule, new Random(actualSeed));
                 AssertNoSeedsRemaining();
             }
         }
@@ -567,6 +572,11 @@ internal static class SeededRandomness {
         }
         public override void PreUpdate() {
             if (ModUtils.GetModule("BossesHelper") is { } bossModule && f_TASSeed != null && NextSeed(out int seed)) {
+                if (seed < 0) {
+                    Manager.Controller.ReportError(SeedSource, $"Target '{Name}' was provided a negative seed '{seed}', which it doesn't support");
+                    return;
+                }
+
                 f_TASSeed.SetValue(bossModule, seed);
                 AssertNoSeedsRemaining();
             }

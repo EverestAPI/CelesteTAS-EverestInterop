@@ -108,7 +108,6 @@ public class ChangelogDialog : Eto.Forms.Dialog {
 
                 using var fs = File.OpenRead(srcPath);
                 var view = new ImageView { Image = new Bitmap(fs), Width = image.Width, Height = image.Height };
-                Console.WriteLine(image.Source);
 
                 return (pages[currIdx].Image!.Value.Align switch {
                     Alignment.Left => new StackLayout { Orientation = Orientation.Horizontal, VerticalContentAlignment = VerticalAlignment.Center, Spacing = PaddingSize, Items = { view, scrollable } },
