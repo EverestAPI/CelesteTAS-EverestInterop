@@ -24,6 +24,11 @@ public class SkiaDrawable : Panel {
     public virtual int DrawWidth => Width - Padding.Horizontal;
     public virtual int DrawHeight => Height - Padding.Vertical;
 
+    /// Allow rendering of big image once, to improve performance with mostly static content
+    public virtual bool PreRenderImage => false;
+    public virtual int ImageWidth => DrawWidth;
+    public virtual int ImageHeight => DrawHeight;
+
     /// Whether the control can currently be drawn
     public virtual bool CanDraw => true;
 
@@ -40,3 +45,4 @@ public class SkiaDrawable : Panel {
         bool CanFocus { get; set; }
     }
 }
+

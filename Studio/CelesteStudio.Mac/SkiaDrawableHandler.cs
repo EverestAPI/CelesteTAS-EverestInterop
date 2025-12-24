@@ -32,9 +32,10 @@ public class SkiaDrawableHandler : MacPanel<SkiaDrawableHandler.SkiaDrawableView
             base.DrawRect(dirtyRect);
 
             double scale = Window.BackingScaleFactor;
-            var bounds = new CGRect(drawable.DrawX * scale, drawable.DrawY * scale, drawable.DrawWidth * scale, drawable.DrawHeight * scale);
+            var bounds = new CGRect(drawable.DrawX * scale, drawable.DrawY * scale, drawable.ImageWidth * scale, drawable.ImageHeight * scale);
             var info = new SKImageInfo((int)bounds.Width, (int)bounds.Height, SKColorType.Rgba8888, SKAlphaType.Premul);
 
+            bool preRender = drawable.PreRenderImage;
             if (drawable.CanDraw) {
                 // Allocate a memory for the drawing process
                 nuint infoLength = (nuint)info.BytesSize;
@@ -60,16 +61,27 @@ public class SkiaDrawableHandler : MacPanel<SkiaDrawableHandler.SkiaDrawableView
                         surface = SKSurface.Create(info, bitmapData.MutableBytes, info.RowBytes);
                         surface.Canvas.Scale((float)scale);
                         surface.Canvas.Save();
+
+                        if (preRender) {
+                            var canvas = surface.Canvas;
+                            using (new SKAutoCanvasRestore(canvas, true)) {
+                                canvas.Clear(drawable.BackgroundColor.ToSkia());
+                                drawable.Draw(surface);
+                            }
+                            canvas.Flush();
+                        }
                     }
                 }
 
-                var canvas = surface.Canvas;
-                using (new SKAutoCanvasRestore(canvas, true)) {
-                    canvas.Clear(drawable.BackgroundColor.ToSkia());
-                    canvas.Translate(-drawable.DrawX, -drawable.DrawY);
-                    drawable.Draw(surface);
+                if (!preRender) {
+                    var canvas = surface.Canvas;
+                    using (new SKAutoCanvasRestore(canvas, true)) {
+                        canvas.Clear(drawable.BackgroundColor.ToSkia());
+                        canvas.Translate(-drawable.DrawX, -drawable.DrawY);
+                        drawable.Draw(surface);
+                    }
+                    canvas.Flush();
                 }
-                canvas.Flush();
             } else {
                 drawable.Invalidate();
             }
@@ -82,13 +94,23 @@ public class SkiaDrawableHandler : MacPanel<SkiaDrawableHandler.SkiaDrawableView
                     dataProvider, null, false, CGColorRenderingIntent.Default);
 
                 var ctx = NSGraphicsContext.CurrentContext.GraphicsPort;
+
                 // NOTE: macOS uses a different coordinate-system
-                ctx.DrawImage(new CGRect(
-                    drawable.DrawX + drawable.Padding.Left,
-                    Bounds.Height - (drawable.DrawHeight + drawable.DrawY + drawable.Padding.Top),
-                    drawable.DrawWidth,
-                    drawable.DrawHeight
-                ), image);
+                if (preRender) {
+                    ctx.DrawImage(new CGRect(
+                        drawable.Padding.Left,
+                        Bounds.Height - (drawable.ImageHeight + drawable.Padding.Top),
+                        drawable.ImageWidth,
+                        drawable.ImageHeight
+                    ), image);
+                } else {
+                    ctx.DrawImage(new CGRect(
+                        drawable.DrawX + drawable.Padding.Left,
+                        Bounds.Height - (drawable.DrawHeight + drawable.DrawY + drawable.Padding.Top),
+                        drawable.DrawWidth,
+                        drawable.DrawHeight
+                    ), image);
+                }
             }
         }
 

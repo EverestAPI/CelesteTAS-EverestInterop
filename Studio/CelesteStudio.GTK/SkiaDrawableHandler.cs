@@ -56,8 +56,9 @@ public class SkiaDrawableHandler : GtkPanel<Gtk.EventBox, SkiaDrawable, Control.
             }
 
             var drawable = Handler.Widget;
+            bool preRender = drawable.PreRenderImage;
             if (drawable.CanDraw) {
-                int width = drawable.DrawWidth, height = drawable.DrawHeight;
+                int width = drawable.ImageWidth, height = drawable.ImageHeight;
                 if (surface == null || imageSurface == null || width != bitmap?.Width || height != bitmap?.Height) {
                     var colorType = SKImageInfo.PlatformColorType;
 
@@ -71,20 +72,34 @@ public class SkiaDrawableHandler : GtkPanel<Gtk.EventBox, SkiaDrawable, Control.
 
                     imageSurface?.Dispose();
                     imageSurface = new ImageSurface(pixels, Format.Argb32, bitmap.Width, bitmap.Height, bitmap.Width * 4);
+
+                    if (preRender) {
+                        var canvas = surface.Canvas;
+                        using (new SKAutoCanvasRestore(canvas, true)) {
+                            canvas.Clear(drawable.BackgroundColor.ToSkia());
+                            drawable.Draw(surface);
+                        }
+                    }
                 }
 
-                var canvas = surface.Canvas;
-                using (new SKAutoCanvasRestore(canvas, true)) {
-                    canvas.Clear(drawable.BackgroundColor.ToSkia());
-                    canvas.Translate(-drawable.DrawX, -drawable.DrawY);
-                    drawable.Draw(surface);
+                if (!preRender) {
+                    var canvas = surface.Canvas;
+                    using (new SKAutoCanvasRestore(canvas, true)) {
+                        canvas.Clear(drawable.BackgroundColor.ToSkia());
+                        canvas.Translate(-drawable.DrawX, -drawable.DrawY);
+                        drawable.Draw(surface);
+                    }
                 }
             } else {
                 drawable.Invalidate();
             }
 
             if (imageSurface != null) {
-                args.Cr.SetSourceSurface(imageSurface, drawable.DrawX + drawable.Padding.Left, drawable.DrawY + drawable.Padding.Top);
+                if (preRender) {
+                    args.Cr.SetSourceSurface(imageSurface, drawable.Padding.Left, drawable.Padding.Top);
+                } else {
+                    args.Cr.SetSourceSurface(imageSurface, drawable.DrawX + drawable.Padding.Left, drawable.DrawY + drawable.Padding.Top);
+                }
                 args.Cr.Paint();
             }
         }

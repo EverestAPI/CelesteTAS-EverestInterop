@@ -26,14 +26,14 @@ public class Markdown : SkiaDrawable {
     private readonly SkiaRenderer Renderer;
     private readonly Scrollable? Scrollable;
 
-    // Render everything onto a big image once and then sample from that
-    private SKBitmap? cacheBitmap;
-    private SKSurface? cacheSurface;
-
     public override int DrawX => Scrollable?.ScrollPosition.X ?? 0;
     public override int DrawY => Scrollable?.ScrollPosition.Y ?? 0;
     public override int DrawWidth => (Scrollable?.Width ?? Width) - Padding.Horizontal;
     public override int DrawHeight => (Scrollable?.Height ?? Height) - Padding.Vertical;
+
+    public override bool PreRenderImage => true;
+    public override int ImageWidth => Width - Padding.Horizontal;
+    public override int ImageHeight => Height - Padding.Vertical;
 
     public Markdown(string content, Scrollable? scrollable) {
         var pipeline = new MarkdownPipelineBuilder()
@@ -51,24 +51,8 @@ public class Markdown : SkiaDrawable {
     }
 
     public override void Draw(SKSurface surface) {
-        int width = Width - Padding.Horizontal, height = Height - Padding.Vertical;
-        if (cacheSurface == null || width != cacheBitmap?.Width || height != cacheBitmap?.Height) {
-            var colorType = SKImageInfo.PlatformColorType;
-
-            cacheBitmap?.Dispose();
-            cacheBitmap = new SKBitmap(width, height, colorType, SKAlphaType.Premul);
-            IntPtr pixels = cacheBitmap.GetPixels();
-
-            cacheSurface?.Dispose();
-            cacheSurface = SKSurface.Create(new SKImageInfo(cacheBitmap.Info.Width, cacheBitmap.Info.Height, colorType, SKAlphaType.Premul), pixels, cacheBitmap.Info.RowBytes, new SKSurfaceProperties(SKPixelGeometry.RgbHorizontal));
-
-            cacheSurface.Canvas.Clear(SKColor.Empty);
-            Renderer.Reset(cacheSurface, width);
-            Renderer.Render(Document);
-            cacheSurface.Canvas.Flush();
-        }
-
-        surface.Canvas.DrawBitmap(cacheBitmap, 0.0f, 0.0f);
+        Renderer.Reset(surface, ImageWidth);
+        Renderer.Render(Document);
 
         RequiredHeight = (int) Renderer.Height;
         MinimumSize = new Size(0, (int) Renderer.Height);
@@ -620,3 +604,4 @@ public class Markdown : SkiaDrawable {
 
     #endregion
 }
+
