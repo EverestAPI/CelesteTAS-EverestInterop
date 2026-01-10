@@ -2088,7 +2088,7 @@ public sealed class Editor : TextEditor {
             fillPaint.ColorF = Settings.Instance.Theme.PlayingFrame.ToSkia();
             canvas.DrawText(CommunicationWrapper.CurrentLineSuffix,
                 x: scrollablePosition.X + scrollableSize.Width - suffixWidth - padding,
-                y: actualToVisualRows[CommunicationWrapper.CurrentLine] * font.LineHeight() + font.Offset(),
+                y: actualToVisualRows[CommunicationWrapper.CurrentLine] * Font.LineHeight() + Font.Offset(),
                 font, fillPaint);
         }
 

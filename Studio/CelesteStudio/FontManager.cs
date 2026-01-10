@@ -106,12 +106,16 @@ public static class FontManager {
     public static float MeasureWidth(this SKFont font, string text) {
         return font.CharWidth() * text.Length;
     }
-    // Apply +/- 1.0f for better visuals
+
+    /// Additional spacing in units of line height,
+    /// of how much space should be above/below each line
+    private const float LineSpacing = 0.025f;
+
     public static float LineHeight(this SKFont font) {
-        return font.Spacing * 1.05f;
+        return font.Spacing * (1.0f + 2.0f * LineSpacing);
     }
     public static float Offset(this SKFont font) {
-        return -font.Metrics.Ascent + 0.7f;
+        return font.Metrics.Leading - font.Metrics.Ascent + font.Spacing * LineSpacing;
     }
 
     public static void OnFontChanged() {
