@@ -1169,7 +1169,6 @@ public sealed class Editor : TextEditor {
         }
 
         DesiredVisualCol = Document.Caret.Col;
-        autoCompleteMenu!.Refresh();
     }
 
     protected override void OnDelete(CaretMovementType direction) {
