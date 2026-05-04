@@ -633,12 +633,15 @@ internal class EntityQueryHandler : TargetQuery.Handler {
             }
 
             case EntityIDKey when memberIdx + 1 < memberArgs.Length: {
-                string key = memberArgs[(memberIdx + 1)];
+                string key = memberArgs[memberIdx + 1];
+                memberIdx++; // Skip over 'EntityIDKey'
+                
                 for (int valueIdx = 0; valueIdx < values.Length; valueIdx++) {
                     if (values[valueIdx] is not Entity entity || entity.SourceId.Key != key) {
                         values[valueIdx] = TargetQuery.InvalidValue;
                     }
                 }
+
                 return Result<bool, TargetQuery.QueryError>.Ok(true);
             }
         }
