@@ -2,12 +2,18 @@ using CelesteStudio.Controls;
 using CelesteStudio.Util;
 using System;
 using System.Windows;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Eto.Wpf.Forms;
 using SkiaSharp;
 using System.Windows.Controls;
 using Eto.Wpf;
+using Eto;
+using Eto.Drawing;
+using Eto.Forms;
+using System.Windows.Media;
+using EtoControl = Eto.Forms.Control;
+using EtoColor = Eto.Drawing.Color;
+using EtoColors = Eto.Drawing.Colors;
 
 namespace CelesteStudio.WPF;
 
@@ -53,7 +59,21 @@ public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, Eto.Forms.Cont
 
                             var canvas = surface.Canvas;
                             using (new SKAutoCanvasRestore(surface.Canvas, true)) {
-                                canvas.Clear(drawable.BackgroundColor.ToSkia());
+                                // Traverse transparent background color tree
+                                EtoControl? currWidget = drawable;
+                                EtoColor bgColor = drawable.BackgroundColor;
+                                while (bgColor.A <= 0.01f && currWidget != null) {
+                                    currWidget = currWidget.Parent;
+                                    bgColor = currWidget?.BackgroundColor ?? EtoColors.Transparent;
+                                }
+
+                                if (bgColor.A <= 0.01f) {
+                                    // Use native background color
+                                    canvas.Clear(Settings.Instance.Theme.DarkMode ? Settings.Instance.Theme.Background.ToSkia() : SKColors.White);
+                                } else {
+                                    canvas.Clear(bgColor.ToSkia());
+                                }
+
                                 drawable.Draw(surface);
                             }
                             canvas.Flush();
@@ -81,7 +101,21 @@ public class SkiaDrawableHandler : WpfPanel<Border, SkiaDrawable, Eto.Forms.Cont
 
                     var canvas = surface.Canvas;
                     using (new SKAutoCanvasRestore(surface.Canvas, true)) {
-                        canvas.Clear(drawable.BackgroundColor.ToSkia());
+                        // Traverse transparent background color tree
+                        EtoControl? currWidget = drawable;
+                        EtoColor bgColor = drawable.BackgroundColor;
+                        while (bgColor.A <= 0.01f && currWidget != null) {
+                            currWidget = currWidget.Parent;
+                            bgColor = currWidget?.BackgroundColor ?? EtoColors.Transparent;
+                        }
+
+                        if (bgColor.A <= 0.01f) {
+                            // Use native background color
+                            canvas.Clear(Settings.Instance.Theme.DarkMode ? Settings.Instance.Theme.Background.ToSkia() : SKColors.White);
+                        } else {
+                            canvas.Clear(bgColor.ToSkia());
+                        }
+
                         canvas.Translate(-drawable.DrawX, -drawable.DrawY);
                         drawable.Draw(surface);
                     }

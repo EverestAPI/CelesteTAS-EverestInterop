@@ -211,11 +211,6 @@ public class GameInfo : Scrollable {
     }
 
     private sealed class SubpixelIndicator : SkiaDrawable {
-        public SubpixelIndicator() {
-            BackgroundColor = Settings.Instance.Theme.StatusBg;
-            Settings.ThemeChanged += () => BackgroundColor = Settings.Instance.Theme.StatusBg;
-        }
-
         public override void Draw(SKSurface surface) {
             var canvas = surface.Canvas;
 
