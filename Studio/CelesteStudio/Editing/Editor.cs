@@ -966,209 +966,211 @@ public sealed class Editor : TextEditor {
         ActionLine actionLine;
         int leadingSpaces;
 
-        using var __ = Document.Update();
-
-        Document.Caret = ClampCaret(Document.Caret);
-
-        if (!Document.Selection.Empty) {
-            RemoveRange(Document.Selection.Min, Document.Selection.Max);
-            Document.Caret = Document.Selection.Min;
-            Document.Selection.Clear();
-
-            // Account for frame count not moving
-            line = Document.Lines[Document.Caret.Row];
-            leadingSpaces = line.Length - line.TrimStart().Length;
-            if (ActionLine.TryParse(line, out actionLine)) {
-                int frameDigits = actionLine.Frames.Length;
-                Document.Caret.Col += ActionLine.MaxFramesDigits - (leadingSpaces + frameDigits);
-            }
-        } else {
-            line = Document.Lines[Document.Caret.Row];
-        }
-
-        char typedCharacter = char.ToUpper(e.Text[0]);
-        var oldCaret = Document.Caret;
-
-        // Create breakpoints
-        if (typedCharacter == '*' && !line.TrimStart().StartsWith('#') && !FastForwardLine.TryParse(line, out _)) {
-            if (string.IsNullOrWhiteSpace(line)) {
-                Document.ReplaceLine(Document.Caret.Row, "***");
-                Document.Caret.Col = "***".Length;
-            } else {
-                InsertLine("***");
-            }
-        }
-        // Manually handle action line
-        else if (TryParseAndFormatActionLine(Document.Caret.Row, out actionLine) && e.Text.Length == 1) {
-            ClearQuickEdits();
-
-            line = Document.Lines[Document.Caret.Row];
-            leadingSpaces = line.Length - line.TrimStart().Length;
-
-            // Handle custom bindings
-            int customBindStart = GetColumnOfAction(actionLine, Actions.PressedKey);
-            int customBindEnd = customBindStart + actionLine.CustomBindings.Count;
-            if (customBindStart != -1 && Document.Caret.Col >= customBindStart && Document.Caret.Col <= customBindEnd && typedCharacter is >= 'A' and <= 'Z') {
-                bool alreadyExists = !actionLine.CustomBindings.Add(typedCharacter);
-                if (alreadyExists) {
-                    actionLine.CustomBindings.Remove(typedCharacter);
-                    Document.Caret.Col = customBindEnd - 1;
-                } else {
-                    Document.Caret.Col = customBindEnd + 1;
-                }
-
-                // Skip regular logic
-                Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
-                goto FinishEdit;
-            }
-
-            var typedAction = typedCharacter.ActionForChar();
-
-            // Handle feather inputs
-            int featherStart = GetColumnOfAction(actionLine, Actions.Feather);
-            if (featherStart != -1 && Document.Caret.Col > featherStart && (typedCharacter is '.' or ',' or (>= '0' and <= '9'))) {
-                int newCol;
-                if (typedCharacter == '.' && Document.Caret.Col > 0 && line[Document.Caret.Col - 1] == ActionLine.Delimiter) {
-                    // Auto-insert the leading 0
-                    line = line.Insert(Document.Caret.Col, "0.");
-                    newCol = Document.Caret.Col + 2;
-                } else {
-                    line = line.Insert(Document.Caret.Col, typedCharacter.ToString());
-                    newCol = Document.Caret.Col + 1;
-                }
-
-                if (ActionLine.TryParse(line, out var newActionLine, ignoreInvalidFloats: false)) {
-                    actionLine = newActionLine;
-                    Document.Caret.Col = newCol;
-                }
-            }
-            // Handle dash-only/move-only/custom bindings
-            else if (typedAction is Actions.DashOnly or Actions.MoveOnly or Actions.PressedKey) {
-                actionLine.Actions = actionLine.Actions.ToggleAction(typedAction, Settings.Instance.AutoRemoveMutuallyExclusiveActions);
-
-                if (actionLine.Actions.HasFlag(typedAction)) {
-                    Document.Caret.Col = GetColumnOfAction(actionLine, typedAction);
-                } else {
-                    Document.Caret.Col = ActionLine.MaxFramesDigits;
-                }
-            }
-            // Handle regular inputs
-            else if (typedAction != Actions.None) {
-                int dashOnlyStart = GetColumnOfAction(actionLine, Actions.DashOnly);
-                int dashOnlyEnd = dashOnlyStart + actionLine.Actions.GetDashOnly().Count();
-                if (dashOnlyStart != -1 && Document.Caret.Col >= dashOnlyStart && Document.Caret.Col <= dashOnlyEnd)
-                    typedAction = typedAction.ToDashOnlyActions();
-
-                int moveOnlyStart = GetColumnOfAction(actionLine, Actions.MoveOnly);
-                int moveOnlyEnd = moveOnlyStart + actionLine.Actions.GetMoveOnly().Count();
-                if (moveOnlyStart != -1 && Document.Caret.Col >= moveOnlyStart && Document.Caret.Col <= moveOnlyEnd)
-                    typedAction = typedAction.ToMoveOnlyActions();
-
-                // Toggle it
-                actionLine.Actions = actionLine.Actions.ToggleAction(typedAction, Settings.Instance.AutoRemoveMutuallyExclusiveActions);
-
-                // Warp the cursor after the number
-                if (typedAction == Actions.Feather && actionLine.Actions.HasFlag(Actions.Feather)) {
-                    Document.Caret.Col = GetColumnOfAction(actionLine, Actions.Feather) + 1;
-                } else if (typedAction == Actions.Feather && !actionLine.Actions.HasFlag(Actions.Feather)) {
-                    actionLine.FeatherAngle = null;
-                    actionLine.FeatherMagnitude = null;
-                    Document.Caret.Col = ActionLine.MaxFramesDigits;
-                } else if (typedAction is Actions.LeftDashOnly or Actions.RightDashOnly or Actions.UpDashOnly or Actions.DownDashOnly) {
-                    Document.Caret.Col = GetColumnOfAction(actionLine, Actions.DashOnly) + actionLine.Actions.GetDashOnly().Count();
-                } else if (typedAction is Actions.LeftMoveOnly or Actions.RightMoveOnly or Actions.UpMoveOnly or Actions.DownMoveOnly) {
-                    Document.Caret.Col = GetColumnOfAction(actionLine, Actions.MoveOnly) + actionLine.Actions.GetMoveOnly().Count();
-                } else {
-                    Document.Caret.Col = ActionLine.MaxFramesDigits;
-                }
-            }
-            // If the key we entered is a number
-            else if (typedCharacter is >= '0' and <= '9' && Document.Caret.Col <= ActionLine.MaxFramesDigits) {
-                int caretIndex = Math.Clamp(Document.Caret.Col - leadingSpaces, 0, actionLine.Frames.Length);
-
-                // Jam the number into the current position
-                string framesLeft = actionLine.Frames[..caretIndex];
-                string framesRight = actionLine.Frames[caretIndex..];
-                actionLine.Frames = $"{framesLeft}{typedCharacter}{framesRight}";
-
-                // Cap at max frames
-                if (actionLine.FrameCount > ActionLine.MaxFrames) {
-                    actionLine.FrameCount = ActionLine.MaxFrames;
-                    Document.Caret.Col = ActionLine.MaxFramesDigits;
-                }
-                // Cap at max frame length
-                else if (actionLine.Frames.Length > ActionLine.MaxFramesDigits) {
-                    actionLine.Frames = Math.Clamp(actionLine.FrameCount, 0, ActionLine.MaxFrames).ToString().PadLeft(ActionLine.MaxFramesDigits, '0');
-                }
-            }
-
-            // Allow commenting out the line
-            if (typedCharacter == '#' && Document.Caret.Col <= leadingSpaces) {
-                Document.ReplaceLine(Document.Caret.Row, $"#{actionLine}");
-            } else {
-                Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
-            }
-
-            FinishEdit:
+        using (Document.Update()) {
             Document.Caret = ClampCaret(Document.Caret);
-        }
-        // Manually handle breakpoints
-        else if (FastForwardLine.TryParse(Document.Lines[Document.Caret.Row], out var fastForward)) {
-            if (typedCharacter == '!') {
-                fastForward.ForceStop = !fastForward.ForceStop;
-                if (fastForward.ForceStop) {
-                    Document.Caret.Col++;
-                } else {
-                    Document.Caret.Col--;
-                }
 
-                Document.ReplaceLine(Document.Caret.Row, fastForward.ToString());
-            } else if (char.ToUpper(typedCharacter) == 'S') {
-                fastForward.SaveState = !fastForward.SaveState;
-                if (fastForward.SaveState) {
-                    Document.Caret.Col++;
-                } else {
-                    Document.Caret.Col--;
-                }
+            if (!Document.Selection.Empty) {
+                RemoveRange(Document.Selection.Min, Document.Selection.Max);
+                Document.Caret = Document.Selection.Min;
+                Document.Selection.Clear();
 
-                Document.ReplaceLine(Document.Caret.Row, fastForward.ToString());
-            } else if (typedCharacter is >= '0' and <= '9' or '.') {
-                Document.Insert(e.Text);
-            }
-        }
-        // Just write it as text
-        else {
-            // Encourage having a space before comments (so they aren't labels)
-            // However still allow easily inserting multiple #'s
-            if (e.Text == "#") {
-                var currLine = Document.Lines[Document.Caret.Row];
-                bool onlyComment = currLine.All(c => char.IsWhiteSpace(c) || c == '#');
-
-                if (onlyComment) {
-                    var newLine = $"{currLine.TrimEnd()}# ";
-                    Document.ReplaceLine(Document.Caret.Row, newLine);
-                    Document.Caret.Col = newLine.Length;
-                } else {
-                    Document.Insert("#");
+                // Account for frame count not moving
+                line = Document.Lines[Document.Caret.Row];
+                leadingSpaces = line.Length - line.TrimStart().Length;
+                if (ActionLine.TryParse(line, out actionLine)) {
+                    int frameDigits = actionLine.Frames.Length;
+                    Document.Caret.Col += ActionLine.MaxFramesDigits - (leadingSpaces + frameDigits);
                 }
             } else {
-                Document.Insert(e.Text);
+                line = Document.Lines[Document.Caret.Row];
             }
 
-            // But turn it into an action line if possible
-            if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out var newActionLine)) {
+            char typedCharacter = char.ToUpper(e.Text[0]);
+            var oldCaret = Document.Caret;
+
+            // Create breakpoints
+            if (typedCharacter == '*' && !line.TrimStart().StartsWith('#') && !FastForwardLine.TryParse(line, out _)) {
+                if (string.IsNullOrWhiteSpace(line)) {
+                    Document.ReplaceLine(Document.Caret.Row, "***");
+                    Document.Caret.Col = "***".Length;
+                } else {
+                    InsertLine("***");
+                }
+            }
+            // Manually handle action line
+            else if (TryParseAndFormatActionLine(Document.Caret.Row, out actionLine) && e.Text.Length == 1) {
                 ClearQuickEdits();
 
-                Document.ReplaceLine(Document.Caret.Row, newActionLine.ToString());
-                Document.Caret.Col = ActionLine.MaxFramesDigits;
+                line = Document.Lines[Document.Caret.Row];
+                leadingSpaces = line.Length - line.TrimStart().Length;
+
+                // Handle custom bindings
+                int customBindStart = GetColumnOfAction(actionLine, Actions.PressedKey);
+                int customBindEnd = customBindStart + actionLine.CustomBindings.Count;
+                if (customBindStart != -1 && Document.Caret.Col >= customBindStart && Document.Caret.Col <= customBindEnd && typedCharacter is >= 'A' and <= 'Z') {
+                    bool alreadyExists = !actionLine.CustomBindings.Add(typedCharacter);
+                    if (alreadyExists) {
+                        actionLine.CustomBindings.Remove(typedCharacter);
+                        Document.Caret.Col = customBindEnd - 1;
+                    } else {
+                        Document.Caret.Col = customBindEnd + 1;
+                    }
+
+                    // Skip regular logic
+                    Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
+                    goto FinishEdit;
+                }
+
+                var typedAction = typedCharacter.ActionForChar();
+
+                // Handle feather inputs
+                int featherStart = GetColumnOfAction(actionLine, Actions.Feather);
+                if (featherStart != -1 && Document.Caret.Col > featherStart && (typedCharacter is '.' or ',' or (>= '0' and <= '9'))) {
+                    int newCol;
+                    if (typedCharacter == '.' && Document.Caret.Col > 0 && line[Document.Caret.Col - 1] == ActionLine.Delimiter) {
+                        // Auto-insert the leading 0
+                        line = line.Insert(Document.Caret.Col, "0.");
+                        newCol = Document.Caret.Col + 2;
+                    } else {
+                        line = line.Insert(Document.Caret.Col, typedCharacter.ToString());
+                        newCol = Document.Caret.Col + 1;
+                    }
+
+                    if (ActionLine.TryParse(line, out var newActionLine, ignoreInvalidFloats: false)) {
+                        actionLine = newActionLine;
+                        Document.Caret.Col = newCol;
+                    }
+                }
+                // Handle dash-only/move-only/custom bindings
+                else if (typedAction is Actions.DashOnly or Actions.MoveOnly or Actions.PressedKey) {
+                    actionLine.Actions = actionLine.Actions.ToggleAction(typedAction, Settings.Instance.AutoRemoveMutuallyExclusiveActions);
+
+                    if (actionLine.Actions.HasFlag(typedAction)) {
+                        Document.Caret.Col = GetColumnOfAction(actionLine, typedAction);
+                    } else {
+                        Document.Caret.Col = ActionLine.MaxFramesDigits;
+                    }
+                }
+                // Handle regular inputs
+                else if (typedAction != Actions.None) {
+                    int dashOnlyStart = GetColumnOfAction(actionLine, Actions.DashOnly);
+                    int dashOnlyEnd = dashOnlyStart + actionLine.Actions.GetDashOnly().Count();
+                    if (dashOnlyStart != -1 && Document.Caret.Col >= dashOnlyStart && Document.Caret.Col <= dashOnlyEnd)
+                        typedAction = typedAction.ToDashOnlyActions();
+
+                    int moveOnlyStart = GetColumnOfAction(actionLine, Actions.MoveOnly);
+                    int moveOnlyEnd = moveOnlyStart + actionLine.Actions.GetMoveOnly().Count();
+                    if (moveOnlyStart != -1 && Document.Caret.Col >= moveOnlyStart && Document.Caret.Col <= moveOnlyEnd)
+                        typedAction = typedAction.ToMoveOnlyActions();
+
+                    // Toggle it
+                    actionLine.Actions = actionLine.Actions.ToggleAction(typedAction, Settings.Instance.AutoRemoveMutuallyExclusiveActions);
+
+                    // Warp the cursor after the number
+                    if (typedAction == Actions.Feather && actionLine.Actions.HasFlag(Actions.Feather)) {
+                        Document.Caret.Col = GetColumnOfAction(actionLine, Actions.Feather) + 1;
+                    } else if (typedAction == Actions.Feather && !actionLine.Actions.HasFlag(Actions.Feather)) {
+                        actionLine.FeatherAngle = null;
+                        actionLine.FeatherMagnitude = null;
+                        Document.Caret.Col = ActionLine.MaxFramesDigits;
+                    } else if (typedAction is Actions.LeftDashOnly or Actions.RightDashOnly or Actions.UpDashOnly or Actions.DownDashOnly) {
+                        Document.Caret.Col = GetColumnOfAction(actionLine, Actions.DashOnly) + actionLine.Actions.GetDashOnly().Count();
+                    } else if (typedAction is Actions.LeftMoveOnly or Actions.RightMoveOnly or Actions.UpMoveOnly or Actions.DownMoveOnly) {
+                        Document.Caret.Col = GetColumnOfAction(actionLine, Actions.MoveOnly) + actionLine.Actions.GetMoveOnly().Count();
+                    } else {
+                        Document.Caret.Col = ActionLine.MaxFramesDigits;
+                    }
+                }
+                // If the key we entered is a number
+                else if (typedCharacter is >= '0' and <= '9' && Document.Caret.Col <= ActionLine.MaxFramesDigits) {
+                    int caretIndex = Math.Clamp(Document.Caret.Col - leadingSpaces, 0, actionLine.Frames.Length);
+
+                    // Jam the number into the current position
+                    string framesLeft = actionLine.Frames[..caretIndex];
+                    string framesRight = actionLine.Frames[caretIndex..];
+                    actionLine.Frames = $"{framesLeft}{typedCharacter}{framesRight}";
+
+                    // Cap at max frames
+                    if (actionLine.FrameCount > ActionLine.MaxFrames) {
+                        actionLine.FrameCount = ActionLine.MaxFrames;
+                        Document.Caret.Col = ActionLine.MaxFramesDigits;
+                    }
+                    // Cap at max frame length
+                    else if (actionLine.Frames.Length > ActionLine.MaxFramesDigits) {
+                        actionLine.Frames = Math.Clamp(actionLine.FrameCount, 0, ActionLine.MaxFrames).ToString().PadLeft(ActionLine.MaxFramesDigits, '0');
+                    }
+                }
+
+                // Allow commenting out the line
+                if (typedCharacter == '#' && Document.Caret.Col <= leadingSpaces) {
+                    Document.ReplaceLine(Document.Caret.Row, $"#{actionLine}");
+                } else {
+                    Document.ReplaceLine(Document.Caret.Row, actionLine.ToString());
+                }
+
+                FinishEdit:
+                Document.Caret = ClampCaret(Document.Caret);
             }
+            // Manually handle breakpoints
+            else if (FastForwardLine.TryParse(Document.Lines[Document.Caret.Row], out var fastForward)) {
+                if (typedCharacter == '!') {
+                    fastForward.ForceStop = !fastForward.ForceStop;
+                    if (fastForward.ForceStop) {
+                        Document.Caret.Col++;
+                    } else {
+                        Document.Caret.Col--;
+                    }
+
+                    Document.ReplaceLine(Document.Caret.Row, fastForward.ToString());
+                } else if (char.ToUpper(typedCharacter) == 'S') {
+                    fastForward.SaveState = !fastForward.SaveState;
+                    if (fastForward.SaveState) {
+                        Document.Caret.Col++;
+                    } else {
+                        Document.Caret.Col--;
+                    }
+
+                    Document.ReplaceLine(Document.Caret.Row, fastForward.ToString());
+                } else if (typedCharacter is >= '0' and <= '9' or '.') {
+                    Document.Insert(e.Text);
+                }
+            }
+            // Just write it as text
+            else {
+                // Encourage having a space before comments (so they aren't labels)
+                // However still allow easily inserting multiple #'s
+                if (e.Text == "#") {
+                    var currLine = Document.Lines[Document.Caret.Row];
+                    bool onlyComment = currLine.All(c => char.IsWhiteSpace(c) || c == '#');
+
+                    if (onlyComment) {
+                        var newLine = $"{currLine.TrimEnd()}# ";
+                        Document.ReplaceLine(Document.Caret.Row, newLine);
+                        Document.Caret.Col = newLine.Length;
+                    } else {
+                        Document.Insert("#");
+                    }
+                } else {
+                    Document.Insert(e.Text);
+                }
+
+                // But turn it into an action line if possible
+                if (ActionLine.TryParse(Document.Lines[Document.Caret.Row], out var newActionLine)) {
+                    ClearQuickEdits();
+
+                    Document.ReplaceLine(Document.Caret.Row, newActionLine.ToString());
+                    Document.Caret.Col = ActionLine.MaxFramesDigits;
+                }
+            }
+
+            if (oldCaret.Row != Document.Caret.Row) {
+                FixInvalidInput(oldCaret.Row);
+            }
+
+            DesiredVisualCol = Document.Caret.Col;
         }
 
-        if (oldCaret.Row != Document.Caret.Row) {
-            FixInvalidInput(oldCaret.Row);
-        }
-
-        DesiredVisualCol = Document.Caret.Col;
+        
     }
 
     protected override void OnDelete(CaretMovementType direction) {
