@@ -83,8 +83,8 @@ public sealed class Editor : TextEditor {
 
     private static readonly ConditionalInstanceActionBinding<Editor> FrameOperationAdd = new("Editor_FrameOperationAdd", "Add", Binding.Category.FrameOperations, Hotkey.Char('+'), editor => editor.OnFrameOperation(CalculationOperator.Add), preferTextHotkey: true);
     private static readonly ConditionalInstanceActionBinding<Editor> FrameOperationSub = new("Editor_FrameOperationSub", "Subtract", Binding.Category.FrameOperations, Hotkey.Char('-'), editor => editor.OnFrameOperation(CalculationOperator.Sub), preferTextHotkey: true);
-    private static readonly ConditionalInstanceActionBinding<Editor> FrameOperationMul = new("Editor_FrameOperationMul", "Multiply", Binding.Category.FrameOperations, Hotkey.Char('*'), editor => editor.OnFrameOperation(CalculationOperator.Mul), preferTextHotkey: true);
-    private static readonly ConditionalInstanceActionBinding<Editor> FrameOperationDiv = new("Editor_FrameOperationDiv", "Divide", Binding.Category.FrameOperations, Hotkey.Char('/'), editor => editor.OnFrameOperation(CalculationOperator.Div), preferTextHotkey: true);
+    private static readonly ConditionalInstanceActionBinding<Editor> FrameOperationMul = new("Editor_FrameOperationMul", "Multiply", Binding.Category.FrameOperations, Hotkey.None, editor => editor.OnFrameOperation(CalculationOperator.Mul), preferTextHotkey: true);
+    private static readonly ConditionalInstanceActionBinding<Editor> FrameOperationDiv = new("Editor_FrameOperationDiv", "Divide", Binding.Category.FrameOperations, Hotkey.None, editor => editor.OnFrameOperation(CalculationOperator.Div), preferTextHotkey: true);
     private static readonly ConditionalInstanceActionBinding<Editor> FrameOperationSet = new("Editor_FrameOperationSet", "Set", Binding.Category.FrameOperations, Hotkey.Char('='), editor => editor.OnFrameOperation(CalculationOperator.Set), preferTextHotkey: true);
 
     public static new readonly InstanceBinding[] AllBindings = [
