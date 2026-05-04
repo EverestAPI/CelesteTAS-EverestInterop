@@ -59,8 +59,8 @@ public class InfoTemplateForm : Form {
 
             CommunicationWrapper.SetCustomInfoTemplate(string.Join('\n', lines));
             Close();
-        }) { Text = "&OK" };
-        var cancelButton = new Button((_, _) => Close()) { Text = "&Cancel" };
+        }) { Text = "OK" };
+        var cancelButton = new Button((_, _) => Close()) { Text = "Cancel" };
         var buttonsLayout = new DynamicLayout();
         buttonsLayout.BeginHorizontal();
         buttonsLayout.Add(cancelButton);
