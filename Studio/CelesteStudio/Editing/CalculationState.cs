@@ -36,9 +36,9 @@ public static class CalculationExtensions {
             CalculationOperator.Add => actionLine.FrameCount + operand,
             CalculationOperator.Sub => actionLine.FrameCount - operand,
             CalculationOperator.Mul => actionLine.FrameCount * operand,
-            CalculationOperator.Div => actionLine.FrameCount / operand,
+            CalculationOperator.Div when operand != 0 => actionLine.FrameCount / operand,
             CalculationOperator.Set => operand,
-            _ => throw new UnreachableException(),
+            _ => actionLine.FrameCount,
         };
 
         return actionLine with { FrameCount = Math.Clamp(newFrames, 0, ActionLine.MaxFrames) };
