@@ -1,0 +1,23 @@
+<Solution>
+    <Folder Name="/CelesteTAS/">
+        <Project Path="CelesteTAS-EverestInterop/CelesteTAS-EverestInterop.csproj" />
+        <Project Path="SyncChecker/SyncChecker.csproj" />
+    </Folder>
+    <Folder Name="/CelesteStudio/">
+        <Project Path="Studio/CelesteStudio/CelesteStudio.csproj" />
+
+        <Project Path="Studio/CelesteStudio.GTK/CelesteStudio.GTK.csproj">
+            <Build Project="false" />
+        </Project>
+        <Project Path="Studio/CelesteStudio.Mac/CelesteStudio.Mac.csproj">
+            <Build Project="false" />
+        </Project>
+        <Project Path="Studio/CelesteStudio.WPF/CelesteStudio.WPF.csproj">
+            <Build Project="false" />
+        </Project>
+        
+        <Project Path="external/Featherline/Featherline.csproj" />
+    </Folder>
+
+    <Project Path="StudioCommunication/StudioCommunication.csproj" />
+</Solution>
