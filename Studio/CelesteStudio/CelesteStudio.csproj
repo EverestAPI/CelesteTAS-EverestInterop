@@ -37,6 +37,13 @@
 
     <ItemGroup>
         <EmbeddedResource Include="Assets\Icon.ico" LogicalName="Icon.ico"/>
+        <EmbeddedResource Include="Assets\Icon.svg" LogicalName="Icon.svg"/>
+        <EmbeddedResource Include="Assets\Icon_16x16.png" LogicalName="Icon_16x16.png"/>
+        <EmbeddedResource Include="Assets\Icon_32x32.png" LogicalName="Icon_32x32.png"/>
+        <EmbeddedResource Include="Assets\Icon_48x48.png" LogicalName="Icon_48x48.png"/>
+        <EmbeddedResource Include="Assets\Icon_64x64.png" LogicalName="Icon_64x64.png"/>
+        <EmbeddedResource Include="Assets\Icon_128x128.png" LogicalName="Icon_128x128.png"/>
+        <EmbeddedResource Include="Assets\Icon_256x256.png" LogicalName="Icon_256x256.png"/>
     </ItemGroup>
 
     <!-- Windows requires .otf, macOS requires .ttf and GTK doesn't seem to care -->

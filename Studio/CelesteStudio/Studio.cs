@@ -230,6 +230,11 @@ public sealed class Studio : Form {
                 OnNewFile();
             }
         };
+        
+        // Setup desktop shortcut once
+        if (Settings.Instance.InstallDesktopShortcut == null) {
+            Shown += (_, _) => DesktopShortcutDialog.Show(this);
+        }
 
         CommunicationWrapper.Start();
     }
@@ -810,6 +815,7 @@ public sealed class Studio : Form {
                 MenuUtils.CreateAction("Snippets...", Keys.None, SnippetDialog.Show),
                 MenuUtils.CreateAction("Font...", Keys.None, FontDialog.Show),
                 CreateThemeMenu(),
+                MenuUtils.CreateAction("Create desktop shortcut", Keys.None, DesktopShortcutDialog.Install),
                 MenuUtils.CreateAction("Open Settings File...", Keys.None, () => ProcessHelper.OpenInDefaultApp(Settings.SettingsPath)),
             }},
             new SubMenuItem { Text = "&Preferences", Items = {

@@ -266,6 +266,8 @@ public sealed class Settings {
     public Size GameInfoPopoutSize { get; set; } = new(400, 250);
 
     public string LastSaveDirectory { get; set; } = string.Empty;
+    
+    public bool? InstallDesktopShortcut { get; set; } = null;
 
     public bool FindMatchCase { get; set; }
 
