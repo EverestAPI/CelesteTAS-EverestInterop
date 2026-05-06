@@ -110,6 +110,8 @@ public class CommandAutoCompleteMenu : AutoCompleteMenu {
             Entries.AddRange(baseEntries);
             Filter = line;
 
+            editor.RecalcPopupMenu();
+            
             currArgumentIndex = -1;
         } else {
             var command = CommunicationWrapper.Commands.FirstOrDefault(cmd => string.Equals(cmd.Name, commandLine.Value.Command, StringComparison.OrdinalIgnoreCase));
@@ -306,7 +308,6 @@ public class CommandAutoCompleteMenu : AutoCompleteMenu {
                 }, token);
             } else {
                 Entries.Clear();
-                editor.RecalcPopupMenu();
             }
 
             if (editor.GetSelectedQuickEdit() is { } quickEdit && commandLine.Value.Arguments[^1] == quickEdit.DefaultText) {
@@ -315,6 +316,7 @@ public class CommandAutoCompleteMenu : AutoCompleteMenu {
             } else {
                 Filter = commandLine.Value.Arguments[^1];
             }
+            editor.RecalcPopupMenu();
         }
     }
 }

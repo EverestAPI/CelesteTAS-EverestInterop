@@ -1166,11 +1166,10 @@ public sealed class Editor : TextEditor {
             if (oldCaret.Row != Document.Caret.Row) {
                 FixInvalidInput(oldCaret.Row);
             }
-
-            DesiredVisualCol = Document.Caret.Col;
         }
 
-        
+        DesiredVisualCol = Document.Caret.Col;
+        autoCompleteMenu!.Refresh();
     }
 
     protected override void OnDelete(CaretMovementType direction) {

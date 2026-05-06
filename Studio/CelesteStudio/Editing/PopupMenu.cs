@@ -432,7 +432,7 @@ public abstract class PopupMenu : Scrollable {
                 return 0;
             }
 
-            int visibleEntryCount = Math.Min(shownEntries.Length, (int) MathF.Ceiling(ClientSize.Height / EntryHeight) + 1);
+            int visibleEntryCount = Math.Min(shownEntries.Length, (int) MathF.Ceiling(ClientSize.Height / (float)EntryHeight) + 1);
             int medianGroupLen = shownEntries
                 .Where((_, idx) => idx + visibleEntryCount <= shownEntries.Length)
                 .Select((_, idx) => {
@@ -460,8 +460,8 @@ public abstract class PopupMenu : Scrollable {
     private Entry[] shownEntries = [];
     private readonly ContentDrawable drawable;
 
-    private int TopVisibleEntry => (int) MathF.Floor(ScrollPosition.Y / EntryHeight);
-    private int BottomVisibleEntry => (int) MathF.Ceiling((ScrollPosition.Y + ClientSize.Height) / EntryHeight);
+    private int TopVisibleEntry => (int) MathF.Floor(ScrollPosition.Y / (float)EntryHeight);
+    private int BottomVisibleEntry => (int) MathF.Ceiling((ScrollPosition.Y + ClientSize.Height) / (float)EntryHeight);
     private IEnumerable<Entry> VisibleEntries {
         get {
             int top = TopVisibleEntry;
@@ -470,6 +470,8 @@ public abstract class PopupMenu : Scrollable {
             return shownEntries.Skip(top).Take(Math.Min(bottom - top + 1, shownEntries.Length - top));
         }
     }
+
+    private readonly FuzzyMatcher matcher = new() { IgnoreCase = true };
 
     public PopupMenu() {
         LoadStorage();
@@ -493,35 +495,63 @@ public abstract class PopupMenu : Scrollable {
         // Order for the categories
         const int frequentlyUsedThreshold = 5;
 
-        const int favouriteIndex = 0;
-        const int frequentlyUsedIndex = favouriteIndex + 1;
-        const int suggestionIndex = frequentlyUsedIndex + FrequentlyUsedCategorySize;
-        const int regularIndex = suggestionIndex + 1;
-
         var frequentlyUsed = entries
-            .Where(entry => (string.IsNullOrEmpty(entry.SearchText) || entry.SearchText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase))
-                         && entry.Data is { } data && data.Usages.TryGetValue(entry.StorageName, out uint amount) && amount >= frequentlyUsedThreshold)
-            .OrderBy(entry => entry.Data!.Usages[entry.StorageName]);
+            .Where(entry => entry.Data is { } data && data.Usages.TryGetValue(entry.StorageName, out uint amount) && amount >= frequentlyUsedThreshold)
+            .Select(entry => (Entry: entry, Score: matcher.GetMatch(entry.SearchText.AsSpan(), filter.AsSpan())))
+            .Where(pair => pair.Score != null)
+            .OrderBy(pair => pair.Entry.Data!.Usages[pair.Entry.StorageName] * 10 + pair.Score!.Value);
+        
         int i = 0;
-        foreach (var entry in frequentlyUsed) {
+        foreach (var (entry, _) in frequentlyUsed) {
             entry.FrequentlyUsedIndex = i++;
         }
 
         shownEntries = entries
-            .Where(entry => string.IsNullOrEmpty(entry.SearchText) || entry.SearchText.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase))
-            .OrderBy(entry => {
-                if (entry.Data is { } data && data.Favourites.Contains(entry.StorageName)) {
-                    return favouriteIndex;
+            .Select(entry => (Entry: entry, Score: matcher.GetMatch(entry.SearchText.AsSpan(), filter.AsSpan())))
+            .Where(pair => pair.Score != null)
+            .Order(Comparer<(Entry Entry, ushort? Score)>.Create((lhs, rhs) => {
+                ushort lhsScore = lhs.Score!.Value;
+                ushort rhsScore = rhs.Score!.Value;
+                
+                bool lhsFavourite = lhs.Entry.Data is { } lhsData && lhsData.Favourites.Contains(lhs.Entry.StorageName);
+                bool rhsFavourite = rhs.Entry.Data is { } rhsData && rhsData.Favourites.Contains(rhs.Entry.StorageName);
+                if (lhsFavourite && !rhsFavourite) {
+                    return -1;
                 }
-                if (entry.FrequentlyUsedIndex is >= 0 and < FrequentlyUsedCategorySize) {
-                    return frequentlyUsedIndex + entry.FrequentlyUsedIndex;
+                if (!lhsFavourite && rhsFavourite) {
+                    return  1;
                 }
-                if (entry.Suggestion) {
-                    return suggestionIndex;
+                if (lhsFavourite && rhsFavourite) {
+                    return lhsScore - rhsScore;
                 }
 
-                return regularIndex;
-            })
+                bool lhsFrequent = lhs.Entry.FrequentlyUsedIndex is >= 0 and < FrequentlyUsedCategorySize;
+                bool rhsFrequent = rhs.Entry.FrequentlyUsedIndex is >= 0 and < FrequentlyUsedCategorySize;
+                if (lhsFrequent && !rhsFrequent) {
+                    return -1;
+                }
+                if (!lhsFrequent && rhsFrequent) {
+                    return  1;
+                }
+                if (lhsFrequent && rhsFrequent) {
+                    return (lhs.Entry.FrequentlyUsedIndex * 10 + lhsScore) - (rhs.Entry.FrequentlyUsedIndex * 10 + rhsScore);
+                }
+
+                bool lhsSuggestion = lhs.Entry.Suggestion;
+                bool rhsSuggestion = rhs.Entry.Suggestion;
+                if (lhsSuggestion && !rhsSuggestion) {
+                    return -1;
+                }
+                if (!lhsSuggestion && rhsSuggestion) {
+                    return  1;
+                }
+                if (lhsSuggestion && rhsSuggestion) {
+                    return lhsScore - rhsScore;
+                }
+                
+                return lhsScore - rhsScore;
+            }))
+            .Select(pair => pair.Entry)
             .ToArray();
 
         if (shownEntries.Length == 0) {

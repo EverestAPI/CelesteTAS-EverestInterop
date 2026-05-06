@@ -1,9 +1,11 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace StudioCommunication.Util;
 
@@ -20,46 +22,6 @@ public static class GenericExtensions {
             action(obj);
             yield return obj;
         }
-    }
-}
-
-/// Splits each line into its own slice, accounting for LF, CRLF and CR line endings
-public ref struct LineIterator(ReadOnlySpan<char> text) {
-    private ReadOnlySpan<char> text = text;
-    private int startIdx = 0;
-
-    public ReadOnlySpan<char> Current { get; private set; }
-    public LineIterator GetEnumerator() => this;
-
-    public bool MoveNext() {
-        for (int i = startIdx; i < text.Length; i++) {
-            // \n is always a newline
-            if (text[i] == '\n') {
-                Current = text[startIdx..i];
-                startIdx = i + 1;
-                return true;
-            }
-
-            // \r is either alone or a \r\n
-            if (text[i] == '\r') {
-                Current = text[startIdx..i];
-
-                if (i + 1 < text.Length && text[i + 1] == '\n') {
-                    i++;
-                }
-
-                startIdx = i + 1;
-                return true;
-            }
-        }
-
-        if (startIdx != text.Length) {
-            Current =  text[startIdx..];
-            startIdx = text.Length;
-            return true;
-        }
-
-        return false;
     }
 }
 
@@ -84,10 +46,10 @@ public static class HashExtensions {
         }
 
         if (typeof(T) == typeof(string)) {
-            return ((string)(object) value).GetStableHashCode();
+            return ((string)(object)value).GetStableHashCode();
         }
         if (typeof(T).IsSubclassOf(typeof(IStableHash))) {
-            return ((IStableHash) value).GetStableHashCode();
+            return ((IStableHash)value).GetStableHashCode();
         }
 
         throw new NotImplementedException($"Cannot create stable hash of type '{typeof(T)}'");
@@ -102,13 +64,13 @@ public static class HashExtensions {
 
             for (int i = 0; i < str.Length && str[i] != '\0'; i += 2) {
                 hash1 = ((hash1 << 5) + hash1) ^ str[i];
-                if (i == str.Length - 1 || str[i+1] == '\0') {
+                if (i == str.Length - 1 || str[i + 1] == '\0') {
                     break;
                 }
-                hash2 = ((hash2 << 5) + hash2) ^ str[i+1];
+                hash2 = ((hash2 << 5) + hash2) ^ str[i + 1];
             }
 
-            return hash1 + (hash2*1566083941);
+            return hash1 + (hash2 * 1566083941);
         }
     }
 }
@@ -220,13 +182,80 @@ public static class CollectionExtensions {
         return -1;
     }
 
+    /// Searches for the specified character and returns the index of its first occurrence
+    public static int IndexOfChar(this ReadOnlySpan<char> span, char value, bool ignoreCase) {
+        if (ignoreCase) {
+            return span.IndexOfAny([char.ToLower(value), char.ToUpper(value)]);
+        } else {
+            return span.IndexOf(value);
+        }
+    }
+
+    /// Searches for the specified character and returns the index of its last occurrence
+    public static int LastIndexOfChar(this ReadOnlySpan<char> span, char value, bool ignoreCase) {
+        if (ignoreCase) {
+            return span.LastIndexOfAny([char.ToLower(value), char.ToUpper(value)]);
+        } else {
+            return span.LastIndexOf(value);
+        }
+    }
+
+    /// Iterate over all indices where the needle matches
+    public static IndexIterator<T> IndicesOf<T>(this ReadOnlySpan<T> haystack, T needle) where T : IEquatable<T> {
+        return new IndexIterator<T>(haystack, needle);
+    }
+
+    /// Iterate over all indices where any needle matches
+    public static IndexAnyIterator<T> IndicesOfAny<T>(this ReadOnlySpan<T> haystack, ReadOnlySpan<T> needles) where T : IEquatable<T> {
+        return new IndexAnyIterator<T>(haystack, needles);
+    }
+
+    /// Yields all indices of a given match from the collection
+    public ref struct IndexIterator<T>(ReadOnlySpan<T> haystack, T needle) where T : IEquatable<T> {
+        private readonly ReadOnlySpan<T> haystack = haystack;
+
+        public int Current { get; private set; } = -1;
+        public IndexIterator<T> GetEnumerator() => this;
+
+        public bool MoveNext() {
+            int startIdx = Current + 1;
+            int nextIdx = haystack[startIdx..].IndexOf(needle);
+            if (nextIdx == -1) {
+                return false;
+            }
+
+            Current = nextIdx + startIdx;
+            return true;
+        }
+    }
+
+    /// Yields all indices of a given match from the collection
+    public ref struct IndexAnyIterator<T>(ReadOnlySpan<T> haystack, ReadOnlySpan<T> needles) where T : IEquatable<T> {
+        private readonly ReadOnlySpan<T> haystack = haystack;
+        private readonly ReadOnlySpan<T> needles = needles;
+
+        public int Current { get; private set; } = -1;
+        public IndexAnyIterator<T> GetEnumerator() => this;
+
+        public bool MoveNext() {
+            int startIdx = Current + 1;
+            int nextIdx = haystack[startIdx..].IndexOfAny(needles);
+            if (nextIdx == -1) {
+                return false;
+            }
+
+            Current = nextIdx + startIdx;
+            return true;
+        }
+    }
+
     // Median implementation based on https://stackoverflow.com/a/22702269
 
     /// <summary>
     /// Note: specified list would be mutated in the process.
     /// </summary>
     public static T Median<T>(this IList<T> list) where T : IComparable<T> {
-        return list.NthOrderStatistic((list.Count - 1)/2);
+        return list.NthOrderStatistic((list.Count - 1) / 2);
     }
 
     public static T Median<T>(this IEnumerable<T> sequence) where T : IComparable<T> {
@@ -244,7 +273,7 @@ public static class CollectionExtensions {
     /// </summary>
     private static int Partition<T>(this IList<T> list, int start, int end, Random? rnd = null) where T : IComparable<T> {
         if (rnd != null) {
-            list.Swap(end, rnd.Next(start, end+1));
+            list.Swap(end, rnd.Next(start, end + 1));
         }
 
         var pivot = list[end];
@@ -254,6 +283,7 @@ public static class CollectionExtensions {
                 list.Swap(i, ++lastLow);
             }
         }
+
         list.Swap(end, ++lastLow);
         return lastLow;
     }
@@ -266,6 +296,7 @@ public static class CollectionExtensions {
     public static T NthOrderStatistic<T>(this IList<T> list, int n, Random? rnd = null) where T : IComparable<T> {
         return NthOrderStatistic(list, n, 0, list.Count - 1, rnd);
     }
+
     private static T NthOrderStatistic<T>(this IList<T> list, int n, int start, int end, Random? rnd) where T : IComparable<T> {
         while (true) {
             int pivotIndex = list.Partition(start, end, rnd);
@@ -411,7 +442,7 @@ public static class StackExtensions {
         }
 
         var f_Stack_array = typeof(Stack<T>).GetField("_array", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        var array = (T[]) f_Stack_array.GetValue(stack)!;
+        var array = (T[])f_Stack_array.GetValue(stack)!;
 
         return array[stack.Count - distance];
     }
@@ -425,11 +456,58 @@ public static class QueueExtensions {
         }
 
         var f_Queue_array = typeof(Queue<T>).GetField("_array", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        var array = (T[]) f_Queue_array.GetValue(queue)!;
+        var array = (T[])f_Queue_array.GetValue(queue)!;
 
         var f_Queue_head = typeof(Queue<T>).GetField("_head", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        int head = (int) f_Queue_head.GetValue(queue)!;
+        int head = (int)f_Queue_head.GetValue(queue)!;
 
         return array[(head + distance) % array.Length];
+    }
+}
+
+public static class UnsafeExtensions {
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+    private struct AlignmentHelper<T> where T : unmanaged {
+        public byte Padding;
+        public T Target;
+    }
+#pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
+    
+    /// Calculate alignment of .NET type
+    public static nint AlignmentOf<T>() where T : unmanaged {
+        return Marshal.OffsetOf<AlignmentHelper<T>>(nameof(AlignmentHelper<>.Target));
+    }
+
+    /// Aligns the given address to the next alignment
+    public static nint AlignForward<T>(nint addr) where T : unmanaged {
+        return AlignForward(addr, AlignmentOf<T>());
+    }
+    /// Aligns the given address to the next alignment
+    public static nint AlignForward(nint addr, nint alignment) {
+        return AlignBackward(addr + (alignment - 1), alignment);
+    }
+
+    /// Aligns the given address to the previous alignment
+    public static nint AlignBackward<T>(nint addr) where T : unmanaged {
+        return AlignBackward(addr, AlignmentOf<T>());
+    }
+    /// Aligns the given address to the previous alignment
+    public static nint AlignBackward(nint addr, nint alignment) {
+        return addr & ~(alignment - 1);
+    }
+    
+    private sealed unsafe class UnmanagedMemoryManager<T>(T* ptr, int length) : MemoryManager<T> where T : unmanaged {
+        public override Span<T> GetSpan() => new(ptr, length);
+        public override MemoryHandle Pin(int elementIndex = 0) => new(ptr + elementIndex);
+
+        public override void Unpin() { }
+
+        protected override void Dispose(bool disposing) { }
+    }
+
+    /// Provides a safe memory view for a native pointer
+    public static unsafe Memory<T> AsMemory<T>(T* ptr, int len) where T : unmanaged {
+        var manager = new UnmanagedMemoryManager<T>(ptr, len);
+        return manager.Memory;
     }
 }
