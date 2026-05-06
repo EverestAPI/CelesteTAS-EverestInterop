@@ -12,12 +12,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Python
-        uses: actions/setup-python@v5.2.0
+        uses: actions/setup-python@v6
         with:
-          python-version: 3.12.6
+          python-version: 3.14
       - name: Setup Python environment
         run: |
           python -m venv .venv
@@ -33,22 +33,22 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Upload version information
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: changelog-version
           path: version_info.txt
       - name: Upload GameBanana changelog
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: changelog-gamebanana
           path: gamebanana_changelog.json
       - name: Upload GitHub changelog
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: changelog-github
           path: github_changelog.md
       - name: Upload Studio changelog
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: changelog-studio
           path: studio_changelog.json
@@ -82,23 +82,23 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: 'recursive'
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0'
       - name: Setup Python
-        uses: actions/setup-python@v5.2.0
+        uses: actions/setup-python@v6
         with:
-          python-version: 3.12.6
+          python-version: 3.14
       - name: Setup Firefox WebDriver
         uses: browser-actions/setup-firefox@v1
 
       - name: Download Studio builds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: CelesteStudio-*
       - name: Move Studio builds into correct location
@@ -110,19 +110,19 @@ jobs:
 
       - name: Cache Windows build
         if: ${{ needs.build-studio.outputs.windows_cache_hit != 'true' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: CelesteStudio-windows-x64.zip
           key: ${{ needs.build-studio.outputs.windows_cache_key }}
       - name: Cache Linux build
         if: ${{ needs.build-studio.outputs.linux_cache_hit != 'true' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: CelesteStudio-linux-x64.zip
           key: ${{ needs.build-studio.outputs.linux_cache_key }}
       - name: Cache macOS build
         if: ${{ needs.build-studio.outputs.macos_cache_hit != 'true' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: |
             CelesteStudio-macos-x64.zip
@@ -130,9 +130,10 @@ jobs:
           key: ${{ needs.build-studio.outputs.macos_cache_key }}
 
       - name: Download SyncChecker builds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
-          pattern: SyncChecker
+          name: SyncChecker
+          path: SyncChecker
       - name: Generate SyncChecker archive
         run: |
           pushd SyncChecker
@@ -140,7 +141,7 @@ jobs:
           popd
 
       - name: Download changelogs
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: changelog-*
       - name: Copy Studio changelog into correct location
@@ -199,7 +200,7 @@ jobs:
           GAMEBANANA_ISTOOL: 1
 
       - name: Upload GitHub release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           name: ${{ env.RELEASE_TITLE }}
           body_path: changelog-github/github_changelog.md
@@ -212,7 +213,7 @@ jobs:
             SyncChecker.zip
 
       - name: Clean-up changelog artifacts
-        uses: geekyeggo/delete-artifact@v5
+        uses: geekyeggo/delete-artifact@v6
         with:
           name: changelog-*
           failOnError: false

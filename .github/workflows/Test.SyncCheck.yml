@@ -43,7 +43,7 @@ jobs:
 
     steps:
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: |
           8.0
@@ -54,7 +54,7 @@ jobs:
 
     - name: Restore mods cache
       id: restore-cache
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v5
       with:
         path: |
           Mods/**
@@ -71,7 +71,7 @@ jobs:
       run: touch ${{ env.CELESTE_INSTALL }}/${{ env.CHECKSUM_PATH }}
 
     - name: Checkout CelesteTAS
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         path: ${{ env.CELESTETAS_REPO_NAME }}
     - name: Move CelesteTAS directory
@@ -87,7 +87,7 @@ jobs:
         dotnet build CelesteTAS-EverestInterop -c ${{ inputs.build-cfg }} -p:UseSymlinks=false
 
     - name: Checkout TAS files
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: ${{ inputs.tas-repository }}
         ref: ${{ inputs.tas-revision }}
@@ -97,9 +97,10 @@ jobs:
         mv ${{ env.TASFILES_REPO_NAME }} ${{ env.CELESTE_INSTALL }}/${{ env.TASFILES_REPO_NAME }}
 
     - name: Download SyncChecker builds
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
-        pattern: SyncChecker
+        name: SyncChecker
+        path: SyncChecker
 
     - name: Generate run configuration
       run: |
@@ -143,7 +144,7 @@ jobs:
 
     - name: Save mods cache
       if: ${{ always() && env.OLD_CHECKSUM != env.NEW_CHECKSUM && github.ref == 'refs/heads/master' }}
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@v5
       with:
         path: |
           Mods/**

@@ -36,7 +36,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: Compute cache keys
         id: compute-key
@@ -47,19 +47,19 @@ jobs:
 
       - name: Check Windows cache
         id: check-windows
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: CelesteStudio-windows-x64.zip
           key: ${{ steps.compute-key.outputs.windows_key }}
       - name: Check Linux cache
         id: check-linux
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: CelesteStudio-linux-x64.zip
           key: ${{ steps.compute-key.outputs.linux_key }}
       - name: Check macOS cache
         id: check-macos
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: |
             CelesteStudio-macos-x64.zip
@@ -67,25 +67,25 @@ jobs:
           key: ${{ steps.compute-key.outputs.macos_key }}
 
       - name: Upload Windows x64
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: steps.check-windows.outputs.cache-hit == 'true'
         with:
           name: CelesteStudio-windows-x64
           path: CelesteStudio-windows-x64.zip
       - name: Upload Linux x64
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: steps.check-linux.outputs.cache-hit == 'true'
         with:
           name: CelesteStudio-linux-x64
           path: CelesteStudio-linux-x64.zip
       - name: Upload macOS x64
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: steps.check-macos.outputs.cache-hit == 'true'
         with:
           name: CelesteStudio-macos-x64
           path: CelesteStudio-macos-x64.zip
       - name: Upload macOS ARM64
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: steps.check-macos.outputs.cache-hit == 'true'
         with:
           name: CelesteStudio-macos-arm64
@@ -100,11 +100,11 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: 'recursive'
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0'
 
@@ -128,7 +128,7 @@ jobs:
           Pop-Location
 
       - name: Upload x64
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: CelesteStudio-windows-x64
           path: CelesteStudio-windows-x64.zip
@@ -142,11 +142,11 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: 'recursive'
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0'
 
@@ -170,7 +170,7 @@ jobs:
           popd
 
       - name: Upload x64
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: CelesteStudio-linux-x64
           path: CelesteStudio-linux-x64.zip
@@ -184,11 +184,11 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: 'recursive'
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0'
       - name: Install macOS workflow
@@ -237,12 +237,12 @@ jobs:
           popd
 
       - name: Upload x64
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: CelesteStudio-macos-x64
           path: CelesteStudio-macos-x64.zip
       - name: Upload ARM64
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: CelesteStudio-macos-arm64
           path: CelesteStudio-macos-arm64.zip

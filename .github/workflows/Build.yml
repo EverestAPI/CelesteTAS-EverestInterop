@@ -62,16 +62,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: 'recursive'
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0'
 
       - name: Download Studio builds
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: CelesteStudio-*
       - name: Move Studio builds into correct location
@@ -83,19 +83,19 @@ jobs:
 
       - name: Cache Windows build
         if: ${{ needs.build-studio.outputs.windows_cache_hit != 'true' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: CelesteStudio-windows-x64.zip
           key: ${{ needs.build-studio.outputs.windows_cache_key }}
       - name: Cache Linux build
         if: ${{ needs.build-studio.outputs.linux_cache_hit != 'true' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: CelesteStudio-linux-x64.zip
           key: ${{ needs.build-studio.outputs.linux_cache_key }}
       - name: Cache macOS build
         if: ${{ needs.build-studio.outputs.macos_cache_hit != 'true' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: |
             CelesteStudio-macos-x64.zip
@@ -124,7 +124,7 @@ jobs:
         run: dotnet build CelesteTAS-EverestInterop -c Debug -p:DefineConstants=INSTALL_STUDIO -p:UseSymlinks=false
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: CelesteTAS
           path: |
