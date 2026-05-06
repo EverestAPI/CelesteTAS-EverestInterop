@@ -21,7 +21,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0'
+          dotnet-version: '10.0'
 
       - name: Publish
         run: dotnet publish SyncChecker -c ${{ inputs.build-cfg }} -p:UseAppHost=false --output build-sync-checker
