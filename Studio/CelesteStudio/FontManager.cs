@@ -1,4 +1,3 @@
-using Eto;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -16,7 +15,7 @@ public static class FontManager {
     public const string FontFamilyBuiltinDisplayName = "JetBrains Mono (builtin)";
 
     private static Font? editorFont, statusFont;
-    private static SKFont? skEditorFontRegular, skEditorFontBold, skEditorFontItalic, skEditorFontBoldItalic, skStatusFont, skPopupFont;
+    private static SKFont? skEditorFontRegular, skEditorFontBold, skEditorFontItalic, skEditorFontBoldItalic, skStatusFont, skPopupFont, skPopupFontBold;
 
     public static Font EditorFont => editorFont ??= CreateFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize);
     public static Font StatusFont => statusFont ??= CreateFont(Settings.Instance.FontFamily, Settings.Instance.StatusFontSize);
@@ -27,6 +26,7 @@ public static class FontManager {
     public static SKFont SKEditorFontBoldItalic => skEditorFontBoldItalic ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, FontStyle.Bold | FontStyle.Italic);
     public static SKFont SKStatusFont           => skStatusFont           ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.StatusFontSize);
     public static SKFont SKPopupFont            => skPopupFont            ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.PopupFontSize);
+    public static SKFont SKPopupFontBold        => skPopupFontBold        ??= CreateSKFont(Settings.Instance.FontFamily, Settings.Instance.PopupFontSize, FontStyle.Bold);
 
     private static FontFamily? builtinFontFamily;
     public static Font CreateFont(string fontFamily, float size, FontStyle style = FontStyle.None) {
@@ -34,7 +34,7 @@ public static class FontManager {
             var asm = Assembly.GetExecutingAssembly();
             builtinFontFamily ??= FontFamily.FromStreams(asm.GetManifestResourceNames()
                 .Where(name => name.StartsWith("JetBrainsMono/"))
-                .Select(name => asm.GetManifestResourceStream(name)));
+                .Select(asm.GetManifestResourceStream));
 
             return new Font(builtinFontFamily, size, style);
         } else {
@@ -67,32 +67,6 @@ public static class FontManager {
         }
     }
 
-    private static readonly Dictionary<Font, float> charWidthCache = new();
-    public static float CharWidth(this Font font) {
-        if (charWidthCache.TryGetValue(font, out float width)) {
-            return width;
-        }
-
-        width = font.MeasureString("X").Width;
-        charWidthCache.Add(font, width);
-        return width;
-    }
-    public static float LineHeight(this Font font) {
-        if (Platform.Instance.IsWpf) {
-            // WPF reports the line height a bit to small for some reason?
-            return font.LineHeight + 5.0f;
-        }
-
-        return font.LineHeight;
-    }
-    public static float MeasureWidth(this Font font, string text, bool measureReal = false) {
-        if (measureReal) {
-            return string.IsNullOrEmpty(text) ? 0.0f : font.MeasureString(text).Width;
-        }
-
-        return font.CharWidth() * text.Length;
-    }
-
     private static readonly Dictionary<SKFont, float> widthCache = [];
     public static float CharWidth(this SKFont font) {
         if (widthCache.TryGetValue(font, out float width)) {
@@ -122,7 +96,6 @@ public static class FontManager {
         // Clear cached fonts
         editorFont?.Dispose();
         statusFont?.Dispose();
-        charWidthCache.Clear();
 
         editorFont = statusFont = null;
 
@@ -132,12 +105,9 @@ public static class FontManager {
         skEditorFontBoldItalic?.Dispose();
         skStatusFont?.Dispose();
         skPopupFont?.Dispose();
+        skPopupFontBold?.Dispose();
         widthCache.Clear();
 
-        skEditorFontRegular = skEditorFontBold = skEditorFontItalic = skEditorFontBoldItalic = skStatusFont = skPopupFont = null;
+        skEditorFontRegular = skEditorFontBold = skEditorFontItalic = skEditorFontBoldItalic = skStatusFont = skPopupFont = skPopupFontBold = null;
     }
-
-    private static Font CreateEditor(FontStyle style) => CreateFont(Settings.Instance.FontFamily, Settings.Instance.EditorFontSize * Settings.Instance.FontZoom, style);
-    private static Font CreateStatus() => CreateFont(Settings.Instance.FontFamily, Settings.Instance.StatusFontSize);
-    private static Font CreatePopup() => CreateFont(Settings.Instance.FontFamily, Settings.Instance.PopupFontSize);
 }

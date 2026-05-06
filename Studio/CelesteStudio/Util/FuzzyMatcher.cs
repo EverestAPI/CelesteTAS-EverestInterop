@@ -2,6 +2,7 @@ using StudioCommunication.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -123,22 +124,24 @@ public class FuzzyMatcher : IDisposable {
             }
 
             public void ReconstructOptimalPath(ushort maxScoreEnd, int matrixLen, int start, List<int> indicesList) {
-                indicesList.EnsureCapacity(indicesList.Count + RowOffset.Length);
+                indicesList.EnsureCapacity(RowOffset.Length);
+                indicesList.AddRange(Enumerable.Repeat(0, RowOffset.Length));
+                var indices = CollectionsMarshal.AsSpan(indicesList);
 
                 var rowOffsetSpan = RowOffset.Span;
                 var scoreCellsSpan = ScoreCells.Span;
 
-                var indices = CollectionsMarshal.AsSpan(indicesList)[indicesList.Count..];
                 int lastRowOffset = rowOffsetSpan[^1];
                 indices[RowOffset.Length - 1] = start + maxScoreEnd + lastRowOffset;
 
                 var matrixCells = MatrixCells.Span[..matrixLen];
                 int width = ScoreCells.Length;
                 
-                int rowIdx = 0;
-                int rowOffset = rowOffsetSpan[0];
+                int rowIdx = RowOffset.Length - 2;
+                int rowOffset = rowOffsetSpan[rowIdx];
+                int relativeRowOffset = rowOffset - rowIdx;
 
-                int splitIdx = matrixCells.Length - (width - rowOffset);
+                int splitIdx = matrixCells.Length - (width - relativeRowOffset);
                 var row = matrixCells[splitIdx..];
                 matrixCells = matrixCells[..splitIdx];
 
@@ -154,19 +157,21 @@ public class FuzzyMatcher : IDisposable {
                     }
 
                     byte mask = matched ? MATRIX_M_MATCH_MASK : MATRIX_P_MATCH_MASK;
-                    bool nextMatched = (row[col] & mask) == 0;
+                    bool nextMatched = (row[col] & mask) != 0;
 
                     if (matched) {
-                        rowIdx++;
-                        if (rowIdx >= RowOffset.Length) {
+                        if (rowIdx == 0) {
                             break;
                         }
                         
+                        rowIdx--;
                         int nextRowOffset = rowOffsetSpan[rowIdx];
-                        int nextSplitIdx = matrixCells.Length - (width - nextRowOffset - rowIdx);
+                        int nextRelativeRowOffset = nextRowOffset - rowIdx;
+                        int nextSplitIdx = matrixCells.Length - (width - nextRelativeRowOffset);
                         var nextRow = matrixCells[nextSplitIdx..];
                         matrixCells = matrixCells[..nextSplitIdx];
 
+                        col += rowOffset - nextRowOffset;
                         rowOffset = nextRowOffset;
                         row = nextRow;
                     }
@@ -548,7 +553,7 @@ public class FuzzyMatcher : IDisposable {
     }
 
     private (int Start, int GreedyEnd, int End)? Prefilter(ReadOnlySpan<char> needle, ReadOnlySpan<char> haystack, bool onlyGreedy) {
-        int start = haystack[..^needle.Length].IndexOfChar(needle[0], ignoreCase: IgnoreCase);
+        int start = haystack[..(haystack.Length - needle.Length + 1)].IndexOfChar(needle[0], ignoreCase: IgnoreCase);
         if (start == -1) {
             return null;
         }
@@ -590,8 +595,8 @@ public class FuzzyMatcher : IDisposable {
 
         prevClass = currClass;
 
-        char needleChar = GetCharNormalized(needle[0]);
-        int needleIdx = 1;
+        char needleChar = GetCharNormalized(needle.Length > 1 ? needle[1] : needle[0]);
+        int needleIdx = 2;
 
         for (int idx = start + 1; idx < end; idx++) {
             (char currChar, currClass) = GetCharClassNormalized(haystack[idx]);

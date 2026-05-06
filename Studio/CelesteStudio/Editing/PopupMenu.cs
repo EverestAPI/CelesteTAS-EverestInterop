@@ -108,24 +108,22 @@ public abstract class PopupMenu : Scrollable {
         /// Callback for when this entry is selected.
         public required Action OnUse;
         /// Whether the entry can be selected.
-        public bool Disabled = false;
+        public bool Disabled;
 
         /// Index used to determine "usage frequency" of entry
         public int FrequentlyUsedIndex = -1;
 
         /// Unique identifier for the category of the entry
-        private string? storageKey;
         public string? StorageKey {
-            get => storageKey;
-            set => storageKey = value?.Replace('.', '#');
+            get;
+            init => field = value?.Replace('.', '#');
         }
 
         /// Unique identifier inside the current category
-        private string? storageName;
         [AllowNull]
         public string StorageName {
-            get => storageName ?? DisplayText.Replace('.', '#');
-            set => storageName = value?.Replace('.', '#');
+            get => field ?? DisplayText.Replace('.', '#');
+            init => field = value?.Replace('.', '#');
         }
 
         /// Active data slot, used for storing persistant data
@@ -176,8 +174,7 @@ public abstract class PopupMenu : Scrollable {
         public override void Draw(SKSurface surface) {
             var canvas = surface.Canvas;
 
-            var visibleElements = menu.VisibleEntries.ToArray();
-            if (visibleElements.Length == 0) {
+            if (menu.VisibleEntries.Length == 0) {
                 return;
             }
 
@@ -186,18 +183,17 @@ public abstract class PopupMenu : Scrollable {
             canvas.DrawRect(backgroundRect, Settings.Instance.Theme.PopupMenuBgPaint);
 
             var font = FontManager.SKPopupFont;
-            int maxDisplayLen = visibleElements.Select(entry => entry.DisplayText.Length).Aggregate(Math.Max);
+            int maxDisplayLen = menu.VisibleEntries
+                .Select(pair => pair.Entry.DisplayText.Length)
+                .Aggregate(Math.Max);
 
             float width = menu.ContentWidth - Settings.Instance.Theme.PopupMenuBorderPadding * 2.0f;
             float height = menu.EntryHeight;
             int iconWidth = menu.IconWidth;
 
-            const int rowCullOverhead = 3;
-            int minRow = Math.Max(0, (int)(menu.ScrollPosition.Y / height) - rowCullOverhead);
-            int maxRow = Math.Min(menu.shownEntries.Length - 1, (int)((menu.ScrollPosition.Y + menu.ClientSize.Height) / height) + rowCullOverhead);
-
-            for (int row = minRow; row <= maxRow; row++) {
-                var entry = menu.shownEntries[row];
+            for (int idx = 0; idx < menu.VisibleEntries.Length; idx++) {
+                int row = menu.VisibleEntriesMinRow + idx;
+                var (entry, indices) = menu.VisibleEntries[idx];
 
                 const float normalIconScale = 0.75f;
                 const float hoverIconScale = 0.9f;
@@ -276,13 +272,52 @@ public abstract class PopupMenu : Scrollable {
                         Settings.Instance.Theme.PopupMenuSelectedPaint);
                 }
 
-                canvas.DrawText(entry.DisplayText,
-                    x: Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding + menu.IconWidth,
-                    y: Settings.Instance.Theme.PopupMenuBorderPadding + row * height + Settings.Instance.Theme.PopupMenuEntryVerticalPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f + font.Offset(),
-                    font, entry.Disabled ? Settings.Instance.Theme.PopupMenuFgDisabledPaint : Settings.Instance.Theme.PopupMenuFgPaint);
+                float textX = Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding + menu.IconWidth;
+                float textY = Settings.Instance.Theme.PopupMenuBorderPadding + row * height + Settings.Instance.Theme.PopupMenuEntryVerticalPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f + font.Offset();
+
+                // Highlight fuzzy-matched letter
+                var boldFont = FontManager.SKPopupFontBold;
+                var boldMetrics = boldFont.Metrics;
+                float boldUnderlineOffset = boldMetrics.UnderlinePosition ?? boldFont.LineHeight() / 10.0f;
+
+                var strokePaint = new SKPaint();
+                strokePaint.Style = SKPaintStyle.Stroke;
+                strokePaint.Color = Settings.Instance.Theme.PopupMenuFgPaint.Color;
+                strokePaint.StrokeWidth = boldMetrics.UnderlineThickness ?? 1.0f;
+                strokePaint.StrokeCap = SKStrokeCap.Round;
+                
+                int highlightIdx = 0;
+                for (int currLetter = 0; currLetter < entry.DisplayText.Length;) {
+                    int nextLetter = highlightIdx < indices.Count ? indices[highlightIdx] : entry.DisplayText.Length;
+                    highlightIdx++;
+                    
+                    var regularText = entry.DisplayText.AsSpan()[currLetter..nextLetter];
+                    canvas.DrawText(regularText,
+                        x: textX + currLetter * font.CharWidth(),
+                        y: textY,
+                        font, entry.Disabled ? Settings.Instance.Theme.PopupMenuFgDisabledPaint : Settings.Instance.Theme.PopupMenuFgPaint);
+
+                    if (nextLetter == entry.DisplayText.Length) {
+                        break;
+                    }
+
+                    float boldX = textX + nextLetter * font.CharWidth(); 
+                    
+                    var boldText = entry.DisplayText.AsSpan()[nextLetter..(nextLetter + 1)];
+                    canvas.DrawText(boldText,
+                        x: boldX,
+                        y: textY,
+                        boldFont, entry.Disabled ? Settings.Instance.Theme.PopupMenuFgDisabledPaint : Settings.Instance.Theme.PopupMenuFgPaint);
+
+                    float underlineY = textY + boldUnderlineOffset;
+                    canvas.DrawLine(boldX, underlineY, boldX + font.CharWidth(), underlineY, strokePaint);
+                    
+                    currLetter = nextLetter + 1;
+                }
+                
                 canvas.DrawText(entry.ExtraText,
-                    x: Settings.Instance.Theme.PopupMenuBorderPadding + Settings.Instance.Theme.PopupMenuEntryHorizontalPadding + menu.IconWidth + font.CharWidth() * (maxDisplayLen + DisplayExtraPadding),
-                    y: Settings.Instance.Theme.PopupMenuBorderPadding + row * height + Settings.Instance.Theme.PopupMenuEntryVerticalPadding + Settings.Instance.Theme.PopupMenuEntrySpacing / 2.0f + font.Offset(),
+                    x: textX + (maxDisplayLen + DisplayExtraPadding) * font.CharWidth(),
+                    y: textY,
                     font, Settings.Instance.Theme.PopupMenuFgExtraPaint);
             }
         }
@@ -460,14 +495,33 @@ public abstract class PopupMenu : Scrollable {
     private Entry[] shownEntries = [];
     private readonly ContentDrawable drawable;
 
-    private int TopVisibleEntry => (int) MathF.Floor(ScrollPosition.Y / (float)EntryHeight);
-    private int BottomVisibleEntry => (int) MathF.Ceiling((ScrollPosition.Y + ClientSize.Height) / (float)EntryHeight);
-    private IEnumerable<Entry> VisibleEntries {
+    private ((Entry Entry, List<int> FuzzyIndices)[]? Entries, int MinRow, int MaxRow) visibleEntryData;
+    
+    private int VisibleEntriesMinRow => Math.Max(visibleEntryData.MinRow, 0);
+    private int VisibleEntriesMaxRow => Math.Min(visibleEntryData.MaxRow, shownEntries.Length - 1);
+    private (Entry Entry, List<int> FuzzyIndices)[] VisibleEntries {
         get {
-            int top = TopVisibleEntry;
-            int bottom = BottomVisibleEntry;
+            const int rowCullOverhead = 3;
+            float height = EntryHeight;
+            int minRow = Math.Max(0, (int)(ScrollPosition.Y / height) - rowCullOverhead);
+            int maxRow = Math.Min(shownEntries.Length - 1, (int)((ScrollPosition.Y + ClientSize.Height) / height) + rowCullOverhead);
+            
+            if (visibleEntryData.Entries == null || visibleEntryData.MinRow != minRow || visibleEntryData.MaxRow != maxRow) {
+                // Recalculate visible entries
+                visibleEntryData.MinRow = minRow;
+                visibleEntryData.MaxRow = maxRow;
+                visibleEntryData.Entries = shownEntries
+                    .Skip(minRow)
+                    .Take(maxRow - minRow + 1)
+                    .Select(entry => {
+                        var indices = new List<int>();
+                        matcher.GetIndices(entry.SearchText.AsSpan(), filter.AsSpan(), indices);
+                        return (entry, indices);
+                    })
+                    .ToArray();
+            }
 
-            return shownEntries.Skip(top).Take(Math.Min(bottom - top + 1, shownEntries.Length - top));
+            return visibleEntryData.Entries;
         }
     }
 
@@ -522,7 +576,7 @@ public abstract class PopupMenu : Scrollable {
                     return  1;
                 }
                 if (lhsFavourite && rhsFavourite) {
-                    return lhsScore - rhsScore;
+                    return rhsScore - lhsScore;
                 }
 
                 bool lhsFrequent = lhs.Entry.FrequentlyUsedIndex is >= 0 and < FrequentlyUsedCategorySize;
@@ -534,7 +588,7 @@ public abstract class PopupMenu : Scrollable {
                     return  1;
                 }
                 if (lhsFrequent && rhsFrequent) {
-                    return (lhs.Entry.FrequentlyUsedIndex * 10 + lhsScore) - (rhs.Entry.FrequentlyUsedIndex * 10 + rhsScore);
+                    return (rhsScore - lhsScore) + (rhs.Entry.FrequentlyUsedIndex - lhs.Entry.FrequentlyUsedIndex) * 5;
                 }
 
                 bool lhsSuggestion = lhs.Entry.Suggestion;
@@ -546,10 +600,10 @@ public abstract class PopupMenu : Scrollable {
                     return  1;
                 }
                 if (lhsSuggestion && rhsSuggestion) {
-                    return lhsScore - rhsScore;
+                    return rhsScore - lhsScore;
                 }
                 
-                return lhsScore - rhsScore;
+                return rhsScore - lhsScore;
             }))
             .Select(pair => pair.Entry)
             .ToArray();
@@ -563,6 +617,9 @@ public abstract class PopupMenu : Scrollable {
                 Disabled = true
             }];
         }
+
+        // Clear cached entries
+        visibleEntryData.Entries = null;
 
         selectedEntry = Math.Clamp(selectedEntry, 0, shownEntries.Length - 1);
 
