@@ -59,7 +59,6 @@ internal class SettingsQueryHandler : TargetQuery.Handler {
             case nameof(Settings.VSync):
             case nameof(Settings.MusicVolume):
             case nameof(Settings.SFXVolume):
-            case nameof(Settings.Language):
                 // Intentional no-op. A TAS should not modify these user preferences
                 return Result<bool, TargetQuery.MemberAccessError>.Ok(true);
         }
