@@ -496,18 +496,29 @@ public static class ConsoleCommand {
 
         if (!simple) {
             if (level.Tracker.GetEntity<Player>() is { } player) {
-                if (player.movementCounter == Vector2.Zero && player.Speed != Vector2.Zero) {
+                if (player.movementCounter == Vector2.Zero && player.Speed == Vector2.Zero) {
                     if (player.Position == level.DefaultSpawnPoint) {
                         if (level.Session.Level == level.Session.MapData.StartLevel().Name) {
                             // Simplify to load from beginning
                         } else {
                             // Simplify to default room load
-                            values.Add(level.Session.Level);
+                            if (level.Session.Level.StartsWith("lvl_")) {
+                                values.Add(level.Session.Level);
+                            } else {
+                                values.Add("lvl_" + level.Session.Level);
+                            }
                         }
                     } else if (level.Session.LevelData.Spawns.IndexOf(player.Position) is var spawnIndex && spawnIndex > 0) {
                         // Simplify to indexed room load
-                        values.Add(level.Session.Level);
+                        if (level.Session.Level.StartsWith("lvl_")) {
+                            values.Add(level.Session.Level);
+                        } else {
+                            values.Add("lvl_" + level.Session.Level);
+                        }
                         values.Add(spawnIndex.ToString());
+                    } else {
+                        values.Add(player.X.ToString("F0"));
+                        values.Add(player.Y.ToString("F0"));
                     }
                 } else {
                     // Load exact position
@@ -521,7 +532,11 @@ public static class ConsoleCommand {
                     }
                 }
             } else {
-                values.Add(level.Session.Level);
+                if (level.Session.Level.StartsWith("lvl_")) {
+                    values.Add(level.Session.Level);
+                } else {
+                    values.Add("lvl_" + level.Session.Level);
+                }
             }
         }
 
