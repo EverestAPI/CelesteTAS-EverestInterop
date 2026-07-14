@@ -29,6 +29,8 @@ internal static class SeededRandomness {
         public int SeedIndex = 0;
         public SourceLocation SeedSource;
 
+        public bool HasSeed => SeedIndex < Seeds.Length;
+
         public virtual void Init() { }
         public virtual void Reset() { }
         public virtual void PreUpdate() { }
@@ -88,6 +90,9 @@ internal static class SeededRandomness {
         }
         if (ModUtils.IsInstalled("BossesHelper")) {
             handlers.Add(new BossesHelperHandler());
+        }
+        if (ModUtils.IsInstalled("CrystallineHelper")) {
+            handlers.Add(new CrystallineHelperHandler());
         }
         if (ModUtils.IsInstalled("PandorasBox")) {
             handlers.Add(new PandorasBoxTileGlitcherHandler());
@@ -580,6 +585,24 @@ internal static class SeededRandomness {
                 f_TASSeed.SetValue(bossModule, seed);
                 AssertNoSeedsRemaining();
             }
+        }
+    }
+
+    public class CrystallineHelperHandler : Handler {
+        public override string Name => "CrystallineHelper_Timer";
+
+        private static CrystallineHelperHandler instance = null!;
+
+        public override void Init() {
+            instance = this;
+
+            ModUtils.GetMethod("CrystallineHelper", "vitmod.VitModule", "GetSeed")
+                ?.OverrideReturn(
+                    condition: static () => instance.HasSeed,
+                    valueProvider: static () => {
+                        instance.NextSeed(out int seed);
+                        return seed;
+                    });
         }
     }
 

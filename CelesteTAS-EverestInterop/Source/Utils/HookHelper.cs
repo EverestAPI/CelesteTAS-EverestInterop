@@ -189,16 +189,18 @@ internal static class HookHelper {
     }
 
     /// Creates a callback to conditionally override the return value of the original method without ever even calling it
-    public static void OverrideReturn<T>(this MethodInfo method, Func<bool> condition, T value) {
+    public static void OverrideReturn<T>(this MethodInfo method, Func<bool>? condition, T value) {
 #if DEBUG
-        Debug.Assert(typeof(T).IsSameOrSubclassOf(method.ReturnType));
+        Debug.Assert(typeof(T).IsAssignableTo(method.ReturnType), $"Expected type of override {typeof(T).FullName} to be assignable to {method.ReturnType.FullName}");
 #endif
         method.IlHook((cursor, _) => {
             var start = cursor.MarkLabel();
             cursor.MoveBeforeLabels();
 
-            cursor.EmitStaticDelegate("OverrideReturn", condition);
-            cursor.EmitBrfalse(start);
+            if (condition is not null) {
+                cursor.EmitStaticDelegate("OverrideReturn", condition);
+                cursor.EmitBrfalse(start);
+            }
 
             // Put the return value onto the stack
             switch (value) {
@@ -226,16 +228,18 @@ internal static class HookHelper {
     }
 
     /// Creates a callback to conditionally override the return value of the original method without ever even calling it
-    public static void OverrideReturn<T>(this MethodInfo method, Func<bool> condition, Func<T> valueProvider) {
+    public static void OverrideReturn<T>(this MethodInfo method, Func<bool>? condition, Func<T> valueProvider) {
 #if DEBUG
-        Debug.Assert(typeof(T).IsSameOrSubclassOf(method.ReturnType));
+        Debug.Assert(typeof(T).IsAssignableTo(method.ReturnType), $"Expected type of override {typeof(T).FullName} to be assignable to {method.ReturnType.FullName}");
 #endif
         method.IlHook((cursor, _) => {
             var start = cursor.MarkLabel();
             cursor.MoveBeforeLabels();
 
-            cursor.EmitStaticDelegate("OverrideReturn", condition);
-            cursor.EmitBrfalse(start);
+            if (condition is not null) {
+                cursor.EmitStaticDelegate("OverrideReturn", condition);
+                cursor.EmitBrfalse(start);
+            }
 
             // Put the return value onto the stack
             cursor.EmitStaticDelegate("OverrideReturn", valueProvider);
@@ -244,7 +248,7 @@ internal static class HookHelper {
     }
 
     /// Creates a callback to conditionally override the return value of the original method without ever even calling it
-    public static void OverrideReturn<TParam, TReturn>(this MethodInfo method, Func<TParam, bool> condition, Func<TParam, TReturn> valueProvider) {
+    public static void OverrideReturn<TParam, TReturn>(this MethodInfo method, Func<TParam, bool>? condition, Func<TParam, TReturn> valueProvider) {
 #if DEBUG
         if (method.IsStatic) {
             var parameters = method.GetParameters();
@@ -253,15 +257,17 @@ internal static class HookHelper {
             Debug.Assert(method.DeclaringType?.IsSameOrSubclassOf(typeof(TParam)) ?? false);
         }
 
-        Debug.Assert(typeof(TReturn).IsSameOrSubclassOf(method.ReturnType));
+        Debug.Assert(typeof(TReturn).IsAssignableTo(method.ReturnType), $"Expected type of override {typeof(TReturn).FullName} to be assignable to {method.ReturnType.FullName}");
 #endif
         method.IlHook((cursor, _) => {
             var start = cursor.MarkLabel();
             cursor.MoveBeforeLabels();
 
-            cursor.EmitLdarg0();
-            cursor.EmitStaticDelegate("OverrideReturn", condition);
-            cursor.EmitBrfalse(start);
+            if (condition is not null) {
+                cursor.EmitLdarg0();
+                cursor.EmitStaticDelegate("OverrideReturn", condition);
+                cursor.EmitBrfalse(start);
+            }
 
             // Put the return value onto the stack
             cursor.EmitLdarg0();
