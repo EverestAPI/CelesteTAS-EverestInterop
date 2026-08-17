@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using Mono.Cecil;
+using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using MonoMod.Utils;
@@ -366,7 +367,7 @@ internal static class HookHelper {
         var targetMethod = dynamicMethod.Generate();
         var targetReference = cursor.Context.Import(targetMethod);
         targetReference.Name = name;
-        targetReference.DeclaringType = cb.Method.DeclaringType?.DeclaringType.ResolveDefinition();
+        targetReference.DeclaringType = cb.Method.DeclaringType?.DeclaringType!.ResolveDefinition();
         targetReference.ReturnType = dynamicMethod.Definition.ReturnType;
         targetReference.Parameters.AddRange(dynamicMethod.Definition.Parameters);
 
