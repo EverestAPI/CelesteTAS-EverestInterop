@@ -1,3 +1,31 @@
+# CelesteTAS v3.47.1, Studio v3.11.0
+
+## Fuzzy Auto-Completion
+<!-- IMAGE right 349 294 Assets/v3.47.1/FuzzyAutoComplete.png -->
+
+Auto-complete now uses **fuzzy search algorithm** to filter through the results,
+resulting earlier matches and easier discovery.
+
+---
+
+- Feature: Allow for creation of Desktop Shortcuts on Windows and Linux
+- Feature: Apply force-allowed accessibility tools to Secrets of Celeste Mountain
+- Feature: Allow seeding of Trigger Triggers via `SeedRandom` (see wiki for more infos)
+- Tweak: Remove default keybinds for multiply/divide to avoid conflicts
+- Tweak: Remove warning for `Repeat,1` command
+- Tweak: Allow game language to be changed with `Set` command
+- Fix: EntityID target-query selector (i.e. `Entity[a-00:1]`) not working
+- Fix: Simplified `load` commands not being generated properly
+- Fix: Rendering of certain non-default fonts
+- Fix: Rendering of fonts on transparent background on Windows
+- Fix: Crash when trying to insert breakpoint on last line
+- Fix: Crash when trying to divide by zero (but seriously, what did you expect?)
+- Fix: Info-Template editor closing when pressing certain keys
+- Fix: Parsing of console commands from the DebugRC page
+- Fix: Rendering of Arbitrary Shape Lightning
+- Fix: Map-defiend Extended Variants being restored as user-defined
+- Fix: Settings getting corrupted when auto-completing certain types
+
 # CelesteTAS v3.47.0, Studio v3.10.0
 
 ## Improved Auto-Completion
@@ -89,7 +117,6 @@ which can be useful for lobby routing or sync-checking.
 - Fix: Avoid starting TAS when manually starting recording with TAS Recorder
 - Fix: Certain entities not being watchable in the Info HUD
 - Remove: Unused clutter in parameter auto-complete for `Set`/`Invoke` commands
-
 
 # CelesteTAS v3.46.2, Studio v3.9.7
 
