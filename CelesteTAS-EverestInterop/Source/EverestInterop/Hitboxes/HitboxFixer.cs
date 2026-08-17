@@ -164,11 +164,13 @@ internal static class HitboxFixer {
         }
 
         var points = self.GetFieldValue<Vector2[]>("Points")!;
+        var pos = self.Entity?.Position ?? default;
+        
         for (int i = 0; i < points.Length - 1; i++) {
-            DrawExactLine(points[i], points[i + 1], color);
+            DrawExactLine(pos + points[i], pos + points[i + 1], color);
         }
         if (self.GetFieldValue<bool>("Fill")) {
-            DrawExactLine(points[0], points[^1], color);
+            DrawExactLine(pos + points[0], pos + points[^1], color);
         }
     }
 
