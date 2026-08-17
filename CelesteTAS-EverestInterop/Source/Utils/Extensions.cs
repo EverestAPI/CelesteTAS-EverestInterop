@@ -555,6 +555,14 @@ internal static class ReflectionExtensions {
 
         return (T?) method.Invoke(null, parameters);
     }
+
+    public static string GetFullName(this MethodBase method) {
+        if (method.DeclaringType?.FullName is { } declType) {
+            return $"{declType}::{method.Name}";
+        }
+
+        return method.Name;
+    }
 }
 
 internal static class HashCodeExtensions {

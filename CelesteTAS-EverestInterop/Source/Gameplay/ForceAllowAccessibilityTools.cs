@@ -56,6 +56,24 @@ internal static class ForceAllowAccessibilityTools {
     // Doesn't account for switching to a non-cleared save file after being completed on another, but we don't care about that
     private static readonly HashSet<(string SID, AreaMode Mode)> beatenMaps = new();
 
+    [Load]
+    private static void Load() {
+        On.Celeste.Celeste.Update += On_Celeste_Update;
+    }
+    [Unload]
+    private static void Unload() {
+        On.Celeste.Celeste.Update -= On_Celeste_Update;
+    }
+
+    private static void On_Celeste_Update(On.Celeste.Celeste.orig_Update orig, Celeste.Celeste self, GameTime gameTime) {
+        if (Enabled) {
+            // Some mods just disable this without ever re-enabling it....
+            Engine.Commands.Enabled = true;
+        }
+
+        orig(self, gameTime);
+    }
+
     [Initialize]
     private static void Initialize() {
         // Prevent the "Custom Pause Controller" from disabling pausing / 'Save & Quit'
@@ -190,5 +208,14 @@ internal static class ForceAllowAccessibilityTools {
     }
 
     #endregion
+    #region XaphanHelper
 
+    [ModILHook("XaphanHelper", "Celeste.Mod.XaphanHelper.XaphanModuleSettings", "get_AllowDebug")]
+    private static void ForceAllowDebug(ILCursor cursor) {
+        cursor.GotoNext(instr => instr.MatchRet());
+        cursor.EmitCall(typeof(ForceAllowAccessibilityTools).GetGetMethod(nameof(Enabled))!);
+        cursor.EmitOr();
+    }
+
+    #endregion
 }
