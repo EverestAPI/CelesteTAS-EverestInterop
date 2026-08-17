@@ -1,100 +1,48 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text.RegularExpressions;
 using Celeste.Mod;
-using Mono.Cecil.Cil;
+using JetBrains.Annotations;
 using Monocle;
-using MonoMod.Cil;
 using StudioCommunication;
+using System.Linq;
 using TAS.Input;
-using TAS.Module;
 using TAS.Utils;
 
 namespace TAS.EverestInterop.Lua;
 
 public static class EvalLuaCommand {
+    public const string CommandName = "EvalLua";
+
     private class Meta : ITasCommandMeta {
-        public string Insert => $"EvalLua{CommandInfo.Separator}[0;Code]";
+        public string Insert => $"{CommandName}{CommandInfo.Separator}[0;Code]";
         public bool HasArguments => true;
     }
 
     internal static bool ConsoleCommandRunning;
-
-    private const string CommandName = "EvalLua";
-    private static readonly Regex commandAndSeparatorRegex = new(@$"^{CommandName}[ |,]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-    private static readonly FieldInfo DebugRClogFieldInfo = typeof(Commands).GetFieldInfo("debugRClog")!;
-
-    [Load]
-    private static void Load() {
-        HookEverestDebugRc();
-    }
-
-    private static void HookEverestDebugRc() {
-        var methods = typeof(Everest.DebugRC).GetNestedType("<>c", BindingFlags.NonPublic)!
-            .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic);
-        foreach (var method in methods) {
-            var methodBody = method.GetMethodBody();
-            if (methodBody == null) {
-                continue;
-            }
-
-            foreach (var localVariable in methodBody.LocalVariables) {
-                if (localVariable.LocalType.FullName != "Monocle.Commands+CommandData") {
-                    continue;
-                }
-
-                method.IlHook((cursor, _) => {
-                    // insert codes after "rawCommand.Split(new[] {' ', ','}, StringSplitOptions.RemoveEmptyEntries);"
-                    if (cursor.TryGotoNext(MoveType.After, ins => ins.MatchCallvirt<string>("Split"))) {
-                        cursor.Emit(OpCodes.Ldloc_0).EmitDelegate<Func<string[], string, string[]>>(
-                            (commandAndArgs, rawCommand) => {
-                                if (commandAndArgs[0].ToLower() == CommandName && commandAndArgs.Length >= 2) {
-                                    return [CommandName, commandAndSeparatorRegex.Replace(rawCommand, "")];
-                                }
-
-                                return commandAndArgs;
-                            });
-                    }
-                });
-
-                return;
-            }
-        }
-    }
-
-    private static string? ReadContent(string assetPath) {
-        ModAsset? modAsset = Everest.Content.Get(assetPath, true);
-        if (modAsset != null) {
-            using StreamReader streamReader = new(modAsset.Stream);
-            return streamReader.ReadToEnd();
-        } else {
-            return null;
-        }
-    }
 
     public static void Log(object message) {
         if (ConsoleCommandRunning) {
             Engine.Commands.Log(message);
         }
 
-        $"EvalLua Command Failed: {message}".Log();
+        $"{CommandName} Command Failed: {message}".Log();
     }
 
-    [Monocle.Command(CommandName, "Evaluate lua code (CelesteTAS)")]
-    private static void EvalLua(string code) {
-        string? firstHistory = Engine.Commands.commandHistory.FirstOrDefault();
-        if (DebugRClogFieldInfo.GetValue(Engine.Commands) == null &&
-            firstHistory?.StartsWith(CommandName, StringComparison.InvariantCultureIgnoreCase) == true) {
-            code = commandAndSeparatorRegex.Replace(firstHistory, "");
+    [Monocle.Command(CommandName, "Evaluate Lua code (CelesteTAS)"), UsedImplicitly]
+    private static void EvalLua() {
+        if (!CommandLine.TryParse(Engine.Commands.commandHistory[0], out var commandLine)) {
+            $"{CommandName} Command Failed: Couldn't parse arguments of command".ConsoleLog(LogLevel.Error);
+            return;
         }
 
-        ConsoleCommandRunning = true;
-        object?[]? result = EvalLuaImpl(code);
-        ConsoleCommandRunning = false;
-        LogResult(result);
+        try {
+            ConsoleCommandRunning = true;
+            object?[]? result = ExecuteLua(string.Join(commandLine.ArgumentSeparator, commandLine.Arguments));
+            LogResult(result);
+        } finally {
+            ConsoleCommandRunning = false;
+        }
     }
 
     [TasCommand(CommandName, LegalInFullGame = false, MetaDataProvider = typeof(Meta))]
@@ -104,12 +52,18 @@ public static class EvalLuaCommand {
             return;
         }
 
-        EvalLuaImpl(string.Join(commandLine.ArgumentSeparator, commandLine.Arguments));
+        ExecuteLua(string.Join(commandLine.ArgumentSeparator, commandLine.Arguments));
     }
 
-    public static object?[]? EvalLuaImpl(string code) {
-        string localCode = ReadContent("bin/env")!;
-        code = $"{localCode}\n{code}";
+    private static string? envCode;
+    internal static object?[]? ExecuteLua(string code) {
+        // Prepend useful helper functions as environment
+        if (envCode == null) {
+            var asset = Everest.Content.Get("bin/env");
+            using var reader = new StreamReader(asset.Stream);
+            envCode = reader.ReadToEnd() + "\n";
+        }
+        code = envCode + code;
 
         object?[]? objects;
         try {
@@ -122,17 +76,16 @@ public static class EvalLuaCommand {
         return objects;
     }
 
-    private static void LogResult(object?[]? objects) {
-        var result = new List<string>();
-
+    internal static void LogResult(object?[]? objects) {
         if (objects == null || objects.Length == 0) {
             return;
-        } else if (objects.Length == 1) {
+        }
+
+        var result = new List<string>();
+        if (objects.Length == 1) {
             result.Add(objects[0]?.ToString() ?? "null");
         } else {
-            for (var i = 0; i < objects.Length; i++) {
-                result.Add($"{i + 1}: {objects[i]?.ToString() ?? "null"}");
-            }
+            result.AddRange(objects.Select((obj, idx) => $"{idx + 1}: {obj?.ToString() ?? "null"}"));
         }
 
         Engine.Commands.Log(string.Join("\n", result));

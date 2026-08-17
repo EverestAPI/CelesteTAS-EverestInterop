@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using Celeste.Mod;
 using JetBrains.Annotations;
@@ -6,8 +5,6 @@ using Monocle;
 using StudioCommunication;
 using StudioCommunication.Util;
 using System.Collections.Generic;
-using TAS.EverestInterop;
-using TAS.Gameplay;
 using TAS.InfoHUD;
 using TAS.Playback;
 using TAS.Utils;
@@ -15,8 +12,10 @@ using TAS.Utils;
 namespace TAS.Input.Commands;
 
 public static class SetCommand {
+    public const string CommandName = "Set";
+    
     internal class SetMeta : ITasCommandMeta {
-        public string Insert => $"Set{CommandInfo.Separator}[0;Query]{CommandInfo.Separator}[1;Value]";
+        public string Insert => $"{CommandName}{CommandInfo.Separator}[0;Query]{CommandInfo.Separator}[1;Value]";
         public bool HasArguments => true;
 
         public int GetHash(string[] args, string filePath, int fileLine) {
@@ -59,19 +58,19 @@ public static class SetCommand {
 
     private static void ReportError(string message) {
         if (activeFile == null) {
-            $"Set Command Failed: {message}".ConsoleLog(LogLevel.Error);
+            $"{CommandName} Command Failed: {message}".ConsoleLog(LogLevel.Error);
         } else {
             PopupToast.ShowAndLog($"""
-                                   Set '{activeFile.Value.Name}' line {activeFile.Value.Line} failed:
+                                   {CommandName} '{activeFile.Value.Name}' line {activeFile.Value.Line} failed:
                                    {message}
                                    """);
         }
     }
 
-    [Monocle.Command("set", "'set Settings/Level/Session/Entity value' | Example: 'set DashMode Infinite', 'set Player.Speed 325 -52.5' (CelesteTAS)"), UsedImplicitly]
+    [Monocle.Command(CommandName, "'set Settings/Level/Session/Entity value' | Example: 'set DashMode Infinite', 'set Player.Speed 325 -52.5' (CelesteTAS)"), UsedImplicitly]
     private static void SetCmd() {
         if (!CommandLine.TryParse(Engine.Commands.commandHistory[0], out var commandLine)) {
-            "Set Command Failed: Couldn't parse arguments of command".ConsoleLog(LogLevel.Error);
+            $"{CommandName} Command Failed: Couldn't parse arguments of command".ConsoleLog(LogLevel.Error);
             return;
         }
 
@@ -82,14 +81,17 @@ public static class SetCommand {
     // Set, Mod.Setting, Value
     // Set, Entity.Field, Value
     // Set, Type.StaticMember, Value
-    [TasCommand("Set", LegalInFullGame = false, MetaDataProvider = typeof(SetMeta))]
+    [TasCommand(CommandName, LegalInFullGame = false, MetaDataProvider = typeof(SetMeta))]
     private static void Set(CommandLine commandLine, int studioLine, string filePath, int fileLine) {
-        activeFile = (filePath, fileLine);
-        Set(commandLine.Arguments);
-        activeFile = null;
+        try {
+            activeFile = (filePath, fileLine);
+            Set(commandLine.Arguments);
+        } finally {
+            activeFile = null;
+        }
     }
 
-    private static void Set(string[] args) {
+    internal static void Set(string[] args) {
         switch (args.Length) {
             case < 1:
                 ReportError("Expected target-query and value");

@@ -42,22 +42,21 @@ internal static class HookHelper {
     public static void OnHook(this MethodBase from, Delegate to) => onHooks.Add(new Hook(from, to));
 
     /// Creates an IL-hook to the specified method, which will automatically be unregistered
-    public static void IlHook(this MethodBase from, ILContext.Manipulator manipulator) => ilHooks.Add(new ILHook(from, manipulator));
-
-    /// Creates an IL-hook to the specified method, which will automatically be unregistered
-    public static void IlHook(this MethodBase from, Action<ILCursor, ILContext> manipulator) {
-        from.IlHook(il => {
-            var cursor = new ILCursor(il);
-            manipulator(cursor, il);
+    public static void IlHook(this MethodBase from, ILContext.Manipulator manipulator) {
+        ilHooks.Add(new ILHook(from, il => {
+            manipulator(il);
 
             try {
                 il.Method.FixShortLongOps();
             } catch {
                 // Some methods have slightly weird IL, causing that method to crash
             }
-        });
+        }));
     }
 
+    /// Creates an IL-hook to the specified method, which will automatically be unregistered
+    public static void IlHook(this MethodBase from, Action<ILCursor, ILContext> manipulator) => from.IlHook(il => manipulator(new ILCursor(il), il));
+    
     /// Creates a callback before the original method is called
     public static void HookBefore(this MethodBase methodInfo, Action action) {
         methodInfo.IlHook((cursor, _) => {

@@ -3,12 +3,19 @@ using System.Collections.Generic;
 using Celeste;
 using Celeste.Mod;
 using Microsoft.Xna.Framework.Input;
+using Mono.Cecil;
 using Monocle;
 using MonoMod.Cil;
+using MonoMod.Utils;
+using StudioCommunication;
+using System.Net;
+using System.Text;
+using TAS.EverestInterop.Lua;
 using TAS.ModInterop;
 using TAS.Module;
 using TAS.Utils;
 using TAS.InfoHUD;
+using TAS.Input.Commands;
 
 namespace TAS.EverestInterop;
 
@@ -36,6 +43,63 @@ public static class ConsoleEnhancements {
     [Load]
     private static void Load() {
         IL.Monocle.Commands.Render += IL_Commands_Render;
+        
+        // Parse cctor of DebugRC to find correct delegate
+        using var dmd = new DynamicMethodDefinition(typeof(Everest.DebugRC).TypeInitializer!);
+        var cur = new ILCursor(new ILContext(dmd.Definition));
+        MethodReference handlerMethodRef = null!;
+
+        cur.GotoNext(instr => instr.MatchLdstr("/console"));
+        cur.GotoNext(instr => instr.MatchLdftn(out handlerMethodRef!));
+
+        handlerMethodRef.ResolveReflection()
+            .IlHook(static (cur, _) => {
+                cur.GotoNext(MoveType.Before, instr => instr.MatchStloc(out int _));
+
+                // Manually handle TAS console command to avoid the arguments being split
+                cur.EmitDup();
+                cur.EmitLdarg1();
+                cur.EmitStaticDelegate("CheckTasCommand", bool (string line, HttpListenerContext c) => {
+                    if (!CommandLine.TryParse(line, out var commandLine)) {
+                        return false;
+                    } 
+
+                    Action execute;
+                    if (line.StartsWith(SetCommand.CommandName, StringComparison.OrdinalIgnoreCase) ) {
+                        execute = () => SetCommand.Set(commandLine.Arguments);
+                    } else if (line.StartsWith(CommandInfo.GetCommand, StringComparison.OrdinalIgnoreCase) ) {
+                        execute = () => TargetQuery.Get(commandLine);
+                    } else if (line.StartsWith(InvokeCommand.CommandName, StringComparison.OrdinalIgnoreCase) ) {
+                        execute = () => InvokeCommand.Invoke(commandLine.Arguments);
+                    } else if (line.StartsWith(EvalLuaCommand.CommandName, StringComparison.OrdinalIgnoreCase) ) {
+                        execute = () => {
+                            object?[]? result = EvalLuaCommand.ExecuteLua(string.Join(commandLine.ArgumentSeparator, commandLine.Arguments));
+                            EvalLuaCommand.LogResult(result);
+                        };
+                    } else {
+                        return false;
+                    }
+                    
+                    var output = new StringBuilder();
+                    MainThreadHelper.Schedule(() => {
+                        try {
+                            Engine.Commands.debugRClog = output;
+                            execute();
+                        } finally {
+                            Engine.Commands.debugRClog = null;
+                        }
+                    }).AsTask().Wait();
+                    Everest.DebugRC.Write(c, output.ToString());
+
+                    return true;
+                });
+
+                var skipRet = cur.DefineLabel();
+                cur.EmitBrfalse(skipRet);
+                cur.EmitPop();
+                cur.EmitRet();
+                cur.MarkLabel(skipRet);
+            });
     }
 
     [Unload]

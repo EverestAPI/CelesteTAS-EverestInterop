@@ -192,13 +192,17 @@ public static class TargetQuery {
         }
     }
 
-    [MonocleCommand("get", "'get Type.fieldOrProperty' -> value | Example: 'get Player.Position', 'get Level.Wind' (CelesteTAS)"), UsedImplicitly]
+    [MonocleCommand(CommandInfo.GetCommand, "'get Type.fieldOrProperty' -> value | Example: 'get Player.Position', 'get Level.Wind' (CelesteTAS)"), UsedImplicitly]
     private static void GetCmd() {
         if (!CommandLine.TryParse(Engine.Commands.commandHistory[0], out var commandLine)) {
             "Get Command Failed: Couldn't parse arguments of command".ConsoleLog(LogLevel.Error);
             return;
         }
 
+        Get(commandLine);
+    }
+
+    internal static void Get(CommandLine commandLine) {
         if (commandLine.Arguments.Length == 0) {
             "Get Command Failed: No target-query specified".ConsoleLog(LogLevel.Error);
             return;
