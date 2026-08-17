@@ -55,14 +55,12 @@ internal static class RepeatCommand {
         // Count must be a valid value
         // Needs to be kept in sync with the Studio's clamp
         if (count < 1) {
-            AbortTas($"{errorText}Repeat command's count must be greater than 1");
+            AbortTas($"{errorText}Repeat command's count must not be less than 1");
             return;
         }
         if (count > 10_000_000) {
             AbortTas($"{errorText}Repeat command's count must not be greater than 10 million");
-        }
-        if (count == 1) {
-            PopupToast.ShowAndLog($"{errorText}Repeat with count 1 is useless");
+            return;
         }
 
         repeatStack.Push(new Arguments(Manager.Controller.CurrentParsingFrame, count, filePath, fileLine));
