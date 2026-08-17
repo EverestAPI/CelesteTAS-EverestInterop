@@ -12,6 +12,9 @@ internal static class ExtendedVariantsInterop {
 
     private static readonly Lazy<FastReflectionHelper.FastInvoker?> getCurrentVariantValue = new(() =>
         triggerManager.Value?.GetType().GetMethodInfo("GetCurrentVariantValue")?.GetFastInvoker());
+    private static readonly Lazy<FastReflectionHelper.FastInvoker?> getCurrentMapDefinedVariantValue = new(() =>
+        triggerManager.Value?.GetType().GetMethodInfo("GetCurrentMapDefinedVariantValue")?.GetFastInvoker());
+    
     private static readonly Lazy<FastReflectionHelper.FastInvoker?> setVariantValue = new(() =>
         module.Value?.GetType().Assembly.GetType("ExtendedVariants.UI.ModOptionsEntries")?.GetMethodInfo("SetVariantValue")?.GetFastInvoker());
     private static readonly Lazy<FastReflectionHelper.FastInvoker?> dictionaryGetItem = new(() =>
@@ -51,6 +54,11 @@ internal static class ExtendedVariantsInterop {
     public static object? GetCurrentVariantValue(Lazy<object?> variant) {
         if (variant.Value is null) return null;
         return getCurrentVariantValue.Value?.Invoke(triggerManager.Value, variant.Value);
+    }
+    
+    public static object? GetCurrentMapDefinedVariantValue(Lazy<object?> variant) {
+        if (variant.Value is null) return null;
+        return getCurrentMapDefinedVariantValue.Value?.Invoke(triggerManager.Value, variant.Value);
     }
 
     public static void SetVariantValue(Lazy<object?> variant, object? value) {

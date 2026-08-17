@@ -59,7 +59,13 @@ internal static class RestoreSettings {
         if (ExtendedVariantsInterop.GetVariantsEnum() is { } variantsEnum) {
             foreach (object variant in Enum.GetValues(variantsEnum)) {
                 try {
-                    origExtendedVariants[variant] = ExtendedVariantsInterop.GetCurrentVariantValue(new Lazy<object?>(variant));;
+                    var lazyVariant = new Lazy<object?>(variant);
+                    object? currValue = ExtendedVariantsInterop.GetCurrentVariantValue(lazyVariant);
+                    object? currMapValue = ExtendedVariantsInterop.GetCurrentMapDefinedVariantValue(lazyVariant);
+
+                    if (currValue != currMapValue) {
+                        origExtendedVariants[variant] = currValue;
+                    }
                 } catch {
                     // ignore
                 }
