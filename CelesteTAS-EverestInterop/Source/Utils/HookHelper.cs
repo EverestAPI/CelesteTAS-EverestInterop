@@ -1,13 +1,10 @@
-using Celeste;
 using Celeste.Mod;
+using Celeste.Mod.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Numerics;
 using System.Reflection;
-using JetBrains.Annotations;
 using Mono.Cecil;
-using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using MonoMod.Utils;
@@ -36,13 +33,35 @@ internal static class HookHelper {
     }
 
     /// Creates an On-hook to the specified method, which will automatically be unregistered
-    public static void OnHook(this MethodBase from, MethodInfo to) => onHooks.Add(new Hook(from, to));
+    public static void OnHook(this MethodBase from, MethodInfo to) {
+        if (!HookUtils.TryDisableInlining(from)) {
+            $"Failed to disable inlining for On-hooked method: {from.GetFullName()}".Log(LogLevel.Warn);
+        } else {
+            $"Successfully disabled inlining for On-hooked method: {from.GetFullName()}".Log(LogLevel.Debug);
+        }
+        
+        onHooks.Add(new Hook(from, to));
+    }
 
     /// Creates an On-hook to the specified method, which will automatically be unregistered
-    public static void OnHook(this MethodBase from, Delegate to) => onHooks.Add(new Hook(from, to));
+    public static void OnHook(this MethodBase from, Delegate to) {
+        if (!HookUtils.TryDisableInlining(from)) {
+            $"Failed to disable inlining for On-hooked method: {from.GetFullName()}".Log(LogLevel.Warn);
+        } else {
+            $"Successfully disabled inlining for On-hooked method: {from.GetFullName()}".Log(LogLevel.Debug);
+        }
+        
+        onHooks.Add(new Hook(from, to));
+    }
 
     /// Creates an IL-hook to the specified method, which will automatically be unregistered
     public static void IlHook(this MethodBase from, ILContext.Manipulator manipulator) {
+        if (!HookUtils.TryDisableInlining(from)) {
+            $"Failed to disable inlining for IL-hooked method: {from.GetFullName()}".Log(LogLevel.Warn);
+        } else {
+            $"Successfully disabled inlining for IL-hooked method: {from.GetFullName()}".Log(LogLevel.Debug);
+        }
+        
         ilHooks.Add(new ILHook(from, il => {
             manipulator(il);
 
