@@ -520,8 +520,21 @@ public abstract class PopupMenu : Scrollable {
                     .Skip(minRow)
                     .Take(maxRow - minRow + 1)
                     .Select(entry => {
+                        // Attempt to map fuzzy match indices onto display text
+                        int displayIdx = entry.SearchText.IndexOf(entry.DisplayText);
+                        if (displayIdx == -1) {
+                            // Not a substring
+                            return (entry, []);
+                        }
+
                         var indices = new List<int>();
                         matcher.GetIndices(entry.SearchText.AsSpan(), filter.AsSpan(), indices);
+
+                        indices.RemoveAll(idx => idx < displayIdx || idx >= displayIdx + entry.DisplayText.Length);
+                        for (int i = 0; i < indices.Count; i++) {
+                            indices[i] -= displayIdx;
+                        }
+
                         return (entry, indices);
                     })
                     .ToArray();
