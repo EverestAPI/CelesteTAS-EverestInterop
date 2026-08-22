@@ -368,7 +368,7 @@ public class FuzzyMatcher : IDisposable {
     
     #region Scoring
     
-    private enum CharClass { Lower, Upper, Number, Whitespace, Delimiter, NonWord }
+    private enum CharClass { Whitespace, NonWord, Delimiter, Lower, Upper, Number }
 
     private const ushort NO_MATCH = ushort.MaxValue;
 
