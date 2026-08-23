@@ -359,7 +359,7 @@ public sealed class Settings {
                         allowSaving = true;
                         break;
                     case SettingsErrorAction.Edit:
-                        ProcessHelper.OpenInDefaultApp(SettingsPath);
+                        IOHelper.OpenInDefaultApp(SettingsPath);
                         MessageBox.Show(
                             $"""
                             The settings file should've opened itself.
@@ -534,7 +534,7 @@ public sealed class FeatherlineSettings {
             if (!Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
 
-            File.WriteAllText(FeatherlineSettingsPath, TomletMain.DocumentFrom(Instance).SerializedValue);
+            IOHelper.WriteToFileSafeOrThrow(FeatherlineSettingsPath, TomletMain.DocumentFrom(Instance).SerializedValue);
         } catch (Exception ex) {
             Console.Error.WriteLine($"Failed to write settings file to path '{FeatherlineSettingsPath}'");
             Console.Error.WriteLine(ex);

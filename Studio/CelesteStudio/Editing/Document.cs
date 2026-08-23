@@ -241,7 +241,7 @@ public class Document : IDisposable {
 
                     try {
                         lastFileSave = DateTime.UtcNow;
-                        await File.WriteAllTextAsync(FilePath, text);
+                        await IOHelper.WriteToFileSafeOrThrowAsync(FilePath, text);
                         Dirty = false;
 
                         if (Settings.Instance.AutoBackupEnabled && !string.IsNullOrWhiteSpace(FilePath)) {

@@ -95,10 +95,7 @@ public abstract class PopupMenu : Scrollable {
 
         toml.PutValue(StoragesArrayKey, array);
 
-        // Write to another file and then move that over, to avoid getting interrupted while writing and corrupting the settings
-        string tmpFile = Settings.PopupStoragePath + ".tmp";
-        File.WriteAllText(tmpFile, toml.SerializedValue);
-        File.Move(tmpFile, Settings.PopupStoragePath, overwrite: true);
+        IOHelper.WriteToFileSafeOrThrow(toml.SerializedValue, Settings.PopupStoragePath);
     }
 
     #endregion

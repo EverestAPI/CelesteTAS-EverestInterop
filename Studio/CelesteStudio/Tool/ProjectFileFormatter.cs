@@ -2,6 +2,7 @@ using CelesteStudio.Editing;
 using CelesteStudio.Util;
 using Eto.Drawing;
 using Eto.Forms;
+using StudioCommunication.Util;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -200,9 +201,7 @@ public class ProjectFileFormatterDialog : Eto.Forms.Dialog {
 
             // Write to another file and then move that over, to avoid getting interrupted while writing and corrupting the settings
             string configPath = Path.Combine(projectRoot, StyleConfig.ConfigFile);
-            string tempPath = configPath + ".tmp";
-            File.WriteAllText(tempPath, TomletMain.DocumentFrom(config).SerializedValue);
-            File.Move(tempPath, configPath, overwrite: true);
+            IOHelper.WriteToFileSafeOrThrow(configPath, TomletMain.DocumentFrom(config).SerializedValue);
         }
 
         int totalTasks = 0, finishedTasks = 0;

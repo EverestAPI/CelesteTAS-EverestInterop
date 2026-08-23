@@ -25,13 +25,13 @@ public class RecordingFailedDialog : Eto.Forms.Dialog {
                     VerticalContentAlignment = VerticalAlignment.Center,
                     Items = {
                         new Button((_, _) => {
-                            var proc = ProcessHelper.OpenInDefaultApp("https://maddie480.ovh/celeste/dl?id=TASRecorder&twoclick=1");
+                            var proc = IOHelper.OpenInDefaultApp("https://maddie480.ovh/celeste/dl?id=TASRecorder&twoclick=1");
                             proc?.WaitForExit(TimeSpan.FromSeconds(10));
                             Environment.Exit(1);
                         }) { Text = "&Install TAS Recorder" },
 
                         new Button((_, _) => {
-                            var proc = ProcessHelper.OpenInDefaultApp("https://github.com/psyGamer/TASRecorder#installation");
+                            var proc = IOHelper.OpenInDefaultApp("https://github.com/psyGamer/TASRecorder#installation");
                             proc?.WaitForExit(TimeSpan.FromSeconds(10));
                             Environment.Exit(1);
                         }) { Text = "&Open Install instructions" },

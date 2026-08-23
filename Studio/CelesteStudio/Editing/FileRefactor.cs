@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -415,6 +415,8 @@ public static class FileRefactor {
         try {
             foreach (string filePath in pendingFilesystemWrite.Select(Path.GetFullPath)) {
                 Task.Run(async () => {
+                    using var content = new MemoryStream(Encoding.UTF8.GetBytes(FileCache[filePath].FormatTasLinesToText()));
+
                     const int numberOfRetries = 3;
                     const int delayOnRetry = 1000;
                     const int ERROR_SHARING_VIOLATION = unchecked((int) 0x80070020);
@@ -423,8 +425,12 @@ public static class FileRefactor {
                     try {
                         for (int i = 1; i <= numberOfRetries; i++) {
                             try {
-                                await File.WriteAllTextAsync(filePath, FileCache[filePath].FormatTasLinesToText());
-                                Console.WriteLine($"Successfully flushed file '{filePath}'");
+                                if (!await IOHelper.WriteToFileSafeAsync(filePath, content)) {
+                                    Console.WriteLine($"Successfully flushed file '{filePath}'");
+                                    break;
+                                }
+                                
+                                await Task.Delay(delayOnRetry);    
                             } catch (IOException ex) when (ex.HResult == ERROR_SHARING_VIOLATION || ex is FileNotFoundException) {
                                 await Task.Delay(delayOnRetry);
                             } catch (Exception ex) {

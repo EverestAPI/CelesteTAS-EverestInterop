@@ -52,7 +52,7 @@ public static class ErrorLog {
 
     public static void Open() {
         if (File.Exists(FilePath)) {
-            ProcessHelper.OpenInDefaultApp(FilePath);
+            IOHelper.OpenInDefaultApp(FilePath);
         }
     }
 }

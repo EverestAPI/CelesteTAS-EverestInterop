@@ -23,10 +23,7 @@ public static class Migrator {
     private static readonly Version InvalidVersion = new(0, 0, 0);
 
     public static void WriteSettings(TomlDocument document) {
-        // Write to another file and then move that over, to avoid getting interrupted while writing and corrupting the settings
-        var tmpFile = Settings.SettingsPath + ".tmp";
-        File.WriteAllText(tmpFile, document.SerializedValue);
-        File.Move(tmpFile, Settings.SettingsPath, overwrite: true);
+        IOHelper.WriteToFileSafeOrThrow(Settings.SettingsPath, document.SerializedValue);
     }
 
     /// Migrates settings and other configurations from the last used to the current version
@@ -116,7 +113,7 @@ public static class Migrator {
                         Settings.Reset();
                         break;
                     case SettingsErrorAction.Edit:
-                        ProcessHelper.OpenInDefaultApp(Settings.SettingsPath);
+                        IOHelper.OpenInDefaultApp(Settings.SettingsPath);
                         MessageBox.Show(
                             $"""
                              The settings file should've opened itself.

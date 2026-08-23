@@ -580,7 +580,7 @@ public class Markdown : SkiaDrawable {
                 return;
             }
 
-            Action clickAction = () => ProcessHelper.OpenInDefaultApp(link.Url!);
+            Action clickAction = () => IOHelper.OpenInDefaultApp(link.Url!);
 
             var style = renderer.CurrentStyle;
             renderer.PushStyle(style

@@ -690,7 +690,7 @@ public sealed class Studio : Form {
             Settings.Instance.RecentFiles.RemoveAt(0);
         }
 
-        File.WriteAllText(filePath, Editor.Document.Text);
+        IOHelper.WriteToFileSafeOrThrow(filePath, Editor.Document.Text);
         if (openTargetFile) {
             OpenFileInEditor(filePath);
         }
@@ -702,7 +702,7 @@ public sealed class Studio : Form {
             return;
         }
 
-        ProcessHelper.OpenInDefaultApp(Path.GetDirectoryName(Editor.Document.FilePath)!);
+        IOHelper.OpenInDefaultApp(Path.GetDirectoryName(Editor.Document.FilePath)!);
     }
 
     private void OnRecordTAS() {
@@ -761,7 +761,7 @@ public sealed class Studio : Form {
             backupsMenu.Items.Add(MenuUtils.CreateAction(Path.GetFileName(filePath), Keys.None, () => OpenFileInEditor(filePath)));
         }
         backupsMenu.Items.Add(new SeparatorMenuItem());
-        backupsMenu.Items.Add(new Command((_, _) => ProcessHelper.OpenInDefaultApp(backupDir)) { MenuText = "Show All Files" });
+        backupsMenu.Items.Add(new Command((_, _) => IOHelper.OpenInDefaultApp(backupDir)) { MenuText = "Show All Files" });
         backupsMenu.Items.Add(new Command((_, _) => {
             var confirm = MessageBox.Show("Are you sure you want to delete all backups for this file?", MessageBoxButtons.YesNo, MessageBoxType.Question, MessageBoxDefaultButton.No);
             if (confirm == DialogResult.Yes) {
@@ -816,7 +816,7 @@ public sealed class Studio : Form {
                 MenuUtils.CreateAction("Font...", Keys.None, FontDialog.Show),
                 CreateThemeMenu(),
                 MenuUtils.CreateAction("Create desktop shortcut", Keys.None, DesktopShortcutDialog.Install),
-                MenuUtils.CreateAction("Open Settings File...", Keys.None, () => ProcessHelper.OpenInDefaultApp(Settings.SettingsPath)),
+                MenuUtils.CreateAction("Open Settings File...", Keys.None, () => IOHelper.OpenInDefaultApp(Settings.SettingsPath)),
             }},
             new SubMenuItem { Text = "&Preferences", Items = {
                 MenuUtils.CreateSettingToggle("&Auto Save File", nameof(Settings.AutoSave)),
@@ -905,8 +905,8 @@ public sealed class Studio : Form {
         ];
 
         var quitItem = Quit.CreateItem();
-        var homeItem = MenuUtils.CreateAction("Open README...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop"));
-        var wikiItem = MenuUtils.CreateAction("Open wiki...", Keys.None, () => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki"));
+        var homeItem = MenuUtils.CreateAction("Open README...", Keys.None, () => IOHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop"));
+        var wikiItem = MenuUtils.CreateAction("Open wiki...", Keys.None, () => IOHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki"));
         var whatsNewItem = MenuUtils.CreateAction("What's new?", Keys.None, () => {
             string versionHistoryPath = Path.Combine(InstallDirectory, "Assets", "version_history.json");
             if (File.Exists(versionHistoryPath)) {

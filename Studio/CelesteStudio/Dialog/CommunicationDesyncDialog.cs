@@ -41,13 +41,13 @@ public class CommunicationDesyncDialog : Eto.Forms.Dialog {
                     VerticalContentAlignment = VerticalAlignment.Center,
                     Items = {
                         new Button((_, _) => {
-                            var proc = ProcessHelper.OpenInDefaultApp("https://0x0a.de/twoclick/?https://github.com/EverestAPI/CelesteTAS-EverestInterop/releases/latest/download/CelesteTAS.zip");
+                            var proc = IOHelper.OpenInDefaultApp("https://0x0a.de/twoclick/?https://github.com/EverestAPI/CelesteTAS-EverestInterop/releases/latest/download/CelesteTAS.zip");
                             proc?.WaitForExit(TimeSpan.FromSeconds(10));
                             Environment.Exit(1);
                         }) { Text = "Update CelesteTAS" },
 
                         new Button((_, _) => {
-                            var proc = ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop/releases/latest");
+                            var proc = IOHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop/releases/latest");
                             proc?.WaitForExit(TimeSpan.FromSeconds(10));
                             Environment.Exit(1);
                         }) { Text = "Download latest Release" },

@@ -1,7 +1,7 @@
 using CelesteStudio.Editing;
+using StudioCommunication.Util;
 using System.IO;
 using Tomlet;
-using Tomlet.Exceptions;
 using Tomlet.Models;
 
 namespace CelesteStudio.Migration;
@@ -39,9 +39,6 @@ public static class MigrateV3_11_0 {
 
         newToml.Put(PopupMenu.StoragesArrayKey, newArray);
 
-        // Write to another file and then move that over, to avoid getting interrupted while writing and corrupting the settings
-        string tmpFile = Settings.PopupStoragePath + ".tmp";
-        File.WriteAllText(tmpFile, newToml.SerializedValue);
-        File.Move(tmpFile, Settings.PopupStoragePath, overwrite: true);
+        IOHelper.WriteToFileSafeOrThrow(Settings.PopupStoragePath, newToml.SerializedValue);
     }
 }

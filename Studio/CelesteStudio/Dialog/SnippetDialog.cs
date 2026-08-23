@@ -31,7 +31,7 @@ public class SnippetDialog : Dialog<bool> {
             GenerateListEntries(list.Items);
         };
 
-        var documentationCmd = new Command((_, _) => ProcessHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Snippets"));
+        var documentationCmd = new Command((_, _) => IOHelper.OpenInDefaultApp("https://github.com/EverestAPI/CelesteTAS-EverestInterop/wiki/Snippets"));
 
         Title = "Edit Snippets";
         Content = new StackLayout {

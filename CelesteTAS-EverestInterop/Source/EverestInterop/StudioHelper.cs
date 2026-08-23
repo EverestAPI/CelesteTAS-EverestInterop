@@ -215,7 +215,7 @@ public static class StudioHelper {
             }
 
             File.WriteAllText(path, text);
-            ProcessHelper.OpenInDefaultApp(path);
+            IOHelper.OpenInDefaultApp(path);
         }
 
         // Delete executable, so that the notice only pops up once
@@ -529,6 +529,6 @@ public static class StudioHelper {
              """;
 
         File.WriteAllText(path, text);
-        ProcessHelper.OpenInDefaultApp(path);
+        IOHelper.OpenInDefaultApp(path);
     }
 }
