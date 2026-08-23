@@ -14,19 +14,26 @@ public static class MigrateV3_11_0 {
         }
 
         var oldToml = TomlParser.ParseFile(Settings.PopupStoragePath);
+        if (oldToml.TryGetValue(PopupMenu.StoragesArrayKey, out var oldArray) && oldArray is TomlArray) {
+            return;
+        }
+        
         var newToml = TomlDocument.CreateEmpty();
         var newArray = new TomlArray();
 
         foreach ((string key, var tomlValue) in oldToml.Entries) {
-            if (tomlValue is not TomlTable oldTable) {
-                throw new TomlTypeMismatchException(typeof(TomlTable), tomlValue.GetType(), typeof(PopupMenu.StorageData));
+            if (tomlValue is not TomlTable oldTable ||
+                !oldTable.TryGetValue("Favourites", out var oldFavourites) ||
+                !oldTable.TryGetValue("Usages", out var oldUsages)
+            ) {
+                continue;
             }
 
             var newTable = new TomlTable();
 
             newTable.Put(PopupMenu.StoragesNameKey, key, quote: true);
-            newTable.Put(nameof(PopupMenu.StorageData.Favourites), oldTable.GetValue(nameof(PopupMenu.StorageData.Favourites)));
-            newTable.Put(nameof(PopupMenu.StorageData.Usages), oldTable.GetValue(nameof(PopupMenu.StorageData.Usages)));
+            newTable.Put("Favourites", oldFavourites);
+            newTable.Put("Usages", oldUsages);
             newArray.ArrayValues.Add(newTable);
         }
 
