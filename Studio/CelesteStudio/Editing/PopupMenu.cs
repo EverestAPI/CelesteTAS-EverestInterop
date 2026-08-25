@@ -95,7 +95,7 @@ public abstract class PopupMenu : Scrollable {
 
         toml.PutValue(StoragesArrayKey, array);
 
-        IOHelper.WriteToFileSafeOrThrow(toml.SerializedValue, Settings.PopupStoragePath);
+        IOHelper.WriteToFileSafeOrThrow(Settings.PopupStoragePath, toml.SerializedValue);
     }
 
     #endregion
